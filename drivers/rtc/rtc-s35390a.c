@@ -385,7 +385,7 @@ static int s35390a_probe(struct i2c_client *client,
 	if (s35390a_get_datetime(client, &tm) < 0)
 		dev_warn(&client->dev, "clock needs to be set\n");
 
-	device_set_wakeup_capable(&client->dev, 1);
+	device_init_wakeup(&client->dev, 1);
 
 	s35390a->rtc = devm_rtc_device_register(&client->dev,
 					s35390a_driver.driver.name,
