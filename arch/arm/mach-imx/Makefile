@@ -122,6 +122,7 @@ obj-$(CONFIG_SOC_IMX6) += suspend-imx6.o
 obj-$(CONFIG_SOC_IMX7) += suspend-imx7.o
 endif
 obj-$(CONFIG_SOC_IMX6) += pm-imx6.o
+obj-$(CONFIG_ARCH_ADVANTECH) += proc-board.o
 AFLAGS_smp_wfe.o :=-Wa,-march=armv7-a
 AFLAGS_ddr3_freq_imx7d.o :=-Wa,-march=armv7-a
 AFLAGS_lpddr3_freq_imx.o :=-Wa,-march=armv7-a
