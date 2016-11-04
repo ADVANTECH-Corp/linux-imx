@@ -531,8 +531,8 @@ static int spi_nor_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
 static const struct spi_device_id spi_nor_ids[] = {
 #ifdef CONFIG_ARCH_ADVANTECH
 	/* Micron N25Q */
-	{ "n25q", INFO(0x20ba16, 0, 64 * 1024,  64, SECT_4K) },
-	{ "n25q", INFO(0x20bb16, 0, 64 * 1024,  64, SECT_4K) },
+	{ "n25qba16", INFO(0x20ba16, 0, 64 * 1024,  64, SECT_4K) },
+	{ "n25qbb16", INFO(0x20bb16, 0, 64 * 1024,  64, SECT_4K) },
 #endif
 	/* Atmel -- some are (confusingly) marketed as "DataFlash" */
 	{ "at25fs010",  INFO(0x1f6601, 0, 32 * 1024,   4, SECT_4K) },
