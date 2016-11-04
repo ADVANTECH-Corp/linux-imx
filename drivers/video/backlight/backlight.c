@@ -31,6 +31,11 @@ static const char *const backlight_types[] = {
 	[BACKLIGHT_FIRMWARE] = "firmware",
 };
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+extern int first_power_on;
+extern void enable_ldb_bkl_pwm(void);
+#endif
+
 #if defined(CONFIG_FB) || (defined(CONFIG_FB_MODULE) && \
 			   defined(CONFIG_BACKLIGHT_CLASS_DEVICE_MODULE))
 /* This callback gets called when something important happens inside a
@@ -61,7 +66,23 @@ static int fb_notifier_callback(struct notifier_block *self,
 				if (!bd->use_count++) {
 					bd->props.state &= ~BL_CORE_FBBLANK;
 					bd->props.fb_blank = FB_BLANK_UNBLANK;
+
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+					if(first_power_on)
+						printk(KERN_INFO "[LVDS Sequence] 3 Start to enable LVDS pwm.\n");
+
 					backlight_update_status(bd);
+
+					if(first_power_on)
+					{
+						
+						enable_ldb_bkl_pwm();
+						first_power_on = 0;
+					}
+#else
+					backlight_update_status(bd);
+#endif
+
 				}
 			} else if (fb_blank != FB_BLANK_UNBLANK &&
 				   bd->fb_bl_on[node]) {
