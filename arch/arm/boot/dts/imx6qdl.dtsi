@@ -1187,6 +1187,19 @@
 				status = "disabled";
 			};
 
+			/* boot order: sd card > emmc */
+			usdhc4: usdhc@0219c000 {
+				compatible = "fsl,imx6q-usdhc";
+				reg = <0x0219c000 0x4000>;
+				interrupts = <0 25 IRQ_TYPE_LEVEL_HIGH>;
+				clocks = <&clks IMX6QDL_CLK_USDHC4>,
+					 <&clks IMX6QDL_CLK_USDHC4>,
+					 <&clks IMX6QDL_CLK_USDHC4>;
+				clock-names = "ipg", "ahb", "per";
+				bus-width = <4>;
+				status = "disabled";
+			};
+
 			usdhc2: usdhc@02194000 {
 				compatible = "fsl,imx6q-usdhc";
 				reg = <0x02194000 0x4000>;
@@ -1206,18 +1219,6 @@
 				clocks = <&clks IMX6QDL_CLK_USDHC3>,
 					 <&clks IMX6QDL_CLK_USDHC3>,
 					 <&clks IMX6QDL_CLK_USDHC3>;
-				clock-names = "ipg", "ahb", "per";
-				bus-width = <4>;
-				status = "disabled";
-			};
-
-			usdhc4: usdhc@0219c000 {
-				compatible = "fsl,imx6q-usdhc";
-				reg = <0x0219c000 0x4000>;
-				interrupts = <0 25 IRQ_TYPE_LEVEL_HIGH>;
-				clocks = <&clks IMX6QDL_CLK_USDHC4>,
-					 <&clks IMX6QDL_CLK_USDHC4>,
-					 <&clks IMX6QDL_CLK_USDHC4>;
 				clock-names = "ipg", "ahb", "per";
 				bus-width = <4>;
 				status = "disabled";
