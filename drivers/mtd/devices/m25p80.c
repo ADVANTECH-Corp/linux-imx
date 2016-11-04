@@ -262,6 +262,9 @@ static int m25p_remove(struct spi_device *spi)
  * keep them available as module aliases for existing platforms.
  */
 static const struct spi_device_id m25p_ids[] = {
+#ifdef CONFIG_ARCH_ADVANTECH
+	{"n25qba16"},  {"n25qbb16"},
+#endif
 	{"at25fs010"},	{"at25fs040"},	{"at25df041a"},	{"at25df321a"},
 	{"at25df641"},	{"at26f004"},	{"at26df081a"},	{"at26df161a"},
 	{"at26df321"},	{"at45db081d"},
