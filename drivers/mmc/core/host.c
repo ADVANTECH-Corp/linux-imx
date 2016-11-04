@@ -401,6 +401,9 @@ int mmc_of_parse(struct mmc_host *host)
 	int ret;
 	bool cd_cap_invert, cd_gpio_invert = false;
 	bool ro_cap_invert, ro_gpio_invert = false;
+#ifdef CONFIG_ARCH_ADVANTECH
+  int cd_gpio;
+#endif
 
 	if (!host->parent || !host->parent->of_node)
 		return 0;
@@ -455,12 +458,31 @@ int mmc_of_parse(struct mmc_host *host)
 		if (of_property_read_bool(np, "broken-cd"))
 			host->caps |= MMC_CAP_NEEDS_POLL;
 
-		ret = mmc_gpiod_request_cd(host, "cd", 0, true,
-					   0, &cd_gpio_invert);
-		if (!ret)
-			dev_info(host->parent, "Got CD GPIO\n");
-		else if (ret != -ENOENT && ret != -ENOSYS)
-			return ret;
+#ifdef CONFIG_ARCH_ADVANTECH
+    cd_gpio = of_get_named_gpio(np, "cd-gpios", 0);  
+		if (gpio_is_valid(cd_gpio))
+    {   
+        ret = mmc_gpio_request_cd(host, cd_gpio, 0);
+    		if (!ret)
+    			dev_info(host->parent, "Got CD GPIO: %d\n", cd_gpio);
+    		else
+        { 
+          printk("Failed gpio request: cd_gpio\n");   
+          if (ret != -ENOENT && ret != -ENOSYS)
+    			return ret;
+        }                 
+    }
+    else
+      printk("cd-gpios is invalid\n");             
+
+#else
+ 		ret = mmc_gpiod_request_cd(host, "cd", 0, true,
+ 					   0, &cd_gpio_invert);
+ 		if (!ret)
+ 			dev_info(host->parent, "Got CD GPIO\n");
+ 		else if (ret != -ENOENT && ret != -ENOSYS)
+ 			return ret;
+#endif
 
 		/*
 		 * There are two ways to flag that the CD line is inverted:
