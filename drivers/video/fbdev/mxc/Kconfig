@@ -18,6 +18,11 @@ config FB_MXC_SYNC_PANEL
 	depends on FB_MXC
 	tristate "Synchronous Panel Framebuffer"
 
+config FB_MXC_SYNC_PANEL_EDID
+	depends on FB_MXC_SYNC_PANEL && ARCH_ADVANTECH
+	tristate "VGA Panel EDID Parser"
+	default n
+
 config FB_MXC_MIPI_DSI
 	tristate "MXC MIPI_DSI"
 	depends on FB_MXC_SYNC_PANEL
@@ -96,3 +101,7 @@ config FB_MXC_EINK_V2_PANEL
 config FB_MXC_EINK_AUTO_UPDATE_MODE
 	bool "E-Ink Auto-update Mode Support"
 	depends on FB_MXC_EINK_PANEL
+
+config FB_MXC_CH7055
+	depends on FB_MXC_SYNC_PANEL && ARCH_ADVANTECH
+	tristate "Chrontel CH7055 VGA Interface Chip"

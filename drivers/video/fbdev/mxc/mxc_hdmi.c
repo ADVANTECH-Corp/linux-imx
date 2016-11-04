@@ -54,6 +54,10 @@
 
 #include <linux/mfd/mxc-hdmi-core.h>
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/proc-board.h>
+#endif
+
 #define DISPDRV_HDMI	"hdmi"
 #define HDMI_EDID_LEN		512
 
@@ -869,33 +873,6 @@ static void hdmi_phy_i2c_write(struct mxc_hdmi *hdmi, unsigned short data,
 	hdmi_phy_wait_i2c_done(hdmi, 1000);
 }
 
-#if 0
-static unsigned short hdmi_phy_i2c_read(struct mxc_hdmi *hdmi,
-					unsigned char addr)
-{
-	unsigned short data;
-	unsigned char msb = 0, lsb = 0;
-	hdmi_writeb(0xFF, HDMI_IH_I2CMPHY_STAT0);
-	hdmi_writeb(addr, HDMI_PHY_I2CM_ADDRESS_ADDR);
-	hdmi_writeb(HDMI_PHY_I2CM_OPERATION_ADDR_READ,
-		HDMI_PHY_I2CM_OPERATION_ADDR);
-	hdmi_phy_wait_i2c_done(hdmi, 1000);
-	msb = hdmi_readb(HDMI_PHY_I2CM_DATAI_1_ADDR);
-	lsb = hdmi_readb(HDMI_PHY_I2CM_DATAI_0_ADDR);
-	data = (msb << 8) | lsb;
-	return data;
-}
-
-static int hdmi_phy_i2c_write_verify(struct mxc_hdmi *hdmi, unsigned short data,
-				     unsigned char addr)
-{
-	unsigned short val = 0;
-	hdmi_phy_i2c_write(hdmi, data, addr);
-	val = hdmi_phy_i2c_read(hdmi, addr);
-	return (val == data);
-}
-#endif
-
 static bool  hdmi_edid_wait_i2c_done(struct mxc_hdmi *hdmi, int msec)
 {
     unsigned char val = 0;
@@ -1199,13 +1176,42 @@ static int hdmi_phy_configure(struct mxc_hdmi *hdmi, unsigned char pRep,
 
 	hdmi_phy_i2c_write(hdmi, 0x0000, 0x13);  /* PLLPHBYCTRL */
 	hdmi_phy_i2c_write(hdmi, 0x0006, 0x17);
-	/* RESISTANCE TERM 133Ohm Cfg */
-	hdmi_phy_i2c_write(hdmi, 0x0005, 0x19);  /* TXTERM */
-	/* PREEMP Cgf 0.00 */
-	hdmi_phy_i2c_write(hdmi, 0x800d, 0x09);  /* CKSYMTXCTRL */
-	/* TX/CK LVL 10 */
-	hdmi_phy_i2c_write(hdmi, 0x01ad, 0x0E);  /* VLEVCTRL */
-
+#ifdef CONFIG_ARCH_ADVANTECH
+	if ( IS_ROM_3420 || IS_ROM_5420 )
+	{
+		if(hdmi->fbi->var.yres == 480)
+		{
+			/* PLL/MPLL Cfg */
+			hdmi_phy_i2c_write(hdmi, 0x1EA0, 0x06);
+			/* PREEMP Cgf 0.00 */
+			hdmi_phy_i2c_write(hdmi, 0x8009, 0x09);  /* CKSYMTXCTRL */
+			/* TX/CK LVL 10 */
+			hdmi_phy_i2c_write(hdmi, 0x02B5, 0x0E);  /* VLEVCTRL */
+			/* RESISTANCE TERM 133Ohm Cfg */
+			hdmi_phy_i2c_write(hdmi, 0x0, 0x19);  /* TXTERM */
+		}
+		else
+		{
+			/* PLL/MPLL Cfg */
+			hdmi_phy_i2c_write(hdmi, 0x0AA0, 0x06);
+			/* PREEMP Cgf 0.00 */
+			hdmi_phy_i2c_write(hdmi, 0x800D, 0x09);  /* CKSYMTXCTRL */
+			/* TX/CK LVL 10 */
+			hdmi_phy_i2c_write(hdmi, 0x00C6, 0x0E);  /* VLEVCTRL */
+			/* RESISTANCE TERM 133Ohm Cfg */
+			hdmi_phy_i2c_write(hdmi, 0x0004, 0x19);  /* TXTERM */
+		}
+	}
+	else
+#endif
+	{
+		/* RESISTANCE TERM 133Ohm Cfg */
+		hdmi_phy_i2c_write(hdmi, 0x0005, 0x19);  /* TXTERM */
+		/* PREEMP Cgf 0.00 */
+		hdmi_phy_i2c_write(hdmi, 0x800d, 0x09);  /* CKSYMTXCTRL */
+		/* TX/CK LVL 10 */
+		hdmi_phy_i2c_write(hdmi, 0x01ad, 0x0E);  /* VLEVCTRL */
+	}
 	/* Board specific setting for PHY register 0x09, 0x0e to pass HCT */
 	if (hdmi->phy_config.reg_cksymtx != 0)
 		hdmi_phy_i2c_write(hdmi, hdmi->phy_config.reg_cksymtx, 0x09);
