@@ -64,6 +64,13 @@
 
 #ifdef CONFIG_ARCH_ADVANTECH
 char fb_vga_fix_id[30];
+
+#if defined(CONFIG_OF)
+int first_power_on = 1;
+extern void enable_lcd_vdd_en(void);
+extern void enable_ldb_bkl_pwm(void);
+#endif
+
 #endif
 
 /*!
@@ -219,12 +226,6 @@ enum {
 
 static bool g_dp_in_use[2];
 LIST_HEAD(fb_alloc_list);
-
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-static int first_power_on = 1;
-extern void enable_lcd_vdd_en(void);
-extern void enable_ldb_bkl_pwm(void);
-#endif
 
 /* Return default standard(RGB) pixel format */
 static uint32_t bpp_to_pixfmt(int bpp)
@@ -2635,14 +2636,6 @@ next:
 	}
 
 	dev_dbg(info->device, "Update complete\n");
-
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-	if(first_power_on)
-	{
-		enable_ldb_bkl_pwm();
-		first_power_on = 0;
-	}
-#endif
 
 	info->var.yoffset = var->yoffset;
 	mxc_fbi->cur_var.xoffset = var->xoffset;
