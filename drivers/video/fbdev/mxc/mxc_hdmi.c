@@ -1176,8 +1176,30 @@ static int hdmi_phy_configure(struct mxc_hdmi *hdmi, unsigned char pRep,
 
 	hdmi_phy_i2c_write(hdmi, 0x0000, 0x13);  /* PLLPHBYCTRL */
 	hdmi_phy_i2c_write(hdmi, 0x0006, 0x17);
+	/* RESISTANCE TERM 133Ohm Cfg */
+	hdmi_phy_i2c_write(hdmi, 0x0005, 0x19);  /* TXTERM */
+	/* PREEMP Cgf 0.00 */
+	hdmi_phy_i2c_write(hdmi, 0x800d, 0x09);  /* CKSYMTXCTRL */
+	/* TX/CK LVL 10 */
+	hdmi_phy_i2c_write(hdmi, 0x01ad, 0x0E);  /* VLEVCTRL */
+
+	/* Board specific setting for PHY register 0x09, 0x0e to pass HCT */
+	if (hdmi->phy_config.reg_cksymtx != 0)
+		hdmi_phy_i2c_write(hdmi, hdmi->phy_config.reg_cksymtx, 0x09);
+
+	if (hdmi->phy_config.reg_vlev != 0)
+		hdmi_phy_i2c_write(hdmi, hdmi->phy_config.reg_vlev, 0x0E);
+
+	/* REMOVE CLK TERM */
+	hdmi_phy_i2c_write(hdmi, 0x8000, 0x05);  /* CKCALCTRL */
+
+	if (hdmi->hdmi_data.video_mode.mPixelClock > 148500000) {
+		hdmi_phy_i2c_write(hdmi, 0x800b, 0x09);
+		hdmi_phy_i2c_write(hdmi, 0x0129, 0x0E);
+	}
+
 #ifdef CONFIG_ARCH_ADVANTECH
-	if ( IS_ROM_3420 || IS_ROM_5420 )
+	if ( IS_ROM_3420 || IS_ROM_5420 || IS_ROM_7421)
 	{
 		if(hdmi->fbi->var.yres == 480)
 		{
@@ -1188,7 +1210,11 @@ static int hdmi_phy_configure(struct mxc_hdmi *hdmi, unsigned char pRep,
 			/* TX/CK LVL 10 */
 			hdmi_phy_i2c_write(hdmi, 0x02B5, 0x0E);  /* VLEVCTRL */
 			/* RESISTANCE TERM 133Ohm Cfg */
-			hdmi_phy_i2c_write(hdmi, 0x0, 0x19);  /* TXTERM */
+			if (IS_ROM_7421)
+				hdmi_phy_i2c_write(hdmi, 0x0004, 0x19);  /* TXTERM */
+			else
+				hdmi_phy_i2c_write(hdmi, 0x0, 0x19);  /* TXTERM */
+
 		}
 		else
 		{
@@ -1202,30 +1228,7 @@ static int hdmi_phy_configure(struct mxc_hdmi *hdmi, unsigned char pRep,
 			hdmi_phy_i2c_write(hdmi, 0x0004, 0x19);  /* TXTERM */
 		}
 	}
-	else
 #endif
-	{
-		/* RESISTANCE TERM 133Ohm Cfg */
-		hdmi_phy_i2c_write(hdmi, 0x0005, 0x19);  /* TXTERM */
-		/* PREEMP Cgf 0.00 */
-		hdmi_phy_i2c_write(hdmi, 0x800d, 0x09);  /* CKSYMTXCTRL */
-		/* TX/CK LVL 10 */
-		hdmi_phy_i2c_write(hdmi, 0x01ad, 0x0E);  /* VLEVCTRL */
-	}
-	/* Board specific setting for PHY register 0x09, 0x0e to pass HCT */
-	if (hdmi->phy_config.reg_cksymtx != 0)
-		hdmi_phy_i2c_write(hdmi, hdmi->phy_config.reg_cksymtx, 0x09);
-
-	if (hdmi->phy_config.reg_vlev != 0)
-		hdmi_phy_i2c_write(hdmi, hdmi->phy_config.reg_vlev, 0x0E);
-
-	/* REMOVE CLK TERM */
-	hdmi_phy_i2c_write(hdmi, 0x8000, 0x05);  /* CKCALCTRL */
-
-	if (hdmi->hdmi_data.video_mode.mPixelClock > 148500000) {
-			hdmi_phy_i2c_write(hdmi, 0x800b, 0x09);
-			hdmi_phy_i2c_write(hdmi, 0x0129, 0x0E);
-	}
 
 	mxc_hdmi_phy_enable_power(1);
 
