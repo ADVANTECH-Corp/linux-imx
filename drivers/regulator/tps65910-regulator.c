@@ -1083,6 +1083,9 @@ static int tps65910_probe(struct platform_device *pdev)
 	struct tps65910_board *pmic_plat_data;
 	struct of_regulator_match *tps65910_reg_matches = NULL;
 	int i, err;
+#ifdef CONFIG_ARCH_ADVANTECH
+	int ret, value;
+#endif
 
 	pmic_plat_data = dev_get_platdata(tps65910->dev);
 	if (!pmic_plat_data && tps65910->dev->of_node)
@@ -1210,6 +1213,27 @@ static int tps65910_probe(struct platform_device *pdev)
 		/* Save regulator for cleanup */
 		pmic->rdev[i] = rdev;
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	switch (tps65910_chip_id(tps65910)) {
+	case TPS65911:
+		ret = tps65910_reg_read(pmic->mfd, TPS65910_DCDCCTRL, &value);
+
+		if(ret < 0)
+			dev_err(&pdev->dev, "Cannot read TPS65910_DCDCCTRL value!\n");	
+		else {
+			if(value != 1)
+				tps65910_reg_write(pmic->mfd, TPS65910_DCDCCTRL, 0x01);
+		}
+	break;
+	case TPS65910:
+	break;
+	default:
+	dev_err(&pdev->dev, "Invalid tps chip version\n");
+		return -ENODEV;
+	}	
+#endif
+
 	return 0;
 }
 
