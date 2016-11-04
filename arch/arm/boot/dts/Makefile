@@ -667,6 +667,7 @@ dtb-$(CONFIG_ARCH_ADVANTECH) += \
 	imx6q-rsb4411-a1.dtb \
 	imx6q-rsb4410-a1.dtb \
 	imx6q-rsb4410-a2.dtb \
+	imx6dl-rom5420-b1.dtb \
 	imx6q-rom5420-a1.dtb \
 	imx6q-rom5420-b1.dtb \
 	imx6q-rom7420-a1.dtb \
