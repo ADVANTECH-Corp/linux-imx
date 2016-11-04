@@ -56,6 +56,8 @@
 
 static int gpio_wdt_en;
 static int gpio_wdt_ping;
+static int gpio_wdt_out;
+
 
 struct i2c_client *adv_client;
 
@@ -375,6 +377,18 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	gpio_direction_output(gpio_wdt_ping, !flags);
 	msleep(10);
 	gpio_direction_output(gpio_wdt_ping, flags);
+
+	/* We use common gpio pin to be watchdog-out pin (output-low) at present. We wait H/W rework, then remove.  */
+	gpio_wdt_out = of_get_named_gpio_flags(np, "wdt-out", 0, &flags);
+        if (!gpio_is_valid(gpio_wdt_ping))
+                return -ENODEV;
+
+	ret = devm_gpio_request_one(&client->dev, gpio_wdt_out, GPIOF_OUT_INIT_LOW, "adv_wdt.wdt_out`");
+
+	if (ret < 0) {
+		dev_err(&client->dev, "request gpio failed: %d\n", ret);
+		return ret;
+	}
 
 	adv_wdt.timeout = clamp_t(unsigned, timeout, 1, ADV_WDT_MAX_TIME);
 	if (adv_wdt.timeout != timeout)
