@@ -411,15 +411,16 @@ static int mxs_phy_hw_init(struct mxs_phy *mxs_phy)
 #ifdef CONFIG_ARCH_ADVANTECH
 	if(mxs_phy->port_id == 0) {
 		/* USB-OTG Port */
-		if ( IS_ROM_3420 || IS_ROM_5420 || IS_ROM_7421) {
+		if ( IS_ROM_3420 || IS_ROM_5420 || IS_ROM_7421 || IS_RSB_4411) {
 			u32 val;
-
 			val = readl(base + HW_USBPHY_TX);
 
 			if (IS_ROM_3420)
 				val &= 0x10060603;
 			else if (IS_ROM_5420)
 				val &= 0x10060607;
+			else if (IS_RSB_4411)
+				val &= 0x10020207;
 			else /* IS_ROM_7421 */
 				val &= 0x10000007;
 
