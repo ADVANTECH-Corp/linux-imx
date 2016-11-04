@@ -331,7 +331,23 @@ static struct platform_driver tps65910_rtc_driver = {
 	},
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int __init tps65910_rtc_init(void)
+{
+	return platform_driver_register(&tps65910_rtc_driver);
+}
+subsys_initcall(tps65910_rtc_init);
+
+static void __exit tps65910_rtc_exit(void)
+{
+	platform_driver_unregister(&tps65910_rtc_driver);
+}
+module_exit(tps65910_rtc_exit);
+
+#else
 module_platform_driver(tps65910_rtc_driver);
+#endif
+
 MODULE_ALIAS("platform:rtc-tps65910");
 MODULE_AUTHOR("Venu Byravarasu <vbyravarasu@nvidia.com>");
 MODULE_LICENSE("GPL");
