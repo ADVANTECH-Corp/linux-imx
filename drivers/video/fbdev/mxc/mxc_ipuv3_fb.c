@@ -1290,6 +1290,16 @@ static int mxcfb_set_par(struct fb_info *fbi)
 		}
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	/* overlay should be smaller than BG */
+	if (ovfbi_enable) {
+		if ((mxc_fbi->ovfbi->var.xres > fbi->var.xres) || (mxc_fbi->ovfbi->var.yres > fbi->var.yres)) {
+			mxc_fbi_fg->cur_blank = mxc_fbi_fg->next_blank = FB_BLANK_POWERDOWN;
+			ovfbi_enable = false;
+		}
+	}
+#endif
+
 	if (!on_the_fly) {
 		_setup_disp_channel1(fbi);
 		if (ovfbi_enable)
@@ -2385,6 +2395,12 @@ mxcfb_pan_display(struct fb_var_screeninfo *var, struct fb_info *info)
 			return -EINVAL;
 		if (bg_mxcfbi->cur_blank != FB_BLANK_UNBLANK)
 			return -EINVAL;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+		/* overlay should be smaller than BG */
+		if ((info->var.xres > fbi_tmp->var.xres) || (info->var.yres > fbi_tmp->var.yres))
+			return -EINVAL;			
+#endif
 	}
 	if (mxc_fbi->cur_blank != FB_BLANK_UNBLANK)
 		return -EINVAL;
