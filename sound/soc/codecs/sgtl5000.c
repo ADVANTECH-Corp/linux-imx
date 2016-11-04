@@ -160,10 +160,21 @@ static int mic_bias_event(struct snd_soc_dapm_widget *w,
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
+#ifdef CONFIG_ARCH_ADVANTECH
+               /* change mic bias resistor to 2Kohm and voltage to 2.00V
+                   to avoid recording noise */
+               snd_soc_update_bits(codec, SGTL5000_CHIP_MIC_CTRL,
+                               SGTL5000_BIAS_R_MASK,
+                               SGTL5000_BIAS_R_2K << SGTL5000_BIAS_R_SHIFT);
+               snd_soc_update_bits(codec, SGTL5000_CHIP_MIC_CTRL,
+                               SGTL5000_BIAS_VOLT_MASK,
+                               SGTL5000_BIAS_VOLT_2_00V << SGTL5000_BIAS_VOLT_SHIFT);
+#else
 		/* change mic bias resistor */
 		snd_soc_update_bits(codec, SGTL5000_CHIP_MIC_CTRL,
 			SGTL5000_BIAS_R_MASK,
 			sgtl5000->micbias_resistor << SGTL5000_BIAS_R_SHIFT);
+#endif
 		break;
 
 	case SND_SOC_DAPM_PRE_PMD:
@@ -943,9 +954,27 @@ static int sgtl5000_set_bias_level(struct snd_soc_codec *codec,
 	int ret;
 	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (codec->dapm.bias_level == level)
+		return 0;
+#endif
+
 	switch (level) {
 	case SND_SOC_BIAS_ON:
+#ifdef CONFIG_ARCH_ADVANTECH
+		ret = snd_soc_update_bits(codec, SGTL5000_CHIP_ANA_POWER,
+				SGTL5000_VAG_POWERUP, SGTL5000_VAG_POWERUP);
+		if (ret)
+			msleep(400);
+		break;
+#endif
 	case SND_SOC_BIAS_PREPARE:
+#ifdef CONFIG_ARCH_ADVANTECH
+		ret = snd_soc_update_bits(codec, SGTL5000_CHIP_ANA_POWER,
+				SGTL5000_VAG_POWERUP, 0);
+		if (ret)
+			msleep(600);
+#endif
 		break;
 	case SND_SOC_BIAS_STANDBY:
 		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
@@ -971,9 +1000,21 @@ static int sgtl5000_set_bias_level(struct snd_soc_codec *codec,
 			}
 		}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+		ret = snd_soc_update_bits(codec, SGTL5000_CHIP_ANA_POWER,
+				SGTL5000_VAG_POWERUP, 0);
+		if (ret)
+			msleep(600);
+#endif
 		break;
 	case SND_SOC_BIAS_OFF:
 		regcache_cache_only(sgtl5000->regmap, true);
+#ifdef CONFIG_ARCH_ADVANTECH
+		ret = snd_soc_update_bits(codec, SGTL5000_CHIP_ANA_POWER,
+				SGTL5000_VAG_POWERUP, 0);
+		if (ret)
+			msleep(600);
+#endif
 		regulator_bulk_disable(ARRAY_SIZE(sgtl5000->supplies),
 					sgtl5000->supplies);
 		break;
@@ -1334,6 +1375,13 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
 			SGTL5000_HP_ZCD_EN |
 			SGTL5000_ADC_ZCD_EN);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+       snd_soc_write(codec, SGTL5000_CHIP_MIC_CTRL, 0);
+       snd_soc_write(codec, SGTL5000_CHIP_DAC_VOL, 0x6060);
+       snd_soc_write(codec, SGTL5000_CHIP_ANA_ADC_CTRL,
+               (0xf << SGTL5000_ADC_VOL_LEFT_SHIFT) |\
+               (0xf << SGTL5000_ADC_VOL_RIGHT_SHIFT));
+#else
 	snd_soc_update_bits(codec, SGTL5000_CHIP_MIC_CTRL,
 			SGTL5000_BIAS_R_MASK,
 			sgtl5000->micbias_resistor << SGTL5000_BIAS_R_SHIFT);
@@ -1341,6 +1389,7 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
 	snd_soc_update_bits(codec, SGTL5000_CHIP_MIC_CTRL,
 			SGTL5000_BIAS_VOLT_MASK,
 			sgtl5000->micbias_voltage << SGTL5000_BIAS_VOLT_SHIFT);
+#endif
 	/*
 	 * disable DAP
 	 * TODO:
