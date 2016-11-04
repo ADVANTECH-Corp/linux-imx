@@ -28,6 +28,10 @@
 #include <linux/of.h>
 #include <linux/of_device.h>
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/proc-board.h>
+#endif
+
 static struct resource rtc_resources[] = {
 	{
 		.start  = TPS65910_IRQ_RTC_ALARM,
@@ -444,9 +448,20 @@ static void tps65910_power_off(void)
 
 	tps65910 = dev_get_drvdata(&tps65910_i2c_client->dev);
 
-	if (tps65910_reg_set_bits(tps65910, TPS65910_DEVCTRL,
+#ifdef CONFIG_ARCH_ADVANTECH
+	if(IS_ROM_7421) {
+		/* set value to 1 for bit 0 of 0x3f register */
+		if (tps65910_reg_set_bits(tps65910, TPS65910_DEVCTRL, 1) < 0)
+			printk("\n [tps65910_power_off] Error --> Cannot set 1 value for %x register\n", TPS65910_DEVCTRL);
+		
+	} else {
+#endif
+		if (tps65910_reg_set_bits(tps65910, TPS65910_DEVCTRL,
 			DEVCTRL_PWR_OFF_MASK) < 0)
-		return;
+			return;
+#ifdef CONFIG_ARCH_ADVANTECH
+	}
+#endif
 
 	tps65910_reg_clear_bits(tps65910, TPS65910_DEVCTRL,
 			DEVCTRL_DEV_ON_MASK);
