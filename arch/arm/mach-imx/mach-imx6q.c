@@ -146,6 +146,27 @@ static int ar8031_phy_fixup(struct phy_device *dev)
 
 #define PHY_ID_AR8031	0x004dd074
 
+#if defined(CONFIG_ARCH_ADVANTECH) && defined(CONFIG_REALTEK_PHY)
+static int rtl8211e_phy_fixup(struct phy_device *dev)
+{
+	/*PHY LED OK*/
+	phy_write(dev, 0x1f, 0x0007);
+	phy_write(dev, 0x1e, 0x002c);
+	phy_write(dev, 0x1c, 0x0742);
+	phy_write(dev, 0x1a, 0x0040);
+	phy_write(dev, 0x1f, 0x0000);
+
+	phy_write(dev, 0x1f, 0x0005);
+	phy_write(dev, 0x05, 0x8b82);
+	phy_write(dev, 0x06, 0x052b);
+	phy_write(dev, 0x1f, 0x0000);
+	return 0;
+}
+
+#define PHY_ID_REALTEK	0x001cc915
+#define REALTEK_PHY_ID_MASK 0x001fffff
+#endif
+
 static int ar8035_phy_fixup(struct phy_device *dev)
 {
 	u16 val;
@@ -190,6 +211,10 @@ static void __init imx6q_enet_phy_init(void)
 				ar8031_phy_fixup);
 		phy_register_fixup_for_uid(PHY_ID_AR8035, 0xffffffef,
 				ar8035_phy_fixup);
+#if defined(CONFIG_ARCH_ADVANTECH) && defined(CONFIG_REALTEK_PHY)
+		phy_register_fixup_for_uid(PHY_ID_REALTEK, 0xffffffff,
+				rtl8211e_phy_fixup);
+#endif
 	}
 }
 
