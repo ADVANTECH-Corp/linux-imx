@@ -46,6 +46,10 @@
 
 #include "queue.h"
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/proc-board.h>
+#endif
+
 MODULE_ALIAS("mmc:block");
 #ifdef MODULE_PARAM_PREFIX
 #undef MODULE_PARAM_PREFIX
@@ -2122,8 +2126,22 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 	 */
 	if (!subname) {
 #ifdef CONFIG_ARCH_ADVANTECH
-		md->name_idx = find_first_zero_bit(name_use, max_devices);
-		printk("MMC: md->name_idx = %d\n", md->name_idx);
+		if (IS_ROM_7421) {
+			int idx;
+
+			idx = mmc_get_reserved_index(card->host);
+
+			if(idx == 2)
+				md->name_idx = idx;
+			else
+				md->name_idx = find_first_zero_bit(name_use, max_devices);
+
+			printk("MMC: md->name_idx = %d\n", md->name_idx);
+		}
+		else {
+			md->name_idx = find_first_zero_bit(name_use, max_devices);
+			printk("MMC: md->name_idx = %d\n", md->name_idx);
+		}
 #else
 		int idx;
 
