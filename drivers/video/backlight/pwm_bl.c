@@ -165,17 +165,19 @@ void enable_lcd_vdd_en(void)
 		else
 			gpio_direction_output(lvds_vcc_enable, lvds_vcc_flag);
 	}
+
+	mdelay(250);
 }
 
 void enable_ldb_bkl_pwm(void)
 {
 	int ret;
 
-	mdelay(250);
-
+	mdelay(20);
+	
         if (lvds_bkl_enable > 0)
         {
-		printk(KERN_INFO "[LVDS Sequence] 3 Start to enable LVDS backlight.\n");
+		printk(KERN_INFO "[LVDS Sequence] 4 Start to enable LVDS backlight.\n");
 		ret = gpio_request(lvds_bkl_enable,"lvds_bkl_enable");
 
 		if (ret < 0)
@@ -183,10 +185,6 @@ void enable_ldb_bkl_pwm(void)
 		else
 			gpio_direction_output(lvds_bkl_enable, lvds_bkl_flag);
 	}
-
-	mdelay(30);
-
-	printk(KERN_INFO "[LVDS Sequence] 4 Start to enable LVDS pwm.\n");
 }
 #endif
 
