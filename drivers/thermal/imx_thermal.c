@@ -92,7 +92,17 @@ enum imx_thermal_trip {
  * It defines the temperature in millicelsius for passive trip point
  * that will trigger cooling action when crossed.
  */
+#ifdef CONFIG_ARCH_ADVANTECH
+#define IMX_TEMP_PASSIVE		190000
+
+/*
+ * The maximum die temperature on imx parts is 105C, let's give some cushion
+ * for noise and possible temperature rise between measurements.
+ */
+#define IMX_TEMP_CRITICAL		200000
+#else
 #define IMX_TEMP_PASSIVE		85000
+#endif
 #define IMX_TEMP_PASSIVE_COOL_DELTA	10000
 
 #define IMX_POLLING_DELAY		2000 /* millisecond */
@@ -828,6 +838,12 @@ static int imx_thermal_probe(struct platform_device *pdev)
 	}
 
 	mutex_init(&data->mutex);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	data->temp_passive = IMX_TEMP_PASSIVE;
+	data->temp_critical = IMX_TEMP_CRITICAL;
+#endif
+
 	data->tz = thermal_zone_device_register("imx_thermal_zone",
 						IMX_TRIP_NUM,
 						(1 << IMX_TRIP_NUM) - 1, data,
