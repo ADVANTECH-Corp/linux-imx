@@ -86,6 +86,10 @@ static irqreturn_t gpio_ir_recv_irq(int irq, void *dev_id)
 	if (gpio_dev->active_low)
 		gval = !gval;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	(gval > 0)? (gval = 1): (gval = 0);
+#endif
+
 	if (gval == 1)
 		type = IR_PULSE;
 
