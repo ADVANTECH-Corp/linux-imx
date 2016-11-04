@@ -288,8 +288,6 @@ static int mxs_phy_hw_init(struct mxs_phy *mxs_phy)
 #ifdef CONFIG_ARCH_ADVANTECH
 		}
 	}
-
-	printk(KERN_INFO "FREESCALE USB PHY=0x%x\n", readl(base + HW_USBPHY_TX));
 #endif
 
 	return 0;
