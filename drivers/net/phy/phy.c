@@ -461,6 +461,12 @@ int phy_start_aneg(struct phy_device *phydev)
 	/* Invalidate LP advertising flags */
 	phydev->lp_advertising = 0;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (phydev->state == PHY_DOWN) {
+		err = 0;
+		goto out_unlock;
+	}
+#endif
 	err = phydev->drv->config_aneg(phydev);
 	if (err < 0)
 		goto out_unlock;
