@@ -49,6 +49,13 @@
 #include <linux/platform_device.h>
 #include <linux/phy.h>
 #include <linux/fec.h>
+
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/proc_fs.h>
+#include <linux/proc-board.h>
+struct platform_device *gdev= NULL;
+#endif
+
 #include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
@@ -1708,6 +1715,8 @@ static void fec_get_mac(struct net_device *ndev)
 	/*
 	 * 3) from flash or fuse (via platform data)
 	 */
+#ifndef CONFIG_ARCH_ADVANTECH
+/* we use 3 to set mac address without OCTOP */	 	 
 	if (!is_valid_ether_addr(iap)) {
 #ifdef CONFIG_M5272
 		if (FEC_FLASHMAC)
@@ -1717,7 +1726,7 @@ static void fec_get_mac(struct net_device *ndev)
 			iap = (unsigned char *)&pdata->mac;
 #endif
 	}
-
+#endif
 	/*
 	 * 4) FEC mac registers set by bootloader
 	 */
@@ -2061,7 +2070,15 @@ static int fec_enet_mii_init(struct platform_device *pdev)
 	 * Reference Manual has an error on this, and gets fixed on i.MX6Q
 	 * document.
 	 */
+	/*
+	 * Fixed Freescale S6-0027 issue:
+	   MDC frequency setting value and actual measured value are difference between the two
+	 */	 
+#if defined (CONFIG_ARCH_ADVANTECH)
+	mii_speed = DIV_ROUND_UP(clk_get_rate(fep->clk_ipg), FEC_ENET_MII_CLK);
+#else
 	mii_speed = DIV_ROUND_UP(clk_get_rate(fep->clk_ipg), 5000000);
+#endif
 	if (fep->quirks & FEC_QUIRK_ENET_MAC)
 		mii_speed--;
 	if (mii_speed > 63) {
@@ -3435,6 +3452,69 @@ static void fec_enet_of_parse_stop_mode(struct platform_device *pdev)
 	fep->gpr.req_bit = out_val[2];
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int
+fec_proc_write(struct file *file, const char __user * buffer,
+               size_t count, loff_t *offset)
+{
+	int i;
+	char line[8];
+	int ret;
+	struct platform_device *pdev = (struct platform_device *)gdev;
+	struct net_device *ndev = platform_get_drvdata(pdev);
+	struct fec_enet_private *fep = netdev_priv(ndev);
+
+	ret = copy_from_user(line, buffer, count);
+	if (ret)
+		return -EFAULT;
+
+	for (i = 0 ; i < PHY_MAX_ADDR; i++)
+	{
+		if (fep->mii_bus->phy_map[i])
+			break;
+	}
+
+	if (IS_UBC_220)
+	{
+		/* Access RTL8211E internal register to measure IEEE waveform */
+		fep->mii_bus->write(fep->mii_bus, i, 0x1f, 0x0005);
+		fep->mii_bus->write(fep->mii_bus, i, 0x05, 0x8b86);
+		fep->mii_bus->write(fep->mii_bus, i, 0x06, 0xe200);
+		fep->mii_bus->write(fep->mii_bus, i, 0x1f, 0x0007);
+		fep->mii_bus->write(fep->mii_bus, i, 0x1e, 0x0020);
+		fep->mii_bus->write(fep->mii_bus, i, 0x15, 0x0108);
+		fep->mii_bus->write(fep->mii_bus, i, 0x1f, 0x0000);
+	}
+	else
+	{
+		fep->mii_bus->write(fep->mii_bus, i, 0x1d, 0x000b);
+		fep->mii_bus->write(fep->mii_bus, i, 0x1e, 0x0009);
+		fep->mii_bus->write(fep->mii_bus, i, 0x00, 0x8140);
+	}
+
+	if (strstr(line, "1"))
+		fep->mii_bus->write(fep->mii_bus, i, 0x09, 0x2200);
+	else if (strstr(line, "2"))
+		fep->mii_bus->write(fep->mii_bus, i, 0x09, 0x4200);	
+	else if (strstr(line, "3"))
+		fep->mii_bus->write(fep->mii_bus, i, 0x09, 0x6200);
+	else if (strstr(line, "4"))
+		fep->mii_bus->write(fep->mii_bus, i, 0x09, 0x8200);
+	else
+		goto out; /* Disable test mode */
+
+	//value = fep->mii_bus->read(fep->mii_bus, i, 0x09);
+	//printk("mii reg: 0x%x\n", value);
+out:
+	return count;
+}
+
+static const struct file_operations net_testmode_fops = {
+	.owner = THIS_MODULE,
+	.write = fec_proc_write,
+};
+#endif
+
 static int
 fec_probe(struct platform_device *pdev)
 {
@@ -3448,6 +3528,9 @@ fec_probe(struct platform_device *pdev)
 	struct device_node *np = pdev->dev.of_node, *phy_node;
 	int num_tx_qs;
 	int num_rx_qs;
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct proc_dir_entry *proc_entry = NULL;
+#endif
 
 	fec_enet_get_queue_num(pdev, &num_tx_qs, &num_rx_qs);
 
@@ -3624,6 +3707,17 @@ fec_probe(struct platform_device *pdev)
 
 	fep->rx_copybreak = COPYBREAK_DEFAULT;
 	INIT_WORK(&fep->tx_timeout_work, fec_enet_timeout_work);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	gdev = pdev;
+	proc_entry = proc_create("net_testmode", 0777, NULL, &net_testmode_fops);
+/*
+	if (proc_entry) {
+		proc_entry->data = gdev;
+	}
+*/
+#endif
+
 	return 0;
 
 failed_register:
