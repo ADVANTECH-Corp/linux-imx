@@ -30,6 +30,12 @@
 
 #define DRV_NAME "ahci-imx"
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/proc-board.h>
+
+static	u32 g_speed;
+#endif
+
 enum {
 	/* Timer 1-ms Register */
 	IMX_TIMER1MS				= 0x00e0,
@@ -223,6 +229,22 @@ static int imx_sata_enable(struct ahci_host_priv *hpriv)
 	struct device *dev = &imxpriv->ahci_pdev->dev;
 	int ret;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	u32 tmpmask, tmpdata;
+	u32 sata_gen_phy_reg[3];
+	u32 orig_mask = IMX6Q_GPR13_SATA_RX_EQ_VAL_MASK | \
+			IMX6Q_GPR13_SATA_RX_LOS_LVL_MASK | \
+			IMX6Q_GPR13_SATA_RX_DPLL_MODE_MASK | \
+			IMX6Q_GPR13_SATA_SPD_MODE_MASK | \
+			IMX6Q_GPR13_SATA_MPLL_SS_EN | \
+			IMX6Q_GPR13_SATA_TX_ATTEN_MASK | \
+			IMX6Q_GPR13_SATA_TX_BOOST_MASK | \
+			IMX6Q_GPR13_SATA_TX_LVL_MASK | \
+			IMX6Q_GPR13_SATA_MPLL_CLK_EN | \
+			IMX6Q_GPR13_SATA_TX_EDGE_RATE;
+	u32 cap;
+#endif
+
 	if (imxpriv->no_device)
 		return 0;
 
@@ -241,6 +263,57 @@ static int imx_sata_enable(struct ahci_host_priv *hpriv)
 		 * is 0x07ffffff, and the other one write for setting
 		 * the mpll_clk_en.
 		 */
+#ifdef CONFIG_ARCH_ADVANTECH
+	tmpmask = 0x07FFFFFF;
+
+	if(IS_ROM_5420_A1)
+	{
+		sata_gen_phy_reg[0] = 0x0593E4C4;
+		sata_gen_phy_reg[1] = 0x0593E4C4;
+		sata_gen_phy_reg[2] = 0x0593E4C4;
+	}
+	else if(IS_ROM_5420_B1)
+	{
+		sata_gen_phy_reg[0] = 0x05919552; 
+		sata_gen_phy_reg[1] = 0x05919552;
+		sata_gen_phy_reg[2] = 0x05919552;
+	}
+	else if(IS_ROM_3420)
+	{
+		sata_gen_phy_reg[0] = 0x05911672; 
+		sata_gen_phy_reg[1] = 0x05918732;
+		sata_gen_phy_reg[2] = 0x05918732;
+	}
+	else if(IS_ROM_7421)
+	{
+		sata_gen_phy_reg[0] = 0x059114f6; 
+		sata_gen_phy_reg[1] = 0x059194f6;
+		sata_gen_phy_reg[2] = 0x059194f6;
+	}
+	else
+	{
+		sata_gen_phy_reg[0] = imxpriv->phy_params; 
+		sata_gen_phy_reg[1] = imxpriv->phy_params;
+		sata_gen_phy_reg[2] = imxpriv->phy_params;
+		tmpmask = orig_mask;
+	}
+	
+	cap = readl(hpriv->mmio + HOST_CAP);
+	g_speed = (cap >> 20) & 0xf;
+
+	if (g_speed == 1) //Gen-1: 1.5 Gbps
+		tmpdata = sata_gen_phy_reg[0];
+	else if (g_speed == 2) //Gen-2: 3 Gbps
+		tmpdata = sata_gen_phy_reg[1];
+	else if (g_speed == 3) //Gen-3: 6 Gbps
+		tmpdata = sata_gen_phy_reg[2];
+	else
+		tmpdata = sata_gen_phy_reg[1];
+
+	regmap_update_bits(imxpriv->gpr, IOMUXC_GPR13, tmpmask, tmpdata);
+	regmap_update_bits(imxpriv->gpr, IOMUXC_GPR13, IMX6Q_GPR13_SATA_MPLL_CLK_EN, IMX6Q_GPR13_SATA_MPLL_CLK_EN);
+	usleep_range(100, 200);
+#else
 		regmap_update_bits(imxpriv->gpr, IOMUXC_GPR13,
 				   IMX6Q_GPR13_SATA_RX_EQ_VAL_MASK |
 				   IMX6Q_GPR13_SATA_RX_LOS_LVL_MASK |
@@ -258,6 +331,7 @@ static int imx_sata_enable(struct ahci_host_priv *hpriv)
 				   IMX6Q_GPR13_SATA_MPLL_CLK_EN);
 
 		usleep_range(100, 200);
+#endif
 	}
 
 
