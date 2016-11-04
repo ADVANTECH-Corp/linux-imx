@@ -253,20 +253,28 @@ static int bq20z75_get_battery_health(
 	struct i2c_client *client, enum power_supply_property psp,
 	union power_supply_propval *val)
 {
-        s32 ret;
-        ret = bq20z75_write_word_data(client, 0x82, 0x90); 
-        ret = bq20z75_read_byte_data(client, 0x80);
+	s32 ret;
+	ret = bq20z75_write_word_data(client, 0x82, 0x90); 
+	ret = bq20z75_read_byte_data(client, 0x80);
 
-        if (ret < 0)
-                return ret;
-            val->intval = ret;
-	
-	        if (ret & 0x02)
-			val->intval = POWER_SUPPLY_HEALTH_GOOD;
-		else
-		        val->intval = POWER_SUPPLY_HEALTH_DEAD;
-                //printk(KERN_INFO "[Battery]--> bq20z75_get_battery_health[0x%x] \n",ret);
+	val->intval = POWER_SUPPLY_HEALTH_UNKNOWN;	
+
+	if (ret < 0)
+	{
+		printk("\n[bq20z75_get_battery_health] EC health ERROR! Use Default val->intval:%d\n", val->intval);
 		return ret;
+	}
+
+	val->intval = ret;
+
+	if (ret & 0x02)
+		val->intval = POWER_SUPPLY_HEALTH_GOOD;
+	else
+		val->intval = POWER_SUPPLY_HEALTH_DEAD;
+
+	//printk(KERN_INFO "[Battery]--> bq20z75_get_battery_health[0x%x] \n",ret);
+
+	return ret;
 }
 
 static int bq20z75_get_battery_voltage_property(struct i2c_client *client,
@@ -325,8 +333,14 @@ static int bq20z75_get_battery_status_property(struct i2c_client *client,
 
         ret = bq20z75_write_word_data(client, 0x82, 0x01); //by clayder
         ret = bq20z75_read_byte_data(client, 0x80);
-        if (ret < 0)
-                return ret;
+
+	val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
+
+	if (ret < 0)
+	{
+		printk("\n[bq20z75_get_battery_status_property] EC status ERROR! Use Default val->intval:%d\n", val->intval);
+		return ret;
+	}
 
         /* returned values are 16 bit */
         if (bq20z75_data[reg_offset].min_value < 0)
@@ -492,6 +506,30 @@ static int bq20z75_get_battery_capacity(struct i2c_client *client,
 	return 0;
 }
 
+static char bq20z75_model_name[16];
+static int bq20z75_get_battery_model_name(struct i2c_client *client,
+	union power_supply_propval *val)
+{
+	int ret;
+
+	ret = sprintf(bq20z75_model_name, "bq20z75");
+	val->strval = bq20z75_model_name;
+
+	return 0;
+}
+
+static char bq20z75_manufacturer[16];
+static int bq20z75_get_battery_manufacturer(struct i2c_client *client,
+	union power_supply_propval *val)
+{
+	int ret;
+
+	ret = sprintf(bq20z75_manufacturer, "bq20z75");
+	val->strval = bq20z75_manufacturer;
+
+	return 0;
+}
+
 static char bq20z75_serial[5];
 static int bq20z75_get_battery_serial_number(struct i2c_client *client,
 	union power_supply_propval *val)
@@ -582,6 +620,30 @@ static int bq20z75_get_property(struct power_supply *psy,
 
 		ret = bq20z75_get_battery_property(client, ret, psp, val);
 		break;
+
+	case POWER_SUPPLY_PROP_CHARGE_TYPE:
+		val->intval = POWER_SUPPLY_CHARGE_TYPE_UNKNOWN;
+	break;
+
+	case POWER_SUPPLY_PROP_CAPACITY_LEVEL:
+		val->intval = POWER_SUPPLY_CAPACITY_LEVEL_UNKNOWN;
+	break;
+
+	case POWER_SUPPLY_PROP_TYPE:
+		val->intval = POWER_SUPPLY_TYPE_BATTERY;
+	break;
+
+	case POWER_SUPPLY_PROP_SCOPE:
+		val->intval = POWER_SUPPLY_SCOPE_UNKNOWN;
+	break;
+
+	case POWER_SUPPLY_PROP_MODEL_NAME:
+		ret = bq20z75_get_battery_model_name(client, val);
+	break;
+
+	case POWER_SUPPLY_PROP_MANUFACTURER:
+		ret = bq20z75_get_battery_manufacturer(client, val);
+	break;
 
 	default:
 		dev_err(&client->dev,
@@ -763,13 +825,31 @@ static int bq20z75_remove(struct i2c_client *client)
 	if (bq20z75_device->gpio_detect)
 		gpio_free(bq20z75_device->pdata->battery_detect);
 
-        cancel_delayed_work_sync(&bq20z75_device->work);
+	cancel_delayed_work(&bq20z75_device->work);
+	flush_scheduled_work();
 	
-        power_supply_unregister(bq20z75_device->power_supply);
+	power_supply_unregister(bq20z75_device->power_supply);
 	kfree(bq20z75_device);
 	bq20z75_device = NULL;
 
 	return 0;
+}
+
+static void bq20z75_shutdown(struct i2c_client *client)
+{
+	struct bq20z75_info *bq20z75_device = i2c_get_clientdata(client);
+
+	if (bq20z75_device->irq)
+		free_irq(bq20z75_device->irq, &bq20z75_device->power_supply);
+	if (bq20z75_device->gpio_detect)
+		gpio_free(bq20z75_device->pdata->battery_detect);
+
+	cancel_delayed_work(&bq20z75_device->work);
+	flush_scheduled_work();
+
+	power_supply_unregister(bq20z75_device->power_supply);
+	kfree(bq20z75_device);
+	bq20z75_device = NULL;
 }
 
 #if defined CONFIG_PM
@@ -817,6 +897,7 @@ MODULE_DEVICE_TABLE(i2c, bq20z75_id);
 static struct i2c_driver bq20z75_battery_driver = {
 	.probe		= bq20z75_probe,
 	.remove		= bq20z75_remove,
+	.shutdown	= bq20z75_shutdown,
 	.id_table	= bq20z75_id,
 	.driver = {
 		.name	= "ec-battery",
