@@ -23,6 +23,9 @@
  * Timeout for stopping processes
  */
 unsigned int __read_mostly freeze_timeout_msecs = 20 * MSEC_PER_SEC;
+#ifdef CONFIG_ARCH_ADVANTECH
+extern char suspend_key_flag;
+#endif
 
 static int try_to_freeze_tasks(bool user_only)
 {
@@ -212,6 +215,12 @@ void thaw_processes(void)
 	usermodehelper_enable();
 
 	schedule();
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	suspend_key_flag=0;
+	printk( "suspend_key_flag=0.\n");
+#endif
+
 	pr_cont("done.\n");
 	trace_suspend_resume(TPS("thaw_processes"), 0, false);
 }
