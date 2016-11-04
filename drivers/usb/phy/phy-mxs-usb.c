@@ -422,7 +422,7 @@ static int mxs_phy_hw_init(struct mxs_phy *mxs_phy)
 			else if (IS_RSB_4411)
 				val &= 0x10020207;
 			else /* IS_ROM_7421 */
-				val &= 0x10000007;
+				val &= 0x10040406;
 
 			writel(val, base + HW_USBPHY_TX);
 			udelay(10);
