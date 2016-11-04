@@ -290,6 +290,12 @@ static int imx_sata_enable(struct ahci_host_priv *hpriv)
 		sata_gen_phy_reg[1] = 0x059194f6;
 		sata_gen_phy_reg[2] = 0x059194f6;
 	}
+	else if(IS_RSB_4411)
+	{
+		sata_gen_phy_reg[0] = 0x059194f6; 
+		sata_gen_phy_reg[1] = 0x059194f6;
+		sata_gen_phy_reg[2] = 0x059194f6;
+	}
 	else
 	{
 		sata_gen_phy_reg[0] = imxpriv->phy_params; 
