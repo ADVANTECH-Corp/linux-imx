@@ -220,6 +220,12 @@ enum {
 static bool g_dp_in_use[2];
 LIST_HEAD(fb_alloc_list);
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+static int first_power_on = 1;
+extern void enable_lcd_vdd_en(void);
+extern void enable_ldb_bkl_pwm(void);
+#endif
+
 /* Return default standard(RGB) pixel format */
 static uint32_t bpp_to_pixfmt(int bpp)
 {
@@ -2627,6 +2633,14 @@ next:
 
 	dev_dbg(info->device, "Update complete\n");
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	if(first_power_on)
+	{
+		enable_ldb_bkl_pwm();
+		first_power_on = 0;
+	}
+#endif
+
 	info->var.yoffset = var->yoffset;
 	mxc_fbi->cur_var.xoffset = var->xoffset;
 	mxc_fbi->cur_var.yoffset = var->yoffset;
@@ -3513,6 +3527,16 @@ static int mxcfb_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "get mxcfb of property fail\n");
 		return ret;
 	}
+
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	if(first_power_on) {
+		printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD.\n");
+
+		enable_lcd_vdd_en();
+
+		printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
+	}
+#endif
 
 	/* Initialize FB structures */
 	fbi = mxcfb_init_fbinfo(&pdev->dev, &mxcfb_ops);
