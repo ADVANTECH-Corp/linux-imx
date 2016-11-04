@@ -672,6 +672,7 @@ dtb-$(CONFIG_ARCH_ADVANTECH) += \
 	imx6q-rom5420-b1.dtb \
 	imx6q-rom7420-a1.dtb \
 	imx6q-wise3310-a1.dtb \
+	imx6dl-rom7421-a1.dtb \
 	imx6qp-rom7421-a1.dtb
 dtb-$(CONFIG_SOC_LS1021A) += \
 	ls1021a-qds.dtb \
