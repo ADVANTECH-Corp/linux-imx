@@ -1063,6 +1063,11 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
 	struct device_node *np = pdev->dev.of_node;
 	struct esdhc_platform_data *boarddata = &imx_data->boarddata;
 	int ret;
+#ifdef CONFIG_ARCH_ADVANTECH
+	int en_gpios;
+	enum of_gpio_flags en_gpios_flag;
+	int ret1;
+#endif
 
 	if (of_get_property(np, "fsl,wp-controller", NULL))
 		boarddata->wp_type = ESDHC_WP_CONTROLLER;
@@ -1070,6 +1075,19 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
 	boarddata->wp_gpio = of_get_named_gpio(np, "wp-gpios", 0);
 	if (gpio_is_valid(boarddata->wp_gpio))
 		boarddata->wp_type = ESDHC_WP_GPIO;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	en_gpios = of_get_named_gpio_flags(np, "en-gpios", 0, &en_gpios_flag);
+	if (en_gpios > 0)
+	{
+		ret1 = gpio_request(en_gpios,"en_gpios");
+		if (ret1 < 0) {
+			printk("request en_gpios failed: %d\n", ret1);
+			return ret1;
+		}
+		gpio_direction_output(en_gpios, en_gpios_flag);
+	}
+#endif
 
 	of_property_read_u32(np, "fsl,tuning-step", &boarddata->tuning_step);
 	of_property_read_u32(np, "fsl,tuning-start-tap",
