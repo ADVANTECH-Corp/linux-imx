@@ -293,6 +293,12 @@ config GPIO_MXC
 	select GPIO_GENERIC
 	select GENERIC_IRQ_CHIP
 
+config GPIO_ARCH_ADVANTECH
+	def_bool y
+	depends on GPIO_DEVRES
+	help
+		Set GPIO direction.
+
 config GPIO_MXS
 	def_bool y
 	depends on ARCH_MXS
