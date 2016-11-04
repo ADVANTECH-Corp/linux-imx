@@ -32,6 +32,13 @@
 			TPS65910_SLEEP_CONTROL_EXT_INPUT_EN3 |		\
 			TPS65911_SLEEP_CONTROL_EXT_INPUT_SLEEP)
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#define TPS65910_VIO_VALUE 0xc1
+#define TPS65910_VDD1_VALUE 0x2d
+#define TPS65910_VPLL_VALUE 0xc5
+#define TPS65910_DCDCCTRL_VALUE 0x01
+#endif
+
 /* supported VIO voltages in microvolts */
 static const unsigned int VIO_VSEL_table[] = {
 	1500000, 1800000, 2500000, 3300000,
@@ -1217,13 +1224,44 @@ static int tps65910_probe(struct platform_device *pdev)
 #ifdef CONFIG_ARCH_ADVANTECH
 	switch (tps65910_chip_id(tps65910)) {
 	case TPS65911:
+		/* Change +V1.5_DDR(0x20) value to 0xc1 from 0x01  */
+                ret = tps65910_reg_read(pmic->mfd, TPS65910_VIO, &value);
+
+                if(ret < 0)
+                        dev_err(&pdev->dev, "Cannot read TPS65910_VIO value!\n");
+                else {
+                        if(value != TPS65910_VIO_VALUE)
+                                tps65910_reg_write(pmic->mfd, TPS65910_VIO, TPS65910_VIO_VALUE);
+                }
+
+		/* Change +V1.5_DDR_NVCC(0x21) value to 0x2d from 0x0d  */
+                ret = tps65910_reg_read(pmic->mfd, TPS65910_VDD1, &value);
+
+                if(ret < 0)
+                        dev_err(&pdev->dev, "Cannot read TPS65910_VDD1 value!\n");
+                else {
+                        if(value != TPS65910_VDD1_VALUE)
+                                tps65910_reg_write(pmic->mfd, TPS65910_VDD1, TPS65910_VDD1_VALUE);
+                }
+
+		/* Change +V3.0_SNVS(0x36) value to 3.25v(0xc5) from 3.0v(b1) */
+                ret = tps65910_reg_read(pmic->mfd, TPS65910_VPLL, &value);
+
+                if(ret < 0)
+                        dev_err(&pdev->dev, "Cannot read TPS65910_VPLL value!\n");
+                else {
+                        if(value != TPS65910_VPLL_VALUE)
+                                tps65910_reg_write(pmic->mfd, TPS65910_VPLL, TPS65910_VPLL_VALUE);
+                }
+
+		/* Change VIO/VDD1/VDD2(0x3e) value when the device is in continual mode */
 		ret = tps65910_reg_read(pmic->mfd, TPS65910_DCDCCTRL, &value);
 
 		if(ret < 0)
 			dev_err(&pdev->dev, "Cannot read TPS65910_DCDCCTRL value!\n");	
 		else {
-			if(value != 1)
-				tps65910_reg_write(pmic->mfd, TPS65910_DCDCCTRL, 0x01);
+			if(value != TPS65910_DCDCCTRL_VALUE)
+				tps65910_reg_write(pmic->mfd, TPS65910_DCDCCTRL, TPS65910_DCDCCTRL_VALUE);
 		}
 	break;
 	case TPS65910:
