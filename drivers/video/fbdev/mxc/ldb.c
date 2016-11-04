@@ -426,6 +426,9 @@ static int ldb_setup(struct mxc_dispdrv_handle *mddh,
 		return ret;
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	ldb_di_parent = ldb->spl_mode ? ldb->div_3_5_clk[chno] : ldb->div_7_clk[chno];
+#endif
 
 	if (ldb->clk_fixup) {
 		/*
@@ -435,6 +438,10 @@ static int ldb_setup(struct mxc_dispdrv_handle *mddh,
 		 * -> |                   |-> div_sel[chno] -> di[id]
 		 *     ->  div_7[chno] ->
 		 */
+#ifdef CONFIG_ARCH_ADVANTECH
+		clk_set_parent(ldb->div_sel_clk[chno], ldb_di_parent);
+#endif
+
 		clk_set_parent(ldb->di_clk[id], ldb->div_sel_clk[chno]);
 	} else {
 		/*
@@ -447,10 +454,18 @@ static int ldb_setup(struct mxc_dispdrv_handle *mddh,
 		 * -> ldb_di[chno] -> di[id]
 		 */
 		clk_set_parent(ldb->di_clk[id], ldb->ldb_di_clk[chno]);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+		clk_set_parent(ldb->div_sel_clk[chno], ldb_di_parent); 
+#endif
 	}
+
+#ifndef CONFIG_ARCH_ADVANTECH
 	ldb_di_parent = ldb->spl_mode ? ldb->div_3_5_clk[chno] :
 			ldb->div_7_clk[chno];
 	clk_set_parent(ldb->div_sel_clk[chno], ldb_di_parent);
+#endif
+
 	ldb_di_sel = clk_get_parent(ldb_di_parent);
 	ldb_di_sel_parent = clk_get_parent(ldb_di_sel);
 	serial_clk = ldb->spl_mode ? chan.vm.pixelclock * 7 / 2 :
