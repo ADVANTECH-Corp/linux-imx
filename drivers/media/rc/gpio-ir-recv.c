@@ -85,6 +85,10 @@ static irqreturn_t gpio_ir_recv_irq(int irq, void *dev_id)
 	if (gpio_dev->active_low)
 		gval = !gval;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+        (gval > 0)? (gval = 1): (gval = 0);
+#endif
+
 	rc = ir_raw_event_store_edge(gpio_dev->rcdev, gval == 1);
 	if (rc < 0)
 		goto err_get_value;
