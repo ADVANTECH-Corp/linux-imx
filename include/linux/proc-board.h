@@ -37,5 +37,8 @@ extern char board_cpu[20];
 #define IS_ROM_7421     ( strncmp(board_type,"ROM-7421", 8)==0 ? 1 : 0)
 #define IS_ROM_7421_A1  ( strncmp(board_type,"ROM-7421 A1", 11)==0 ? 1 : 0)
 
+#define IS_RSB_4411     ( strncmp(board_type,"RSB-4411", 8)==0 ? 1 : 0)
+#define IS_RSB_4411_A1  ( strncmp(board_type,"RSB-4411 A1", 11)==0 ? 1 : 0)
+
 #endif /* _LINUX_PROC_BOARD_H */
 #endif /* CONFIG_ARCH_ADVANTECH */
