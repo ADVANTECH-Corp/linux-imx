@@ -61,6 +61,11 @@
 
 /* Display port number */
 #define MXCFB_PORT_NUM	2
+
+#ifdef CONFIG_ARCH_ADVANTECH
+char fb_vga_fix_id[30];
+#endif
+
 /*!
  * Structure containing the MXC specific framebuffer information.
  */
@@ -3029,8 +3034,32 @@ static int mxcfb_dispdrv_init(struct platform_device *pdev,
 
 	dev_info(&pdev->dev, "registered mxc display driver %s\n", disp_dev);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+  /* dirty! need to fix */
+	if(!strcmp(disp_dev, "lcd"))
+	{
+		char bg0_id[] = "DISP3 BG";
+		char bg1_id[] = "DISP3 BG - DI1";
+		char fg_id[] = "DISP3 FG";
+
+		if (mxcfbi->ipu_di == 0) {
+			bg0_id[4] += mxcfbi->ipu_id;
+			strcpy(fb_vga_fix_id, bg0_id);
+		} else if (mxcfbi->ipu_di == 1) {
+			bg1_id[4] += mxcfbi->ipu_id;
+			strcpy(fb_vga_fix_id, bg1_id);
+		} else { /* Overlay */
+			fg_id[4] += mxcfbi->ipu_id;
+			strcpy(fb_vga_fix_id, fg_id);
+		}
+		printk("*****VGA fb name %s", fb_vga_fix_id);
+	}
+#endif
 	return ret;
 }
+#ifdef CONFIG_ARCH_ADVANTECH
+EXPORT_SYMBOL_GPL(fb_vga_fix_id);
+#endif
 
 /*
  * Parse user specified options (`video=trident:')
@@ -3521,11 +3550,17 @@ static int mxcfb_probe(struct platform_device *pdev)
 		mxcfbi->ipu_ch_nf_irq = IPU_IRQ_BG_SYNC_NFACK;
 		mxcfbi->ipu_alp_ch_irq = IPU_IRQ_BG_ALPHA_SYNC_EOF;
 		mxcfbi->ipu_ch = MEM_BG_SYNC;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+		/* Unblank all the fb by default */
+		mxcfbi->cur_blank = mxcfbi->next_blank = FB_BLANK_UNBLANK;
+#else
 		/* Unblank the primary fb only by default */
 		if (pdev->id == 0)
 			mxcfbi->cur_blank = mxcfbi->next_blank = FB_BLANK_UNBLANK;
 		else
 			mxcfbi->cur_blank = mxcfbi->next_blank = FB_BLANK_POWERDOWN;
+#endif
 
 		ret = mxcfb_register(fbi);
 		if (ret < 0)
