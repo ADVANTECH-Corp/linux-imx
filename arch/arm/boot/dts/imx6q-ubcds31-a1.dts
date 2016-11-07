@@ -1,0 +1,173 @@
+/*
+ * Copyright 2012 Freescale Semiconductor, Inc.
+ * Copyright 2011 Linaro Ltd.
+ *
+ * The code contained herein is licensed under the GNU General Public
+ * License. You may obtain a copy of the GNU General Public License
+ * Version 2 or later at the following locations:
+ *
+ * http://www.opensource.org/licenses/gpl-license.html
+ * http://www.gnu.org/copyleft/gpl.html
+ */
+
+/dts-v1/;
+
+#include "imx6q.dtsi"
+#include "imx6qdl-advantech.dtsi"
+
+/ {
+	model = "Freescale i.MX6 Quad UBCDS31 A1";
+	compatible = "fsl,imx6q-sabresd", "fsl,imx6q";
+
+	board {
+		compatible = "proc-board";
+		board-type = "UBC-DS31 A1";
+		board-cpu = "DualQuad";
+	};
+};
+
+&audio_sgtl5000 {
+	audio-codec = <&codec>;
+};
+
+&i2c1 {
+
+	codec: sgtl5000@0a {
+		compatible = "fsl,sgtl5000";
+		reg = <0x0a>;
+		clocks = <&clks 201>;
+		VDDA-supply = <&reg_2p5v>;
+		VDDIO-supply = <&reg_3p3v>;
+		mclk = <16000000>;
+		mclk_source = <0>;
+	};
+
+	s35390a@30 {
+		compatible = "fsl,s35390a";
+		reg = <0x30>;
+	};
+
+};
+
+&i2c2 {
+
+	hdmi: edid@50 {
+		compatible = "fsl,imx6-hdmi-i2c";
+		reg = <0x50>;
+	};
+};
+
+&i2c3 {
+
+	ch7055@76 {
+		compatible = "fsl,ch7055";
+		reg = <0x76>;
+	};
+
+	mxc_vga_i2c@50 {
+		compatible = "fsl,mxc_vga_i2c";
+		reg = <0x50>;
+	};
+};
+
+&iomuxc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_hog_1 &pinctrl_hog_2>;
+
+	hog {
+		pinctrl_hog_2: hoggrp-2 {
+			fsl,pins = <
+				MX6QDL_PAD_EIM_D20__GPIO3_IO20 		0x80000000	/* 3G_DET# */
+				MX6QDL_PAD_EIM_D24__GPIO3_IO24 		0x80000000	/* ALL_SYS_PG */
+				MX6QDL_PAD_EIM_D25__GPIO3_IO25 		0x80000000	/* PLTRST# */
+			>;
+		};
+	};
+
+	pcie {
+		pinctrl_pcie_1: pciegrp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_EIM_D19__GPIO3_IO19		0x80000000	/* PCIE_DIS_B */
+			>;
+		};
+	};
+
+	spi1 {
+		pinctrl_ecspi1_cs_0: ecspi1_cs_grp-0 {
+			fsl,pins = <
+				MX6QDL_PAD_EIM_EB2__GPIO2_IO30		0x80000000	/* ECSPI1_CS0 */
+			>;
+		};
+	};
+
+	uart2 {
+		pinctrl_uart2_3: uart2grp-3 { /* DCE mode */
+			fsl,pins = <
+				MX6QDL_PAD_EIM_D26__UART2_TX_DATA	0x1b0b1
+				MX6QDL_PAD_EIM_D27__UART2_RX_DATA	0x1b0b1
+				MX6QDL_PAD_EIM_D28__UART2_CTS_B		0x1b0b1
+				MX6QDL_PAD_EIM_D29__UART2_RTS_B		0x1b0b1
+			>;
+		};
+	};
+};
+
+&mxcfb1 {
+	status = "okay";
+};
+
+&mxcfb2 {
+	status = "okay";
+};
+
+&pcie {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pcie_1>;
+	disable-gpio = <&gpio3 19 0>;
+	status = "okay";
+};
+
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart1_1>;
+	status = "okay";
+};
+
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart2_3>;
+	status = "okay";
+};
+
+&usbh1 {
+	status = "okay";
+};
+
+&usbotg {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbotg_2>;
+	disable-over-current;
+	status = "okay";
+};
+
+&usdhc2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc2_2>;
+	cd-gpios = <&gpio2 2 0>;
+	wp-gpios = <&gpio2 3 0>;
+	no-1-8-v;
+	keep-power-in-suspend;
+	enable-sdio-wakeup;
+	status = "okay";
+};
+
+&usdhc4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc4_1>;
+	bus-width = <8>;
+	non-removable;
+	no-1-8-v;
+	keep-power-in-suspend;
+	status = "okay";
+};
+
