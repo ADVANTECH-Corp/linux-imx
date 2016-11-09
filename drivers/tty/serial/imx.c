@@ -238,6 +238,10 @@ struct imx_port {
 	unsigned int		dma_tx_nents;
 	struct delayed_work	tsk_dma_tx;
 	wait_queue_head_t	dma_wait;
+#ifdef CONFIG_ARCH_ADVANTECH
+	/* RS-485 fields */
+	struct serial_rs485	rs485;
+#endif
 	unsigned int            saved_reg[10];
 #define DMA_TX_IS_WORKING 1
 	unsigned long		flags;
@@ -598,9 +602,11 @@ static void imx_start_tx(struct uart_port *port)
 	if (port->rs485.flags & SER_RS485_ENABLED) {
 		/* enable transmitter and shifter empty irq */
 		temp = readl(port->membase + UCR2);
+#ifndef CONFIG_ARCH_ADVANTECH		
 		if (port->rs485.flags & SER_RS485_RTS_ON_SEND)
 			temp &= ~UCR2_CTS;
 		else
+#endif		
 			temp |= UCR2_CTS;
 		writel(temp, port->membase + UCR2);
 
@@ -813,6 +819,10 @@ static void imx_set_mctrl(struct uart_port *port, unsigned int mctrl)
 			temp |= UCR2_CTS | UCR2_CTSC;
 		writel(temp, sport->port.membase + UCR2);
 	}
+#ifdef CONFIG_ARCH_ADVANTECH
+	else	return;
+#endif	
+	
 
 	temp = readl(sport->port.membase + uts_reg(sport)) & ~UTS_LOOP;
 	if (mctrl & TIOCM_LOOP)
@@ -1341,11 +1351,14 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
 		} else {
 			termios->c_cflag &= ~CRTSCTS;
 		}
+#ifdef CONFIG_ARCH_ADVANTECH	
+	}
+#else
 	} else if (port->rs485.flags & SER_RS485_ENABLED)
 		/* disable transmitter */
 		if (!(port->rs485.flags & SER_RS485_RTS_AFTER_SEND))
 			ucr2 |= UCR2_CTS;
-
+#endif
 	if (termios->c_cflag & CSTOPB)
 		ucr2 |= UCR2_STPB;
 	if (termios->c_cflag & PARENB) {
@@ -1596,10 +1609,15 @@ static int imx_rs485_config(struct uart_port *port,
 		/* disable transmitter */
 		temp = readl(sport->port.membase + UCR2);
 		temp &= ~UCR2_CTSC;
+#ifndef CONFIG_ARCH_ADVANTECH	
 		if (rs485conf->flags & SER_RS485_RTS_AFTER_SEND)
 			temp &= ~UCR2_CTS;
 		else
 			temp |= UCR2_CTS;
+#else
+		temp &= ~UCR2_CTS;
+		temp |= UCR2_IRTS;
+#endif			
 		writel(temp, sport->port.membase + UCR2);
 	}
 
@@ -1607,6 +1625,40 @@ static int imx_rs485_config(struct uart_port *port,
 
 	return 0;
 }
+
+#ifdef CONFIG_ARCH_ADVANTECH
+/*
+ * Handle TIOCSRS485 & TIOCSRS485 ioctl for RS-485 support
+ */
+static int imx_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
+{
+#if 1
+	struct serial_rs485 rs485conf;
+	struct imx_port *sport = (struct imx_port *)port;
+
+	switch (cmd) {
+		case TIOCSRS485:
+			if (copy_from_user(&rs485conf,
+			    (struct serial_rs485 *) arg,
+			    sizeof(rs485conf)))
+				return -EFAULT;
+			imx_rs485_config(port, &rs485conf);
+			break;
+
+		case TIOCGRS485:
+			if (copy_to_user((struct serial_rs485 *) arg,
+			    &(sport->rs485),
+			    sizeof(rs485conf)))
+				return -EFAULT;
+			break;
+
+		default:
+			return -ENOIOCTLCMD;
+	}
+#endif
+	return 0;
+}
+#endif
 
 static struct uart_ops imx_pops = {
 	.tx_empty	= imx_tx_empty,
@@ -1624,6 +1676,9 @@ static struct uart_ops imx_pops = {
 	.type		= imx_type,
 	.config_port	= imx_config_port,
 	.verify_port	= imx_verify_port,
+#ifdef CONFIG_ARCH_ADVANTECH
+	.ioctl		= imx_ioctl,
+#endif
 #if defined(CONFIG_CONSOLE_POLL)
 	.poll_init      = imx_poll_init,
 	.poll_get_char  = imx_poll_get_char,
