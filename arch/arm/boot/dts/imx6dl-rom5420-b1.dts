@@ -396,7 +396,7 @@
 				MX6QDL_PAD_CSI0_DAT14__UART5_TX_DATA	0x1b0b1
 				MX6QDL_PAD_CSI0_DAT15__UART5_RX_DATA	0x1b0b1
 				MX6QDL_PAD_CSI0_DAT18__UART5_RTS_B		0x1b0b1
-				MX6QDL_PAD_CSI0_DAT19__UART5_RTS_B		0x1b0b1
+				MX6QDL_PAD_CSI0_DAT19__UART5_CTS_B		0x1b0b1
 			>;
 		};
 	};
@@ -509,6 +509,7 @@
 &uart5 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart5_1>;
+	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
