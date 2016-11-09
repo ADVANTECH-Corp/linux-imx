@@ -598,12 +598,14 @@
 &uart2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart2_4>;
+	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
 &uart4 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart4_2>;
+	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
