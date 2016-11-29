@@ -23,6 +23,10 @@
 #include <linux/pwm_backlight.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#include <linux/delay.h>
+#endif
 
 struct pwm_bl_data {
 	struct pwm_device	*pwm;
@@ -144,6 +148,50 @@ static int pwm_backlight_check_fb_name(struct device *dev, struct fb_info *info)
 
 	return false;
 }
+#ifdef CONFIG_ARCH_ADVANTECH
+int lvds_vcc_enable;
+int lvds_bkl_enable;
+enum of_gpio_flags lvds_vcc_flag;
+enum of_gpio_flags lvds_bkl_flag;
+
+void enable_lcd_vdd_en(void)
+{
+	int ret;
+
+	/* LVDS Panel power enable */
+	if (lvds_vcc_enable > 0)
+	{
+		ret = gpio_request(lvds_vcc_enable,"lvds_vcc_enable");
+
+                if (ret < 0)
+			printk("\nRequest lvds_vcc_enable failed!!\n");
+		else
+			gpio_direction_output(lvds_vcc_enable, lvds_vcc_flag);
+	}
+}
+
+void enable_ldb_bkl_pwm(void)
+{
+	int ret;
+
+	mdelay(250);
+
+        if (lvds_bkl_enable > 0)
+        {
+		printk(KERN_INFO "[LVDS Sequence] 3 Start to enable LVDS backlight.\n");
+		ret = gpio_request(lvds_bkl_enable,"lvds_bkl_enable");
+
+		if (ret < 0)
+			printk("\nRequest lvds_bkl_enable failed!!\n");
+		else
+			gpio_direction_output(lvds_bkl_enable, lvds_bkl_flag);
+	}
+
+	mdelay(30);
+
+	printk(KERN_INFO "[LVDS Sequence] 4 Start to enable LVDS pwm.\n");
+}
+#endif
 
 static int pwm_backlight_parse_dt(struct device *dev,
 				  struct platform_pwm_backlight_data *data)
@@ -196,6 +244,17 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	}
 
 	data->enable_gpio = -EINVAL;
+
+	/*
+	 * TODO: Most users of this driver use a number of GPIOs to control
+	 *       backlight power. Support for specifying these needs to be
+	 *       added.
+	 */
+#ifdef CONFIG_ARCH_ADVANTECH
+	lvds_vcc_enable = of_get_named_gpio_flags(node, "lvds-vcc-enable", 0, &lvds_vcc_flag);
+	lvds_bkl_enable = of_get_named_gpio_flags(node, "lvds-bkl-enable", 0, &lvds_bkl_flag);
+#endif
+
 	return 0;
 }
 
@@ -393,6 +452,14 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 
 	bl->props.brightness = data->dft_brightness;
 	bl->props.power = pwm_backlight_initial_power_state(pb);
+
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	/* Inorder to power off pwm backlight for SI test */
+	bl->props.fb_blank = FB_BLANK_NORMAL;
+
+	printk(KERN_INFO "[LVDS Sequence] 0 Set to power off pwm backlight at first.\n");
+#endif
+
 	backlight_update_status(bl);
 
 	platform_set_drvdata(pdev, bl);
