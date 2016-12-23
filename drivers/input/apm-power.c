@@ -20,26 +20,12 @@
 #include <linux/pm.h>
 #include <linux/apm-emulation.h>
 
-#ifdef CONFIG_ARCH_ADVANTECH
-#include <linux/proc-board.h>
-#include <linux/timer.h>
-long timer_diff,timer_1,timer_2;
-char suspend_key_flag = 0;
-#endif
 static void system_power_event(unsigned int keycode)
 {
 	switch (keycode) {
 	case KEY_SUSPEND:
-#ifdef CONFIG_ARCH_ADVANTECH
-		if (!suspend_key_flag) {
-			apm_queue_event(APM_USER_SUSPEND);
-			pr_info("Requesting system suspend...\n");
-			suspend_key_flag = 1;
-		}
-#else
 		apm_queue_event(APM_USER_SUSPEND);
 		pr_info("Requesting system suspend...\n");
-#endif
 		break;
 	default:
 		break;
@@ -49,39 +35,9 @@ static void system_power_event(unsigned int keycode)
 static void apmpower_event(struct input_handle *handle, unsigned int type,
 			   unsigned int code, int value)
 {
-	/* only react on key down events */
-#ifdef CONFIG_ARCH_ADVANTECH
-	if ( !IS_ROM_5420 && !IS_ROM_3420 ) {
-		if (value != 1)
-			return;
-	}
-#else
 	if (value != 1)
 		return;
-#endif
 	switch (type) {
-#ifdef CONFIG_ARCH_ADVANTECH
-	case EV_KEY:
-                pr_info("EV_PWR:value[%d],type[%d],code[%d]\n",value,type,code);
-                if (code == KEY_SUSPEND) {
-                        if (value) 
-                                timer_1 = jiffies;
-                        else {
-                                timer_2 = jiffies;
-                                if (timer_1 > timer_2)
-                                        timer_diff = timer_1 - timer_2;
-                                else
-                                        timer_diff = timer_2 - timer_1;
-                                if (timer_diff < 100 ) {
-                                        if (!suspend_key_flag) {
-                                                system_power_event(code);
-                                                suspend_key_flag = 1;
-                                        }
-                                }
-                        }
-                }
-		break;
-#endif	
 	case EV_PWR:
 		system_power_event(code);
 		break;
@@ -137,12 +93,6 @@ static const struct input_device_id apmpower_ids[] = {
 		.flags = INPUT_DEVICE_ID_MATCH_EVBIT,
 		.evbit = { BIT_MASK(EV_PWR) },
 	},
-#ifdef CONFIG_ARCH_ADVANTECH
-	{
-		.flags = INPUT_DEVICE_ID_MATCH_KEYBIT,
-		.evbit = { BIT_MASK(EV_KEY) },
-	},
-#endif
 	{ },
 };
 
