@@ -1083,3 +1083,7 @@
 &usbphy2 {
 	tx-d-cal = <0x5>;
 };
+
+&snvs_poweroff {
+	status = "okay";
+};
