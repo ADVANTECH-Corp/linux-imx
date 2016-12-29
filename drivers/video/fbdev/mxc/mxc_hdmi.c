@@ -192,7 +192,9 @@ struct mxc_hdmi *g_hdmi;
 
 static bool hdmi_inited;
 static bool hdcp_init;
+#ifndef CONFIG_ARCH_ADVANTECH
 static struct regulator *hdmi_regulator;
+#endif
 
 extern const struct fb_videomode mxc_cea_mode[64];
 extern void mxc_hdmi_cec_handle(u16 cec_stat);
@@ -2843,7 +2845,7 @@ static int mxc_hdmi_probe(struct platform_device *pdev)
 	mxc_dispdrv_setdata(hdmi->disp_mxc_hdmi, hdmi);
 
 	platform_set_drvdata(pdev, hdmi);
-
+#ifndef CONFIG_ARCH_ADVANTECH
 	hdmi_regulator = devm_regulator_get(&pdev->dev, "HDMI");
 	if (!IS_ERR(hdmi_regulator)) {
 		ret = regulator_enable(hdmi_regulator);
@@ -2855,7 +2857,7 @@ static int mxc_hdmi_probe(struct platform_device *pdev)
 		hdmi_regulator = NULL;
 		dev_warn(&pdev->dev, "No hdmi 5v supply\n");
 	}
-
+#endif
 	return 0;
 edispdrv:
 	iounmap(hdmi->gpr_base);
@@ -2886,9 +2888,10 @@ static int mxc_hdmi_remove(struct platform_device *pdev)
 	free_irq(irq, hdmi);
 	kfree(hdmi);
 
+#ifndef CONFIG_ARCH_ADVANTECH
 	if (hdmi_regulator)
 		regulator_disable(hdmi_regulator);
-
+#endif
 	g_hdmi = NULL;
 
 	return 0;
