@@ -265,7 +265,12 @@ static int imx_sata_enable(struct ahci_host_priv *hpriv)
 		 */
 #ifdef CONFIG_ARCH_ADVANTECH
 	tmpmask = 0x07FFFFFF;
-
+#if 0
+/*
+	this modification as below are sata si test value
+	but it may result in some sata disk can't be detected
+	so we mark it
+*/
 	if(IS_ROM_5420_A1)
 	{
 		sata_gen_phy_reg[0] = 0x0593E4C4;
@@ -298,11 +303,14 @@ static int imx_sata_enable(struct ahci_host_priv *hpriv)
 	}
 	else
 	{
+#endif
 		sata_gen_phy_reg[0] = imxpriv->phy_params; 
 		sata_gen_phy_reg[1] = imxpriv->phy_params;
 		sata_gen_phy_reg[2] = imxpriv->phy_params;
 		tmpmask = orig_mask;
+#if 0
 	}
+#endif
 	
 	cap = readl(hpriv->mmio + HOST_CAP);
 	g_speed = (cap >> 20) & 0xf;
