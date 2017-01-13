@@ -591,10 +591,6 @@
 	status = "okay";
 };
 
-&wdog1 {
-	status = "disabled";
-};
-
 &fec {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_enet1_1 &pinctrl_enet1_rst_1>;
