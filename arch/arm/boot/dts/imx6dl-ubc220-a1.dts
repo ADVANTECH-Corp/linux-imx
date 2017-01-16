@@ -309,6 +309,3 @@
 	status = "okay";
 };
 
-&wdog1 {
-	status = "disabled";
-};
