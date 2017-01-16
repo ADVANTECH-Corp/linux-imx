@@ -432,10 +432,6 @@
 	status = "okay";
 };
 
-&wdog1 {
-	status = "disabled";
-};
-
 &v4l2_capture_1 {
         status = "okay";
 };

@@ -593,9 +593,6 @@
 	status = "okay";
 };
 
-&wdog1 {
-	status = "disabled";
-};
 
 &fec {
 	pinctrl-names = "default";
