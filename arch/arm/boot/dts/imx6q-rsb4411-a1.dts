@@ -62,7 +62,7 @@
         m25p80@0 {
                 #address-cells = <1>;
                 #size-cells = <1>;
-                compatible = "micron,n25q";
+                compatible = "micron,n25qba16";
                 spi-max-frequency = <20000000>;
                 reg = <0>;
         };

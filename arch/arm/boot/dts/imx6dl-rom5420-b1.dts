@@ -92,12 +92,12 @@
 	status = "okay";
 
 	chip1: m25p80@0 {
-		compatible = "micron,n25q";
+		compatible = "micron,n25qba16";
 		spi-max-frequency = <20000000>;
 		reg = <0>;
 	};
 	chip2: m25p80@1 {
-		compatible = "micron,n25q";
+		compatible = "micron,n25qba16";
 		spi-max-frequency = <20000000>;
 		reg = <1>;
 	};
