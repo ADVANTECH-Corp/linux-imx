@@ -16,12 +16,12 @@
 #include "imx6qdl-advantech.dtsi"
 
 / {
-	model = "Freescale i.MX6 Quad ROM7420 A1";
+	model = "Freescale i.MX6 Quad RSB6410 A1";
 	compatible = "fsl,imx6q-sabresd", "fsl,imx6q";
 
 	board {
 		compatible = "proc-board";
-		board-type = "ROM-7420 A1";
+		board-type = "ROM-RSB6410 A1";
 		board-cpu = "DualQuad";
 	};
 
@@ -37,13 +37,27 @@
 		};
 	};
 
+	adv-gpios {
+		//pinctrl-names = "default";
+		//pinctrl-0 = <&pinctrl_gpios>;
+		compatible = "adv-gpios";
+		status = "okay";
+	};
+
+
+ 	 v4l2_out {
+	    compatible = "fsl,mxc_v4l2_output";
+	    status = "okay";
+	};
 	gpio-keys {
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_gpio_sleep_1>;
-		compatible = "gpio-keys";
+		compatible = "c8051-pwrbtn";
+		pwm-gpio = <&gpio7 4 1>;
+		canrx-gpio = <&gpio7 5 1>;
 		sleep {
 			label = "Sleep Button";
-			gpios = <&gpio4 5 1>;
+			gpios = <&gpio1 1 1>;
 			linux,input-type = <22>;
 			linux,code = <205>; /* KEY_SUSPEND */
 			debounce_interval = <1>;
@@ -58,7 +72,7 @@
 
 &bkl {
 	lvds-bkl-enable = <&gpio6 9 1>;
-	lvds-vcc-enable = <&gpio6 7 1>;
+	lvds-vcc-enable = <&gpio6 7 0>;
 	pwms = <&pwm1 0 5000000>;
 	status = "okay";
 };
@@ -67,34 +81,10 @@
 	cs-gpios = <&gpio3 19 0>;
 };
 
-&ecspi5 {
-	fsl,spi-num-chipselects = <2>;
-	cs-gpios = <&gpio1 17 0>, <&gpio1 19 0>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_ecspi5_1 &pinctrl_ecspi5_cs_0 &pinctrl_ecspi5_cs_1>;
-	status = "okay";
 
-	chip1: m25p80@0 {
-		compatible = "micron,n25qba16";
-		spi-max-frequency = <20000000>;
-		reg = <0>;
-	};
-	chip2: m25p80@1 {
-		compatible = "micron,n25qba16";
-		spi-max-frequency = <20000000>;
-		reg = <1>;
-	};
-};
-
-&can1 {
+&flexcan1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_flexcan1_1>;
-	status = "okay";
-};
-
-&can2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_flexcan2_1>;
 	status = "okay";
 };
 
@@ -141,28 +131,35 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_hog_1 &pinctrl_hog_2>;
 
-	can1 {
+	flexcan1 {
 		pinctrl_flexcan1_1: flexcan1grp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_GPIO_7__FLEXCAN1_TX		0x80000000
 				MX6QDL_PAD_GPIO_8__FLEXCAN1_RX		0x80000000
+				//advantech gpios
+				MX6QDL_PAD_NANDF_D4__GPIO2_IO04		0x80000000
+				MX6QDL_PAD_NANDF_D5__GPIO2_IO05		0x80000000
+				MX6QDL_PAD_NANDF_D6__GPIO2_IO06		0x80000000
+				MX6QDL_PAD_NANDF_D7__GPIO2_IO07		0x80000000
+				MX6QDL_PAD_SD3_DAT4__GPIO7_IO01		0x80000000
+				//UART Mode select
+				MX6QDL_PAD_EIM_D20__GPIO3_IO20		0x80000000    /* RS485 or RS232*/
+				//8051 input
+				MX6QDL_PAD_SD3_DAT0__GPIO7_IO04		0x80000000    /* CAN2_TX 8051 */
+				MX6QDL_PAD_SD3_DAT1__GPIO7_IO05		0x80000000	/* CAN2_RX 8051 */
+				
+				//sdio reset
+				MX6QDL_PAD_KEY_ROW1__GPIO4_IO09                 0x80000000	/* sdio reset */
+				MX6QDL_PAD_SD3_RST__GPIO7_IO08                  0x80000000
 			>;
 		};
 	};
 
-	can2 {
-		pinctrl_flexcan2_1: flexcan2grp-1 {
-			fsl,pins = <
-				MX6QDL_PAD_SD3_DAT0__FLEXCAN2_TX	0x80000000
-				MX6QDL_PAD_SD3_DAT1__FLEXCAN2_RX	0x80000000
-			>;
-		};
-	};
 
 	gpio-keys {
 			pinctrl_gpio_sleep_1: gpio_sleep1grp-1 {
 			fsl,pins = <
-				MX6QDL_PAD_GPIO_19__GPIO4_IO05		0x80000000	/* SLEEP Button */
+				MX6QDL_PAD_GPIO_1__GPIO1_IO01		0x80000000	/* SLEEP Button */
 			>;
 		};
 	};
@@ -186,11 +183,13 @@
 		pinctrl_lvds_bkl_1: lvds_bklgrp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_NANDF_WP_B__GPIO6_IO09	0x170b0		/* LCD_BKLT_EN */
+				MX6QDL_PAD_NANDF_CLE__GPIO6_IO07	0x170b0		/* LCD_VDD_EN */
 			>;
 		};
 		pinctrl_lvds_vcc_1: lvds_vccgrp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_NANDF_CLE__GPIO6_IO07	0x170b0		/* LCD_VDD_EN */
+				MX6QDL_PAD_NANDF_WP_B__GPIO6_IO09	0x170b0		/* LCD_BKLT_EN */
 			>;
 		};
 	};
@@ -198,7 +197,6 @@
 	pcie {
 		pinctrl_pcie_1: pcie1grp-1 {
 			fsl,pins = <
-				MX6QDL_PAD_EIM_D20__GPIO3_IO20		0x80000000	/* PWR_EN */
 				MX6QDL_PAD_KEY_COL4__GPIO4_IO14		0x0001B0B0	/* PCIE_DIS_B */
 				MX6QDL_PAD_CSI0_DATA_EN__GPIO5_IO20	0x0001B0B0	/* PCIE_WAKE */
 				MX6QDL_PAD_GPIO_17__GPIO7_IO12		0x80000000	/* PCIE_RST */
@@ -214,33 +212,13 @@
 		};
 	};
 
-	spi5 {
-		pinctrl_ecspi5_cs_0: ecspi5_cs_grp-0 {
-			fsl,pins = <
-				MX6QDL_PAD_SD1_DAT1__GPIO1_IO17		0x80000000
-			>;
-		};
-
-		pinctrl_ecspi5_cs_1: ecspi5_cs_grp-1 {
-			fsl,pins = <
-				MX6QDL_PAD_SD1_DAT2__GPIO1_IO19		0x80000000
-			>;
-		};
-
-		pinctrl_ecspi5_1: ecspi5grp-1 {
-			fsl,pins = <
-				MX6QDL_PAD_SD1_DAT0__ECSPI5_MISO	0x100b1
-				MX6QDL_PAD_SD1_CMD__ECSPI5_MOSI		0x100b1
-				MX6QDL_PAD_SD1_CLK__ECSPI5_SCLK		0x100b1
-			>;
-		};
-	};
-
 	uart2 {
-		pinctrl_uart2_1: uart2grp-1 {
+		pinctrl_uart2_2: uart2grp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_EIM_D26__UART2_TX_DATA	0x1b0b1
 				MX6QDL_PAD_EIM_D27__UART2_RX_DATA	0x1b0b1
+ 				MX6QDL_PAD_EIM_D28__UART2_CTS_B     0x1b0b1
+				MX6QDL_PAD_EIM_D29__UART2_RTS_B     0x1b0b1
 			>;
 		};
 	};
@@ -250,6 +228,8 @@
 			fsl,pins = <
 				MX6QDL_PAD_EIM_D24__UART3_TX_DATA	0x1b0b1
 				MX6QDL_PAD_EIM_D25__UART3_RX_DATA	0x1b0b1
+				MX6QDL_PAD_EIM_D31__UART3_RTS_B     0x1b0b1 
+				MX6QDL_PAD_EIM_D30__UART3_CTS_B     0x1b0b1 
 			>;
 		};
 	};
@@ -259,6 +239,12 @@
 			fsl,pins = <
 				MX6QDL_PAD_CSI0_DAT12__UART4_TX_DATA	0x1b0b1
 				MX6QDL_PAD_CSI0_DAT13__UART4_RX_DATA	0x1b0b1
+				MX6QDL_PAD_CSI0_DAT16__UART4_RTS_B		0x1b0b1
+				MX6QDL_PAD_CSI0_DAT17__UART4_CTS_B		0x1b0b1
+				/*
+				MX6QDL_PAD_CSI0_DAT12__UART4_TX_DATA	0x1b0b1
+				MX6QDL_PAD_CSI0_DAT13__UART4_RX_DATA	0x1b0b1
+				*/
 			>;
 		};
 	};
@@ -268,6 +254,12 @@
 			fsl,pins = <
 				MX6QDL_PAD_CSI0_DAT14__UART5_TX_DATA	0x1b0b1
 				MX6QDL_PAD_CSI0_DAT15__UART5_RX_DATA	0x1b0b1
+				MX6QDL_PAD_CSI0_DAT18__UART5_RTS_B		0x1b0b1
+				MX6QDL_PAD_CSI0_DAT19__UART5_CTS_B		0x1b0b1
+				/*
+				MX6QDL_PAD_CSI0_DAT14__UART5_TX_DATA	0x1b0b1
+				MX6QDL_PAD_CSI0_DAT15__UART5_RX_DATA	0x1b0b1
+				*/
 			>;
 		};
 	};
@@ -275,12 +267,13 @@
 	usbotg {
 		pinctrl_usbotg_pwr_1: usbotg_pwr_grp-1 {
 			fsl,pins = <
-				MX6QDL_PAD_EIM_D22__GPIO3_IO22		0x000130B0	/* USB_OTG_PWR*/
+				MX6QDL_PAD_EIM_D22__GPIO3_IO22		0x000000B0	/* USB_OTG_PWR*/
 			>;
 		};
 		pinctrl_usbotg_2: usbotggrp-2 {
 			fsl,pins = <
 				MX6QDL_PAD_ENET_RX_ER__USB_OTG_ID	0x0001B0B0
+				MX6QDL_PAD_EIM_D21__USB_OTG_OC 0x17059
 			>;
 		};
 	};
@@ -301,17 +294,16 @@
 &mxcfb3 {
 	status = "okay";
 };
-
+/*
 &mxcfb4 {
 	status = "okay";
 };
-
+*/
 &pcie {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie_1>;
-	power-on-gpio = <&gpio3 20 0>;
 	disable-gpio = <&gpio4 14 0>;
-	wake-up-gpio = <&gpio5 20 0>;
+	power-on-gpio = <&gpio5 20 0>; /*	wake-up-gpio = <&gpio5 20 0>;*/
 	reset-gpio = <&gpio7 12 0>;
 	status = "okay";
 };
@@ -329,30 +321,35 @@
 &uart1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1_1>;
+	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
 &uart2 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_uart2_1>;
+	pinctrl-0 = <&pinctrl_uart2_2>;
+	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
 &uart3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart3_2>;
+	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
 &uart4 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart4_1>;
+	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
 &uart5 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart5_1>;
+	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
@@ -364,14 +361,22 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usbotg_2 &pinctrl_usbotg_pwr_1>;
 	vbus-supply = <&reg_usb_otg_vbus>;
-	imx6-usb-charger-detection;
+	disable-over-current;
+	dr_mode = "otg";
+	status = "okay";
+};
+
+&usdhc1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc1_1>;
+	bus-width = <4>;
 	status = "okay";
 };
 
 &usdhc2 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usdhc2_1>;
-	bus-width = <8>;
+	pinctrl-0 = <&pinctrl_usdhc2_2>;
+	bus-width = <4>;
 	cd-gpios = <&gpio2 2 0>;
 	wp-gpios = <&gpio2 3 0>;
 	status = "okay";
