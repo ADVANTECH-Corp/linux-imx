@@ -718,4 +718,11 @@ config KEYBOARD_BCM
 	  To compile this driver as a module, choose M here: the
 	  module will be called bcm-keypad.
 
+config C8051_PWRBTN
+	tristate "C8051 GPIO Power Button"	
+	depends on GPIOLIB
+	default y
+	help	  
+	  This driver implements support for power button connected	  
+	  to C8051.
 endif
