@@ -213,7 +213,7 @@
 	};
 
 	uart2 {
-		pinctrl_uart2_2: uart2grp-1 {
+		pinctrl_uart2_1: uart2grp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_EIM_D26__UART2_TX_DATA	0x1b0b1
 				MX6QDL_PAD_EIM_D27__UART2_RX_DATA	0x1b0b1
@@ -327,7 +327,7 @@
 
 &uart2 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_uart2_2>;
+	pinctrl-0 = <&pinctrl_uart2_1>;
 	fsl,uart-has-rtscts;
 	status = "okay";
 };
