@@ -82,7 +82,7 @@
 };
 
 
-&flexcan1 {
+&can1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_flexcan1_1>;
 	status = "okay";
@@ -131,7 +131,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_hog_1 &pinctrl_hog_2>;
 
-	flexcan1 {
+	can1 {
 		pinctrl_flexcan1_1: flexcan1grp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_GPIO_7__FLEXCAN1_TX		0x80000000
