@@ -44,8 +44,8 @@
 		sleep {
 			label = "Sleep Button";
 			gpios = <&gpio4 5 1>;
-			linux,input-type = <22>;
-			linux,code = <205>; /* KEY_SUSPEND */
+			linux,input-type = <1>;	/* EV_KEY */
+			linux,code = <116>;	/* KEY_POWER */
 			debounce_interval = <1>;
 			gpio-key,wakeup;
 		};

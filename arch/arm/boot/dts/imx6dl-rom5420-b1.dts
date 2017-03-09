@@ -41,11 +41,11 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_gpio_sleep_1>;
 		compatible = "gpio-keys";
-		sleep {
-			label = "Sleep Button";
+		mcu {
+			label = "MCU";
 			gpios = <&gpio1 25 1>; /* active low */
-			linux,input-type = <1>;
-			linux,code = <205>; /* KEY_SUSPEND */
+			linux,input-type = <1>;	/* EV_KEY */
+			linux,code = <116>;	/* KEY_POWER */
 			debounce_interval = <1>;
 			gpio-key,wakeup;
 		};
