@@ -19,6 +19,10 @@
 	model = "Freescale i.MX6 Solo ROM7421 A1";
 	compatible = "fsl,imx6dl-sabresd", "fsl,imx6dl";
 
+	aliases {
+		i2c3; /* Disabled i2c3 in imx6dl.dtsi */
+	};
+
 	board {
 		compatible = "proc-board";
 		board-type = "ROM-7421 A1";
