@@ -71,6 +71,7 @@ static struct {
 	unsigned remain_time;
 	unsigned long status;
 	int wdt_ping_status;
+	int wdt_en_off;
 	char version[2];
 } adv_wdt;
 
@@ -150,8 +151,7 @@ static int adv_wdt_i2c_read_reg(struct i2c_client *client, u8 reg, void *buf, si
 int adv_wdt_i2c_set_timeout(struct i2c_client *client, int val)
 {
 	int ret = 0;
-	
-	val = WDOG_SEC_TO_COUNT(val);
+	val = WDOG_SEC_TO_COUNT(val) & 0x0000FFFF;
 	ret = adv_wdt_i2c_write_reg(client, REG_WDT_WATCHDOG_TIME_OUT, &val, sizeof(val));
 	if (ret)
 		return -EIO;
@@ -203,7 +203,7 @@ static void adv_wdt_start(void)
 	if (!test_and_set_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status)) 
 	{
 		/* at our first start we enable clock and do initialisations */
-		gpio_set_value(gpio_wdt_en, 1);
+		gpio_set_value(gpio_wdt_en, !adv_wdt.wdt_en_off);
 	} 
 
 	/* Watchdog is enabled - time to reload the timeout value */
@@ -216,7 +216,7 @@ static void adv_wdt_stop(void)
 
 	/* we don't need a clk_disable, it cannot be disabled once started.
 	 * We use a timer to ping the watchdog while /dev/watchdog is closed */
-	gpio_set_value(gpio_wdt_en, 0);
+	gpio_set_value(gpio_wdt_en, adv_wdt.wdt_en_off);
 }
 
 static int adv_wdt_open(struct inode *inode, struct file *file)
@@ -358,14 +358,14 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	gpio_wdt_en = of_get_named_gpio_flags(np, "wdt-en", 0, &flags);
 	if (!gpio_is_valid(gpio_wdt_en))
 		return -ENODEV;	
-
+	adv_wdt.wdt_en_off = flags;
 	ret = devm_gpio_request_one(&client->dev, gpio_wdt_en,
 				GPIOF_OUT_INIT_LOW, "adv_wdt.wdt_en");
 	if (ret < 0) {
 		dev_err(&client->dev, "request gpio failed: %d\n", ret);
 		return ret;
 	}
-	gpio_direction_output(gpio_wdt_en, flags);
+	gpio_direction_output(gpio_wdt_en, adv_wdt.wdt_en_off);
 	
 	gpio_wdt_ping = of_get_named_gpio_flags(np, "wdt-ping", 0, &flags);
 	if (!gpio_is_valid(gpio_wdt_ping))
@@ -437,10 +437,32 @@ static int __exit adv_wdt_i2c_remove(struct i2c_client *client)
 
 	if (test_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status))
 	{	
-		gpio_set_value(gpio_wdt_en, 0);
+		gpio_set_value(gpio_wdt_en, adv_wdt.wdt_en_off);
 		dev_crit(adv_wdt_miscdev.parent, "Device removed: Expect reboot!\n");
 	}
+	clear_bit(ADV_WDT_EXPECT_CLOSE, &adv_wdt.status);
+	clear_bit(ADV_WDT_STATUS_OPEN, &adv_wdt.status);
+	clear_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status);
 	adv_wdt_miscdev.parent = NULL;
+	return 0;
+}
+
+static int adv_wdt_i2c_resume(struct device *dev)
+{
+	if (test_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status))
+	{
+		gpio_set_value(gpio_wdt_en, !adv_wdt.wdt_en_off);
+		adv_wdt_i2c_set_timeout(adv_client, adv_wdt.timeout / 10);
+		adv_wdt_ping();
+	}
+	return 0;
+}
+
+static int adv_wdt_i2c_suspend(struct device *dev)
+{
+	if (test_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status)) {
+		adv_wdt_stop();
+	}
 	return 0;
 }
 
@@ -449,13 +471,16 @@ static void adv_wdt_i2c_shutdown(struct i2c_client *client)
 	if (test_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status)) {
 		/* we are running, we need to delete the timer but will give
 		 * max timeout before reboot will take place */
-		gpio_set_value(gpio_wdt_en, 0);		
-		adv_wdt_i2c_set_timeout(client, ADV_WDT_MAX_TIME);
+		gpio_set_value(gpio_wdt_en, adv_wdt.wdt_en_off);
+		adv_wdt_i2c_set_timeout(client, ADV_WDT_MAX_TIME / 10);
 		adv_wdt_ping();
 
 		dev_crit(adv_wdt_miscdev.parent,
 			"Device shutdown: Expect reboot!\n");
 	}
+	clear_bit(ADV_WDT_EXPECT_CLOSE, &adv_wdt.status);
+	clear_bit(ADV_WDT_STATUS_OPEN, &adv_wdt.status);
+	clear_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status);
 }
 
 static const struct i2c_device_id adv_wdt_i2c_id[] = {
@@ -471,11 +496,17 @@ static const struct of_device_id adv_wdt_i2c_dt_ids[] = {
 };
 MODULE_DEVICE_TABLE(of, adv_wdt_i2c_dt_ids);
 
+static const struct dev_pm_ops adv_wdt_device_pm_ops = {
+	.resume = adv_wdt_i2c_resume,
+	.suspend = adv_wdt_i2c_suspend,
+};
+
 static struct i2c_driver adv_wdt_i2c_driver = {
 	.driver = {
 		   .name = DRIVER_NAME,
 		   .owner = THIS_MODULE,
 		   .of_match_table = adv_wdt_i2c_dt_ids,
+		   .pm = &adv_wdt_device_pm_ops,
 		   },
 	.probe = adv_wdt_i2c_probe,
 	.remove = adv_wdt_i2c_remove,
