@@ -32,15 +32,6 @@
 #include <linux/of_irq.h>
 #include <linux/spinlock.h>
 
-#ifdef CONFIG_ARCH_ADVANTECH
-#include <linux/proc-board.h>
-#include <linux/timer.h>
-long timer_diff,timer_1,timer_2;
-int send_event_flag=0;
-int suspend_key_flag = 0;
-int init_suspend_key_flag = 0;
-#endif
-
 struct gpio_button_data {
 	const struct gpio_keys_button *button;
 	struct input_dev *input;
@@ -340,72 +331,18 @@ static struct attribute_group gpio_keys_attr_group = {
 	.attrs = gpio_keys_attrs,
 };
 
-#ifdef CONFIG_ARCH_ADVANTECH
-static void get_latest_button_code(unsigned int type, unsigned int code, int state)
-{
-	if (state)
-		timer_1 = jiffies;
-	else {
-		timer_2 = jiffies;
-
-		if (timer_1 > timer_2)
-			timer_diff = timer_1 - timer_2;
-		else
-			timer_diff = timer_2 - timer_1;
-
-		/* printk("\ntime_diff [%ld]- start[%ld] stop[%ld] ----\n",timer_diff, timer_1, timer_2); */
-
-		if (timer_diff > 100 )
-			suspend_key_flag = 0;
-		else
-			suspend_key_flag = 1;
-
-		send_event_flag = 1;
-	}
-}
-#endif
-
 static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 {
 	const struct gpio_keys_button *button = bdata->button;
 	struct input_dev *input = bdata->input;
 	unsigned int type = button->type ?: EV_KEY;
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
-#ifdef CONFIG_ARCH_ADVANTECH
-	unsigned int latest_code;
-#endif
 
 	if (type == EV_ABS) {
 		if (state)
 			input_event(input, type, button->code, button->value);
 	} else {
-#ifdef CONFIG_ARCH_ADVANTECH
-		if(IS_ROM_3420 || IS_ROM_5420) {
-			if(init_suspend_key_flag) {
-				get_latest_button_code(type, button->code, state);
-
-				if(send_event_flag == 1) {
-					if(suspend_key_flag == 0) /* power off */
-						latest_code = KEY_POWER;
-					else /* suspend */
-						latest_code = button->code;	
-
-					input_event(input, type, latest_code, 1); /* button down */
-					msleep(500);
-					input_event(input, type, latest_code, 0); /* button up */
-					send_event_flag = 0;
-				}
-			}
-			else {
-				init_suspend_key_flag = 1;
-				input_event(input, type, button->code, !!state);
-			}
-		} else
-			input_event(input, type, button->code, !!state);
-
-#else
 		input_event(input, type, button->code, !!state);
-#endif
 	}
 	input_sync(input);
 }
@@ -572,12 +509,6 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 	}
 
 	input_set_capability(input, button->type ?: EV_KEY, button->code);
-
-#ifdef CONFIG_ARCH_ADVANTECH
-	/* We need to register KEY_POWER event, then upper API(key_event) will monitor KEY_POWER evnet */
-	if ( IS_ROM_3420 || IS_ROM_5420 )
-		input_set_capability(input, button->type ?: EV_KEY, KEY_POWER);
-#endif
 
 	/*
 	 * Install custom action to cancel release timer and
