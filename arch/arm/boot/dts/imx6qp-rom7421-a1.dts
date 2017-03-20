@@ -46,15 +46,15 @@
 		power@1 {
 			label = "Power button";
 			gpios = <&gpio3 24 1>; /* GPIO_ACTIVE_LOW:1 */
-			linux,input-type = <1>; /* EV_KEY: 1 */
+			linux,input-type = <22>; /* EV_PWR */
 			linux,code = <116>; /* KEY_POWER:116 */
 			debounce_interval = <1>;
                 };
 		sleep@2 {
 			label = "Sleep Button";
 			gpios = <&gpio4 5 1>;
-			linux,input-type = <22>;
-			linux,code = <205>; /* KEY_SUSPEND */
+			linux,input-type = <1>; /* EV_KEY */
+			linux,code = <116>; /* KEY_SUSPEND */
 			debounce_interval = <1>;
 			gpio-key,wakeup;
 		};

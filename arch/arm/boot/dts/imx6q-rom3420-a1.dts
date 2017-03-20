@@ -50,7 +50,7 @@
 		pinctrl-0 = <&pinctrl_gpio_sleep_1>;
 		compatible = "gpio-keys";
 		mcu {
-			label = "MCU Delay";
+			label = "MCU";
 			gpios = <&gpio1 25 1>; /* active low */
 			linux,input-type = <1>;	/* EV_KEY */
 			linux,code = <116>;	/* KEY_POWER */
