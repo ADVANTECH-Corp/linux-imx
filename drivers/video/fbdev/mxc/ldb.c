@@ -23,6 +23,11 @@
 #include <linux/types.h>
 #include <video/of_videomode.h>
 #include <video/videomode.h>
+
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <video/of_display_timing.h>
+#endif
+
 #include "mxc_dispdrv.h"
 
 #define DRIVER_NAME	"ldb"
@@ -849,7 +854,11 @@ static int ldb_probe(struct platform_device *pdev)
 			return -EINVAL;
 		}
 
+		#ifdef CONFIG_ARCH_ADVANTECH
+		ret = of_get_videomode(child, &chan->vm, OF_USE_NATIVE_MODE);
+		#else
 		ret = of_get_videomode(child, &chan->vm, 0);
+		#endif
 		if (ret)
 			return -EINVAL;
 
