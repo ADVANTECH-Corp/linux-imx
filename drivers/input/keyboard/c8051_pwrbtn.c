@@ -1,3 +1,4 @@
+#ifdef CONFIG_ARCH_ADVANTECH
 /*
  * Driver for keys on GPIO lines capable of generating interrupts.
  *
@@ -887,3 +888,5 @@ module_exit(gpio_keys_exit);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Keyboard driver for GPIOs");
 MODULE_ALIAS("platform:gpio-keys");
+
+#endif
