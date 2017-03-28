@@ -21,7 +21,7 @@
 
 	board {
 		compatible = "proc-board";
-		board-type = "ROM-RSB6410 A1";
+		board-type = "RSB-6410 A1";
 		board-cpu = "DualQuad";
 	};
 
@@ -37,18 +37,11 @@
 		};
 	};
 
-	adv-gpios {
-		//pinctrl-names = "default";
-		//pinctrl-0 = <&pinctrl_gpios>;
-		compatible = "adv-gpios";
-		status = "okay";
-	};
-
-
  	 v4l2_out {
 	    compatible = "fsl,mxc_v4l2_output";
 	    status = "okay";
 	};
+	 
 	gpio-keys {
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_gpio_sleep_1>;
@@ -64,6 +57,14 @@
 			gpio-key,wakeup;
 		};
 	};
+};
+
+&fec {
+	phy-led = <0x9247 0x0091>;
+};
+
+&uart3 {
+     uart-sel-gpio = <&gpio3 20 1>;
 };
 
 &audio_sgtl5000 {
@@ -146,11 +147,12 @@
 				MX6QDL_PAD_EIM_D20__GPIO3_IO20		0x80000000    /* RS485 or RS232*/
 				//8051 input
 				MX6QDL_PAD_SD3_DAT0__GPIO7_IO04		0x80000000    /* CAN2_TX 8051 */
-				MX6QDL_PAD_SD3_DAT1__GPIO7_IO05		0x80000000	/* CAN2_RX 8051 */
-				
+				MX6QDL_PAD_SD3_DAT1__GPIO7_IO05		0x80000000		/* CAN2_RX 8051 */
+				//uart select gpio
+				MX6QDL_PAD_EIM_D20__GPIO3_IO20                 0x80000000	/* uart select gpio */			
 				//sdio reset
-				MX6QDL_PAD_KEY_ROW1__GPIO4_IO09                 0x80000000	/* sdio reset */
-				MX6QDL_PAD_SD3_RST__GPIO7_IO08                  0x80000000
+				MX6QDL_PAD_KEY_ROW1__GPIO4_IO09     0x80000000		/* sdio reset */
+				MX6QDL_PAD_SD3_RST__GPIO7_IO08      0x80000000
 			>;
 		};
 	};
@@ -165,6 +167,15 @@
 	};
 
 	hog {
+		/* Common GPIO */
+		pinctrl_hog_1: hoggrp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_NANDF_D2__GPIO2_IO02 	0x80000000	/* SD2_CD */
+				MX6QDL_PAD_NANDF_D3__GPIO2_IO03 	0x80000000	/* SD2_WP */
+				MX6QDL_PAD_GPIO_0__CCM_CLKO1   		0x130b0     /* AUDIO CLK */
+			>;
+		};
+
 		pinctrl_hog_2: hoggrp-2 {
 			fsl,pins = <
 				MX6QDL_PAD_NANDF_CS0__GPIO6_IO11	0x80000000	/* GPIO1 */
@@ -208,6 +219,14 @@
 		pinctrl_ecspi1_cs_0: ecspi1_cs_grp-0 {
 			fsl,pins = <
 				MX6QDL_PAD_EIM_D19__GPIO3_IO19		0x80000000	/* ECSPI1_CS1 */
+			>;
+		};
+	};
+
+	pwm1 {
+		pinctrl_pwm1_1: pwm1grp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_GPIO_9__PWM1_OUT 0x1b0b1
 			>;
 		};
 	};
@@ -281,6 +300,40 @@
 
 &ldb {
 	status = "okay";
+//	split-mode;
+	
+	lvds-channel@0 {
+		display-timings {
+			native-mode = <&timing60>;
+			timing50: g215hvn0 {
+				clock-frequency = <144000000>;
+				hactive = <1920>;
+				vactive = <1080>;
+				hback-porch = <90>;
+				hfront-porch = <30>;
+				vback-porch = <5>;
+				vfront-porch = <38>;
+				hsync-len = <60>;
+				vsync-len = <7>;
+			};
+	
+		timing60:g150xgel05 {
+			clock-frequency = <65000000>;
+			hactive = <1024>;
+			vactive = <768>;
+			hback-porch = <220>;
+			hfront-porch = <40>;
+			vback-porch = <21>;
+			vfront-porch = <7>;
+			hsync-len = <60>;
+			vsync-len = <10>;
+			};	
+		};
+	};
+	lvds-channel@1 {
+		crtc = "ipu1-di0";
+		status = "disable";
+	};
 };
 
 &mxcfb1 {
@@ -370,7 +423,11 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usdhc1_1>;
 	bus-width = <4>;
-	status = "okay";
+
+	non-removable;
+	keep-power-in-suspend;
+	enable-sdio-wakeup;
+	status = "disable";
 };
 
 &usdhc2 {
@@ -390,4 +447,3 @@
 	no-1-8-v;
 	status = "okay";
 };
-
