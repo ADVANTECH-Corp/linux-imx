@@ -19,6 +19,10 @@
 	model = "Freescale i.MX6 Solo ROM7421 A1";
 	compatible = "fsl,imx6dl-sabresd", "fsl,imx6dl";
 
+	aliases {
+		i2c3; /* Disabled i2c3 in imx6dl.dtsi */
+	};
+
 	board {
 		compatible = "proc-board";
 		board-type = "ROM-7421 A1";
@@ -45,15 +49,15 @@
 		power@1 {
 			label = "Power button";
 			gpios = <&gpio3 24 1>; /* GPIO_ACTIVE_LOW:1 */
-			linux,input-type = <1>; /* EV_KEY: 1 */
-			linux,code = <116>; /* KEY_POWER:116 */
+			linux,input-type = <22>;	/* EV_PWR */
+			linux,code = <116>;		/* KEY_POWER */
 			debounce_interval = <1>;
                 };
 		sleep@2 {
 			label = "Sleep Button";
 			gpios = <&gpio4 5 1>;
-			linux,input-type = <22>;
-			linux,code = <205>; /* KEY_SUSPEND */
+			linux,input-type = <1>;		/* EV_KEY */
+			linux,code = <205>;		/* KEY_SUSPEND */
 			debounce_interval = <1>;
 			gpio-key,wakeup;
 		};
