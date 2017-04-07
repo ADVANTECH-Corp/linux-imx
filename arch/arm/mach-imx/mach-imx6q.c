@@ -40,6 +40,7 @@
 #include "cpuidle.h"
 #include "hardware.h"
 
+
 /* For imx6q sabrelite board: set KSZ9021RN RGMII pad skew */
 static int ksz9021rn_phy_fixup(struct phy_device *phydev)
 {
@@ -151,11 +152,26 @@ static int ar8031_phy_fixup(struct phy_device *dev)
 #if defined(CONFIG_ARCH_ADVANTECH) && defined(CONFIG_REALTEK_PHY)
 static int rtl8211e_phy_fixup(struct phy_device *dev)
 {
+	int len=0;
+	u32 value1,value2;
+	const __be32 *parp;
+	struct device_node *np;
+
+	value1 = 0x0742;
+	value2 = 0x0040;
+	np = of_find_compatible_node(NULL, NULL, "fsl,imx6q-fec");
+	if (np) {
+		parp = of_get_property(np, "phy-led", &len);
+		if (parp && (len / sizeof (int) == 2)) {
+			value1 = be32_to_cpu(parp[0]);
+			value2 = be32_to_cpu(parp[1]);
+		}
+	}
 	/*PHY LED OK*/
 	phy_write(dev, 0x1f, 0x0007);
 	phy_write(dev, 0x1e, 0x002c);
-	phy_write(dev, 0x1c, 0x0742);
-	phy_write(dev, 0x1a, 0x0040);
+	phy_write(dev, 0x1c, value1);
+	phy_write(dev, 0x1a, value2);
 	phy_write(dev, 0x1f, 0x0000);
 
 	phy_write(dev, 0x1f, 0x0005);
