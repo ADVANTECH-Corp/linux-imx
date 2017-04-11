@@ -650,9 +650,9 @@ static void c8051_reboot(enum reboot_mode reboot_mode, const char *cmd)
 	int i = 0;
 	for(i=0;; i++){
 		gpio_set_value_cansleep(g_pwm_gpio, 0);
-		udelay(150);
+		udelay(165);
 		gpio_set_value_cansleep(g_pwm_gpio, 1);
-		udelay(150);
+		udelay(165);
 	}
 }
 
