@@ -349,7 +349,7 @@
 &pcie {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie_1>;
-	disable-gpio = <&gpio3 19 0>;
+	disable-gpio = <&gpio6 15 0>;
 	status = "okay";
 };
 
