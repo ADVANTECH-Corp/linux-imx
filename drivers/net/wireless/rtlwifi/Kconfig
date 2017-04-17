@@ -81,6 +81,17 @@ config RTL8188EE
 
 	If you choose to build it as a module, it will be called rtl8188ee
 
+config ADVANTECH_RISC_RTL8188EE
+        tristate "Realtek RTL8188EE PCIe WiFi"
+        depends on PCI
+        select RTLWIFI
+        select RTLWIFI_PCI
+        ---help---
+        This is the driver for Realtek RTL8188EE 802.11n PCIe
+        wireless network adapters.
+
+        If you choose to build it as a module, it will be called 8188ee
+
 config RTL8192EE
 	tristate "Realtek RTL8192EE Wireless Network Adapter"
 	depends on PCI
