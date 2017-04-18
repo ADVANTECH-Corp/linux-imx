@@ -240,7 +240,7 @@ void rtw_indicate_wx_assoc_event(_adapter *padapter)
 	else
 		_rtw_memcpy(wrqu.ap_addr.sa_data, pmlmepriv->cur_network.network.MacAddress, ETH_ALEN);
 
-	DBG_871X_LEVEL(_drv_always_, "assoc success\n");
+	printk("assoc success\n");
 #ifndef CONFIG_IOCTL_CFG80211
 	wireless_send_event(padapter->pnetdev, SIOCGIWAP, &wrqu, NULL);
 #endif

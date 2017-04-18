@@ -37,7 +37,7 @@ static void iol_mode_enable(PADAPTER padapter, u8 enable)
 		
 		if(padapter->bFWReady == _FALSE)
 		{
-			printk("bFWReady == _FALSE call reset 8051...\n");
+			DBG_871X("bFWReady == _FALSE call reset 8051...\n");
 			_8051Reset88E(padapter);
 		}		
 			
@@ -449,7 +449,7 @@ static s32 iol_read_efuse(
 s32 rtl8188e_iol_efuse_patch(PADAPTER padapter)
 {
 	s32	result = _SUCCESS;
-	printk("==> %s \n",__FUNCTION__);
+	DBG_871X("==> %s \n",__FUNCTION__);
 	
 	if(rtw_IOL_applied(padapter)){
 		iol_mode_enable(padapter, 1);

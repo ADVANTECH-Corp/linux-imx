@@ -198,6 +198,7 @@ extern void rtl871x_cedbg(const char *fmt, ...);
 
 /* with driver-defined prefix */
 #undef DBG_871X_LEVEL
+#if 0
 #define DBG_871X_LEVEL(level, fmt, arg...)     \
 	do {\
 		if (level <= GlobalDebugLevel) {\
@@ -207,6 +208,10 @@ extern void rtl871x_cedbg(const char *fmt, ...);
 				_dbgdump(DRIVER_PREFIX fmt, ##arg);\
 		}\
 	}while(0)
+#else
+/* Disable debug message */
+#define DBG_871X_LEVEL(level, fmt, arg...)
+#endif
 
 /* without driver-defined prefix */
 #undef _DBG_871X_LEVEL
