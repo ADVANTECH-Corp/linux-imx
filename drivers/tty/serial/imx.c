@@ -405,10 +405,14 @@ static void imx_stop_tx(struct uart_port *port)
 	if (port->rs485.flags & SER_RS485_ENABLED &&
 	    readl(port->membase + USR2) & USR2_TXDC) {
 		temp = readl(port->membase + UCR2);
+#ifdef CONFIG_ARCH_ADVANTECH
+		temp &= ~UCR2_CTS;
+#else
 		if (port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
 			temp &= ~UCR2_CTS;
 		else
 			temp |= UCR2_CTS;
+#endif
 		writel(temp, port->membase + UCR2);
 
 		temp = readl(port->membase + UCR4);
