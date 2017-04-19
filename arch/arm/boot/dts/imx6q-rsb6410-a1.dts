@@ -392,6 +392,11 @@
 
 &sata {
 	status = "okay";
+        fsl,transmit-level-mV = <1133>;
+        fsl,transmit-boost-mdB = <2960>;
+        fsl,transmit-atten-16ths = <12>;
+        fsl,receive-eq-mdB = <3000>;
+        fsl,no-spread-spectrum;
 };
 
 &uart1 {
