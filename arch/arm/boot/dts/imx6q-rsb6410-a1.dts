@@ -37,6 +37,15 @@
 		};
 	};
 
+	gpio-ctrl-adv {
+	        compatible = "gpio-ctrl-adv";
+		minipcie-pwr-gpio = <&gpio1 27 1>;
+		minipcie-reset-gpio = <&gpio4 14 1>;
+		timing-interval = <10>;
+		status = "okay";
+	};
+
+
  	 v4l2_out {
 	    compatible = "fsl,mxc_v4l2_output";
 	    status = "okay";
@@ -153,6 +162,8 @@
 				//sdio reset
 				MX6QDL_PAD_KEY_ROW1__GPIO4_IO09     0x80000000		/* sdio reset */
 				MX6QDL_PAD_SD3_RST__GPIO7_IO08      0x80000000
+				//minipcie power
+				MX6QDL_PAD_ENET_RXD0__GPIO1_IO27                0x80000000
 			>;
 		};
 	};
