@@ -464,9 +464,7 @@
 	bus-width = <4>;
 
 	non-removable;
-	keep-power-in-suspend;
-	enable-sdio-wakeup;
-	status = "disable";
+	status = "okay";
 };
 
 &usdhc2 {
