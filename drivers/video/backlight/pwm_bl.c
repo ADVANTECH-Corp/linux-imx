@@ -148,6 +148,8 @@ static int pwm_backlight_check_fb_name(struct device *dev, struct fb_info *info)
 #ifdef CONFIG_ARCH_ADVANTECH
 int lvds_vcc_enable;
 int lvds_bkl_enable;
+int lvds-vcc-delay-value;
+int lvds-bkl-delay-value;
 enum of_gpio_flags lvds_vcc_flag;
 enum of_gpio_flags lvds_bkl_flag;
 
@@ -166,14 +168,14 @@ void enable_lcd_vdd_en(void)
 			gpio_direction_output(lvds_vcc_enable, lvds_vcc_flag);
 	}
 
-	mdelay(250);
+	mdelay(lvds-vcc-delay-value);
 }
 
 void enable_ldb_bkl_pwm(void)
 {
 	int ret;
 
-	mdelay(20);
+	mdelay(lvds-bkl-delay-value);
 	
         if (lvds_bkl_enable > 0)
         {
@@ -248,6 +250,16 @@ static int pwm_backlight_parse_dt(struct device *dev,
 #ifdef CONFIG_ARCH_ADVANTECH
 	lvds_vcc_enable = of_get_named_gpio_flags(node, "lvds-vcc-enable", 0, &lvds_vcc_flag);
 	lvds_bkl_enable = of_get_named_gpio_flags(node, "lvds-bkl-enable", 0, &lvds_bkl_flag);
+	ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds-vcc-delay-value);
+	if (ret < 0)
+	{
+		lvds-vcc-delay-value = 250;
+	}
+	ret = of_property_read_u32(node,"lvds-bkl-delay-time",&lvds-blk-delay-value);
+	if (ret < 0)
+	{
+		lvds-blk-delay-value = 20;
+	}
 #endif
 
 	return 0;

@@ -83,6 +83,16 @@
 &bkl {
 	lvds-bkl-enable = <&gpio6 9 0>;
 	lvds-vcc-enable = <&gpio6 7 0>;
+	lvds-vcc-delay-time = <2>;	
+	/* 
+		Default:TM104SDHG40:2 
+		Optional:M150GNN2:2
+	*/
+	lvds-bkl-delay-time = <160>; 
+	/*
+		Default:TM104SDHG40:160 
+		Optional:M150GNN2:320
+	*/
 	pwms = <&pwm1 0 5000000>;
 	status = "okay";
 };
