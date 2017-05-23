@@ -40,7 +40,6 @@
 #include "cpuidle.h"
 #include "hardware.h"
 
-
 /* For imx6q sabrelite board: set KSZ9021RN RGMII pad skew */
 static int ksz9021rn_phy_fixup(struct phy_device *phydev)
 {
