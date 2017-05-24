@@ -81,6 +81,51 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 	pb->enabled = false;
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+int lvds_vcc_enable;
+int lvds_bkl_enable;
+int lvds_vcc_delay_value;
+int lvds_bkl_delay_value;
+enum of_gpio_flags lvds_vcc_flag;
+enum of_gpio_flags lvds_bkl_flag;
+
+void enable_lcd_vdd_en(void)
+{
+	int ret;
+
+	/* LVDS Panel power enable */
+	if (lvds_vcc_enable > 0)
+	{
+		ret = gpio_request(lvds_vcc_enable,"lvds_vcc_enable");
+
+                if (ret < 0)
+			printk("\nRequest lvds_vcc_enable failed!!\n");
+		else
+			gpio_direction_output(lvds_vcc_enable, lvds_vcc_flag);
+	}
+
+	mdelay(lvds_vcc_delay_value);
+}
+
+void enable_ldb_bkl_pwm(void)
+{
+	int ret;
+
+	mdelay(lvds_bkl_delay_value);
+	
+        if (lvds_bkl_enable > 0)
+        {
+		printk(KERN_INFO "[LVDS Sequence] 4 Start to enable LVDS backlight.\n");
+		ret = gpio_request(lvds_bkl_enable,"lvds_bkl_enable");
+
+		if (ret < 0)
+			printk("\nRequest lvds_bkl_enable failed!!\n");
+		else
+			gpio_direction_output(lvds_bkl_enable, lvds_bkl_flag);
+	}
+}
+#endif
+
 static int compute_duty_cycle(struct pwm_bl_data *pb, int brightness)
 {
 	unsigned int lth = pb->lth_brightness;
@@ -145,50 +190,6 @@ static int pwm_backlight_check_fb_name(struct device *dev, struct fb_info *info)
 
 	return false;
 }
-#ifdef CONFIG_ARCH_ADVANTECH
-int lvds_vcc_enable;
-int lvds_bkl_enable;
-int lvds_vcc_delay_value;
-int lvds_bkl_delay_value;
-enum of_gpio_flags lvds_vcc_flag;
-enum of_gpio_flags lvds_bkl_flag;
-
-void enable_lcd_vdd_en(void)
-{
-	int ret;
-
-	/* LVDS Panel power enable */
-	if (lvds_vcc_enable > 0)
-	{
-		ret = gpio_request(lvds_vcc_enable,"lvds_vcc_enable");
-
-                if (ret < 0)
-			printk("\nRequest lvds_vcc_enable failed!!\n");
-		else
-			gpio_direction_output(lvds_vcc_enable, lvds_vcc_flag);
-	}
-
-	mdelay(lvds_vcc_delay_value);
-}
-
-void enable_ldb_bkl_pwm(void)
-{
-	int ret;
-
-	mdelay(lvds_bkl_delay_value);
-	
-        if (lvds_bkl_enable > 0)
-        {
-		printk(KERN_INFO "[LVDS Sequence] 4 Start to enable LVDS backlight.\n");
-		ret = gpio_request(lvds_bkl_enable,"lvds_bkl_enable");
-
-		if (ret < 0)
-			printk("\nRequest lvds_bkl_enable failed!!\n");
-		else
-			gpio_direction_output(lvds_bkl_enable, lvds_bkl_flag);
-	}
-}
-#endif
 
 static int pwm_backlight_parse_dt(struct device *dev,
 				  struct platform_pwm_backlight_data *data)
