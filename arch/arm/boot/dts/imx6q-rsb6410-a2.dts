@@ -395,7 +395,6 @@
 &pcie {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie_1>;
-	disable-gpio = <&gpio4 14 0>;
 	power-on-gpio = <&gpio5 20 0>; /*	wake-up-gpio = <&gpio5 20 0>;*/
 	reset-gpio = <&gpio7 12 0>;
 	status = "okay";
