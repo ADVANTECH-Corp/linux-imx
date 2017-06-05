@@ -252,8 +252,6 @@ struct imx_port {
 #ifdef CONFIG_ARCH_ADVANTECH
 	/* RS-485 fields */
 	struct serial_rs485	rs485;
-  // Add for RSB-6410
-	unsigned int        rs485_mode; 
 #endif
 	unsigned int            saved_reg[10];
 	bool			context_saved;
@@ -623,11 +621,7 @@ static void imx_start_tx(struct uart_port *port)
 	struct imx_port *sport = (struct imx_port *)port;
 	unsigned long temp;
 
-#ifdef CONFIG_ARCH_ADVANTECH
-	if ((port->rs485.flags & SER_RS485_ENABLED) && !sport->rs485_mode) {
-#else
         if (port->rs485.flags & SER_RS485_ENABLED) {
-#endif
 		temp = readl(port->membase + UCR2);
 #ifndef CONFIG_ARCH_ADVANTECH
 		if (port->rs485.flags & SER_RS485_RTS_ON_SEND)
@@ -2399,10 +2393,9 @@ static int serial_imx_probe(struct platform_device *pdev)
 		//read gpio value; H =>RS232  L =>RS485 
 		if(gpio_get_value(uart_mode_sel_gpio) == 0){
 			dev_warn(dev,"RS485 MODE\n");
-			sport->rs485_mode = 1;
+			sport->port.rs485.flags |= SER_RS485_ENABLED;
 		}else{
 			dev_warn(dev,"RS232 MODE\n");
-			sport->rs485_mode = 0;
 		}
 	}
 #endif
