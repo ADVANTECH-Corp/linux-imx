@@ -72,10 +72,6 @@
 	phy-led = <0x9247 0x0091>;
 };
 
-&uart3 {
-     uart-sel-gpio = <&gpio3 20 1>;
-};
-
 &audio_sgtl5000 {
 	audio-codec = <&codec>;
 };
@@ -438,6 +434,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart3_2>;
 	fsl,uart-has-rtscts;
+	uart-sel-gpio = <&gpio3 20 1>;
 	status = "okay";
 };
 
