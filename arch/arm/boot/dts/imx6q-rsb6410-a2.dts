@@ -322,7 +322,7 @@
 	
 	lvds-channel@0 {
 		display-timings {
-			native-mode = <&timing80>;
+			native-mode = <&timing00>;
 			timing50: g215hvn0 {
 				clock-frequency = <144000000>;
 				hactive = <1920>;
