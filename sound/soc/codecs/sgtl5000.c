@@ -141,6 +141,9 @@ struct sgtl5000_priv {
 	int revision;
 	u8 micbias_resistor;
 	u8 micbias_voltage;
+#ifdef CONFIG_ARCH_ADVANTECH
+	u32 volume_limite;
+#endif
 };
 
 /*
@@ -303,10 +306,19 @@ static const struct snd_soc_dapm_route sgtl5000_dapm_routes[] = {
 static int dac_info_volsw(struct snd_kcontrol *kcontrol,
 			  struct snd_ctl_elem_info *uinfo)
 {
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
+	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
+#endif
+
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = 2;
 	uinfo->value.integer.min = 0;
+#ifdef CONFIG_ARCH_ADVANTECH
+	uinfo->value.integer.max = 0xfc - sgtl5000->volume_limite;
+#else
 	uinfo->value.integer.max = 0xfc - 0x3c;
+#endif
 	return 0;
 }
 
@@ -337,6 +349,9 @@ static int dac_get_volsw(struct snd_kcontrol *kcontrol,
 			 struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
+#endif
 	int reg;
 	int l;
 	int r;
@@ -349,9 +364,14 @@ static int dac_get_volsw(struct snd_kcontrol *kcontrol,
 	/* get right channel volume */
 	r = (reg & SGTL5000_DAC_VOL_RIGHT_MASK) >> SGTL5000_DAC_VOL_RIGHT_SHIFT;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	l = clamp(l, sgtl5000->volume_limite, 0xfc);
+	r = clamp(r, sgtl5000->volume_limite, 0xfc);
+#else
 	/* make sure value fall in (0x3c,0xfc) */
 	l = clamp(l, 0x3c, 0xfc);
 	r = clamp(r, 0x3c, 0xfc);
+#endif
 
 	/* invert it and map to userspace value */
 	l = 0xfc - l;
@@ -390,6 +410,9 @@ static int dac_put_volsw(struct snd_kcontrol *kcontrol,
 			 struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
+#endif
 	int reg;
 	int l;
 	int r;
@@ -397,9 +420,14 @@ static int dac_put_volsw(struct snd_kcontrol *kcontrol,
 	l = ucontrol->value.integer.value[0];
 	r = ucontrol->value.integer.value[1];
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	l = clamp(l, 0, 0xfc - sgtl5000->volume_limite);
+	r = clamp(r, 0, 0xfc - sgtl5000->volume_limite);
+#else
 	/* make sure userspace volume fall in (0, 0xfc-0x3c) */
 	l = clamp(l, 0, 0xfc - 0x3c);
 	r = clamp(r, 0, 0xfc - 0x3c);
+#endif
 
 	/* invert it, get the value can be set to register */
 	l = 0xfc - l;
@@ -1566,6 +1594,19 @@ static int sgtl5000_i2c_probe(struct i2c_client *client,
 		} else {
 			sgtl5000->micbias_voltage = 0;
 		}
+#ifdef CONFIG_ARCH_ADVANTECH
+		if (!of_property_read_u32(np,
+			"volume-limite", &value)) {
+			if ((value >= 0x00) && (value <= 0xF0))
+				sgtl5000->volume_limite = value;
+			else {
+				sgtl5000->volume_limite = 0x3c;
+				dev_err(&client->dev,"Unsuitable volume limite,use default:0x3c\n");
+			}
+		} else {
+			sgtl5000->volume_limite = 0x3c;
+		}
+#endif
 	}
 
 	i2c_set_clientdata(client, sgtl5000);

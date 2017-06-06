@@ -110,10 +110,11 @@
 		compatible = "fsl,sgtl5000";
 		reg = <0x0a>;
 		clocks = <&clks 201>;
-		VDDA-supply = <&reg_2p5v>;
+		VDDA-supply = <&reg_3p3v>;
 		VDDIO-supply = <&reg_3p3v>;
 		mclk = <16000000>;
 		mclk_source = <0>;
+		volume-limite = <0x58>;
 	};
 
 	s35390a@30 {
