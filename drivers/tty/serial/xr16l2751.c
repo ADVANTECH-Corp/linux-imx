@@ -452,7 +452,7 @@ static void set_serial_irq_type(int irq) {
 
 static int serial_link_irq_chain(struct uart_xr_port *up)
 {
-	struct irq_info *i = irq_lists + up->port.line;
+	struct irq_info *i = irq_lists + up->port.irq;
 	int ret, irq_flags = up->port.flags & UPF_SHARE_IRQ ? IRQF_SHARED : 0;
 
 	spin_lock_irq(&i->lock);
@@ -485,7 +485,8 @@ static int serial_link_irq_chain(struct uart_xr_port *up)
 
 static void serial_unlink_irq_chain(struct uart_xr_port *up)
 {
-	struct irq_info *i = irq_lists + up->port.line;
+	struct irq_info *i = irq_lists + up->port.irq;
+
 	BUG_ON(i->head == NULL);
 
 	if (list_empty(i->head))
