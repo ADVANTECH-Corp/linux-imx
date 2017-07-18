@@ -192,21 +192,23 @@
 		};
 	};
 
+/*
 	ov5640_mipi: ov564x_mipi@3c {
 		compatible = "ovti,ov564x_mipi";
 		reg = <0x3c>;
 		clocks = <&clks 201>;
 		clock-names = "csi_mclk";
-		DOVDD-supply = <&reg_3p3v>; /* 3.3v, enabled via 2.8 VGEN6 */
-		AVDD-supply = <&reg_3p3v>;  /* 1.8v */
-		DVDD-supply = <&reg_3p3v>;  /* 1.8v */
-		PVDD-supply = <&reg_3p3v>;  /* 1.8v */
-		pwn-gpios = <&gpio1 2 1>;   /* active low: MIPICSI_PWN */
-		rst-gpios = <&gpio1 5 0>;   /* active high: MIPICSI_RST */
+		DOVDD-supply = <&reg_3p3v>; // 3.3v, enabled via 2.8 VGEN6
+		AVDD-supply = <&reg_3p3v>;  // 1.8v
+		DVDD-supply = <&reg_3p3v>;  // 1.8v
+		PVDD-supply = <&reg_3p3v>;  // 1.8v
+		pwn-gpios = <&gpio1 2 1>;   // active low: MIPICSI_PWN
+		rst-gpios = <&gpio1 5 0>;   // active high: MIPICSI_RST
 		csi_id = <1>;
 		mclk = <24000000>;
 		mclk_source = <0>;
 	};
+*/
 };
 
 &i2c3 {
@@ -384,15 +386,17 @@
 		};
 	};
 
+/*
 	mipi-csi {
 		pinctrl_mipi_csi_1: mipi_csi1grp-1{
 			fsl,pins = <
-				MX6QDL_PAD_GPIO_2__GPIO1_IO02		0x80000000	/* MIPICSI_PWN */
-				MX6QDL_PAD_GPIO_5__GPIO1_IO05		0x80000000	/* MIPICSI_RST */
-				MX6QDL_PAD_CSI0_MCLK__CCM_CLKO1		0x80000000	/* CSI0_MCLK */
+				MX6QDL_PAD_GPIO_2__GPIO1_IO02		0x80000000	// MIPICSI_PWN
+				MX6QDL_PAD_GPIO_5__GPIO1_IO05		0x80000000	// MIPICSI_RST
+				MX6QDL_PAD_CSI0_MCLK__CCM_CLKO1		0x80000000	// CSI0_MCLK
 			>;
 		};
 	};
+*/
 
 	pcie {
 		pinctrl_pcie_1: pcie1grp-1 {
@@ -500,11 +504,13 @@
 	};
 };
 
+/*
 &mipi_csi {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_mipi_csi_1>;
 	status = "okay";
 };
+*/
 
 &hdmi_core {
 	ipu_id = <0>;
