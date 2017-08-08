@@ -461,90 +461,6 @@ static int caam_probe(struct platform_device *pdev)
 	ctrlpriv->pdev = pdev;
 	nprop = pdev->dev.of_node;
 
-#ifdef CONFIG_ARCH_ADVANTECH 
-#ifdef CONFIG_ARM
-	ctrlpriv->caam_ipg = devm_clk_get(&ctrlpriv->pdev->dev, "caam_ipg");
-	if (IS_ERR(ctrlpriv->caam_ipg)) {
-		ret = PTR_ERR(ctrlpriv->caam_ipg);
-		dev_err(&ctrlpriv->pdev->dev,
-			"can't identify CAAM ipg clk: %d\n", ret);
-		return -ENODEV;
-	}
-	ret = clk_prepare(ctrlpriv->caam_ipg);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "can't prepare CAAM ipg clock: %d\n", ret);
-		return -ENODEV;
-	}
-	ret = clk_enable(ctrlpriv->caam_ipg);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "can't enable CAAM ipg clock: %d\n", ret);
-		return -ENODEV;
-	}
-
-	pr_debug("%s caam_ipg clock:%d\n", __func__,
-			 (int)clk_get_rate(ctrlpriv->caam_ipg));
-
-	ctrlpriv->caam_aclk = devm_clk_get(&ctrlpriv->pdev->dev, "caam_aclk");
-	if (IS_ERR(ctrlpriv->caam_aclk)) {
-		ret = PTR_ERR(ctrlpriv->caam_aclk);
-		dev_err(&ctrlpriv->pdev->dev,
-			"can't identify CAAM aclk clk: %d\n", ret);
-			return -ENODEV;
-	}
-	ret = clk_prepare(ctrlpriv->caam_aclk);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "can't prepare CAAM aclk clock: %d\n", ret);
-		return -ENODEV;
-	}
-	ret = clk_enable(ctrlpriv->caam_aclk);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "can't enable CAAM aclk clock: %d\n", ret);
-			return -ENODEV;
-	}
-	pr_debug("%s caam_aclk clock:%d\n", __func__,
-			(int)clk_get_rate(ctrlpriv->caam_aclk));
-
-	/* imx7d only has two caam clock */
-	if (!(of_find_compatible_node(NULL, NULL, "fsl,imx7d-caam"))) {
-		ctrlpriv->caam_mem = devm_clk_get(&ctrlpriv->pdev->dev,
-						  "caam_mem");
-		if (IS_ERR(ctrlpriv->caam_mem)) {
-			ret = PTR_ERR(ctrlpriv->caam_mem);
-			dev_err(&ctrlpriv->pdev->dev,
-					"can't identify CAAM secure mem clk: %d\n",
-					ret);
-			return -ENODEV;
-		}
-		ret = clk_prepare(ctrlpriv->caam_mem);
-		if (ret < 0) {
-			dev_err(&pdev->dev, "can't prepare CAAM secure mem clock: %d\n",
-					ret);
-			return -ENODEV;
-		}
-		ret = clk_enable(ctrlpriv->caam_mem);
-		if (ret < 0) {
-			dev_err(&pdev->dev, "can't enable CAAM secure mem clock: %d\n",
-					ret);
-			return -ENODEV;
-		}
-		pr_debug("%s caam_mem clock:%d\n", __func__,
-				 (int)clk_get_rate(ctrlpriv->caam_mem));
-
-		if (!(of_find_compatible_node(NULL, NULL, "fsl,imx6ul-caam"))) {
-			ctrlpriv->caam_emi_slow = devm_clk_get(&ctrlpriv->pdev->dev,
-							       "caam_emi_slow");
-			ret = clk_prepare_enable(ctrlpriv->caam_emi_slow);
-			if (ret < 0) {
-				dev_err(&pdev->dev,
-					"can'to prepare CAAM emi slow clock: %d\n",
-					ret);
-				return -ENODEV;
-			}
-		}
-	}
-#endif
-#endif
-
 	/* Get configuration properties from device tree */
 	/* First, get register page */
 	ctrl = of_iomap(nprop, 0);
@@ -565,7 +481,6 @@ static int caam_probe(struct platform_device *pdev)
  * ARM targets tend to have clock control subsystems that can
  * enable/disable clocking to our device. Turn clocking on to proceed
  */
-#ifndef CONFIG_ARCH_ADVANTECH
 #ifdef CONFIG_ARM
 	ctrlpriv->caam_ipg = devm_clk_get(&ctrlpriv->pdev->dev, "caam_ipg");
 	if (IS_ERR(ctrlpriv->caam_ipg)) {
@@ -646,7 +561,6 @@ static int caam_probe(struct platform_device *pdev)
 			}
 		}
 	}
-#endif
 #endif
 
 	/* Finding the page size for using the CTPR_MS register */
