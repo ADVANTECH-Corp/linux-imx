@@ -1,0 +1,309 @@
+/*
+ * Copyright 2012 Freescale Semiconductor, Inc.
+ * Copyright 2011 Linaro Ltd.
+ *
+ * The code contained herein is licensed under the GNU General Public
+ * License. You may obtain a copy of the GNU General Public License
+ * Version 2 or later at the following locations:
+ *
+ * http://www.opensource.org/licenses/gpl-license.html
+ * http://www.gnu.org/copyleft/gpl.html
+ */
+
+/dts-v1/;
+
+#include "imx6q.dtsi"
+#include "imx6qdl-advantech.dtsi"
+
+/ {
+	model = "Freescale i.MX6 Quad UBC220 A1";
+	compatible = "fsl,imx6q-sabresd", "fsl,imx6q";
+
+	board {
+		compatible = "proc-board";
+		board-type = "UBC-220 A1";
+		board-cpu = "DualQuad";
+	};
+
+	regulators {
+
+		reg_usb_otg_vbus: usb_otg_vbus {
+			compatible = "regulator-fixed";
+			regulator-name = "usb_otg_vbus";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			gpio = <&gpio4 15  GPIO_ACTIVE_HIGH>;
+			enable-active-high;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_leds_debug_1>;
+		debug-led {
+			label = "Heartbeat";
+			gpios = <&gpio7 12 0>;
+			linux,default-trigger = "heartbeat";
+		};
+	};
+
+	gpio_direction {
+		pinctrl-names = "default";
+		compatible = "gpio-set-direction";
+		usb-host-pwr-en = <&gpio1 0 1>;
+		usb-host-oc = <&gpio1 3 0>;
+		wifi-det = <&gpio5 21 0>;
+		det-3g = <&gpio5 22 0>;
+		off-3g = <&gpio5 23 0>;
+		pcie-h-wlan-led = <&gpio6 15 0>;
+		pcie-h-wwan-led = <&gpio6 8 0>;
+		pcie-f-wlan-led = <&gpio2 0 0>;
+		pcie-f-wwan-led = <&gpio2 4 0>;
+	};
+};
+
+&audio_sgtl5000 {
+	status = "disabled";
+};
+
+&audmux {
+	status = "disabled";
+};
+
+&bkl {
+	lvds-bkl-enable = <&gpio4 6 1>;
+	lvds-vcc-enable = <&gpio4 7 1>;
+	pwms = <&pwm4 0 5000000>;
+	status = "okay";
+};
+
+&ecspi1 {
+	m25p80@0 {
+		compatible = "st,m25p32";
+	};
+};
+
+&i2c1 {
+
+	s35390a@30 {
+		compatible = "fsl,s35390a";
+		reg = <0x30>;
+	};
+
+	wdt@29 {
+		compatible = "fsl,adv-wdt-i2c";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+		status = "okay";
+		wdt-en = <&gpio2 5 0>;
+		wdt-ping = <&gpio1 9 0>;
+		reg = <0x29>;
+	};
+};
+
+&i2c2 {
+
+	hdmi: edid@50 {
+		compatible = "fsl,imx6-hdmi-i2c";
+		reg = <0x50>;
+	};
+};
+
+&i2c3 {
+	status = "disabled";
+};
+
+&iomuxc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_hog_1 &pinctrl_hog_2>;
+
+	hog {
+		pinctrl_hog_1: hoggrp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_GPIO_2__GPIO1_IO02		0x80000000	/* SD card - SD2_WP */
+				MX6QDL_PAD_GPIO_4__GPIO1_IO04		0x80000000	/* SD card - SD2_CD */
+				MX6QDL_PAD_EIM_D30__GPIO3_IO30		0x0001B0B0	/* BORAD_ID0 */
+				MX6QDL_PAD_EIM_D31__GPIO3_IO31		0x000130B0	/* BORAD_ID1 */
+			>;
+		};
+
+		pinctrl_hog_2: hoggrp-2 {
+			fsl,pins = <
+				MX6QDL_PAD_CSI0_VSYNC__GPIO5_IO21	0x0001B0B0	/* WIFI_DET# */
+				MX6QDL_PAD_CSI0_DAT4__GPIO5_IO22	0x0001B0B0	/* 3G_DET# */
+				MX6QDL_PAD_CSI0_DAT5__GPIO5_IO23	0x0001B0B0	/* 3G_OFF# */
+				MX6QDL_PAD_NANDF_CS2__GPIO6_IO15	0x0001B0B0	/* PCIE_H_WLAN_LED# */
+				MX6QDL_PAD_NANDF_ALE__GPIO6_IO08	0x0001B0B0	/* PCIE_H_WWAN_LED# */
+				MX6QDL_PAD_NANDF_D0__GPIO2_IO00		0x0001B0B0	/* PCIE_F_WLAN_LED# */
+				MX6QDL_PAD_NANDF_D4__GPIO2_IO04		0x00017059	/* PCIE_F_WWAN_LED# */
+			>;
+		};
+	};
+
+	leds {
+		pinctrl_leds_debug_1: leds_debug1grp-1{
+			fsl,pins = <
+				MX6QDL_PAD_GPIO_17__GPIO7_IO12		0x80000000	/* gpio - led */
+			>;
+		};
+	};
+
+	pcie {
+		pinctrl_pcie_1: pcie1grp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_CSI0_PIXCLK__GPIO5_IO18	0x80000000	/* PCIE disable pin - WIFI_OFF# */
+			>;
+		};
+	};
+
+	pwm4 {
+		pinctrl_pwm4_1: pwm4grp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_SD1_CMD__PWM4_OUT		0x1b0b1
+			>;
+		};
+	};
+
+	spi1 {
+		pinctrl_ecspi1_cs_0: ecspi1_cs_grp-0 {
+			fsl,pins = <
+				MX6QDL_PAD_EIM_EB2__GPIO2_IO30		0x80000000	/* ECSPI1_CS0 */
+			>;
+		};
+	};
+
+	uart2 {
+		pinctrl_uart2_3: uart2grp-3 { /* DCE mode */
+			fsl,pins = <
+				MX6QDL_PAD_EIM_D26__UART2_TX_DATA		0x1b0b1
+				MX6QDL_PAD_EIM_D27__UART2_RX_DATA		0x1b0b1
+				MX6QDL_PAD_EIM_D28__UART2_CTS_B			0x1b0b1
+				MX6QDL_PAD_EIM_D29__UART2_RTS_B			0x1b0b1
+			>;
+		};
+	};
+
+	usbh1 {
+		pinctrl_usbh1_1: usbh1_grp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_GPIO_0__GPIO1_IO00		0x00017099	/* USB_HOST_PWR_EN */
+				MX6QDL_PAD_GPIO_3__GPIO1_IO03		0x0001B8B1	/* USB_HOST_OC# */
+			>;
+		};
+	};
+
+	usbotg {
+		pinctrl_usbotg_pwr_1: usbotg_pwr_grp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_KEY_ROW4__GPIO4_IO15		0x80000000	/* USB_OTG_PWR */
+				MX6QDL_PAD_KEY_COL4__GPIO4_IO14		0x0001B0B0	/* USB_OTG_OC */
+			>;
+		};
+	};
+
+	wdt{
+		pinctrl_wdt_en_1: wdt_engrp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_NANDF_D5__GPIO2_IO05		0x80000000
+			>;
+		};
+
+		pinctrl_wdt_ping_1: wdt_pinggrp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_GPIO_9__GPIO1_IO09		0x80000000
+			>;
+		};
+	};
+};
+
+&ldb {
+	lvds-channel@0 {
+		crtc = "ipu1-di0";
+	};
+
+	lvds-channel@1 {
+		status ="disabled";
+	};
+};
+
+&hdmi_core {
+	ipu_id = <0>;
+	disp_id = <1>;
+	status = "okay";
+};
+
+&mxcfb1 {
+	status = "okay";
+};
+
+&mxcfb3 {
+	status = "okay";
+};
+
+&pcie {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pcie_1>;
+	disable-gpio = <&gpio5 18 0>;
+	status = "okay";
+};
+
+&pwm4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pwm4_1>;
+	status = "okay";
+
+};
+
+&ssi2 {
+	status = "disabled";
+};
+
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart1_1>;
+	status = "okay";
+};
+
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart2_3>;
+	fsl,uart-has-rtscts;
+	status = "okay";
+};
+
+&usbh1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbh1_1>;
+	status = "okay";
+};
+
+&usbotg {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbotg_1 &pinctrl_usbotg_pwr_1>;
+	vbus-supply = <&reg_usb_otg_vbus>;
+	imx6-usb-charger-detection;
+	status = "okay";
+};
+
+&usdhc2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc2_2>;
+	cd-gpios = <&gpio1 4 0>;
+	wp-gpios = <&gpio1 2 0>;
+	no-1-8-v;
+	keep-power-in-suspend;
+	enable-sdio-wakeup;
+	status = "okay";
+};
+
+&usdhc4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc4_1>;
+	bus-width = <8>;
+	non-removable;
+	no-1-8-v;
+	keep-power-in-suspend;
+	status = "okay";
+};
+
