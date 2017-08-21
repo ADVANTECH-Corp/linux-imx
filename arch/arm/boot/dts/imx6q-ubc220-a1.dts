@@ -218,10 +218,6 @@
 };
 
 &ldb {
-	lvds-channel@0 {
-		crtc = "ipu1-di0";
-	};
-
 	lvds-channel@1 {
 		status ="disabled";
 	};
@@ -232,6 +228,7 @@
 	disp_id = <1>;
 	status = "okay";
 };
+
 
 &mxcfb1 {
 	status = "okay";
