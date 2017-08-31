@@ -524,7 +524,7 @@ static void __exit adv_wdt_i2c_exit(void)
 	i2c_del_driver(&adv_wdt_i2c_driver);
 }
 
-rootfs_initcall(adv_wdt_i2c_init);
+module_init(adv_wdt_i2c_init);
 module_exit(adv_wdt_i2c_exit);
 
 MODULE_DESCRIPTION("Advantech Watchdog I2C Driver");
