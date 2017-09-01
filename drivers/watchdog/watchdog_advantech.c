@@ -16,6 +16,7 @@
 #include <linux/uaccess.h>
 #include <linux/timer.h>
 #include <linux/jiffies.h>
+#include <linux/reboot.h>
 
 #include <linux/i2c.h>
 #include <linux/slab.h>
@@ -334,6 +335,25 @@ static struct miscdevice adv_wdt_miscdev = {
 	.fops = &adv_wdt_fops,
 };
 
+static int adv_wdt_restart_handle(struct notifier_block *this, unsigned long mode,
+			      void *cmd)
+{
+	if (test_and_set_bit(ADV_WDT_STATUS_OPEN, &adv_wdt.status))
+		return -EBUSY;
+	adv_wdt_start();
+	adv_wdt.timeout = 10;
+	adv_wdt_i2c_set_timeout(adv_client, adv_wdt.timeout / 10);
+	//wait to show "Rebooting..." messages
+	mdelay(500);
+	adv_wdt_ping();
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block adv_wdt_restart_handler = {
+	.notifier_call = adv_wdt_restart_handle,
+	.priority = 128,
+};
+
 static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int ret;
@@ -424,6 +444,13 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	dev_info(&client->dev,
 						"Advantech Watchdog Timer enabled. timeout=%ds (nowayout=%d), Ver.%d\n",
 						adv_wdt.timeout, nowayout, adv_wdt_info.firmware_version);
+	
+	ret = register_restart_handler(&adv_wdt_restart_handler);
+	if (ret) {
+		pr_err("cannot register restart handler (err=%d)\n", ret);
+		goto fail;
+	}
+
 	return 0;
 
 fail:
@@ -434,6 +461,7 @@ fail:
 static int __exit adv_wdt_i2c_remove(struct i2c_client *client)
 {
 	misc_deregister(&adv_wdt_miscdev);
+	unregister_restart_handler(&adv_wdt_restart_handler);
 
 	if (test_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status))
 	{	
