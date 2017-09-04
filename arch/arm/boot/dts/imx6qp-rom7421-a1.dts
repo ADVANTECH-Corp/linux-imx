@@ -630,4 +630,4 @@
 
 &wdog1 {
 	status = "disabled";
-}
+};
