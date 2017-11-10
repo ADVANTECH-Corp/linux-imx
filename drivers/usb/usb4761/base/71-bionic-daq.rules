@@ -1,0 +1,2 @@
+# Advantech Bionic DAQ Device name and permission rules
+SUBSYSTEMS=="daq", MODE="0666"
