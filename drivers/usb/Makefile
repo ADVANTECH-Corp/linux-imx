@@ -62,3 +62,7 @@ obj-$(CONFIG_USB_GADGET)	+= gadget/
 obj-$(CONFIG_USB_COMMON)	+= common/
 
 obj-$(CONFIG_USBIP_CORE)	+= usbip/
+
+obj-$(CONFIG_USB_4761)		+= usb4761/
+obj-$(CONFIG_USB_4761_BASE)		+= usb4761/base/
+
