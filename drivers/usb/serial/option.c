@@ -1671,6 +1671,8 @@ static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE(0x1546, 0x1102) }, //for EWM-C109F601E
 	{ USB_DEVICE(0x05c6, 0x9003)}, /* Quectel UC20 */
 	{ USB_DEVICE(0x2c7c, 0x0125)}, /* Quectel EC25/EC20 R2.0*/
+	{ USB_DEVICE_INTERFACE_CLASS(SIERRA_VENDOR_ID, 0x9071, 0xff),
+	  .driver_info = (kernel_ulong_t)&sierra_mc73xx_blacklist }, /* Sierra MC7430 */
 #endif
 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
 	{ USB_DEVICE_AND_INTERFACE_INFO(HAIER_VENDOR_ID, HAIER_PRODUCT_CE81B, 0xff, 0xff, 0xff) },
