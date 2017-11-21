@@ -377,6 +377,12 @@
 
 /* Vendor-specific PHY Definitions */
 
+/* Master/Slave Control Register */
+#define TEST_MODE_1			((u16)0x2000)
+#define TEST_MODE_2			((u16)0x4000)
+#define TEST_MODE_3			((u16)0x6000)
+#define TEST_MODE_4			((u16)0x8000)
+
 /* Mode Control/Status Register */
 #define PHY_MODE_CTRL_STS		(17)
 #define MODE_CTRL_STS_EDPWRDOWN		((u16)0x2000)

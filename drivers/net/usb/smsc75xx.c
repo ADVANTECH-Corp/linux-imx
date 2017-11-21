@@ -30,6 +30,9 @@
 #include <linux/usb/usbnet.h>
 #include <linux/slab.h>
 #include "smsc75xx.h"
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/proc_fs.h>
+#endif
 
 #define SMSC_CHIPNAME			"smsc75xx"
 #define SMSC_DRIVER_VERSION		"1.0.0"
@@ -809,9 +812,56 @@ static int smsc75xx_set_mac_address(struct usbnet *dev)
 	return ret;
 }
 
+// [Advantech] Function to write PHY registers for test modes
+#ifdef CONFIG_ARCH_ADVANTECH
+static int smsc75xx_proc_write(struct file *file, const char __user * buffer,
+				unsigned long count, loff_t *f_pos)
+{
+	char cmd[8];
+	u16 val;
+	int ret;
+	struct usbnet *dev = (struct usbnet *) PDE_DATA(file_inode(file));
+
+	if (dev == NULL) {
+		printk("smsc75xx_proc_write: no data!");
+		return -EFAULT;
+	}
+
+	ret = copy_from_user(cmd, buffer, count);
+	if (ret) {
+		printk("smsc75xx_proc_write: no input buffer!");
+		return -EFAULT;
+	}
+
+	if (strstr(cmd, "1"))
+		val = (TEST_MODE_1 | ADVERTISE_1000FULL | ADVERTISE_1000HALF);
+	else if (strstr(cmd, "2"))
+		val = (TEST_MODE_2 | ADVERTISE_1000FULL | ADVERTISE_1000HALF);
+	else if (strstr(cmd, "3"))
+		val = (TEST_MODE_3 | ADVERTISE_1000FULL | ADVERTISE_1000HALF);
+	else if (strstr(cmd, "4"))
+		val = (TEST_MODE_4 | ADVERTISE_1000FULL | ADVERTISE_1000HALF);
+	else
+		return 0;
+
+	smsc75xx_mdio_write(dev->net, dev->mii.phy_id, MII_CTRL1000, val);
+
+	return count;
+}
+
+static struct file_operations proc_net_fops =
+{
+	.write		= smsc75xx_proc_write,
+};
+#endif
+
 static int smsc75xx_phy_initialize(struct usbnet *dev)
 {
 	int bmcr, ret, timeout = 0;
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct proc_dir_entry *proc_entry = NULL;
+	char node_name[32];
+#endif
 
 	/* Initialize MII structure */
 	dev->mii.dev = dev->net;
@@ -860,6 +910,16 @@ static int smsc75xx_phy_initialize(struct usbnet *dev)
 	mii_nway_restart(&dev->mii);
 
 	netif_dbg(dev, ifup, dev->net, "phy initialised successfully\n");
+
+	// [Advantech] Add proc entry for net_testmode
+#ifdef CONFIG_ARCH_ADVANTECH
+	strncpy(node_name, netdev_reg_state(dev->net), 8);
+	if (!node_name[0]) {
+		snprintf(node_name, 32, "net_testmode_%s", netdev_name(dev->net));
+		proc_entry = proc_create_data(node_name, 0777, NULL,
+						&proc_net_fops, dev);
+	}
+#endif
 	return 0;
 }
 

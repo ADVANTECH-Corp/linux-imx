@@ -53,7 +53,6 @@
 #ifdef CONFIG_ARCH_ADVANTECH
 #include <linux/proc_fs.h>
 #include <linux/proc-board.h>
-struct platform_device *gdev= NULL;
 #endif
 
 #include <linux/of.h>
@@ -3460,7 +3459,7 @@ fec_proc_write(struct file *file, const char __user * buffer,
 	int i;
 	char line[8];
 	int ret;
-	struct platform_device *pdev = (struct platform_device *)gdev;
+	struct platform_device *pdev = (struct platform_device *) PDE_DATA(file_inode(file));
 	struct net_device *ndev = platform_get_drvdata(pdev);
 	struct fec_enet_private *fep = netdev_priv(ndev);
 
@@ -3530,6 +3529,7 @@ fec_probe(struct platform_device *pdev)
 	int num_rx_qs;
 #ifdef CONFIG_ARCH_ADVANTECH
 	struct proc_dir_entry *proc_entry = NULL;
+	char node_name[32];
 #endif
 
 	fec_enet_get_queue_num(pdev, &num_tx_qs, &num_rx_qs);
@@ -3709,13 +3709,12 @@ fec_probe(struct platform_device *pdev)
 	INIT_WORK(&fep->tx_timeout_work, fec_enet_timeout_work);
 
 #ifdef CONFIG_ARCH_ADVANTECH
-	gdev = pdev;
-	proc_entry = proc_create("net_testmode", 0777, NULL, &net_testmode_fops);
-/*
-	if (proc_entry) {
-		proc_entry->data = gdev;
+	strncpy(node_name, netdev_reg_state(ndev), 8);
+	if (!node_name[0]) {
+		snprintf(node_name, 32, "net_testmode_%s", netdev_name(ndev));
+		proc_entry = proc_create_data(node_name, 0777, NULL,
+						&net_testmode_fops, pdev);
 	}
-*/
 #endif
 
 	return 0;
