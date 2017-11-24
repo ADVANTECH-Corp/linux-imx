@@ -42,13 +42,15 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_leds_debug_1>;
 		green {
-			label = "Heartbeat";
-			gpios = <&gpio7 11 0>;
+			label = "Green_Led";
+			gpios = <&gpio7 11 1>;
+			default-state = "on";
 			linux,default-trigger = "heartbeat";
 		};
 		red {
-			label = "Heartbeat";
-			gpios = <&gpio7 12 0>;
+			label = "Red_Led";
+			gpios = <&gpio7 12 1>;
+			default-state = "on";
 			linux,default-trigger = "heartbeat";
 		};
 	};
@@ -62,24 +64,18 @@
                 power@1 {
                         label = "User button";
                         gpios = <&gpio1 9 1>; /* GPIO_ACTIVE_LOW:1 */
+                        linux,input-type = <1>; /* EV_KEY */
+                        linux,code = <240>;     /* KEY_UNKNOWN */
                         debounce_interval = <1>;
                 };
         };
 
+        gpio_direction {
+                pinctrl-names = "default";
+                compatible = "gpio-set-direction";
+                usb-host-pwr-en = <&gpio1 0 1>;
+        };
 
-	gpio_direction {
-		pinctrl-names = "default";
-		compatible = "gpio-set-direction";
-		usb-host-pwr-en = <&gpio1 0 1>;
-		usb-host-oc = <&gpio1 3 0>;
-		wifi-det = <&gpio5 21 0>;
-		det-3g = <&gpio5 22 0>;
-		off-3g = <&gpio5 23 0>;
-		pcie-h-wlan-led = <&gpio6 15 0>;
-		pcie-h-wwan-led = <&gpio6 8 0>;
-		pcie-f-wlan-led = <&gpio2 0 0>;
-		pcie-f-wwan-led = <&gpio2 4 0>;
-	};
 };
 
 &audio_sgtl5000 {
@@ -97,16 +93,6 @@
 	s35390a@30 {
 		compatible = "fsl,s35390a";
 		reg = <0x30>;
-	};
-
-	wdt@29 {
-		compatible = "fsl,adv-wdt-i2c";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
-		status = "okay";
-		wdt-en = <&gpio2 5 0>;
-		wdt-ping = <&gpio1 9 0>;
-		reg = <0x29>;
 	};
 };
 
@@ -169,8 +155,8 @@
 	leds {
 		pinctrl_leds_debug_1: leds_debug1grp-1{
 			fsl,pins = <
-				MX6QDL_PAD_GPIO_16__GPIO7_IO11		0x80000000	/* gpio - green led */
-				MX6QDL_PAD_GPIO_17__GPIO7_IO12		0x80000000	/* gpio - red led */
+				MX6QDL_PAD_GPIO_16__GPIO7_IO11		0x1b0b1 /* gpio - green led */
+				MX6QDL_PAD_GPIO_17__GPIO7_IO12		0x1b0b1	/* gpio - red led */
 			>;
 		};
 	};
@@ -244,7 +230,6 @@
 		pinctrl_usbh1_1: usbh1_grp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_GPIO_0__GPIO1_IO00		0x00017099	/* USB_HOST_PWR_EN */
-				MX6QDL_PAD_GPIO_3__USB_H1_OC		0x0001B8B1	/* USB_HOST_OC# */
 			>;
 		};
 	};
@@ -254,26 +239,6 @@
 			fsl,pins = <
 				MX6QDL_PAD_EIM_D22__GPIO3_IO22		0x80000000	/* USB_OTG_PWR */
                                 MX6QDL_PAD_KEY_COL4__GPIO4_IO14         0x0001B0B0      /* USB_OTG_OC */
-			>;
-		};
-                pinctrl_usbotg_2: usbotggrp-2 {
-                        fsl,pins = <
-                                MX6QDL_PAD_GPIO_1__USB_OTG_ID		0x0001B0B0 /* USB_OTG_ID */
-                        >;
-                };
-
-	};
-
-	wdt{
-		pinctrl_wdt_en_1: wdt_engrp-1 {
-			fsl,pins = <
-				MX6QDL_PAD_NANDF_D5__GPIO2_IO05		0x80000000
-			>;
-		};
-
-		pinctrl_wdt_ping_1: wdt_pinggrp-1 {
-			fsl,pins = <
-				MX6QDL_PAD_GPIO_9__GPIO1_IO09		0x80000000
 			>;
 		};
 	};
@@ -348,7 +313,7 @@
 
 &usbotg {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usbotg_2 &pinctrl_usbotg_pwr_1>;
+	pinctrl-0 = <&pinctrl_usbotg_1 &pinctrl_usbotg_pwr_1>;
 	vbus-supply = <&reg_usb_otg_vbus>;
 	imx6-usb-charger-detection;
 	status = "okay";
@@ -382,6 +347,3 @@
 	status = "okay";
 };
 
-&wdog1 {
-	status = "disabled";
-};
