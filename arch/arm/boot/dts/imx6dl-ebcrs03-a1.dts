@@ -238,7 +238,7 @@
 		pinctrl_usbotg_pwr_1: usbotg_pwr_grp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_EIM_D22__GPIO3_IO22		0x80000000	/* USB_OTG_PWR */
-                                MX6QDL_PAD_KEY_COL4__GPIO4_IO14         0x0001B0B0      /* USB_OTG_OC */
+                                MX6QDL_PAD_KEY_COL4__USB_OTG_OC         0x00017059      /* USB_OTG_OC */
 			>;
 		};
 	};
