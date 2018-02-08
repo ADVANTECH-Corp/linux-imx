@@ -258,6 +258,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie_1>;
 	power-on-gpio = <&gpio1 29 0>;
+	reset-gpio = <&gpio6 15 0>;
 	status = "okay";
 };
 
