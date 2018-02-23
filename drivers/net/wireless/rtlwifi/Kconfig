@@ -116,6 +116,17 @@ config RTL8821AE
 
 	If you choose to build it as a module, it will be called rtl8821ae
 
+config ADVANTECH_RISC_RTL8821AE
+	tristate "Realtek RTL8121AE PCI WiFi"
+	depends on PCI
+	select RTLWIFI
+	select RTLWIFI_PCI
+	---help---
+	This is the driver for Realtek RTL8821AE 802.11n PCIe
+	wireless network adapters.
+
+	If you choose to build it as a module, it will be called 8821ae
+
 config RTL8192CU
 	tristate "Realtek RTL8192CU/RTL8188CU USB Wireless Network Adapter"
 	depends on USB
