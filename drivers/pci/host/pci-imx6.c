@@ -582,23 +582,24 @@ static int imx6_pcie_wait_for_link(struct pcie_port *pp)
 		dev_dbg(pp->dev, "DEBUG_R0: 0x%08x, DEBUG_R1: 0x%08x\n",
 			readl(pp->dbi_base + PCIE_PHY_DEBUG_R0),
 			readl(pp->dbi_base + PCIE_PHY_DEBUG_R1));
+
 #ifdef CONFIG_ARCH_ADVANTECH
-		if (strstr(boot_command_line, "PCIE_SI_TEST")== NULL) {
+	   if (strstr(boot_command_line, "PCIE_SI_TEST")== NULL) {
 #endif
-			if (!IS_ENABLED(CONFIG_PCI_IMX6_COMPLIANCE_TEST)) {
-				clk_disable_unprepare(imx6_pcie->pcie);
-				clk_disable_unprepare(imx6_pcie->pcie_bus);
-				clk_disable_unprepare(imx6_pcie->pcie_phy);
-				if (is_imx6sx_pcie(imx6_pcie))
-					clk_disable_unprepare(imx6_pcie->pcie_inbound_axi);
-				release_bus_freq(BUS_FREQ_HIGH);
-				if (imx6_pcie->pcie_phy_regulator != NULL)
+		if (!IS_ENABLED(CONFIG_PCI_IMX6_COMPLIANCE_TEST)) {
+			clk_disable_unprepare(imx6_pcie->pcie);
+			clk_disable_unprepare(imx6_pcie->pcie_bus);
+			clk_disable_unprepare(imx6_pcie->pcie_phy);
+			if (is_imx6sx_pcie(imx6_pcie))
+				clk_disable_unprepare(imx6_pcie->pcie_inbound_axi);
+			release_bus_freq(BUS_FREQ_HIGH);
+			if (imx6_pcie->pcie_phy_regulator != NULL)
 				regulator_disable(imx6_pcie->pcie_phy_regulator);
-				if (imx6_pcie->pcie_bus_regulator != NULL)
-					regulator_disable(imx6_pcie->pcie_bus_regulator);
-			}
-#ifdef CONFIG_ARCH_ADVANTECH
+			if (imx6_pcie->pcie_bus_regulator != NULL)
+				regulator_disable(imx6_pcie->pcie_bus_regulator);
 		}
+#ifdef CONFIG_ARCH_ADVANTECH
+	   }
 #endif
 		return -EINVAL;
 	}
