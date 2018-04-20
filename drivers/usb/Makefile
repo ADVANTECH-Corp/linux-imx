@@ -66,3 +66,6 @@ obj-$(CONFIG_USBIP_CORE)	+= usbip/
 obj-$(CONFIG_USB_4761)		+= usb4761/
 obj-$(CONFIG_USB_4761_BASE)		+= usb4761/base/
 
+obj-$(CONFIG_USB_4702)		+= usb4702/
+obj-$(CONFIG_USB_4702_BASE)		+= usb4702/base/
+
