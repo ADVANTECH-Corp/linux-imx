@@ -31,14 +31,12 @@ if USB_SUPPORT
 
 config USB_4761_BASE
 	tristate "USB_4761 base driver"
-	default y
 	---help---
 	  Analog in module USB-4761, Advantech
 
 config USB_4761
 	tristate "USB_4761 driver"
 	depends on USB_4761_BASE
-	default y
 	---help---
 	  Analog in module USB-4761, Advantech
 
@@ -125,14 +123,12 @@ if USB
 
 config USB_4702_BASE
 	tristate "USB_4702 base driver"
-	default y
 	---help---
 	  Analog in module USB-4702, Advantech
 
 config USB_4702
 	tristate "USB_4702 driver"
 	depends on USB_4702_BASE
-	default y
 	---help---
 	  Analog in module USB-4702, Advantech
 
