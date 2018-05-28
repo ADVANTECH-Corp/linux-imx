@@ -584,9 +584,10 @@ static int imx6_pcie_wait_for_link(struct pcie_port *pp)
 			readl(pp->dbi_base + PCIE_PHY_DEBUG_R1));
 
 #ifdef CONFIG_ARCH_ADVANTECH
-	   if (strstr(boot_command_line, "PCIE_SI_TEST")== NULL) {
-#endif
+		if (strstr(boot_command_line, "PCIE_SI_TEST")== NULL) {
+#else
 		if (!IS_ENABLED(CONFIG_PCI_IMX6_COMPLIANCE_TEST)) {
+#endif
 			clk_disable_unprepare(imx6_pcie->pcie);
 			clk_disable_unprepare(imx6_pcie->pcie_bus);
 			clk_disable_unprepare(imx6_pcie->pcie_phy);
@@ -598,9 +599,6 @@ static int imx6_pcie_wait_for_link(struct pcie_port *pp)
 			if (imx6_pcie->pcie_bus_regulator != NULL)
 				regulator_disable(imx6_pcie->pcie_bus_regulator);
 		}
-#ifdef CONFIG_ARCH_ADVANTECH
-	   }
-#endif
 		return -EINVAL;
 	}
 
@@ -625,7 +623,11 @@ static int imx6_pcie_start_link(struct pcie_port *pp)
 	 * bus will not be detected at all.  This happens with PCIe switches.
 	 */
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (strstr(boot_command_line, "PCIE_SI_TEST")== NULL) {
+#else
 	if (!IS_ENABLED(CONFIG_PCI_IMX6_COMPLIANCE_TEST)) {
+#endif
 		tmp = readl(pp->dbi_base + PCIE_RC_LCR);
 		tmp &= ~PCIE_RC_LCR_MAX_LINK_SPEEDS_MASK;
 		tmp |= PCIE_RC_LCR_MAX_LINK_SPEEDS_GEN1;
