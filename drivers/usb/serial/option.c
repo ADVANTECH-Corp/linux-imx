@@ -234,6 +234,9 @@ static void option_instat_callback(struct urb *urb);
 #define BANDRICH_PRODUCT_1012			0x1012
 
 #define QUALCOMM_VENDOR_ID			0x05C6
+#ifdef CONFIG_ARCH_ADVANTECH
+#define QUECTEL_VENDOR_ID			0x2C7C
+#endif
 
 #define SIERRA_VENDOR_ID			0x1199
 
@@ -1669,8 +1672,11 @@ static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
 #ifdef CONFIG_ARCH_ADVANTECH
 	{ USB_DEVICE(0x1546, 0x1102) }, //for EWM-C109F601E
-	{ USB_DEVICE(0x05c6, 0x9003)}, /* Quectel UC20 */
-	{ USB_DEVICE(0x2c7c, 0x0125)}, /* Quectel EC25/EC20 R2.0*/
+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9003)}, /* Quectel UC20 */
+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9090)}, /* Quectel UC15 */
+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9215)}, /* Quectel EC20 */
+	{ USB_DEVICE(QUECTEL_VENDOR_ID, 0x0125)}, /* Quectel EC25/EC20 R2.0*/
+	{ USB_DEVICE(QUECTEL_VENDOR_ID, 0x0121)}, /* Quectel EC21 */
 	{ USB_DEVICE_INTERFACE_CLASS(SIERRA_VENDOR_ID, 0x9071, 0xff),
 	  .driver_info = (kernel_ulong_t)&sierra_mc73xx_blacklist }, /* Sierra MC7430 */
 #endif
