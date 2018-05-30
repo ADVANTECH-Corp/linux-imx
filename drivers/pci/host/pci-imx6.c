@@ -58,6 +58,9 @@ struct imx6_pcie {
 	int			dis_gpio;
 	int			power_on_gpio;
 	int			reset_gpio;
+#ifdef CONFIG_ARCH_ADVANTECH
+	int			reset_time;
+#endif
 	struct clk		*pcie_bus;
 	struct clk		*pcie_inbound_axi;
 	struct clk		*pcie_phy;
@@ -433,7 +436,11 @@ static int imx6_pcie_deassert_core_reset(struct pcie_port *pp)
 	/* Some boards don't have PCIe reset GPIO. */
 	if (gpio_is_valid(imx6_pcie->reset_gpio)) {
 		gpio_set_value_cansleep(imx6_pcie->reset_gpio, 0);
+#ifdef CONFIG_ARCH_ADVANTECH
+		mdelay(imx6_pcie->reset_time);
+#else
 		mdelay(20);
+#endif
 		gpio_set_value_cansleep(imx6_pcie->reset_gpio, 1);
 		mdelay(20);
 	}
@@ -1266,6 +1273,11 @@ static int __init imx6_pcie_probe(struct platform_device *pdev)
 			"pcie_bus clock source missing or invalid\n");
 		return PTR_ERR(imx6_pcie->pcie_bus);
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_property_read_u32(np, "reset-time", &imx6_pcie->reset_time) < 0)
+		imx6_pcie->reset_time = 20;
+#endif
 
 	if (of_property_read_u32(np, "ext_osc", &imx6_pcie->ext_osc) < 0)
 		imx6_pcie->ext_osc = 0;
