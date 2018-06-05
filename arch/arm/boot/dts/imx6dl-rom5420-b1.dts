@@ -16,7 +16,7 @@
 #include "imx6qdl-advantech.dtsi"
 
 / {
-	model = "Freescale i.MX6 DualLite ROM5420 B1";
+	model = "Freescale i.MX6 DualLite/Solo ROM5420 B1";
 	compatible = "fsl,imx6dl-sabresd", "fsl,imx6dl";
 
 	aliases {
