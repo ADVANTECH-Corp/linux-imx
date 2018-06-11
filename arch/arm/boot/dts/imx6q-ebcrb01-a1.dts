@@ -36,7 +36,19 @@
                 };
         };
 
+	gpio-leds {
+		compatible = "gpio-leds";
 
+		led-green {
+			label = "green";
+			gpios = <&gpio4 6 GPIO_ACTIVE_LOW>;
+		};
+
+		led-red {
+			label = "red";
+			gpios = <&gpio4 7 GPIO_ACTIVE_LOW>;
+		};
+	};
 };
 
 &audio_sgtl5000 {
@@ -125,6 +137,14 @@
                 };
         };
 
+	leds {
+		pinctrl_leds_1: leds_grp-1{
+			fsl,pins = <
+				MX6QDL_PAD_KEY_COL0__GPIO4_IO06		0x80000000	/* GREEN_STATUS_LED# */
+				MX6QDL_PAD_KEY_ROW0__GPIO4_IO07		0x80000000	/* RED_STATUS_LED# */
+			>;
+		};
+	};
 };
 
 &audmux {
