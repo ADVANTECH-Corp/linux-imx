@@ -39,7 +39,8 @@
         usdhc1_pwrseq: usdhc1_pwrseq {
                 compatible = "mmc-pwrseq-simple";
                 reset-gpios = 	<&gpio2 1 GPIO_ACTIVE_LOW>,
- 				<&gpio2 7 GPIO_ACTIVE_LOW>;      
+ 				<&gpio2 7 GPIO_ACTIVE_LOW>,
+				<&gpio1 11 GPIO_ACTIVE_LOW>;      
         };
 
 
