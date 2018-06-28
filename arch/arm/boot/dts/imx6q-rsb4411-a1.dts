@@ -359,7 +359,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie_1>;
 	reset-gpio = <&gpio5 22 0>;
-	reset-time = "100";
+	disable-gpio = <&gpio6 15 0>;
 	status = "okay";
 };
 
