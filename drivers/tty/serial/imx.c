@@ -1018,7 +1018,6 @@ static int imx_uart_dma_init(struct imx_port *sport)
 	struct dma_slave_config slave_config = {};
 	struct device *dev = sport->port.dev;
 	int ret, i;
-
 	/* Prepare for RX : */
 	sport->dma_chan_rx = dma_request_slave_channel(dev, "rx");
 	if (!sport->dma_chan_rx) {
@@ -1162,8 +1161,13 @@ static int imx_startup(struct uart_port *port)
 		udelay(1);
 
 	/* Can we enable the DMA support? */
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (is_imx6q_uart(sport) && !uart_console(port)
+		&& !sport->dma_is_inited && !(sport->have_rtscts) &&IS_ENABLED(CONFIG_SMP))
+#else
 	if (is_imx6q_uart(sport) && !uart_console(port)
 		&& !sport->dma_is_inited)
+#endif
 		imx_uart_dma_init(sport);
 
 	if (sport->dma_is_inited)
