@@ -1,0 +1,212 @@
+/*
+ * Copyright 2012 Freescale Semiconductor, Inc.
+ * Copyright 2011 Linaro Ltd.
+ *
+ * The code contained herein is licensed under the GNU General Public
+ * License. You may obtain a copy of the GNU General Public License
+ * Version 2 or later at the following locations:
+ *
+ * http://www.opensource.org/licenses/gpl-license.html
+ * http://www.gnu.org/copyleft/gpl.html
+ */
+
+/dts-v1/;
+
+#include "imx6q.dtsi"
+#include "imx6qdl-advantech.dtsi"
+
+/ {
+	model = "Freescale i.MX6 Quad EBCJF02 A2";
+	compatible = "fsl,imx6q-sabresd", "fsl,imx6q";
+
+	board {
+		compatible = "proc-board";
+		board-type = "EBC-JF02 A1";
+		board-cpu = "DualQuad";
+	};
+
+        leds {
+                compatible = "gpio-leds";
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinctrl_leds_debug_1>;
+                led {
+                        label = "Led";
+                        gpios = <&gpio4 6 1>;
+                        default-state = "on";
+                        linux,default-trigger = "heartbeat";
+                };
+        };
+};
+
+&i2c1 {
+	s35390a@30 {
+		compatible = "fsl,s35390a";
+		reg = <0x30>;
+	};
+};
+
+&i2c2 {
+
+};
+
+&i2c3 {
+
+};
+
+&iomuxc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_hog_1 &pinctrl_hog_2>;
+
+	hog {
+		pinctrl_hog_2: hoggrp-2 {
+			fsl,pins = <
+				MX6QDL_PAD_SD1_CMD__GPIO1_IO18 		0x80000000	/* VGPI_0 */
+				MX6QDL_PAD_SD1_CLK__GPIO1_IO20 		0x80000000	/* VGPI_1 */
+				MX6QDL_PAD_SD3_CMD__GPIO7_IO02 		0x80000000	/* VGPO_0 */
+			>;
+		};
+	};
+
+	pcie {
+		pinctrl_pcie_1: pciegrp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_SD1_DAT1__GPIO1_IO17		0x80000000	/* LTE_SW_DISABLE */
+			>;
+		};
+	};
+
+	spi1 {
+		pinctrl_ecspi1_cs_0: ecspi1_cs_grp-0 {
+			fsl,pins = <
+				MX6QDL_PAD_EIM_EB2__GPIO2_IO30		0x80000000	/* ECSPI1_CS0 */
+			>;
+		};
+	};
+
+        spi2 {
+                pinctrl_ecspi2_cs_0: ecspi2_cs_grp-0 {
+                        fsl,pins = <
+                                MX6QDL_PAD_EIM_RW__GPIO2_IO26           0x80000000      /* ECSPI2_CS0 */
+                        >;
+                };
+                pinctrl_ecspi2_1: ecspi2grp-1 {
+                        fsl,pins = <
+                                MX6QDL_PAD_EIM_OE__ECSPI2_MISO          0x170f1         /* ECSPI2_MISO */
+                                MX6QDL_PAD_EIM_CS0__ECSPI2_SCLK         0x170f1         /* ECSPI2_CLK */
+                                MX6QDL_PAD_EIM_CS1__ECSPI2_MOSI         0x1B008         /* ECSPI2_MOSI */
+                        >;
+                };
+        };
+
+	uart2 {
+		pinctrl_uart2_3: uart2grp-3 { 
+			fsl,pins = <
+				MX6QDL_PAD_EIM_D26__UART2_TX_DATA	0x1b0b1
+				MX6QDL_PAD_EIM_D27__UART2_RX_DATA	0x1b0b1
+			>;
+		};
+	};
+
+	uart4 {
+		pinctrl_uart4_1: uart4grp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_CSI0_DAT12__UART4_TX_DATA	0x1b0b1
+				MX6QDL_PAD_CSI0_DAT13__UART4_RX_DATA	0x1b0b1
+			>;
+		};
+	};
+
+        leds {
+                pinctrl_leds_debug_1: leds_debug1grp-1{
+                        fsl,pins = <
+                                MX6QDL_PAD_KEY_COL0__GPIO4_IO06          0x1b0b1 /* led0 */
+                        >;
+                };
+        };
+
+
+};
+
+&pcie {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pcie_1>;
+	disable-gpio = <&gpio1 17 0>;
+	status = "okay";
+};
+
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart1_1>;
+	status = "okay";
+};
+
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart2_3>;
+	status = "okay";
+};
+
+&uart4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart4_1>;
+	status = "okay";
+};
+
+&usbh1 {
+	status = "okay";
+};
+
+&usbotg {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbotg_2>;
+	disable-over-current;
+	status = "okay";
+};
+
+&usdhc2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc2_2>;
+	cd-gpios = <&gpio2 2 0>;
+	wp-gpios = <&gpio2 3 0>;
+	no-1-8-v;
+	keep-power-in-suspend;
+	enable-sdio-wakeup;
+	status = "okay";
+};
+
+&usdhc4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc4_1>;
+	bus-width = <8>;
+	non-removable;
+	no-1-8-v;
+	keep-power-in-suspend;
+	status = "okay";
+};
+
+
+&ecspi2 {
+        fsl,spi-num-chipselects = <1>;
+        cs-gpios = <&gpio2 26 0>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_ecspi2_cs_0 &pinctrl_ecspi2_1>;
+        status = "okay";
+
+        m25p80@0 {
+
+                #address-cells = <1>;
+                #size-cells = <1>;
+                compatible = "micron,n25qba16";
+                spi-max-frequency = <20000000>;
+                reg = <0>;
+        };
+};
+
+&can1 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_flexcan1_1>;
+        status = "okay";
+};
+
+
+
