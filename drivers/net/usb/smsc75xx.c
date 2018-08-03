@@ -32,6 +32,7 @@
 #include "smsc75xx.h"
 #ifdef CONFIG_ARCH_ADVANTECH
 #include <linux/proc_fs.h>
+struct proc_dir_entry *proc_entry = NULL;
 #endif
 
 #define SMSC_CHIPNAME			"smsc75xx"
@@ -859,7 +860,6 @@ static int smsc75xx_phy_initialize(struct usbnet *dev)
 {
 	int bmcr, ret, timeout = 0;
 #ifdef CONFIG_ARCH_ADVANTECH
-	struct proc_dir_entry *proc_entry = NULL;
 	char node_name[32];
 #endif
 
@@ -916,6 +916,11 @@ static int smsc75xx_phy_initialize(struct usbnet *dev)
 	strncpy(node_name, netdev_reg_state(dev->net), 8);
 	if (!node_name[0]) {
 		snprintf(node_name, 32, "net_testmode_%s", netdev_name(dev->net));
+
+		if (proc_entry) {
+			proc_remove(proc_entry);
+		}
+
 		proc_entry = proc_create_data(node_name, 0777, NULL,
 						&proc_net_fops, dev);
 	}
