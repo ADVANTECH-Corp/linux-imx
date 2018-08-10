@@ -71,6 +71,7 @@
 		pinctrl_pcie_1: pciegrp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_SD1_DAT1__GPIO1_IO17		0x80000000	/* LTE_SW_DISABLE */
+				MX6QDL_PAD_SD1_DAT0__GPIO1_IO16		0x80000000	/* LTE_SW_RESET */
 			>;
 		};
 	};
@@ -130,6 +131,7 @@
 &pcie {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie_1>;
+	reset-gpio = <&gpio1 16 0>;
 	disable-gpio = <&gpio1 17 0>;
 	status = "okay";
 };
