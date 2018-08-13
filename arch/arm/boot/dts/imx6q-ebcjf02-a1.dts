@@ -63,6 +63,10 @@
 				MX6QDL_PAD_SD1_CMD__GPIO1_IO18 		0x80000000	/* VGPI_0 */
 				MX6QDL_PAD_SD1_CLK__GPIO1_IO20 		0x80000000	/* VGPI_1 */
 				MX6QDL_PAD_SD3_CMD__GPIO7_IO02 		0x80000000	/* VGPO_0 */
+				MX6QDL_PAD_SD3_DAT7__GPIO6_IO17 	0x80000000	/* Gyro_INT1 */
+				MX6QDL_PAD_SD3_RST__GPIO7_IO08	 	0x80000000	/* Gyro_INT2 */
+				MX6QDL_PAD_SD3_DAT6__GPIO6_IO18	 	0x80000000	/* Gsensor_INT2 */
+				MX6QDL_PAD_SD3_DAT5__GPIO7_IO00	 	0x80000000	/* Gsensor_INT1 */
 			>;
 		};
 	};
@@ -70,8 +74,12 @@
 	pcie {
 		pinctrl_pcie_1: pciegrp-1 {
 			fsl,pins = <
+				MX6QDL_PAD_SD3_CLK__GPIO7_IO03		0x80000000	/* M.2E_SW_RESET */
+				MX6QDL_PAD_SD3_DAT0__GPIO7_IO04		0x80000000	/* M.2E_WAKE */
+				MX6QDL_PAD_GPIO_2__GPIO1_IO02		0x80000000	/* M.2E_DIS */
 				MX6QDL_PAD_SD1_DAT1__GPIO1_IO17		0x80000000	/* LTE_SW_DISABLE */
 				MX6QDL_PAD_SD1_DAT0__GPIO1_IO16		0x80000000	/* LTE_SW_RESET */
+				MX6QDL_PAD_SD1_DAT2__GPIO1_IO19		0x80000000	/* LTE_SW_WAKE */
 			>;
 		};
 	};
@@ -132,7 +140,11 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie_1>;
 	reset-gpio = <&gpio1 16 0>;
+	m2-reset-gpio = <&gpio7 3 0>;
 	disable-gpio = <&gpio1 17 0>;
+	m2-disable-gpio = <&gpio1 2 0>;
+	power-on-gpio = <&gpio1 19 0>;
+	m2-power-on-gpio = <&gpio7 4 0>;
 	status = "okay";
 };
 
