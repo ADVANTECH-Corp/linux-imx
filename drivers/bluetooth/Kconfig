@@ -262,6 +262,19 @@ config BT_MRVL_SDIO
 	  Say Y here to compile support for Marvell BT-over-SDIO driver
 	  into the kernel or say M to compile it as module.
 
+config BT_MRVL_USB
+	tristate "Marvell BT-over-USB driver"
+	depends on BT_MRVL
+	help
+	  The driver for Marvell Bluetooth chipsets with USB interface.
+
+	  This driver is required if you want to use Marvell Bluetooth
+	  devices with USB interface. Currently SD8688/SD8787/SD8797/SD8887/SD8897
+	  chipsets are supported.
+
+	  Say Y here to compile support for Marvell BT-over-USB driver
+	  into the kernel or say M to compile it as module.
+
 config BT_ATH3K
 	tristate "Atheros firmware download driver"
 	depends on BT_HCIBTUSB
