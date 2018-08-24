@@ -59,9 +59,6 @@ struct imx6_pcie {
 	int			power_on_gpio;
 	int			reset_gpio;
 #ifdef CONFIG_ARCH_ADVANTECH
-	int			m2_reset_gpio;
-	int			m2_power_on_gpio;
-	int			m2_dis_gpio;
 	int			reset_time;
 #endif
 	struct clk		*pcie_bus;
@@ -377,10 +374,6 @@ static int imx6_pcie_deassert_core_reset(struct pcie_port *pp)
 	if (gpio_is_valid(imx6_pcie->power_on_gpio))
 		gpio_set_value_cansleep(imx6_pcie->power_on_gpio, 1);
 
-#ifdef CONFIG_ARCH_ADVANTECH
-	if (gpio_is_valid(imx6_pcie->m2_power_on_gpio))
-		gpio_set_value_cansleep(imx6_pcie->m2_power_on_gpio, 1);
-#endif
 	request_bus_freq(BUS_FREQ_HIGH);
 	ret = clk_prepare_enable(imx6_pcie->pcie);
 	if (ret) {
@@ -452,15 +445,6 @@ static int imx6_pcie_deassert_core_reset(struct pcie_port *pp)
 		mdelay(20);
 	}
 
-#ifdef CONFIG_ARCH_ADVANTECH
-        if (gpio_is_valid(imx6_pcie->m2_reset_gpio)) {
-                gpio_set_value_cansleep(imx6_pcie->m2_reset_gpio, 0);
-                mdelay(imx6_pcie->reset_time);
-                gpio_set_value_cansleep(imx6_pcie->m2_reset_gpio, 1);
-                mdelay(20);
-        }
-
-#endif
 	/*
 	 * Release the PCIe PHY reset here
 	 */
@@ -1087,10 +1071,6 @@ static void pci_imx_pm_turn_off(struct imx6_pcie *imx6_pcie)
 	udelay(1000);
 	if (gpio_is_valid(imx6_pcie->reset_gpio))
 		gpio_set_value_cansleep(imx6_pcie->reset_gpio, 0);
-#ifdef CONFIG_ARCH_ADVANTECH
-	if (gpio_is_valid(imx6_pcie->m2_reset_gpio))
-		gpio_set_value_cansleep(imx6_pcie->m2_reset_gpio, 0);
-#endif
 }
 
 static int pci_imx_suspend_noirq(struct device *dev)
@@ -1132,10 +1112,6 @@ static int pci_imx_suspend_noirq(struct device *dev)
 			regulator_disable(imx6_pcie->pcie_bus_regulator);
 		if (gpio_is_valid(imx6_pcie->power_on_gpio))
 			gpio_set_value_cansleep(imx6_pcie->power_on_gpio, 0);
-#ifdef CONFIG_ARCH_ADVANTECH
-		if (gpio_is_valid(imx6_pcie->m2_power_on_gpio))
-			gpio_set_value_cansleep(imx6_pcie->m2_power_on_gpio, 0);
-#endif
 	} else {
 		/*
 		 * L2 can exit by 'reset' or Inband beacon (from remote EP)
@@ -1261,17 +1237,6 @@ static int __init imx6_pcie_probe(struct platform_device *pdev)
 		}
 	}
 
-#ifdef CONFIG_ARCH_ADVANTECH
-	imx6_pcie->m2_dis_gpio = of_get_named_gpio(np, "m2-disable-gpio", 0);
-	if (gpio_is_valid(imx6_pcie->m2_dis_gpio)) {
-		ret = devm_gpio_request_one(&pdev->dev, imx6_pcie->m2_dis_gpio,
-					    GPIOF_OUT_INIT_HIGH, "M.2 PCIe DIS");
-		if (ret) {
-			dev_err(&pdev->dev, "unable to get m2 disable gpio\n");
-			return ret;
-		}
-	}
-#endif
 	imx6_pcie->power_on_gpio = of_get_named_gpio(np, "power-on-gpio", 0);
 	if (gpio_is_valid(imx6_pcie->power_on_gpio)) {
 		ret = devm_gpio_request_one(&pdev->dev,
@@ -1284,19 +1249,6 @@ static int __init imx6_pcie_probe(struct platform_device *pdev)
 		}
 	}
 
-#ifdef CONFIG_ARCH_ADVANTECH
-	imx6_pcie->m2_power_on_gpio = of_get_named_gpio(np, "m2-power-on-gpio", 0);
-	if (gpio_is_valid(imx6_pcie->m2_power_on_gpio)) {
-		ret = devm_gpio_request_one(&pdev->dev,
-					imx6_pcie->m2_power_on_gpio,
-					GPIOF_OUT_INIT_LOW,
-					"M.2 PCIe power enable");
-		if (ret) {
-			dev_err(&pdev->dev, "unable to get m2 power-on gpio\n");
-			return ret;
-		}
-	}
-#endif
 	imx6_pcie->reset_gpio = of_get_named_gpio(np, "reset-gpio", 0);
 	if (gpio_is_valid(imx6_pcie->reset_gpio)) {
 		ret = devm_gpio_request_one(&pdev->dev, imx6_pcie->reset_gpio,
@@ -1306,17 +1258,6 @@ static int __init imx6_pcie_probe(struct platform_device *pdev)
 			return ret;
 		}
 	}
-#ifdef CONFIG_ARCH_ADVANTECH
-        imx6_pcie->m2_reset_gpio = of_get_named_gpio(np, "m2-reset-gpio", 0);
-        if (gpio_is_valid(imx6_pcie->m2_reset_gpio)) {
-                ret = devm_gpio_request_one(&pdev->dev, imx6_pcie->m2_reset_gpio,
-                                            GPIOF_OUT_INIT_LOW, "M.2 PCIe reset");
-                if (ret) {
-                        dev_err(&pdev->dev, "unable to get m2 reset gpio\n");
-                        return ret;
-                }
-        }
-#endif
 	/* Fetch clocks */
 	imx6_pcie->pcie_phy = devm_clk_get(&pdev->dev, "pcie_phy");
 	if (IS_ERR(imx6_pcie->pcie_phy)) {
