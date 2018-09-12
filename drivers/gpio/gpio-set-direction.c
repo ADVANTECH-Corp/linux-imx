@@ -1,4 +1,4 @@
-#ifdef CONFIG_ARCH_ADVANTECH
+#ifdef CONFIG_GPIO_ARCH_ADVANTECH
 
 #include <linux/of_platform.h>
 #include <linux/module.h>
@@ -25,7 +25,7 @@ static int gpio_direction_probe(struct platform_device *pdev)
 {
 	struct gpio_direction_data *gpio;
 	struct device_node *np = pdev->dev.of_node;
-	enum of_gpio_flags usb_host_pwr_flag;
+	enum of_gpio_flags gpio_flags;
 	unsigned long flags;
 	int ret = 0;
 
@@ -38,10 +38,10 @@ static int gpio_direction_probe(struct platform_device *pdev)
 
 	/* Fetch GPIOs */
 	/* USB Config */
-	gpio->usb_host_pwr_en_gpio = of_get_named_gpio_flags(np, "usb-host-pwr-en", 0, &usb_host_pwr_flag);
+	gpio->usb_host_pwr_en_gpio = of_get_named_gpio_flags(np, "usb-host-pwr-en", 0, &gpio_flags);
 
 	if (gpio_is_valid(gpio->usb_host_pwr_en_gpio)) {
-		if(usb_host_pwr_flag)
+		if(gpio_flags)
 			flags = GPIOF_OUT_INIT_HIGH;
 		else
 			flags = GPIOF_OUT_INIT_LOW;
