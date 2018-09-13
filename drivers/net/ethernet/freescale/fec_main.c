@@ -2074,7 +2074,10 @@ static int fec_enet_mii_init(struct platform_device *pdev)
 	   MDC frequency setting value and actual measured value are difference between the two
 	 */	 
 #if defined (CONFIG_ARCH_ADVANTECH)
-	mii_speed = DIV_ROUND_UP(clk_get_rate(fep->clk_ipg), FEC_ENET_MII_CLK);
+	if(IS_EBC_RM01)
+		mii_speed = DIV_ROUND_UP(clk_get_rate(fep->clk_ipg), 5000000);
+	else
+		mii_speed = DIV_ROUND_UP(clk_get_rate(fep->clk_ipg), FEC_ENET_MII_CLK);
 #else
 	mii_speed = DIV_ROUND_UP(clk_get_rate(fep->clk_ipg), 5000000);
 #endif
