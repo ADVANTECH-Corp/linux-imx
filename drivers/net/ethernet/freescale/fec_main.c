@@ -1714,7 +1714,7 @@ static void fec_get_mac(struct net_device *ndev)
 	/*
 	 * 3) from flash or fuse (via platform data)
 	 */
-#ifndef CONFIG_ARCH_ADVANTECH
+#ifndef CONFIG_ARCH_ADVANTECH //alex
 /* we use 3 to set mac address without OCTOP */	 	 
 	if (!is_valid_ether_addr(iap)) {
 #ifdef CONFIG_M5272
@@ -1724,6 +1724,18 @@ static void fec_get_mac(struct net_device *ndev)
 		if (pdata)
 			iap = (unsigned char *)&pdata->mac;
 #endif
+	}
+#else
+	if(IS_EBC_RM01) {
+		if (!is_valid_ether_addr(iap)) {
+#ifdef CONFIG_M5272
+		if (FEC_FLASHMAC)
+			iap = (unsigned char *)FEC_FLASHMAC;
+#else
+		if (pdata)
+			iap = (unsigned char *)&pdata->mac;
+#endif
+		}
 	}
 #endif
 	/*
