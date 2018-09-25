@@ -10,6 +10,7 @@
 
 #include <dt-bindings/input/input.h>
 #include "imx7d.dtsi"
+#include "imx7d-adv-qspi.dtsi"
 
 / {
 	model = "Freescale i.MX7D Dual EBCRM01 A1";
@@ -202,12 +203,13 @@
 	status = "okay";
 };
 
+/*
 &ecspi3 {
 	fsl,spi-num-chipselects = <1>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_ecspi3 &pinctrl_ecspi3_cs>;
 	cs-gpios = <&gpio5 9 0>;
-	/* status = "okay"; */
+	//status = "okay";
 	status = "disabled";
 
 	tsc2046 {
@@ -228,12 +230,12 @@
 		linux,wakeup;
 	};
 };
+*/
 
 &fec1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_enet1 &pinctrl_enet1_rst_1>;
-	// pinctrl-assert-gpios = <&gpio_spi 5 GPIO_ACTIVE_HIGH>;
-	pinctrl-assert-gpios = <&gpio2 28 GPIO_ACTIVE_HIGH>;
+	phy-reset-gpios = <&gpio2 28 1>; /* GPIO_ACTIVE_LOW 1 */
 	assigned-clocks = <&clks IMX7D_ENET1_TIME_ROOT_SRC>,
 			  <&clks IMX7D_ENET1_TIME_ROOT_CLK>;
 	assigned-clock-parents = <&clks IMX7D_PLL_ENET_MAIN_100M_CLK>;
@@ -261,9 +263,8 @@
 
 &fec2 {
 	pinctrl-names = "default";
-	//pinctrl-0 = <&pinctrl_enet2 &pinctrl_enet2_epdc0_en>;
-	pinctrl-0 = <&pinctrl_enet2>;
-	//pinctrl-assert-gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&pinctrl_enet2 &pinctrl_enet1_rst_2>;
+	phy-reset-gpios = <&gpio2 29 1>; /* GPIO_ACTIVE_LOW 1 */
 	assigned-clocks = <&clks IMX7D_ENET2_TIME_ROOT_SRC>,
 			  <&clks IMX7D_ENET2_TIME_ROOT_CLK>;
 	assigned-clock-parents = <&clks IMX7D_PLL_ENET_MAIN_100M_CLK>;
@@ -449,20 +450,20 @@
 			>;
 		};
 
-		pinctrl_hog_3: hoggrp-3 { //alex
+		pinctrl_hog_3: hoggrp-3 {
 			fsl,pins = <
-				MX7D_PAD_GPIO1_IO12__GPIO1_IO12		0x59	/* GPIO0 - GPIO0 */
-				MX7D_PAD_GPIO1_IO13__GPIO1_IO13		0x59	/* GPIO1 - GPIO1 */
-				MX7D_PAD_GPIO1_IO14__GPIO1_IO14		0x59	/* GPIO2 - GPIO2 */
-				MX7D_PAD_GPIO1_IO15__GPIO1_IO15		0x59	/* GPIO3 - GPIO3 */
-				/* GPIO4 - BOOT_CFG04 */
-				/* GPIO5 - BOOT_CFG05 */
-				/* GPIO6 - BOOT_CFG06 */
-				MX7D_PAD_ECSPI2_SCLK__GPIO4_IO20	0x59	/* GPIO7  - GPIO7 */
-				MX7D_PAD_ECSPI2_MISO__GPIO4_IO22	0x59	/* GPIO8  - GPIO8 */
-				MX7D_PAD_ECSPI2_MOSI__GPIO4_IO21	0x59	/* GPIO9  - GPIO9 */
-				MX7D_PAD_ECSPI2_SS0__GPIO4_IO23		0x59	/* GPIO10 - GPIO10 */
-				/* GPIO11 - BOOT_CFG11 */
+				MX7D_PAD_GPIO1_IO12__GPIO1_IO12		0x59	/* GPIO0	- GPIO0 */
+				MX7D_PAD_GPIO1_IO13__GPIO1_IO13		0x59	/* GPIO1	- GPIO1 */
+				MX7D_PAD_GPIO1_IO14__GPIO1_IO14		0x59	/* GPIO2	- GPIO2 */
+				MX7D_PAD_GPIO1_IO15__GPIO1_IO15		0x59	/* GPIO3	- GPIO3 */
+				MX7D_PAD_LCD_DATA04__GPIO3_IO9 		0x59 	/* GPIO4	- BOOT_CFG04 */
+				MX7D_PAD_LCD_DATA05__GPIO3_IO10 		0x59 	/* GPIO5	- BOOT_CFG05 */
+				MX7D_PAD_LCD_DATA06__GPIO3_IO11 		0x59 	/* GPIO6	- BOOT_CFG06 */
+				MX7D_PAD_ECSPI2_SCLK__GPIO4_IO20		0x59	/* GPIO7	- GPIO7 */
+				MX7D_PAD_ECSPI2_MISO__GPIO4_IO22		0x59	/* GPIO8	- GPIO8 */
+				MX7D_PAD_ECSPI2_MOSI__GPIO4_IO21		0x59	/* GPIO9	- GPIO9 */
+				MX7D_PAD_ECSPI2_SS0__GPIO4_IO23		0x59	/* GPIO10	- GPIO10 */
+				MX7D_PAD_LCD_DATA11__GPIO3_IO16		0x59	/* GPIO11	- BOOT_CFG11 */
 			>;
 		};
 
@@ -522,7 +523,7 @@
 
 		pinctrl_enet1_rst_1: enet1_rstgrp-1 {
 			fsl,pins = <
-				MX7D_PAD_EPDC_BDR0__GPIO2_IO28	0x59 /* RGMII_RST# */
+				MX7D_PAD_EPDC_BDR0__GPIO2_IO28	0x59 /* RGMII1_RST# */
 			>;
 		};
 
@@ -540,6 +541,12 @@
 				MX7D_PAD_EPDC_SDOE__ENET2_RGMII_RD2		0x1
 				MX7D_PAD_EPDC_SDSHR__ENET2_RGMII_RD3		0x1
 				MX7D_PAD_EPDC_SDCE0__ENET2_RGMII_RX_CTL		0x1
+			>;
+		};
+
+		pinctrl_enet1_rst_2: enet1_rstgrp-2 {
+			fsl,pins = <
+				MX7D_PAD_EPDC_BDR1__GPIO2_IO29	0x59 /* RGMII2_RST# */
 			>;
 		};
 
@@ -621,6 +628,7 @@
 		};
 */
 
+/*
 		pinctrl_sii902x: hdmigrp-1 {
 			fsl,pins = <
 				MX7D_PAD_EPDC_DATA13__GPIO2_IO13 0x59
@@ -642,7 +650,7 @@
 				MX7D_PAD_EPDC_BDR1__GPIO2_IO29		0x59
 			>;
 		};
-
+*/
 		pinctrl_uart1: uart1grp {
 			fsl,pins = <
 				MX7D_PAD_UART1_TX_DATA__UART1_DCE_TX 0x79
@@ -862,6 +870,7 @@
 	};
 };
 
+/*
 &sim1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sim1_1>;
@@ -869,7 +878,7 @@
 	sven_low_active;
 	status = "okay";
 };
-
+*/
 
 &uart1 {
 	pinctrl-names = "default";
