@@ -635,16 +635,6 @@
 			>;
 		};
 
-		pinctrl_sim1_1: sim1grp-1 {
-			fsl,pins = <
-				MX7D_PAD_EPDC_DATA10__SIM1_PORT1_RST_B 0x77
-				MX7D_PAD_EPDC_DATA12__SIM1_PORT1_PD    0x77
-				MX7D_PAD_EPDC_DATA11__SIM1_PORT1_SVEN  0x77
-				MX7D_PAD_EPDC_DATA09__SIM1_PORT1_CLK   0x73
-				MX7D_PAD_EPDC_DATA08__SIM1_PORT1_TRXD  0x73
-			>;
-		};
-
 		pinctrl_tsc2046_pendown: tsc2046_pendown {
 			fsl,pins = <
 				MX7D_PAD_EPDC_BDR1__GPIO2_IO29		0x59
@@ -814,26 +804,23 @@
 			>;
 		};
 
-/*
-		pinctrl_gpioctrl: gpioctrlgrp {
+		pinctrl_pcie_1: pcie1grp-1 {
 			fsl,pins = <
-				MX7D_PAD_GPIO1_IO09__GPIO1_IO9	0x59
-				MX7D_PAD_GPIO1_IO12__GPIO1_IO12	0x59
-				MX7D_PAD_GPIO1_IO13__GPIO1_IO13	0x59
+				MX7D_PAD_ENET1_COL__GPIO7_IO15		0x59	/* PCIE_RST */
+				MX7D_PAD_ENET1_TX_CLK__GPIO7_IO12	0x59	/* PCIE_WAKE */
 			>;
 		};
-*/
 	};
 };
 
-/*
 &pcie {
 	pinctrl-names = "default";
-	reset-gpio = <&gpio_spi 1 GPIO_ACTIVE_LOW>;
-	disable-gpio = <&gpio_spi 0 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&pinctrl_pcie_1>;
+	reset-gpio = <&gpio7 15 GPIO_ACTIVE_LOW>;
+	/* reset-time = <20>; */
+	wake-up-gpio = <&gpio7 12 0>;
 	status = "okay";
 };
-*/
 
 &sdma {
 	status = "okay";
@@ -856,12 +843,6 @@
 			>;
 		};
 
-		pinctrl_wdog: wdoggrp {
-			fsl,pins = <
-				MX7D_PAD_GPIO1_IO00__WDOD1_WDOG_B 0x74
-			>;
-		};
-
 		pinctrl_sai3_mclk: sai3grp_mclk {
 			fsl,pins = <
 				MX7D_PAD_GPIO1_IO03__SAI3_MCLK         0x1f
@@ -869,16 +850,6 @@
 		};
 	};
 };
-
-/*
-&sim1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_sim1_1>;
-	port = <0>;
-	sven_low_active;
-	status = "okay";
-};
-*/
 
 &uart1 {
 	pinctrl-names = "default";
@@ -974,9 +945,3 @@
         status = "okay";
 };
 
-
-&wdog1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_wdog>;
-	fsl,wdog_b;
-};
