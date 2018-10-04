@@ -76,6 +76,7 @@ static int imx_sgtl5000_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+#if !defined(CONFIG_SOC_IMX7) && !defined(CONFIG_ARCH_ADVANTECH)
 	/*
 	 * The port numbering in the hardware manual starts at 1, while
 	 * the audmux API expects it starts at 0.
@@ -100,7 +101,7 @@ static int imx_sgtl5000_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "audmux external port setup failed\n");
 		return ret;
 	}
-
+#endif
 	ssi_np = of_parse_phandle(pdev->dev.of_node, "ssi-controller", 0);
 	codec_np = of_parse_phandle(pdev->dev.of_node, "audio-codec", 0);
 	if (!ssi_np || !codec_np) {

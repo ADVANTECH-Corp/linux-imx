@@ -26,25 +26,20 @@
 		reg = <0x80000000 0x80000000>;
 	};
 
-
-
-	sound {
-		compatible = "simple-audio-card";
-		simple-audio-card,name = "imx7-sgtl5000";
-		simple-audio-card,format = "i2s";
-		simple-audio-card,bitclock-master = <&dailink_master>;
-		simple-audio-card,frame-master = <&dailink_master>;
-		simple-audio-card,cpu {
-			sound-dai = <&sai1>;
-		};
-
-		dailink_master: simple-audio-card,codec {
-			sound-dai = <&codec>;
-			clocks = <&clks IMX7D_AUDIO_MCLK_ROOT_CLK>;
-		};
-	};
-
-
+        sound {
+                compatible = "fsl,sgtl5000",
+                             "fsl,imx-audio-sgtl5000";
+                model = "sgtl5000";
+                audio-codec = <&codec>;
+                codec-master;
+                ssi-controller = <&sai1>;
+                audio-routing =
+                        "MIC_IN", "Mic Jack",
+                        "Mic Jack", "Mic Bias",
+                        "Headphone Jack", "HP_OUT";
+                mux-int-port = <2>;
+                mux-ext-port = <3>;
+        };
 
 
 
@@ -149,21 +144,6 @@
                 compatible = "mmc-pwrseq-simple";
                 reset-gpios =   <&gpio5 11 GPIO_ACTIVE_LOW>;
         };
-/*
-	audio_sgtl5000: sound {
-		compatible = "fsl,sgtl5000",
-			     "fsl,imx-audio-sgtl5000";
-		model = "sgtl5000";
-		//ssi-controller = <&ssi2>; //need to modify
-		audio-routing =
-			"MIC_IN", "Mic Jack",
-			"Mic Jack", "Mic Bias",
-			"Headphone Jack", "HP_OUT";
-		mux-int-port = <2>;
-		mux-ext-port = <3>;
-	};
-*/
-
 /*
 	gpio_direction {
 		pinctrl-names = "default";
@@ -374,11 +354,16 @@
 
 	codec: sgtl5000@a {
 		compatible = "fsl,sgtl5000";
-		#sound-dai-cells = <0>;
 		reg = <0x0a>;
 		clocks = <&clks IMX7D_AUDIO_MCLK_ROOT_CLK>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_sai1_mclk>;
+		VDDA-supply = <&reg_2p5v>;
+                VDDIO-supply = <&reg_3p3v>;
+                assigned-clocks = <&clks IMX7D_AUDIO_MCLK_ROOT_SRC>,
+                                  <&clks IMX7D_AUDIO_MCLK_ROOT_CLK>;
+                assigned-clock-parents = <&clks IMX7D_PLL_AUDIO_POST_DIV>;
+                assigned-clock-rates = <0>, <12288000>;
 	};
 
 
