@@ -69,6 +69,8 @@
 #include <linux/ratelimit.h>
 #include <linux/pm_runtime.h>
 #include <linux/platform_device.h>
+#include <linux/leds.h>
+
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/libata.h>
@@ -4890,7 +4892,10 @@ static void ata_verify_xfer(struct ata_queued_cmd *qc)
 void ata_qc_complete(struct ata_queued_cmd *qc)
 {
 	struct ata_port *ap = qc->ap;
-
+#ifdef CONFIG_ARCH_ADVANTECH 
+        /* Trigger the LED (if available) */
+	ledtrig_ide_activity();
+#endif
 	/* XXX: New EH and old EH use different mechanisms to
 	 * synchronize EH with regular execution path.
 	 *

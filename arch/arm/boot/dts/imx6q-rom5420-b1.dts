@@ -70,7 +70,14 @@
 			linux,default-trigger = "default-on";
 			default-state = "on";
 		};
+		sata-led {
+			label = "sata-act";
+			gpios = <&gpio2 6 1>;
+			linux,default-trigger = "ide-disk";
+			default-state = "off";
+                };
 	};
+
 };
 
 &audio_sgtl5000 {
@@ -281,6 +288,7 @@
 				MX6QDL_PAD_NANDF_D0__GPIO2_IO00		0x80000000	/* Battery CHARGER_PRSN */
 				MX6QDL_PAD_NANDF_CLE__GPIO6_IO07	0x80000000	/* Battery BATLOW */
 				MX6QDL_PAD_NANDF_RB0__GPIO6_IO10	0x80000000	/* Battery CHARGING */
+				MX6QDL_PAD_NANDF_D6__GPIO2_IO06		0x80000000	/* SATA_ACT */
 			>;
 		};
 	};
