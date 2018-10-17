@@ -2126,7 +2126,7 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 	 */
 	if (!subname) {
 #ifdef CONFIG_ARCH_ADVANTECH
-		if ((IS_ROM_7421) || (IS_EBC_RM01)) {
+		if (IS_ROM_7421) {
 			int idx;
 
 			idx = mmc_get_reserved_index(card->host);

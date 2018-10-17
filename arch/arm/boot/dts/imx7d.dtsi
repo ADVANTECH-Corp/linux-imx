@@ -1286,6 +1286,20 @@
 				vcc-supply = <&reg_1p2>;
 			};
 
+			usdhc3: usdhc@30b60000 {
+				compatible = "fsl,imx7d-usdhc", "fsl,imx6sx-usdhc";
+				reg = <0x30b60000 0x10000>;
+				interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+				clocks = <&clks IMX7D_IPG_ROOT_CLK>,
+					<&clks IMX7D_NAND_USDHC_BUS_ROOT_CLK>,
+					<&clks IMX7D_USDHC3_ROOT_CLK>;
+				clock-names = "ipg", "ahb", "per";
+				fsl,tuning-start-tap = <20>;
+				fsl,tuning-step= <2>;
+				bus-width = <4>;
+				status = "disabled";
+			};
+
 			usdhc1: usdhc@30b40000 {
 				compatible = "fsl,imx7d-usdhc", "fsl,imx6sl-usdhc";
 				reg = <0x30b40000 0x10000>;
@@ -1307,20 +1321,6 @@
 				clocks = <&clks IMX7D_IPG_ROOT_CLK>,
 					<&clks IMX7D_NAND_USDHC_BUS_ROOT_CLK>,
 					<&clks IMX7D_USDHC2_ROOT_CLK>;
-				clock-names = "ipg", "ahb", "per";
-				fsl,tuning-start-tap = <20>;
-				fsl,tuning-step= <2>;
-				bus-width = <4>;
-				status = "disabled";
-			};
-
-			usdhc3: usdhc@30b60000 {
-				compatible = "fsl,imx7d-usdhc", "fsl,imx6sx-usdhc";
-				reg = <0x30b60000 0x10000>;
-				interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
-				clocks = <&clks IMX7D_IPG_ROOT_CLK>,
-					<&clks IMX7D_NAND_USDHC_BUS_ROOT_CLK>,
-					<&clks IMX7D_USDHC3_ROOT_CLK>;
 				clock-names = "ipg", "ahb", "per";
 				fsl,tuning-start-tap = <20>;
 				fsl,tuning-step= <2>;
