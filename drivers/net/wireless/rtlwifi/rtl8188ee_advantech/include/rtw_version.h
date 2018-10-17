@@ -1,1 +1,1 @@
-#define DRIVERVERSION	"v4.3.18.2_r17886.20160524_beta"
+#define DRIVERVERSION	"v5.3.6_xxxx.20180827_beta"
