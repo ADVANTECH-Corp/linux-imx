@@ -757,10 +757,17 @@ static void fsl_qspi_set_map_addr(struct fsl_qspi *q)
 	int nor_size = q->nor_size;
 	void __iomem *base = q->iobase;
 
+#if defined(CONFIG_ARCH_ADVANTECH) && defined(CONFIG_SOC_IMX7)
+	writel(nor_size + q->memmap_phy, base + QUADSPI_SFA1AD);
+	writel(nor_size + q->memmap_phy, base + QUADSPI_SFA2AD);
+	writel(nor_size * 2 + q->memmap_phy, base + QUADSPI_SFB1AD);
+	writel(nor_size * 2 + q->memmap_phy, base + QUADSPI_SFB2AD);
+#else
 	writel(nor_size + q->memmap_phy, base + QUADSPI_SFA1AD);
 	writel(nor_size * 2 + q->memmap_phy, base + QUADSPI_SFA2AD);
 	writel(nor_size * 3 + q->memmap_phy, base + QUADSPI_SFB1AD);
 	writel(nor_size * 4 + q->memmap_phy, base + QUADSPI_SFB2AD);
+#endif
 }
 
 /*

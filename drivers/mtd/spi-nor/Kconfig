@@ -28,11 +28,4 @@ config SPI_FSL_QUADSPI
 	  This enables support for the Quad SPI controller in master mode.
 	  We only connect the NOR to this controller now.
 
-config ADVANTECH_TWO_QSPI_SUPPORT
-	tristate "Advantech support two Quad SPI"
-	depends on ARCH_MXC && SPI_FSL_QUADSPI && ARCH_ADVANTECH
-	help
-	  This enables support for two Quad SPI controller in master mode.
-	  We only connect the NOR to this controller now.
-
 endif # MTD_SPI_NOR

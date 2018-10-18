@@ -36,6 +36,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_qspi1_1>;
 	status = "okay";
+	fsl,qspi-has-second-chip = <1>;
 	ddrsmp=<0>;
 
 	flash0: mx66l1g45g@0 {
