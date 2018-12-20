@@ -294,19 +294,19 @@
 	ldr	r7, =0x1010007e
 	str	r7, [r5, #DDRPHY_MDLL_CON0]
 
-	ldr	r7, =0x10000008
+	ldr	r7, =0x00000010
 	str	r7, [r5, #DDRPHY_OFFSETD_CON0]
 
-	ldr	r7, =0x08080808
+	ldr	r7, =0x0c0c0c0c
 	str	r7, [r5, #DDRPHY_OFFSETR_CON0]
+	ldr	r7, =0x0
 	str	r7, [r5, #DDRPHY_OFFSETR_CON1]
-	ldr	r7, =0x8
 	str	r7, [r5, #DDRPHY_OFFSETR_CON2]
 
-	ldr	r7, =0x08080808
+	ldr	r7, =0x04040404
 	str	r7, [r5, #DDRPHY_OFFSETW_CON0]
+	ldr	r7, =0x0
 	str	r7, [r5, #DDRPHY_OFFSETW_CON1]
-	ldr	r7, =0x8
 	str	r7, [r5, #DDRPHY_OFFSETW_CON2]
 
 	ldr	r7, [r9, #ANADIG_DIGPROG]
@@ -314,12 +314,10 @@
 	cmp	r7, #0x11
 	bne	22f
 
-	ldr	r7, =0x40404040
+	ldr	r7, =0x0
 	str	r7, [r5, #DDRPHY_CA_WLDSKEW_CON0]
-	ldr	r7, =0x18181818
 	str	r7, [r5, #DDRPHY_CA_DSKEW_CON0]
 	str	r7, [r5, #DDRPHY_CA_DSKEW_CON1]
-	ldr	r7, =0x40401818
 	str	r7, [r5, #DDRPHY_CA_DSKEW_CON2]
 	b	23f
 22:
@@ -328,9 +326,9 @@
 	str	r7, [r5, #DDRPHY_CA_DSKEW_CON1]
 	str	r7, [r5, #DDRPHY_CA_DSKEW_CON2]
 23:
-	ldr	r7, =0x11000008
+	ldr	r7, =0x01000010
 	str	r7, [r5, #DDRPHY_OFFSETD_CON0]
-	ldr	r7, =0x10000008
+	ldr	r7, =0x00000010
 	str	r7, [r5, #DDRPHY_OFFSETD_CON0]
 
 	ldr	r6, =0x4
