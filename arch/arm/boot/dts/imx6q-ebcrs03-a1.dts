@@ -195,14 +195,6 @@
                 };
 	};
 
-	pwm4 {
-		pinctrl_pwm4_1: pwm4grp-1 {
-			fsl,pins = <
-				MX6QDL_PAD_SD1_CMD__PWM4_OUT		0x1b0b1
-			>;
-		};
-	};
-
 	spi1 {
 		pinctrl_ecspi1_cs_0: ecspi1_cs_grp-0 {
 			fsl,pins = <
@@ -275,6 +267,11 @@
 	status = "okay";
 };
 
+
+&lcd {
+	status = "disabled";
+};
+
 &mxcfb1 {
 	status = "okay";
 };
@@ -285,13 +282,6 @@
 	power-on-gpio = <&gpio1 29 0>;
 	reset-gpio = <&gpio6 15 0>;
 	status = "okay";
-};
-
-&pwm4 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_pwm4_1>;
-	status = "okay";
-
 };
 
 &ssi2 {
