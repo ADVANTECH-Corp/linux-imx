@@ -199,6 +199,9 @@ MODULE_DEVICE_TABLE(usb, id_table);
 
 struct cp210x_serial_private {
 	__u8			bInterfaceNumber;
+#ifdef CONFIG_ARCH_ADVANTECH
+	u8			partnum;
+#endif
 };
 
 static struct usb_serial_driver cp210x_device = {
@@ -258,6 +261,7 @@ static struct usb_serial_driver * const serial_drivers[] = {
 #define CP210X_SET_CHARS	0x19
 #define CP210X_GET_BAUDRATE	0x1D
 #define CP210X_SET_BAUDRATE	0x1E
+#define CP210X_VENDOR_SPECIFIC	0xFF
 
 /* CP210X_IFC_ENABLE */
 #define UART_ENABLE		0x0001
@@ -299,6 +303,132 @@ static struct usb_serial_driver * const serial_drivers[] = {
 #define CONTROL_DCD		0x0080
 #define CONTROL_WRITE_DTR	0x0100
 #define CONTROL_WRITE_RTS	0x0200
+
+#ifdef CONFIG_ARCH_ADVANTECH
+/* CP210X_VENDOR_SPECIFIC values */
+#define CP210X_READ_2NCONFIG	0x000E
+#define CP210X_READ_LATCH	0x00C2
+#define CP210X_GET_PARTNUM	0x370B
+#define CP210X_GET_PORTCONFIG	0x370C
+#define CP210X_GET_DEVICEMODE	0x3711
+#define CP210X_WRITE_LATCH	0x37E1
+
+/* Part number definitions */
+#define CP210X_PARTNUM_CP2101	0x01
+#define CP210X_PARTNUM_CP2102	0x02
+#define CP210X_PARTNUM_CP2103	0x03
+#define CP210X_PARTNUM_CP2104	0x04
+#define CP210X_PARTNUM_CP2105	0x05
+#define CP210X_PARTNUM_CP2108	0x08
+#define CP210X_PARTNUM_CP2102N_QFN28	0x20
+#define CP210X_PARTNUM_CP2102N_QFN24	0x21
+#define CP210X_PARTNUM_CP2102N_QFN20	0x22
+#define CP210X_PARTNUM_UNKNOWN	0xFF
+
+/* CP2103/4 Port Config */
+// Define bit locations for Mode
+#define PORT_GPIO_0_ON		0x0100
+#define PORT_GPIO_1_ON		0x0200
+#define PORT_GPIO_2_ON		0x0400
+#define PORT_GPIO_3_ON		0x0800
+// Define bit locations for EnhancedFxn
+#define EF_GPIO_0_TXLED			0x01    //  Under device control
+#define EF_GPIO_1_RXLED			0x02    //  Under device control
+#define EF_GPIO_2_RS485			0x04    //  Under device control
+#define EF_RS485_INVERT			0x08    //  RS485 Invert bit
+#define EF_WEAKPULLUP			0x10    //  Weak Pull-up on
+#define EF_RESERVED_1			0x20    //  Reserved, leave bit 5 cleared
+#define EF_SERIAL_DYNAMIC_SUSPEND	0x40    //  For 8 UART/Modem signals
+#define EF_GPIO_DYNAMIC_SUSPEND		0x80    //  For 4 GPIO signals
+
+/* Set config for RS485 mode */
+#define WRITE_RS485_MODE
+
+/*
+ * CP210X_VENDOR_SPECIFIC, CP210X_GET_PORTCONFIG call reads these 0xf bytes.
+ * Structure needs padding due to unused/unspecified bytes.
+ */
+struct cp210x_config {
+	__le16	gpio_mode;
+	u8	__pad0[2];
+	__le16	reset_state;
+	u8	__pad1[4];
+	__le16	suspend_state;
+	u8	sci_cfg;
+	u8	eci_cfg;
+	u8	device_cfg;
+} __packed;
+
+/*
+ * Writes a variable-sized vendor block of CP210X_ registers, identified by val.
+ * Data in buf must be in native USB byte order.
+ */
+static int cp210x_write_vendor_block(struct usb_serial *serial, u8 type,
+				     u16 val, void *buf, int bufsize)
+{
+	struct cp210x_serial_private *spriv = usb_get_serial_data(serial);
+	void *dmabuf;
+	int result;
+
+	dmabuf = kmemdup(buf, bufsize, GFP_KERNEL);
+	if (!dmabuf)
+		return -ENOMEM;
+
+	result = usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
+				 CP210X_VENDOR_SPECIFIC, type, val,
+				 spriv->bInterfaceNumber, dmabuf, bufsize,
+				 USB_CTRL_SET_TIMEOUT);
+
+	kfree(dmabuf);
+
+	if (result == bufsize) {
+		result = 0;
+	} else {
+		dev_err(&serial->interface->dev,
+			"failed to set vendor val 0x%04x size %d: %d\n", val,
+			bufsize, result);
+		if (result >= 0)
+			result = -EIO;
+	}
+
+	return result;
+}
+
+/*
+ * Reads a variable-sized vendor block of CP210X_ registers, identified by val.
+ * Returns data into buf in native USB byte order.
+ */
+static int cp210x_read_vendor_block(struct usb_serial *serial, u8 type, u16 val,
+				    void *buf, int bufsize)
+{
+	struct cp210x_serial_private *spriv = usb_get_serial_data(serial);
+	void *dmabuf;
+	int result;
+
+	dmabuf = kmalloc(bufsize, GFP_KERNEL);
+	if (!dmabuf)
+		return -ENOMEM;
+
+	result = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+				 CP210X_VENDOR_SPECIFIC, type, val,
+				 spriv->bInterfaceNumber, dmabuf, bufsize,
+				 USB_CTRL_GET_TIMEOUT);
+	if (result == bufsize) {
+		memcpy(buf, dmabuf, bufsize);
+		result = 0;
+	} else {
+		dev_err(&serial->interface->dev,
+			"failed to get vendor val 0x%04x size %d: %d\n", val,
+			bufsize, result);
+		if (result >= 0)
+			result = -EIO;
+	}
+
+	kfree(dmabuf);
+
+	return result;
+}
+#endif
 
 /*
  * cp210x_get_config
@@ -863,10 +993,97 @@ static void cp210x_break_ctl(struct tty_struct *tty, int break_state)
 	cp210x_set_config(port, CP210X_SET_BREAK, &state, 2);
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int cp2104_gpioconf_init(struct usb_serial *serial)
+{
+	struct cp210x_config config;
+	int result;
+
+	// Setup RS-485 function for GPIO2
+	result = cp210x_read_vendor_block(serial, REQTYPE_DEVICE_TO_HOST,
+					  CP210X_GET_PORTCONFIG, &config,
+					  sizeof(config));
+	if (result < 0) {
+		dev_err(&serial->interface->dev, "failed to get GPIO value: %d\n",
+				result);
+		return result;
+	} else {
+		// Mask out reserved bits in EnhancedFxn
+		config.sci_cfg &= ~(EF_SERIAL_DYNAMIC_SUSPEND | EF_RESERVED_1);
+	}
+
+	dev_info(&serial->interface->dev,
+		"get Port Config, PortConfig.Mode=0x%x\n", config.gpio_mode);
+	dev_info(&serial->interface->dev,
+		"get Port Config, PortConfig.EnhancedFxn=0x%x\n", config.sci_cfg);
+
+#ifdef WRITE_RS485_MODE
+	if ((config.sci_cfg & EF_GPIO_2_RS485) &&
+	    (config.sci_cfg & EF_RS485_INVERT) &&
+	    (config.gpio_mode & PORT_GPIO_2_ON))
+	{
+		dev_info(&serial->interface->dev,
+			"cp2104 already setup rs485(revert gpio2) mode\n");
+		return 0;
+	} else {
+		config.sci_cfg |= EF_GPIO_2_RS485;	// RS-485 direction
+		config.sci_cfg |= EF_RS485_INVERT;	// active-low
+		config.gpio_mode |= PORT_GPIO_2_ON;
+	}
+
+	// Change user Port_Config structure to match firmware, and check reserved bits are zero
+	if (config.sci_cfg & (EF_SERIAL_DYNAMIC_SUSPEND | EF_RESERVED_1))
+	{
+		dev_err(&serial->interface->dev, "invalid parameter for EnhancedFxn\n");
+	}
+
+	if (config.sci_cfg & EF_WEAKPULLUP) {
+		config.sci_cfg |= (EF_WEAKPULLUP | EF_RESERVED_1); // Set both Weak Pullup bits
+	} else {
+		config.sci_cfg &= ~(EF_WEAKPULLUP | EF_RESERVED_1); // Clear both Weak Pullup bits
+	}
+
+	dev_info(&serial->interface->dev,
+		"set Port Config, PortConfig.Mode=0x%x\n", config.gpio_mode);
+	dev_info(&serial->interface->dev,
+		"set Port Config, PortConfig.EnhancedFxn=0x%x\n", config.sci_cfg);
+
+	result = cp210x_write_vendor_block(serial, REQTYPE_HOST_TO_DEVICE,
+					   CP210X_GET_PORTCONFIG, &config,
+					   sizeof(config));
+	if (result < 0) {
+		dev_err(&serial->interface->dev, "failed to set GPIO value: %d\n",
+				result);
+		return result;
+	}
+
+	dev_info(&serial->interface->dev, "cp2104 setup rs485(revert gpio2) mode ok\n");
+#endif
+	return result;
+}
+
+static int cp210x_gpio_init(struct usb_serial *serial)
+{
+	struct cp210x_serial_private *priv = usb_get_serial_data(serial);
+	int result;
+
+	switch (priv->partnum) {
+	case CP210X_PARTNUM_CP2104:
+		result = cp2104_gpioconf_init(serial);
+		break;
+	default:
+		return 0;
+	}
+
+	return result;
+}
+#endif
+
 static int cp210x_startup(struct usb_serial *serial)
 {
 	struct usb_host_interface *cur_altsetting;
 	struct cp210x_serial_private *spriv;
+	int result;
 
 	spriv = kzalloc(sizeof(*spriv), GFP_KERNEL);
 	if (!spriv)
@@ -877,6 +1094,19 @@ static int cp210x_startup(struct usb_serial *serial)
 
 	usb_set_serial_data(serial, spriv);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	result = cp210x_read_vendor_block(serial, REQTYPE_DEVICE_TO_HOST,
+					  CP210X_GET_PARTNUM, &spriv->partnum,
+					  sizeof(spriv->partnum));
+	if (result < 0) {
+		dev_warn(&serial->interface->dev,
+			 "querying part number failed\n");
+		spriv->partnum = CP210X_PARTNUM_UNKNOWN;
+	}
+	dev_info(&serial->interface->dev, "partnum =%x\n", spriv->partnum);
+
+	cp210x_gpio_init(serial);
+#endif
 	return 0;
 }
 
