@@ -76,7 +76,7 @@ static int imx_sgtl5000_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-#if !defined(CONFIG_SOC_IMX7) && !defined(CONFIG_ARCH_ADVANTECH)
+#ifndef CONFIG_SOC_IMX7
 	/*
 	 * The port numbering in the hardware manual starts at 1, while
 	 * the audmux API expects it starts at 0.
