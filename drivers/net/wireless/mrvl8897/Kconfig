@@ -1,0 +1,23 @@
+config MWIFIEX_PCIE_8897
+	tristate "Marvell WiFi-Ex Driver for PCIE 8897"
+	depends on CFG80211 && PCI
+	select FW_LOADER
+	---help---
+	This adds support for wireless adapters based on Marvell
+	8897 chipsets with PCIe interface.
+
+	If you choose to build it as a module, it will be called
+	mlan.ko and pcie8xxx.ko.
+
+
+config MWIFIEX_USB_8897
+	tristate "Marvell WiFi-Ex Driver for USB 8897"
+	depends on CFG80211 && USB
+	select FW_LOADER
+	---help---
+	This adds support for wireless adapters based on Marvell
+	8897 chipset with USB interface.
+
+	If you choose to build it as a module, it will be called
+	bt8xxx.ko.
+
