@@ -84,10 +84,12 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 #ifdef CONFIG_ARCH_ADVANTECH
 int lvds_vcc_enable;
 int lvds_bkl_enable;
+int bklt_vcc_enable;
 int lvds_vcc_delay_value;
 int lvds_bkl_delay_value;
 enum of_gpio_flags lvds_vcc_flag;
 enum of_gpio_flags lvds_bkl_flag;
+enum of_gpio_flags bklt_vcc_flag;
 
 void enable_lcd_vdd_en(void)
 {
@@ -110,12 +112,24 @@ void enable_lcd_vdd_en(void)
 void enable_ldb_bkl_pwm(void)
 {
 	int ret;
+	printk(KERN_INFO "[LVDS Sequence] 4 Start to enable LVDS backlight.\n");
+
+	// Backlight On (VCC)
+	if (bklt_vcc_enable > 0)
+	{
+		ret = gpio_request(bklt_vcc_enable,"bklt_vdd_enable");
+
+		if (ret < 0)
+			printk("\nRequest bklt_vdd_enable failed!!\n");
+		else
+			gpio_direction_output(bklt_vcc_enable, bklt_vcc_flag);
+	}
 
 	mdelay(lvds_bkl_delay_value);
 	
+	// Backlight Enable (Display On/Off)
         if (lvds_bkl_enable > 0)
         {
-		printk(KERN_INFO "[LVDS Sequence] 4 Start to enable LVDS backlight.\n");
 		ret = gpio_request(lvds_bkl_enable,"lvds_bkl_enable");
 
 		if (ret < 0)
@@ -251,6 +265,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 #ifdef CONFIG_ARCH_ADVANTECH
 	lvds_vcc_enable = of_get_named_gpio_flags(node, "lvds-vcc-enable", 0, &lvds_vcc_flag);
 	lvds_bkl_enable = of_get_named_gpio_flags(node, "lvds-bkl-enable", 0, &lvds_bkl_flag);
+	bklt_vcc_enable = of_get_named_gpio_flags(node, "bklt-vcc-enable", 0, &bklt_vcc_flag);
 	ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds_vcc_delay_value);
 	if (ret < 0)
 	{
