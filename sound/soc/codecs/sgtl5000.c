@@ -1199,12 +1199,12 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
 	int ret;
 	u16 reg;
 	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
-
+#ifndef	CONFIG_ARCH_ADVANTECH_IMX8MQ
 	/* power up sgtl5000 */
 	ret = sgtl5000_set_power_regs(codec);
 	if (ret)
 		goto err;
-
+#endif
 	/* enable small pop, introduce 400ms delay in turning off */
 	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
 				SGTL5000_SMALL_POP, 1);

@@ -946,6 +946,10 @@ static int spi_nor_is_locked(struct mtd_info *mtd, loff_t ofs, uint64_t len)
  * old entries may be missing 4K flag.
  */
 static const struct flash_info spi_nor_ids[] = {
+#ifdef	CONFIG_ARCH_ADVANTECH_IMX8MQ
+	{ "n25qba16", INFO(0x20ba16, 0, 64 * 1024,  64, SECT_4K) },
+	{ "n25qbb16", INFO(0x20bb16, 0, 64 * 1024,  64, SECT_4K) },
+#endif
 	/* Atmel -- some are (confusingly) marketed as "DataFlash" */
 	{ "at25fs010",  INFO(0x1f6601, 0, 32 * 1024,   4, SECT_4K) },
 	{ "at25fs040",  INFO(0x1f6604, 0, 64 * 1024,   8, SECT_4K) },
