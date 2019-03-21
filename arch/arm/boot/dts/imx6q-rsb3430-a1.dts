@@ -193,6 +193,44 @@
 		};
 	};
 
+	uart2 {
+		pinctrl_uart2_3: uart2grp-3 { /* DCE mode */
+			fsl,pins = <
+				MX6QDL_PAD_EIM_D26__UART2_TX_DATA 0x1b0b1
+				MX6QDL_PAD_EIM_D27__UART2_RX_DATA 0x1b0b1
+				MX6QDL_PAD_EIM_D28__UART2_CTS_B   0x1b0b1
+				MX6QDL_PAD_EIM_D29__UART2_RTS_B   0x1b0b1
+			>;
+		};
+	};
+
+	uart3 {
+		pinctrl_uart3_2: uart3grp-2 {
+			fsl,pins = <
+				MX6QDL_PAD_EIM_D24__UART3_TX_DATA 0x1b0b1
+				MX6QDL_PAD_EIM_D25__UART3_RX_DATA 0x1b0b1
+			>;
+		};
+	};
+
+	uart4 {
+		pinctrl_uart4_2: uart4grp-2 {
+			fsl,pins = <
+				MX6QDL_PAD_CSI0_DAT12__UART4_TX_DATA 0x1b0b1
+				MX6QDL_PAD_CSI0_DAT13__UART4_RX_DATA 0x1b0b1
+			>;
+		};
+	};
+
+	uart5 {
+		pinctrl_uart5_2: uart5grp-2 {
+			fsl,pins = <
+				MX6QDL_PAD_CSI0_DAT14__UART5_TX_DATA 0x1b0b1
+				MX6QDL_PAD_CSI0_DAT15__UART5_RX_DATA 0x1b0b1
+			>;
+		};
+	};
+
 	usbh1 {
 		pinctrl_usbh1_1: usbh1_grp-1 {
 			fsl,pins = <
