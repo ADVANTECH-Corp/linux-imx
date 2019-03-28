@@ -6122,6 +6122,7 @@ ssize_t proc_set_lck(struct file *file, const char __user *buffer, size_t count,
 inline void RTW_BUF_DUMP_SEL(uint _loglevel, void *sel, u8 *_titlestring,
 					bool _idx_show, const u8 *_hexdata, int _hexdatalen)
 {
+#ifdef CONFIG_RTW_DEBUG
 	int __i;
 	u8 *ptr = (u8 *)_hexdata;
 
@@ -6147,6 +6148,9 @@ inline void RTW_BUF_DUMP_SEL(uint _loglevel, void *sel, u8 *_titlestring,
 		}
 		_RTW_PRINT_SEL(sel, "\n");
 	}
+#else
+	_RTW_PRINT_SEL(sel, "CONFIG_RTW_DEBUG is disabled\n");
+#endif
 }
 #else
 inline void _RTW_STR_DUMP_SEL(void *sel, char *str_out)
