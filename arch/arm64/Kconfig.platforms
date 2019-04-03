@@ -323,5 +323,4 @@ config ARCH_ADVANTECH
 	help
 	  This enables support for Advantech Board.
 
-
 endmenu
