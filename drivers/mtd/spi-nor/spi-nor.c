@@ -946,7 +946,7 @@ static int spi_nor_is_locked(struct mtd_info *mtd, loff_t ofs, uint64_t len)
  * old entries may be missing 4K flag.
  */
 static const struct flash_info spi_nor_ids[] = {
-#ifdef	CONFIG_ARCH_ADVANTECH_IMX8MQ
+#ifdef	CONFIG_ARCH_ADVANTECH
 	{ "n25qba16", INFO(0x20ba16, 0, 64 * 1024,  64, SECT_4K) },
 	{ "n25qbb16", INFO(0x20bb16, 0, 64 * 1024,  64, SECT_4K) },
 #endif

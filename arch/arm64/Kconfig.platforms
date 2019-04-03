@@ -326,10 +326,27 @@ config ARCH_FSL_IMX8MM
 	help
 	  This enables support for Freescale i.MX8MM SOC.
 
-config ARCH_ADVANTECH_IMX8MQ
-	bool "Support Advantech board"
-	help
-	  This enables support for Advantech i.MX8MQ SOC.
+config ARCH_ADVANTECH
+    bool "Support Advantech board"
+    help
+      This enables support for Advantech Board.
 
+config ARCH_ADVANTECH_IMX8MQ
+    bool "i.MX8MQ SOC"
+    depends on ARCH_FSL_IMX8MQ && ARCH_ADVANTECH
+    help
+      This enables support for Advantech i.MX8MQ SOC.
+
+config ARCH_ADVANTECH_IMX8QM
+    bool "i.MX8QM SOC"
+    depends on ARCH_FSL_IMX8QM && ARCH_ADVANTECH
+    help
+      This enables support for Advantech i.MX8QM SOC.
+
+config ARCH_ADVANTECH_IMX8QXP
+    bool "i.MX8QXP SOC"
+    depends on ARCH_FSL_IMX8QXP && ARCH_ADVANTECH
+    help
+      This enables support for Advantech i.MX8QXP SOC.
 
 endmenu
