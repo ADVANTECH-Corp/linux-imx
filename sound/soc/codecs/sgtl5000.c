@@ -1460,12 +1460,12 @@ static int sgtl5000_probe(struct snd_soc_component *component)
 	u16 reg;
 	struct sgtl5000_priv *sgtl5000 = snd_soc_component_get_drvdata(component);
 	unsigned int zcd_mask = SGTL5000_HP_ZCD_EN | SGTL5000_ADC_ZCD_EN;
-
+#ifndef CONFIG_ARCH_ADVANTECH
 	/* power up sgtl5000 */
 	ret = sgtl5000_set_power_regs(component);
 	if (ret)
 		goto err;
-
+#endif
 	/* enable small pop, introduce 400ms delay in turning off */
 	snd_soc_component_update_bits(component, SGTL5000_CHIP_REF_CTRL,
 				SGTL5000_SMALL_POP, SGTL5000_SMALL_POP);
