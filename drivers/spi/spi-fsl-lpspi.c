@@ -894,6 +894,14 @@ static int fsl_lpspi_probe(struct platform_device *pdev)
 		goto out_controller_put;
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+{
+    int num_cs;
+
+    ret = of_property_read_u32(np, "fsl,spi-num-chipselects", &num_cs);
+    if (ret == 0) controller->num_chipselect=num_cs;
+}
+#endif
 	if (!fsl_lpspi->is_slave) {
 		controller->cs_gpios = devm_kzalloc(&controller->dev,
 			sizeof(int) * controller->num_chipselect, GFP_KERNEL);
