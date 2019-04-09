@@ -860,6 +860,14 @@ static int fsl_lpspi_probe(struct platform_device *pdev)
 	fsl_lpspi->is_slave = of_property_read_bool((&pdev->dev)->of_node,
 						    "spi-slave");
 
+#ifdef CONFIG_ARCH_ADVANTECH
+{
+    int num_cs;
+
+    ret = of_property_read_u32(np, "fsl,spi-num-chipselects", &num_cs);
+    if (ret == 0) controller->num_chipselect=num_cs;
+}
+#endif
 	if (!fsl_lpspi->is_slave) {
 		for (i = 0; i < controller->num_chipselect; i++) {
 			int cs_gpio = of_get_named_gpio(np, "cs-gpios", i);
