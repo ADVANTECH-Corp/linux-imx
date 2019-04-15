@@ -73,6 +73,12 @@
 	status = "okay";
 };
 
+&can1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_flexcan1_1>;
+	status = "okay";
+};
+
 &ecspi1 {
 	m25p80@0 {
 		compatible = "winbond,w25q32";
@@ -298,6 +304,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie_1>;
 	power-on-gpio = <&gpio1 17 0>;
+	disable-gpio = <&gpio6 16 0>; /* M2_W_DIS1# */
 	reset-gpio = <&gpio6 15 1>;
 	status = "okay";
 };
