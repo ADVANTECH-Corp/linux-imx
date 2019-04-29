@@ -87,6 +87,8 @@ int lvds_bkl_enable;
 int bklt_vcc_enable;
 int lvds_vcc_delay_value;
 int lvds_bkl_delay_value;
+int bklt_pwm_delay_value;
+int bklt_en_delay_value;
 enum of_gpio_flags lvds_vcc_flag;
 enum of_gpio_flags lvds_bkl_flag;
 enum of_gpio_flags bklt_vcc_flag;
@@ -94,6 +96,7 @@ enum of_gpio_flags bklt_vcc_flag;
 void enable_lcd_vdd_en(void)
 {
 	int ret;
+	printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD.\n");
 
 	/* LVDS Panel power enable */
 	if (lvds_vcc_enable > 0)
@@ -106,13 +109,19 @@ void enable_lcd_vdd_en(void)
 			gpio_direction_output(lvds_vcc_enable, lvds_vcc_flag);
 	}
 
-	mdelay(lvds_vcc_delay_value);
+	printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
 }
 
-void enable_ldb_bkl_pwm(void)
+void enable_ldb_signal(void)
+{
+	mdelay(lvds_vcc_delay_value); // T2 for AUO 7"
+}
+
+void enable_ldb_bkl_vcc(void)
 {
 	int ret;
-	printk(KERN_INFO "[LVDS Sequence] 4 Start to enable LVDS backlight.\n");
+	mdelay(lvds_bkl_delay_value); // T3 for AUO 7"
+	printk(KERN_INFO "[LVDS Sequence] 3 Start to enable backlight VCC.\n");
 
 	// Backlight On (VCC)
 	if (bklt_vcc_enable > 0)
@@ -125,7 +134,15 @@ void enable_ldb_bkl_pwm(void)
 			gpio_direction_output(bklt_vcc_enable, bklt_vcc_flag);
 	}
 
-	mdelay(lvds_bkl_delay_value);
+	mdelay(bklt_pwm_delay_value); // T8 for AUO 7"
+	printk(KERN_INFO "[LVDS Sequence] 4 Start to enable backlight PWM.\n");
+}
+
+void enable_ldb_bkl_pwm(void)
+{
+	int ret;
+	mdelay(bklt_en_delay_value); // T9 for AUO 7"
+	printk(KERN_INFO "[LVDS Sequence] 5 Start to enable LVDS backlight.\n");
 	
 	// Backlight Enable (Display On/Off)
         if (lvds_bkl_enable > 0)
@@ -269,12 +286,22 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds_vcc_delay_value);
 	if (ret < 0)
 	{
-		lvds_vcc_delay_value = 250;
+		lvds_vcc_delay_value = 10;
 	}
 	ret = of_property_read_u32(node,"lvds-bkl-delay-time",&lvds_bkl_delay_value);
 	if (ret < 0)
 	{
-		lvds_bkl_delay_value = 20;
+		lvds_bkl_delay_value = 210;
+	}
+	ret = of_property_read_u32(node,"bklt-pwm-delay-time",&bklt_pwm_delay_value);
+	if (ret < 0)
+	{
+		bklt_pwm_delay_value = 20;
+	}
+	ret = of_property_read_u32(node,"bklt-en-delay-time",&bklt_en_delay_value);
+	if (ret < 0)
+	{
+		bklt_en_delay_value = 20;
 	}
 #endif
 

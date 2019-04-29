@@ -66,9 +66,8 @@
 char fb_vga_fix_id[30];
 
 #if defined(CONFIG_OF)
-int first_power_on = 1;
+int first_flip_complete = 1;
 extern void enable_lcd_vdd_en(void);
-extern void enable_ldb_bkl_pwm(void);
 #endif
 
 #endif
@@ -2738,6 +2737,13 @@ static irqreturn_t mxcfb_irq_handler(int irq, void *dev_id)
 	}
 
 	complete(&mxc_fbi->flip_complete);
+
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	if (first_flip_complete) {
+		enable_lcd_vdd_en();
+		first_flip_complete = 0;
+	}
+#endif
 	return IRQ_HANDLED;
 }
 
@@ -3520,16 +3526,6 @@ static int mxcfb_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "get mxcfb of property fail\n");
 		return ret;
 	}
-
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-	if(first_power_on) {
-		printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD.\n");
-
-		enable_lcd_vdd_en();
-
-		printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
-	}
-#endif
 
 	/* Initialize FB structures */
 	fbi = mxcfb_init_fbinfo(&pdev->dev, &mxcfb_ops);
