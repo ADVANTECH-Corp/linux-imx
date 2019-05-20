@@ -15,6 +15,10 @@
 
 /dts-v1/;
 
+#define	ENABLE_CSI0
+#define	ENABLE_CSI1 
+/* #define	ENABLE_M2_SDIO */
+
 #include "fsl-imx8mq.dtsi"
 
 / {
@@ -77,22 +81,14 @@
 				<192000>;
 	};
 
-	sound-spdif {
-		compatible = "fsl,imx-audio-spdif";
-		model = "imx-spdif";
-		spdif-controller = <&spdif1>;
-		spdif-out;
-		spdif-in;
-	};
-
-	sound-hdmi-arc {
-		compatible = "fsl,imx-audio-spdif";
-		model = "imx-hdmi-arc";
-		spdif-controller = <&spdif2>;
-		spdif-in;
-	};
-
-
+#ifdef	ENABLE_M2_SDIO
+        usdhc2_pwrseq: usdhc2_pwrseq {
+                compatible = "mmc-pwrseq-simple";
+                reset-gpios =   <&tca9538 0 1>,
+				<&tca9538 1 1>,
+				<&tca9538 4 1>;
+        };
+#endif
 
 	gpio-keys {
                 compatible = "gpio-keys";
@@ -100,6 +96,7 @@
                 #size-cells = <0>;
                 pinctrl-0 = <&pinctrl_lid_key &pinctrl_sleep_key>;
                 pinctrl-names = "default";
+#ifdef LID
                 lid@1 {
                         label = "LID KEY";
                         gpios = <&gpio3 20 0>; /* GPIO_ACTIVE_LOW:1 */
@@ -107,6 +104,7 @@
                         linux,code = <116>;     /* KEY_POWER */
                         debounce_interval = <1>;
                 };
+#endif
                 sleep@2 {
                         label = "SLEEP KEY";
                         gpios = <&gpio3 25 0>; /* GPIO_ACTIVE_LOW:1 */
@@ -114,8 +112,7 @@
                         linux,code = <116>;     /* KEY_POWER */
                         debounce_interval = <1>;
                 };
-        };
-
+	};
 
 };
 
@@ -131,15 +128,19 @@
 	imx8mq-evk {
 		pinctrl_hog: hoggrp {
 			fsl,pins = <
-				MX8MQ_IOMUXC_GPIO1_IO03_GPIO1_IO3		0x19	/* GPIO0 */
-				MX8MQ_IOMUXC_GPIO1_IO04_GPIO1_IO4		0x19	/* GPIO2 */
 				MX8MQ_IOMUXC_GPIO1_IO00_GPIO1_IO0		0x19	/* GPIO4 */
 				MX8MQ_IOMUXC_SPDIF_RX_GPIO5_IO4			0x19	/* GPIO5 */
 				MX8MQ_IOMUXC_SAI5_RXFS_GPIO3_IO19		0x19	/* GPIO6 */
 				MX8MQ_IOMUXC_SAI5_RXD0_GPIO3_IO21		0x19	/* GPIO7 */
 				MX8MQ_IOMUXC_GPIO1_IO08_GPIO1_IO8		0x19	/* GPIO8 */
 				MX8MQ_IOMUXC_SAI5_RXD2_GPIO3_IO23		0x19	/* GPIO9 */
-				MX8MQ_IOMUXC_GPIO1_IO12_GPIO1_IO12		0x19	/* GPIO11 */
+				MX8MQ_IOMUXC_SAI3_RXFS_GPIO4_IO28		0x19	/* GPIO10 */	
+				MX8MQ_IOMUXC_SAI1_RXFS_GPIO4_IO0		0x19	/* GPIO11 */
+
+				MX8MQ_IOMUXC_GPIO1_IO10_GPIO1_IO10		0x19	/* USB0_OTG_ID_1V8*/
+				MX8MQ_IOMUXC_GPIO1_IO12_GPIO1_IO12		0x19	/* USB1_OTG_VBUS */
+
+				MX8MQ_IOMUXC_GPIO1_IO14_CCMSRCGPCMIX_CLKO1	0x59
 
 				MX8MQ_IOMUXC_SAI5_RXD1_GPIO3_IO22		0x19	/* TEST */
 				MX8MQ_IOMUXC_SAI5_RXD3_GPIO3_IO24		0x19	/* BATLOW */
@@ -152,9 +153,21 @@
 				MX8MQ_IOMUXC_NAND_READY_B_GPIO3_IO16		0x19	/* SMB_ALERT_1V8 */
 				
 				MX8MQ_IOMUXC_NAND_WP_B_GPIO3_IO18		0x19	/* WDT_EN */
-				MX8MQ_IOMUXC_SAI1_RXFS_GPIO4_IO0		0x19	/* WDOG_RST */
+				MX8MQ_IOMUXC_SAI2_RXC_GPIO4_IO22		0x19	/* WDOG_TRIG */
 			>;
 		};
+
+                pinctrl_csi1_pwn: csi1_pwn_grp {
+                        fsl,pins = <
+				MX8MQ_IOMUXC_GPIO1_IO03_GPIO1_IO3		0x19	/* GPIO0 */
+                        >;
+                };
+
+                pinctrl_csi1_rst: csi1_rst_grp {
+                        fsl,pins = <
+				MX8MQ_IOMUXC_GPIO1_IO04_GPIO1_IO4		0x19	/* GPIO2 */
+                        >;
+                };
 
                 pinctrl_csi2_pwn: csi2_pwn_grp {
                         fsl,pins = <
@@ -162,35 +175,21 @@
                         >;
                 };
 
-                pinctrl_csi_rst: csi_rst_grp {
+                pinctrl_csi2_rst: csi2_rst_grp {
                         fsl,pins = <
                                 MX8MQ_IOMUXC_GPIO1_IO06_GPIO1_IO6               0x19
-				MX8MQ_IOMUXC_GPIO1_IO14_CCMSRCGPCMIX_CLKO1	0x59
                         >;
                 };
 
 		pinctrl_lid_key: gpio_userkeygrp-1 {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SAI5_RXC_GPIO3_IO20		0x19	/* LID */
+				MX8MQ_IOMUXC_SAI5_RXC_GPIO3_IO20		0x59	/* LID */
 			>;
 		};
 		pinctrl_sleep_key: gpio_userkeygrp-2 {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SAI5_MCLK_GPIO3_IO25		0x19	/* SLEEP */	
+				MX8MQ_IOMUXC_SAI5_MCLK_GPIO3_IO25		0x59	/* SLEEP */	
 			>;
-		};
-
-		lvds {
-			pinctrl_lvds_bkl_1: lvds_bklgrp-1 {
-				fsl,pins = <
-					MX8MQ_IOMUXC_ECSPI1_MOSI_GPIO5_IO7		0x19	/* LCD0_BKLT_EN */
-				>;
-			};
-			pinctrl_lvds_vcc_1: lvds_vccgrp-1 {
-				fsl,pins = <
-					MX8MQ_IOMUXC_ECSPI1_SCLK_GPIO5_IO6		0x19	/* LCD0_VDD_EN */
-				>;
-			};
 		};
 
                 pinctrl_ecspi2: ecspi2grp {
@@ -257,17 +256,26 @@
 			>;
 		};
 
-		pinctrl_qspi: qspigrp {
-			fsl,pins = <
-				MX8MQ_IOMUXC_NAND_ALE_QSPI_A_SCLK	0x82
-				MX8MQ_IOMUXC_NAND_CE0_B_QSPI_A_SS0_B	0x82
-				MX8MQ_IOMUXC_NAND_DATA00_QSPI_A_DATA0	0x82
-				MX8MQ_IOMUXC_NAND_DATA01_QSPI_A_DATA1	0x82
-				MX8MQ_IOMUXC_NAND_DATA02_QSPI_A_DATA2	0x82
-				MX8MQ_IOMUXC_NAND_DATA03_QSPI_A_DATA3	0x82
+                pinctrl_qspi: qspigrp {
+                        fsl,pins = <
 
-			>;
-		};
+                                MX8MQ_IOMUXC_NAND_ALE_QSPI_A_SCLK       0x82
+                                MX8MQ_IOMUXC_NAND_CE0_B_QSPI_A_SS0_B    0x82
+                                MX8MQ_IOMUXC_NAND_DATA00_QSPI_A_DATA0   0x82
+                                MX8MQ_IOMUXC_NAND_DATA01_QSPI_A_DATA1   0x82
+                                MX8MQ_IOMUXC_NAND_DATA02_QSPI_A_DATA2   0x82
+                                MX8MQ_IOMUXC_NAND_DATA03_QSPI_A_DATA3   0x82
+/*
+                                MX8MQ_IOMUXC_NAND_CLE_QSPI_B_SCLK       0x82
+ 				MX8MQ_IOMUXC_NAND_CE3_B_QSPI_B_SS1_B	0x82 
+                                MX8MQ_IOMUXC_NAND_CE2_B_QSPI_B_SS0_B    0x82
+                                MX8MQ_IOMUXC_NAND_DATA04_QSPI_B_DATA0   0x82
+                                MX8MQ_IOMUXC_NAND_DATA05_QSPI_B_DATA1   0x82
+                                MX8MQ_IOMUXC_NAND_DATA06_QSPI_B_DATA2   0x82
+                                MX8MQ_IOMUXC_NAND_DATA07_QSPI_B_DATA3   0x82
+*/
+                        >;
+                };
 
 		pinctrl_uart1: uart1grp {
 			fsl,pins = <
@@ -289,7 +297,6 @@
 				MX8MQ_IOMUXC_UART3_RXD_UART3_DCE_RX		0x49
 				MX8MQ_IOMUXC_ECSPI1_MISO_UART3_DCE_CTS_B	0x49
 				MX8MQ_IOMUXC_ECSPI1_SS0_UART3_DCE_RTS_B		0x49
-				MX8MQ_IOMUXC_NAND_CLE_GPIO3_IO5			0x19
 			>;
 		};
 
@@ -408,7 +415,6 @@
                 pinctrl_usbotg: usbotggrp {
                         fsl,pins = <
 				MX8MQ_IOMUXC_GPIO1_IO13_USB1_OTG_OC	0x16
-				MX8MQ_IOMUXC_GPIO1_IO10_USB1_OTG_ID	0x19	/* GPIO10 */
                         >;
                 };
 
@@ -554,8 +560,21 @@
 			};
 		};
 	};
-
-
+        typec_ptn5100: ptn5110@50 {
+                compatible = "usb,tcpci";
+                pinctrl-names = "default";
+                reg = <0x50>;
+                interrupt-parent = <&gpio3>;
+                interrupts = <3 8>;
+                src-pdos = <0x380190c8>;
+                snk-pdos = <0x380190c8 0x3802d0c8>;
+                max-snk-mv = <9000>;
+                max-snk-ma = <2000>;
+                op-snk-mw = <9000>;
+                max-snk-mw = <18000>;
+                port-type = "drp";
+                default-role = "sink";
+        };
 
 };
 
@@ -564,13 +583,13 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c2>;
 	status = "okay";
-	
-	ov5640_mipi: ov5640_mipi@3c {
+#ifdef	ENABLE_CSI1	
+	ov5640_mipi2: ov5640_mipi2@3c {
                 compatible = "ovti,ov5640_mipi";
                 reg = <0x3c>;
                 status = "okay";
                 pinctrl-names = "default";
-                pinctrl-0 = <&pinctrl_csi2_pwn>, <&pinctrl_csi_rst>;
+                pinctrl-0 = <&pinctrl_csi2_pwn>, <&pinctrl_csi2_rst>;
                 clocks = <&clk IMX8MQ_CLK_CLKO2>;
                 clock-names = "csi_mclk";
                 assigned-clocks = <&clk IMX8MQ_CLK_CLKO2>;
@@ -587,7 +606,24 @@
                         };
                 };
         };
+#endif
+        adv_bridge: adv7535@3d {
+                compatible = "adi,adv7533";
+                reg = <0x3d>;
+                adi,addr-cec = <0x3b>;
+                adi,dsi-lanes = <4>;
+                interrupt-parent = <&gpio5>;
+                interrupts = <7 IRQ_TYPE_LEVEL_LOW>;
 
+                status = "disabled";
+
+                port {
+                        adv7535_in: endpoint {
+                                remote-endpoint = <&mipi_dsi_bridge_adv>;
+                        };
+                };
+        };
+	
 };
 
 &i2c3 {
@@ -605,6 +641,42 @@
                 pinctrl-0 = <&pinctrl_sai2_mclk>;
 
 	};
+        24c32@50 {
+                compatible = "fsl,24c32";
+                reg = <0x50>;
+        };
+	
+	tca9538: pca9538@70 {
+		compatible = "nxp,pca9538";
+		reg = <0x70>;
+		#gpio-cells = <2>;
+		gpio-controller;
+	};
+#ifdef	ENABLE_CSI0	
+	ov5640_mipi: ov5640_mipi@3c {
+                compatible = "ovti,ov5640_mipi";
+                reg = <0x3c>;
+                status = "okay";
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinctrl_csi1_pwn>, <&pinctrl_csi1_rst>;
+                clocks = <&clk IMX8MQ_CLK_CLKO2>;
+                clock-names = "csi_mclk";
+                assigned-clocks = <&clk IMX8MQ_CLK_CLKO2>;
+                assigned-clock-parents = <&clk IMX8MQ_SYS2_PLL_200M>;
+		assigned-clock-rates = <0>, <20000000>;                
+                csi_id = <0>;
+                pwn-gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+                rst-gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;
+		mclk = <20000000>;
+		mclk_source = <0>;
+                port {
+                        ov5640_mipi1_ep: endpoint {
+                                remote-endpoint = <&mipi1_sensor_ep>;
+                        };
+                };
+        };
+#endif
+
 };
 
 
@@ -675,10 +747,13 @@
 
 
 &qspi {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_qspi>;
-	status = "okay";
-
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_qspi>;
+        status = "okay";
+/*
+        fsl,qspi-has-second-chip = <1>;
+        ddrsmp=<0>;
+*/
 	flash0: n25q256a@0 {
 		reg = <0>;
 		#address-cells = <1>;
@@ -687,8 +762,8 @@
 		spi-max-frequency = <29000000>;
 		spi-nor,ddr-quad-read-dummy = <6>;
 	};
-
-	flash1: n25q256a@0 {
+/*
+	flash1: n25q256a@1 {
 		reg = <1>;
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -696,6 +771,7 @@
 		spi-max-frequency = <29000000>;
 		spi-nor,ddr-quad-read-dummy = <6>;
 	};
+*/
 };
 
 &usdhc1 {
@@ -709,11 +785,15 @@
 };
 
 &usdhc2 {
-	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usdhc2>, <&pinctrl_usdhc2_gpio>;
 	bus-width = <4>;
+#ifndef	ENABLE_M2_SDIO
 	cd-gpios = <&gpio2 12 GPIO_ACTIVE_LOW>;
 	wp-gpios = <&gpio2 20 GPIO_ACTIVE_HIGH>;
+#else
+	mmc-pwrseq = <&usdhc2_pwrseq>;
+#endif
 	vmmc-supply = <&reg_usdhc2_vmmc>;
 	status = "okay";
 };
@@ -723,8 +803,6 @@
 };
 
 &usb3_0 {
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_usbotg>;
 	status = "okay";
 };
 
@@ -829,7 +907,20 @@
 	disp-dev = "hdmi_disp";
 };
 
+#ifdef	ENABLE_CSI0	
+&csi1_bridge {
+        fsl,mipi-mode;
+        fsl,two-8bit-sensor-mode;
+        status = "okay";
 
+        port {
+                csi1_ep: endpoint {
+                        remote-endpoint = <&csi1_mipi_ep>;
+                };
+        };
+};
+#endif
+#ifdef	ENABLE_CSI1	
 &csi2_bridge {
         fsl,mipi-mode;
         fsl,two-8bit-sensor-mode;
@@ -841,7 +932,27 @@
                 };
         };
 };
+#endif
+#ifdef	ENABLE_CSI0	
 
+&mipi_csi_1 {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        status = "okay";
+        port {
+                mipi1_sensor_ep: endpoint1 {
+                        remote-endpoint = <&ov5640_mipi1_ep>;
+                        data-lanes = <1 2>;
+                };
+
+                csi1_mipi_ep: endpoint2 {
+                        remote-endpoint = <&csi1_ep>;
+                };
+        };
+};
+#endif
+
+#ifdef	ENABLE_CSI1	
 &mipi_csi_2 {
         #address-cells = <1>;
         #size-cells = <0>;
@@ -857,6 +968,7 @@
                 };
         };
 };
+#endif
 
 &hdmi {
 	status = "okay";
@@ -874,6 +986,15 @@
                 compatible = "micron,n25qba16";
                 spi-max-frequency = <20000000>;
                 reg = <0>;
+        };
+};
+
+
+&mipi_dsi_bridge {
+        port@1 {
+                mipi_dsi_bridge_adv: endpoint {
+                        remote-endpoint = <&adv7535_in>;
+                };
         };
 };
 

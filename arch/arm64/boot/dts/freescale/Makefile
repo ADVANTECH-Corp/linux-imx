@@ -15,8 +15,6 @@ dtb-$(CONFIG_ARCH_LAYERSCAPE) += fsl-ls2088a-qds.dtb
 dtb-$(CONFIG_ARCH_LAYERSCAPE) += fsl-ls2088a-rdb.dtb
  
 dtb-$(CONFIG_ARCH_FSL_IMX8QM) += fsl-imx8qm-lpddr4-arm2.dtb \
-				 fsl-imx8qm-lpddr4-arm2-dom0.dtb \
-				 fsl-imx8qm-lpddr4-arm2-domu.dtb \
 				 fsl-imx8qm-ddr4-arm2.dtb \
 				 fsl-imx8qm-ddr4-arm2-hdmi.dtb \
 				 fsl-imx8qm-lpddr4-arm2_ca53.dtb \
@@ -32,12 +30,6 @@ dtb-$(CONFIG_ARCH_FSL_IMX8QM) += fsl-imx8qm-lpddr4-arm2.dtb \
 				 fsl-imx8qm-mek-dsi-rm67191.dtb \
 				 fsl-imx8qm-mek-enet2-tja1100.dtb \
 				 fsl-imx8qm-mek-jdi-wuxga-lvds1-panel.dtb \
-				 fsl-imx8qm-mek-dom0.dtb \
-				 fsl-imx8qm-mek-dom0-dpu2.dtb \
-				 fsl-imx8qm-mek-domu.dtb \
-				 fsl-imx8qm-mek-domu-car.dtb \
-				 fsl-imx8qm-mek-domu-dpu1.dtb \
-				 fsl-imx8qm-mek-domu-dpu1-hdmi.dtb \
 				 fsl-imx8qm-mek-root.dtb \
 				 fsl-imx8qm-mek-inmate.dtb \
 				 fsl-imx8qm-lpddr4-arm2-dp.dtb \
@@ -105,6 +97,7 @@ dtb-$(CONFIG_ARCH_FSL_IMX8MQ) += fsl-imx8mq-ddr3l-arm2.dtb \
 				 fsl-imx8mq-evk-pdm.dtb \
 				 fsl-imx8mq-evk-dcss-adv7535.dtb \
 				 fsl-imx8mq-evk-dcss-adv7535-b3.dtb \
+				 fsl-imx8mq-rom5720-a1-dcss-adv7535-b3.dtb \
 				 fsl-imx8mq-evk-dcss-rm67191.dtb \
 				 fsl-imx8mq-evk-dcss-rm67191-b3.dtb \
 				 fsl-imx8mq-evk-dual-display.dtb \
