@@ -152,10 +152,20 @@
 				MX8MQ_IOMUXC_NAND_CE1_B_GPIO3_IO2		0x19	/* RESET_DELAY */
 				MX8MQ_IOMUXC_NAND_READY_B_GPIO3_IO16		0x19	/* SMB_ALERT_1V8 */
 				
-				MX8MQ_IOMUXC_NAND_WP_B_GPIO3_IO18		0x19	/* WDT_EN */
-				MX8MQ_IOMUXC_SAI2_RXC_GPIO4_IO22		0x19	/* WDOG_TRIG */
 			>;
 		};
+			pinctrl_wdt_en_1: wdt_engrp-1 {
+				fsl,pins = <
+					MX8MQ_IOMUXC_NAND_WP_B_GPIO3_IO18		0x19	/* WDT_EN */
+				>;
+			};
+			pinctrl_wdt_ping_1: wdt_pinggrp-1 {
+				fsl,pins = <
+					MX8MQ_IOMUXC_SAI2_RXC_GPIO4_IO22		0x19	/* WDOG_TRIG */
+				>;
+			};
+
+
 
                 pinctrl_csi1_pwn: csi1_pwn_grp {
                         fsl,pins = <
@@ -576,6 +586,7 @@
                 default-role = "sink";
         };
 
+
 };
 
 &i2c2 {
@@ -693,6 +704,15 @@
                 trickle-diode-disable;
 
 	};
+	wdt@29 {
+                compatible = "fsl,adv-wdt-i2c";
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+                status = "okay";
+                wdt-en = <&gpio3 18 0>;
+                wdt-ping = <&gpio4 22 0>;
+                reg = <0x29>;
+        };
 };
 
 &pcie0{
