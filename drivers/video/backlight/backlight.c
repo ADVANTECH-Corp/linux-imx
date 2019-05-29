@@ -59,7 +59,7 @@ static int fb_notifier_callback(struct notifier_block *self,
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
 	if (blank_count == 0)
 	{
-		enable_ldb_signal();
+		//enable_ldb_signal();
 		blank_count++;
 		return 0;
 	}
