@@ -142,6 +142,16 @@
 		compatible = "fsl,mxc_vga_i2c";
 		reg = <0x50>;
 	};
+
+	wdt@29 {
+		compatible = "fsl,adv-wdt-i2c";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+		status = "okay";
+		wdt-en = <&gpio1 26 0>;
+		wdt-ping = <&gpio1 28 0>;
+		reg = <0x29>;
+	};
 };
 
 &iomuxc {
@@ -311,6 +321,20 @@
 			fsl,pins = <
 				MX6QDL_PAD_ENET_RX_ER__USB_OTG_ID	0x0001B0B0
 				MX6QDL_PAD_EIM_D21__USB_OTG_OC 0x17059
+			>;
+		};
+	};
+
+	wdt{
+		pinctrl_wdt_en_1: wdt_engrp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_ENET_RXD1__GPIO1_IO26	0x80000000
+			>;
+		};
+
+		pinctrl_wdt_ping_1: wdt_pinggrp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_ENET_TX_EN__GPIO1_IO28		0x80000000
 			>;
 		};
 	};
@@ -490,4 +514,8 @@
 	non-removable;
 	no-1-8-v;
 	status = "okay";
+};
+
+&wdog1 {
+	status = "disabled";
 };
