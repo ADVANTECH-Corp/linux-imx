@@ -28,6 +28,11 @@ config DRM_PANEL_SIMPLE
 	  that it can be automatically turned off when the panel goes into a
 	  low power state.
 
+config DRM_PANEL_AUO_G101UAN02
+	tristate "support for AUO G101UAN02 panel"
+	help
+	  DRM panel driver for AUO G101UAN02 panel.
+
 config DRM_PANEL_INNOLUX_P079ZCA
 	tristate "Innolux P079ZCA panel"
 	depends on OF

@@ -24,6 +24,10 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 
+#if defined(CONFIG_DRM_PANEL_AUO_G101UAN02)
+#include <linux/gpio.h>
+#include <linux/delay.h>
+#endif
 #include <soc/imx8/sc/types.h>
 #include <soc/imx8/sc/sci.h>
 #include <soc/imx8/soc.h>
@@ -294,6 +298,9 @@ static void __init imx8mq_noc_init(void)
 		pr_err("Config NOC for VPU fail!\n");
 }
 
+#if defined(CONFIG_DRM_PANEL_AUO_G101UAN02)
+#define  IMX_GPIO_NR(b,p)  ( ((b - 1) * 32) + p )
+#endif
 static int __init imx8_soc_init(void)
 {
 	struct soc_device_attribute *soc_dev_attr;
@@ -331,6 +338,30 @@ static int __init imx8_soc_init(void)
 
 	if (of_machine_is_compatible("fsl,imx8mq"))
 		imx8mq_noc_init();
+
+#if defined(CONFIG_DRM_PANEL_AUO_G101UAN02)
+	//LCD0_VDD_EN - MX8MQ_IOMUXC_ECSPI1_SCLK_GPIO5_IO6
+	int gpio = IMX_GPIO_NR(5,6);
+	gpio_request(gpio, "LCD0_VDD_EN");
+	gpio_direction_output(gpio, 1);
+	gpio_free(gpio);
+
+	msleep(950); //T5
+
+	//LCD0_BKLT_PWM - MX8MQ_IOMUXC_GPIO1_IO01_GPIO1_IO1
+	gpio = IMX_GPIO_NR(1,1);
+	gpio_request(gpio, "LCD0_BKLT_PWM");
+	gpio_direction_output(gpio, 1);
+	gpio_free(gpio);
+
+	msleep(50); //T12
+
+	//LCD0_BKLT_EN - MX8MQ_IOMUXC_GPIO1_IO15_GPIO1_IO15
+	gpio = IMX_GPIO_NR(1,15);
+	gpio_request(gpio, "LCD0_BKLT_EN");
+	gpio_direction_output(gpio, 1);
+	gpio_free(gpio);
+#endif
 
 	return 0;
 
