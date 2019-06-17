@@ -704,6 +704,7 @@
                 trickle-diode-disable;
 
 	};
+
 	wdt@29 {
                 compatible = "fsl,adv-wdt-i2c";
                 pinctrl-names = "default";
@@ -713,6 +714,12 @@
                 wdt-ping = <&gpio4 22 0>;
                 reg = <0x29>;
         };
+
+        usb2514b@2c {
+                compatible = "microchip,usb2514b";
+                reg = <0x2c>;
+        };
+
 };
 
 &pcie0{
