@@ -1619,7 +1619,6 @@
 };
 
 &vpu_decoder {
-	core_type = <2>;
 	status = "okay";
 };
 
