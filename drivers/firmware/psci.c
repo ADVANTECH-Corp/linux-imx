@@ -558,8 +558,10 @@ static void __init psci_0_2_set_functions(void)
 	psci_ops.affinity_info = psci_affinity_info;
 
 	psci_ops.migrate_info_type = psci_migrate_info_type;
-
-	arm_pm_restart = psci_sys_reset;
+	// The restart handler function in Watch dog need to be called by do_kernel_restart
+	// This callback function should not be defined.
+	// Please refer to arch\arm64\kernel\process.c
+	//arm_pm_restart = psci_sys_reset;
 
 	pm_power_off = psci_sys_poweroff;
 }
