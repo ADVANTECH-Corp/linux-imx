@@ -660,6 +660,8 @@ dtb-$(CONFIG_SOC_IMX7ULP) += \
 	imx7ulp-evkb-mipi.dtb \
 	imx7ulp-evkb-rm68200-wxga.dtb \
 	imx7ulp-evkb-rm68191-qhd.dtb
+dtb-$(CONFIG_ARCH_ADVANTECH) += \
+	imx6q-rom7420-a1.dtb
 dtb-$(CONFIG_SOC_LS1021A) += \
 	ls1021a-qds.dtb \
 	ls1021a-twr.dtb
