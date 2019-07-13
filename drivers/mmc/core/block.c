@@ -88,6 +88,10 @@ static int max_devices;
 
 static DEFINE_IDA(mmc_blk_ida);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	static DECLARE_BITMAP(name_use, MAX_DEVICES);
+#endif
+
 /*
  * There is one mmc_blk_data per slot.
  */
@@ -2751,6 +2755,14 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 		goto out;
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (!subname) {
+		card->host->index = find_first_zero_bit(name_use, max_devices);
+		printk("MMC: card->host->index = %d\n", card->host->index);
+		__set_bit(card->host->index, name_use);
+	}
+#endif
+
 	md->area_type = area_type;
 
 	/*
@@ -2959,6 +2971,10 @@ static void mmc_blk_remove_parts(struct mmc_card *card,
 {
 	struct list_head *pos, *q;
 	struct mmc_blk_data *part_md;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	__clear_bit(card->host->index, name_use);
+#endif
 
 	list_for_each_safe(pos, q, &md->part) {
 		part_md = list_entry(pos, struct mmc_blk_data, part);
