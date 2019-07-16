@@ -56,6 +56,10 @@
 #include "quirks.h"
 #include "sd_ops.h"
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/proc-board.h>
+#endif
+
 MODULE_ALIAS("mmc:block");
 #ifdef MODULE_PARAM_PREFIX
 #undef MODULE_PARAM_PREFIX
@@ -2757,7 +2761,19 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 
 #ifdef CONFIG_ARCH_ADVANTECH
 	if (!subname) {
-		card->host->index = find_first_zero_bit(name_use, max_devices);
+		if (IS_ROM_7421) {
+			int idx;
+
+			idx = mmc_get_reserved_index(card->host);
+
+			if(idx == 2)
+				card->host->index = idx;
+			else
+				card->host->index = find_first_zero_bit(name_use, max_devices);
+		}
+		else {
+			card->host->index = find_first_zero_bit(name_use, max_devices);
+		}
 		printk("MMC: card->host->index = %d\n", card->host->index);
 		__set_bit(card->host->index, name_use);
 	}
