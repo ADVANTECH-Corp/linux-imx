@@ -49,6 +49,15 @@
 			gpios = <&gpio4 7 GPIO_ACTIVE_LOW>;
 		};
 	};
+	
+	rtl8367 {
+		compatible = "realtek,rtl8367b";
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinctrl_rtl_sda &pinctrl_rtl_scl>;
+		gpio-sda = <&gpio4 5  GPIO_ACTIVE_HIGH>;
+		gpio-sck = <&gpio7 13 GPIO_ACTIVE_HIGH>;
+		realtek,extif0 = <1 0 1 1 1 1 1 1 2>;
+	};
 };
 
 &audio_sgtl5000 {
@@ -86,7 +95,10 @@
 };
 
 &i2c3 {
-	status = "disabled";
+        24c512@51 {
+                compatible = "fsl,24c512";
+                reg = <0x51>;
+        };
 };
 
 &iomuxc {
@@ -102,10 +114,24 @@
                                 MX6QDL_PAD_SD2_CLK__GPIO1_IO10         	0x80000000      /* SDIO WAKE */
                                 MX6QDL_PAD_NANDF_D7__GPIO2_IO07        	0x80000000      /* M.2 WLAN OFF */
                                 MX6QDL_PAD_NANDF_D1__GPIO2_IO01        	0x80000000      /* M.2 BT OFF */
-				MX6QDL_PAD_GPIO_19__GPIO4_IO05		0x80000000	/* UART 5 WAKE */
                                 MX6QDL_PAD_GPIO_0__CCM_CLKO1            0x130b0		/* AUDIO CLK */
+				MX6QDL_PAD_NANDF_CS0__GPIO6_IO11        0x80000000      /* WC_SPI */
                         >;
                 };
+	};
+
+	rtl_switch {
+		pinctrl_rtl_sda: rtl_sdagrp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_GPIO_19__GPIO4_IO05		0x80000000	/* RTL8368_SDA */		
+			>;
+		};
+		pinctrl_rtl_scl: rtl_sclgrp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_GPIO_18__GPIO7_IO13		0x80000000	/* RTL8368_SCL */
+			>;
+		};
+		
 	};
 
 	spi1 {
@@ -149,6 +175,10 @@
 
 &audmux {
 	status = "disabled";
+};
+
+&fec {
+	phy-mode = "rgmii";
 };
 
 &ldb {

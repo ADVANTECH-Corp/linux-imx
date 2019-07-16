@@ -35,3 +35,11 @@ obj-$(CONFIG_MDIO_SUN4I)	+= mdio-sun4i.o
 obj-$(CONFIG_MDIO_MOXART)	+= mdio-moxart.o
 obj-$(CONFIG_AMD_XGBE_PHY)	+= amd-xgbe-phy.o
 obj-$(CONFIG_MDIO_BCM_UNIMAC)	+= mdio-bcm-unimac.o
+obj-$(CONFIG_RTL8306_PHY)	+= rtl8306.o
+obj-$(CONFIG_RTL8366_SMI)	+= rtl8366_smi.o
+obj-$(CONFIG_RTL8366S_PHY)	+= rtl8366s.o
+obj-$(CONFIG_RTL8366RB_PHY)	+= rtl8366rb.o
+obj-$(CONFIG_RTL8367_PHY)	+= rtl8367.o
+obj-$(CONFIG_RTL8367B_PHY)	+= rtl8367b.o
+obj-$(CONFIG_SWCONFIG)          += swconfig.o
+
