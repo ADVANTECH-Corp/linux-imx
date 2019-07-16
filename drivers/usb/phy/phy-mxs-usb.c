@@ -26,6 +26,10 @@
 #include <linux/mfd/syscon.h>
 #include <linux/regulator/consumer.h>
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/proc-board.h>
+#endif
+
 #define DRIVER_NAME "mxs_phy"
 
 /* Register Macro */
@@ -404,7 +408,31 @@ static int mxs_phy_hw_init(struct mxs_phy *mxs_phy)
 	if (mxs_phy->data->flags & MXS_PHY_NEED_IP_FIX)
 		writel(BM_USBPHY_IP_FIX, base + HW_USBPHY_IP_SET);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if(mxs_phy->port_id == 0) {
+		/* USB-OTG Port */
+		if ( IS_ROM_3420 || IS_ROM_5420 || IS_ROM_7421) {
+			u32 val;
+
+			val = readl(base + HW_USBPHY_TX);
+
+			if (IS_ROM_3420)
+				val &= 0x10060603;
+			else if (IS_ROM_5420)
+				val &= 0x10060607;
+			else /* IS_ROM_7421 */
+				val &= 0x10000007;
+
+			writel(val, base + HW_USBPHY_TX);
+			udelay(10);
+		}
+		else {
+			mxs_phy_tx_init(mxs_phy);
+		}
+	}
+#else
 	mxs_phy_tx_init(mxs_phy);
+#endif
 
 	return 0;
 
