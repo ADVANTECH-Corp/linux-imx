@@ -40,6 +40,13 @@
 
 #include "pcie-designware.h"
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/proc-board.h>
+
+#define PCIE_RC_LCSR2   0xA0
+#define PCIE_RC_LCSR2_TRANSMIT_MARGIN   (1 << 8)
+#endif
+
 #define to_imx_pcie(x)	dev_get_drvdata((x)->dev)
 
 enum imx_pcie_variants {
@@ -1560,6 +1567,15 @@ static int imx_pcie_establish_link(struct imx_pcie *imx_pcie)
 		dw_pcie_writel_dbi(pci, PCIE_RC_LCR, tmp);
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if(IS_ROM_7421) {
+		/* Change 0x1ffc0a0 register value from 0x10002 to 0x10102 for GEN-1 */
+		tmp = dw_pcie_readl_dbi(pci, PCIE_RC_LCSR2);
+		tmp |= PCIE_RC_LCSR2_TRANSMIT_MARGIN;
+		dw_pcie_writel_dbi(pci, PCIE_RC_LCSR2, tmp);
+	}
+#endif
+
 	/* Start LTSSM. */
 	pci_imx_ltssm_enable(dev);
 
@@ -1573,6 +1589,15 @@ static int imx_pcie_establish_link(struct imx_pcie *imx_pcie)
 		tmp &= ~PCIE_RC_LCR_MAX_LINK_SPEEDS_MASK;
 		tmp |= imx_pcie->link_gen;
 		dw_pcie_writel_dbi(pci, PCIE_RC_LCR, tmp);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+		if(IS_ROM_7421) {
+			/* Change 0x1ffc0a0 register value from 0x10002 to 0x10102 for Gen-2*/
+			tmp = dw_pcie_readl_dbi(pci, PCIE_RC_LCSR2);
+			tmp |= PCIE_RC_LCSR2_TRANSMIT_MARGIN;
+			dw_pcie_writel_dbi(pci, PCIE_RC_LCSR2, tmp);
+		}
+#endif
 
 		/*
 		 * Start Directed Speed Change so the best possible
