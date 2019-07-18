@@ -31,3 +31,4 @@ obj-$(CONFIG_RTLBTCOEXIST)	+= btcoexist/
 obj-$(CONFIG_RTL8723_COMMON)	+= rtl8723com/
 obj-$(CONFIG_RTL8821AE)		+= rtl8821ae/
 obj-$(CONFIG_RTL8192EE)		+= rtl8192ee/
+obj-$(CONFIG_ADVANTECH_RISC_RTL8188EE)	+= rtl8188ee_advantech/
