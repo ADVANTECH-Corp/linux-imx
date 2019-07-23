@@ -296,6 +296,7 @@ struct tpm_chip *tpmm_chip_alloc(struct device *pdev,
 }
 EXPORT_SYMBOL_GPL(tpmm_chip_alloc);
 
+
 static int tpm_add_char_device(struct tpm_chip *chip)
 {
 	int rc;

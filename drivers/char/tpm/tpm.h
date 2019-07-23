@@ -49,9 +49,9 @@ enum tpm_const {
 };
 
 enum tpm_timeout {
-	TPM_TIMEOUT = 5,	/* msecs */
-	TPM_TIMEOUT_RETRY = 100, /* msecs */
-	TPM_TIMEOUT_RANGE_US = 300	/* usecs */
+	TPM_TIMEOUT = 1,	/* msecs */
+	TPM_TIMEOUT_RETRY = 2, /* msecs */
+	TPM_TIMEOUT_RANGE_US = 20 /* usecs */
 };
 
 /* TPM addresses */
@@ -85,7 +85,7 @@ enum tpm2_const {
 	TPM2_TIMEOUT_D		= 30,
 	TPM2_DURATION_SHORT	= 20,
 	TPM2_DURATION_MEDIUM	= 750,
-	TPM2_DURATION_LONG	= 2000,
+	TPM2_DURATION_LONG	= 30000,
 };
 
 enum tpm2_structures {
@@ -102,8 +102,10 @@ enum tpm2_return_codes {
 	TPM2_RC_HASH		= 0x0083, /* RC_FMT1 */
 	TPM2_RC_HANDLE		= 0x008B,
 	TPM2_RC_INITIALIZE	= 0x0100, /* RC_VER1 */
+	TPM2_RC_FAILURE		= 0x0101,
 	TPM2_RC_DISABLED	= 0x0120,
-	TPM2_RC_COMMAND_CODE    = 0x0143,
+	TPM2_RC_UPGRADE		= 0x012D,
+	TPM2_RC_COMMAND_CODE= 0x0143,
 	TPM2_RC_TESTING		= 0x090A, /* RC_WARN */
 	TPM2_RC_REFERENCE_H0	= 0x0910,
 	TPM2_RC_RETRY		= 0x0922,
@@ -542,11 +544,15 @@ int tpm_pm_resume(struct device *dev);
 int wait_for_tpm_stat(struct tpm_chip *chip, u8 mask, unsigned long timeout,
 		      wait_queue_head_t *queue, bool check_cancel);
 
-static inline void tpm_msleep(unsigned int delay_msec)
-{
-	usleep_range(delay_msec * 1000,
-		     (delay_msec * 1000) + TPM_TIMEOUT_RANGE_US);
-};
+static inline void tpm_msleep (unsigned  int delay_msec){
+usleep_range(delay_msec * 1000,(delay_msec * 1000)+TPM_TIMEOUT_RANGE_US);};
+
+//static inline void tpm_msleep_opt (unsigned  int delay_msec){
+//usleep_range(delay_msec * 50,(delay_msec * 50)+TPM_TIMEOUT_RANGE_US);};
+//BHO for I2c before PIRQ implementation
+
+static inline void tpm_msleep_opt (unsigned  int delay_msec){
+usleep_range(delay_msec * 1000,(delay_msec * 1000)+TPM_TIMEOUT_RANGE_US);};
 
 struct tpm_chip *tpm_chip_find_get(int chip_num);
 __must_check int tpm_try_get_ops(struct tpm_chip *chip);
@@ -556,6 +562,7 @@ struct tpm_chip *tpm_chip_alloc(struct device *dev,
 				const struct tpm_class_ops *ops);
 struct tpm_chip *tpmm_chip_alloc(struct device *pdev,
 				 const struct tpm_class_ops *ops);
+
 int tpm_chip_register(struct tpm_chip *chip);
 void tpm_chip_unregister(struct tpm_chip *chip);
 

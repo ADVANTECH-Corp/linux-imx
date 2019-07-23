@@ -73,11 +73,12 @@ static int tpm_tis_spi_transfer(struct tpm_tis_data *data, u32 addr, u16 len,
 		phy->iobuf[1] = 0xd4;
 		phy->iobuf[2] = addr >> 8;
 		phy->iobuf[3] = addr;
+		phy->iobuf[4] = 0x00;
 
 		memset(&spi_xfer, 0, sizeof(spi_xfer));
 		spi_xfer.tx_buf = phy->iobuf;
 		spi_xfer.rx_buf = phy->iobuf;
-		spi_xfer.len = 4;
+		spi_xfer.len = 5;
 		spi_xfer.cs_change = 1;
 
 		spi_message_init(&m);
@@ -86,7 +87,7 @@ static int tpm_tis_spi_transfer(struct tpm_tis_data *data, u32 addr, u16 len,
 		if (ret < 0)
 			goto exit;
 
-		if ((phy->iobuf[3] & 0x01) == 0) {
+		if ((phy->iobuf[4] & 0x01) == 0) {
 			// handle SPI wait states
 			phy->iobuf[0] = 0;
 

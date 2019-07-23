@@ -555,8 +555,8 @@ out:
 	tpm_go_idle(chip, flags);
 
 out_locality:
-	if (need_locality)
-		tpm_relinquish_locality(chip, flags);
+	//if (need_locality)
+	//	tpm_relinquish_locality(chip, flags);
 
 	if (chip->ops->clk_enable != NULL)
 		chip->ops->clk_enable(chip, false);
