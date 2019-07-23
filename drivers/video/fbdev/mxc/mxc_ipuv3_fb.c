@@ -2624,6 +2624,13 @@ next:
 		return -EBUSY;
 	}
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	if (first_flip_complete) {
+		enable_lcd_vdd_en();
+		first_flip_complete = 0;
+	}
+#endif
+
 	if (mxc_fbi->cur_prefetch && ipu_pre_yres_is_small(info->var.yres)) {
 		ret = wait_for_completion_timeout(&mxc_fbi->flip_complete,
 						  HZ/2);
@@ -2740,13 +2747,6 @@ static irqreturn_t mxcfb_irq_handler(int irq, void *dev_id)
 	}
 
 	complete(&mxc_fbi->flip_complete);
-
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-	if (first_flip_complete) {
-		enable_lcd_vdd_en();
-		first_flip_complete = 0;
-	}
-#endif
 	return IRQ_HANDLED;
 }
 

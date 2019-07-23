@@ -85,7 +85,7 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 int lvds_vcc_enable;
 int lvds_bkl_enable;
 int bklt_vcc_enable;
-int lvds_vcc_delay_value;
+//int lvds_vcc_delay_value;
 int lvds_bkl_delay_value;
 int bklt_pwm_delay_value;
 int bklt_en_delay_value;
@@ -112,10 +112,10 @@ void enable_lcd_vdd_en(void)
 	printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
 }
 
-void enable_ldb_signal(void)
+/*void enable_ldb_signal(void)
 {
 	mdelay(lvds_vcc_delay_value); // T2 for AUO 7"
-}
+}*/
 
 void enable_ldb_bkl_vcc(void)
 {
@@ -286,12 +286,12 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	lvds_vcc_enable = of_get_named_gpio_flags(node, "lvds-vcc-enable", 0, &lvds_vcc_flag);
 	lvds_bkl_enable = of_get_named_gpio_flags(node, "lvds-bkl-enable", 0, &lvds_bkl_flag);
 	bklt_vcc_enable = of_get_named_gpio_flags(node, "bklt-vcc-enable", 0, &bklt_vcc_flag);
-	ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds_vcc_delay_value);
+	/*ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds_vcc_delay_value);
 	if (ret < 0)
 	{
 		lvds_vcc_delay_value = 10;
-	}
-	ret = of_property_read_u32(node,"lvds-bkl-delay-time",&lvds-blk-delay-value);
+	}*/
+	ret = of_property_read_u32(node,"lvds-bkl-delay-time",&lvds_bkl_delay_value);
 	if (ret < 0)
 	{
 		lvds_bkl_delay_value = 210;
