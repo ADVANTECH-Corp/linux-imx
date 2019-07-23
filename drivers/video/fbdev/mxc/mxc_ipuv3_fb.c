@@ -3594,16 +3594,11 @@ static int mxcfb_probe(struct platform_device *pdev)
 		mxcfbi->ipu_alp_ch_irq = IPU_IRQ_BG_ALPHA_SYNC_EOF;
 		mxcfbi->ipu_ch = MEM_BG_SYNC;
 
-#ifdef CONFIG_ARCH_ADVANTECH
-		/* Unblank all the fb by default */
-		mxcfbi->cur_blank = mxcfbi->next_blank = FB_BLANK_UNBLANK;
-#else
 		/* Unblank the primary fb only by default */
 		if (pdev->id == 0)
 			mxcfbi->cur_blank = mxcfbi->next_blank = FB_BLANK_UNBLANK;
 		else
 			mxcfbi->cur_blank = mxcfbi->next_blank = FB_BLANK_POWERDOWN;
-#endif
 
 		ret = mxcfb_register(fbi);
 		if (ret < 0)
