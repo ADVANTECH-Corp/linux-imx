@@ -57,7 +57,9 @@
 #include "sd_ops.h"
 
 #ifdef CONFIG_ARCH_ADVANTECH
+#if defined(CONFIG_SOC_IMX6) || defined(CONFIG_SOC_IMX7)
 #include <linux/proc-board.h>
+#endif
 #endif
 
 MODULE_ALIAS("mmc:block");
@@ -93,7 +95,9 @@ static int max_devices;
 static DEFINE_IDA(mmc_blk_ida);
 
 #ifdef CONFIG_ARCH_ADVANTECH
+#if defined(CONFIG_SOC_IMX6) || defined(CONFIG_SOC_IMX7)
 	static DECLARE_BITMAP(name_use, MAX_DEVICES);
+#endif
 #endif
 
 /*
@@ -2760,6 +2764,7 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 	}
 
 #ifdef CONFIG_ARCH_ADVANTECH
+#if defined(CONFIG_SOC_IMX6) || defined(CONFIG_SOC_IMX7)
 	if (!subname) {
 		if (IS_ROM_7421) {
 			int idx;
@@ -2777,6 +2782,7 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 		printk("MMC: card->host->index = %d\n", card->host->index);
 		__set_bit(card->host->index, name_use);
 	}
+#endif
 #endif
 
 	md->area_type = area_type;
@@ -2989,7 +2995,9 @@ static void mmc_blk_remove_parts(struct mmc_card *card,
 	struct mmc_blk_data *part_md;
 
 #ifdef CONFIG_ARCH_ADVANTECH
+#if defined(CONFIG_SOC_IMX6) || defined(CONFIG_SOC_IMX7)
 	__clear_bit(card->host->index, name_use);
+#endif
 #endif
 
 	list_for_each_safe(pos, q, &md->part) {
