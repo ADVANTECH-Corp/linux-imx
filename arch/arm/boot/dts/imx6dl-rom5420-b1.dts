@@ -16,8 +16,12 @@
 #include "imx6qdl-advantech.dtsi"
 
 / {
-	model = "Freescale i.MX6 DualLite ROM5420 B1";
+	model = "Freescale i.MX6 DualLite/Solo ROM5420 B1";
 	compatible = "fsl,imx6dl-sabresd", "fsl,imx6dl";
+
+	aliases {
+                i2c3; /* Disabled i2c3 in imx6dl.dtsi */
+        };
 
 	board {
 		compatible = "proc-board";
@@ -41,11 +45,11 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_gpio_sleep_1>;
 		compatible = "gpio-keys";
-		sleep {
-			label = "Sleep Button";
+		mcu {
+			label = "MCU";
 			gpios = <&gpio1 25 1>; /* active low */
-			linux,input-type = <1>;
-			linux,code = <205>; /* KEY_SUSPEND */
+			linux,input-type = <1>;	/* EV_KEY */
+			linux,code = <116>;	/* KEY_POWER */
 			debounce_interval = <1>;
 			wakeup-source;
 		};
@@ -92,12 +96,12 @@
 	status = "okay";
 
 	chip1: m25p80@0 {
-		compatible = "micron,n25q";
+		compatible = "micron,n25qba16";
 		spi-max-frequency = <20000000>;
 		reg = <0>;
 	};
 	chip2: m25p80@1 {
-		compatible = "micron,n25q";
+		compatible = "micron,n25qba16";
 		spi-max-frequency = <20000000>;
 		reg = <1>;
 	};
@@ -529,8 +533,8 @@
 
 &usdhc2 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usdhc2_1>;
-	bus-width = <8>;
+	pinctrl-0 = <&pinctrl_usdhc2_2>;
+	bus-width = <4>;
 	cd-gpios = <&gpio2 2 0>;
 	wp-gpios = <&gpio2 3 0>;
 	status = "okay";

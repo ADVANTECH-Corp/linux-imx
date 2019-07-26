@@ -158,12 +158,6 @@
 	status = "okay";
 };
 
-&cpu0 {
-	arm-supply = <&reg_arm>;
-	soc-supply = <&reg_soc>;
-	pu-supply = <&reg_pu>; /* use pu_dummy if VDDSOC share with VDDPU */
-};
-
 &clks {
 	assigned-clocks = <&clks IMX6QDL_CLK_LDB_DI0_SEL>,
 			  <&clks IMX6QDL_CLK_LDB_DI1_SEL>;
@@ -750,14 +744,6 @@
 				MX6QDL_PAD_EIM_D29__UART2_DTE_RTS_B 0x1b0b1
 			>;
 		};
-		pinctrl_uart2_3: uart2grp-3 { /* DCE mode */
-			fsl,pins = <
-				MX6QDL_PAD_EIM_D26__UART2_TX_DATA 0x1b0b1
-				MX6QDL_PAD_EIM_D27__UART2_RX_DATA 0x1b0b1
-				MX6QDL_PAD_EIM_D28__UART2_CTS_B   0x1b0b1
-				MX6QDL_PAD_EIM_D29__UART2_RTS_B   0x1b0b1
-			>;
-		};
 	};
 
 	uart3 {
@@ -778,13 +764,6 @@
 				MX6QDL_PAD_EIM_EB3__UART3_CTS_B   0x1b0b1
 			>;
 		};
-
-		pinctrl_uart3_2: uart3grp-2 {
-			fsl,pins = <
-				MX6QDL_PAD_EIM_D24__UART3_TX_DATA 0x1b0b1
-				MX6QDL_PAD_EIM_D25__UART3_RX_DATA 0x1b0b1
-			>;
-		};
 	};
 
 	uart4 {
@@ -792,13 +771,6 @@
 			fsl,pins = <
 				MX6QDL_PAD_KEY_COL0__UART4_TX_DATA 0x1b0b1
 				MX6QDL_PAD_KEY_ROW0__UART4_RX_DATA 0x1b0b1
-			>;
-		};
-
-		pinctrl_uart4_2: uart4grp-2 {
-			fsl,pins = <
-				MX6QDL_PAD_CSI0_DAT12__UART4_TX_DATA 0x1b0b1
-				MX6QDL_PAD_CSI0_DAT13__UART4_RX_DATA 0x1b0b1
 			>;
 		};
 	};
@@ -819,13 +791,6 @@
 				MX6QDL_PAD_KEY_COL1__UART5_RX_DATA 0x1b0b1
 				MX6QDL_PAD_KEY_ROW4__UART5_RTS_B   0x1b0b1
 				MX6QDL_PAD_KEY_COL4__UART5_CTS_B   0x1b0b1
-			>;
-		};
-
-		pinctrl_uart5_2: uart5grp-2 {
-			fsl,pins = <
-				MX6QDL_PAD_CSI0_DAT14__UART5_TX_DATA 0x1b0b1
-				MX6QDL_PAD_CSI0_DAT15__UART5_RX_DATA 0x1b0b1
 			>;
 		};
 	};
@@ -1014,8 +979,8 @@
 		status = "okay";
 
 		display-timings {
-			native-mode = <&timing0>;
-			timing0: g070vw01v0 {
+			native-mode = <&timing00>;
+			timing00: g070vw01v0 {
 				clock-frequency = <29500000>;
 				hactive = <800>;
 				vactive = <480>;
@@ -1026,9 +991,9 @@
 				hsync-len = <72>;
 				vsync-len = <7>;
 			};
-/*
+
 			//SI Test panel
-			timing0: g150xgel04 {
+			timing10: g150xgel04 {
 				clock-frequency = <63500000>;
 				hactive = <1024>;
 				vactive = <768>;
@@ -1040,7 +1005,7 @@
 				vsync-len = <4>;
 			};
 			//Dual channel panel
-			timing0: g190eg01v1 {
+			timing20: g190eg01v1 {
 				clock-frequency = <109000000>;
 				hactive = <1280>;
 				vactive = <1024>;
@@ -1052,7 +1017,7 @@
 				vsync-len = <7>;
 			};
 			//Dual channel panel 
-			timing0: g215hvn0 {
+			timing30: g215hvn0 {
 				clock-frequency = <170000000>;
 				hactive = <1920>;
 				vactive = <1080>;
@@ -1063,7 +1028,18 @@
 				hsync-len = <60>;
 				vsync-len = <7>;
 			};
-*/
+
+			timing40:g150xgel05 {
+				clock-frequency = <65000000>;
+				hactive = <1024>;
+				vactive = <768>;
+				hback-porch = <220>;
+				hfront-porch = <40>;
+				vback-porch = <21>;
+				vfront-porch = <7>;
+				hsync-len = <60>;
+				vsync-len = <10>;
+			};
 		};
 	};
 
@@ -1075,8 +1051,8 @@
 		status = "okay";
 
 		display-timings {
-			native-mode = <&timing1>;
-			timing1: g070vw01v0 {
+			native-mode = <&timing01>;
+			timing01: g070vw01v0 {
 				clock-frequency = <29500000>;
 				hactive = <800>;
 				vactive = <480>;
@@ -1087,9 +1063,9 @@
 				hsync-len = <72>;
 				vsync-len = <7>;
 			};
-/*
+
 			//SI Test panel
-			timing1: g150xgel04 {
+			timing11: g150xgel04 {
 				clock-frequency = <63500000>;
 				hactive = <1024>;
 				vactive = <768>;
@@ -1100,7 +1076,18 @@
 				hsync-len = <104>;
 				vsync-len = <4>;
 			};
-*/
+
+			timing21:g150xgel05 {
+				clock-frequency = <65000000>;
+				hactive = <1024>;
+				vactive = <768>;
+				hback-porch = <220>;
+				hfront-porch = <40>;
+				vback-porch = <21>;
+				vfront-porch = <7>;
+				hsync-len = <60>;
+				vsync-len = <10>;
+			};
 		};
 	};
 };
@@ -1131,4 +1118,8 @@
 
 &usbphy2 {
 	fsl,tx-d-cal = <106>;
+};
+
+&snvs_poweroff {
+	status = "okay";
 };

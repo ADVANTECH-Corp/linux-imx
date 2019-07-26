@@ -12,17 +12,17 @@
 
 /dts-v1/;
 
-#include "imx6dl.dtsi"
+#include "imx6q.dtsi"
 #include "imx6qdl-advantech.dtsi"
 
 / {
-	model = "Freescale i.MX6 DualLite UBC220 A1";
-	compatible = "fsl,imx6dl-sabresd", "fsl,imx6dl";
+	model = "Freescale i.MX6 Quad UBC220 A1";
+	compatible = "fsl,imx6q-sabresd", "fsl,imx6q";
 
 	board {
 		compatible = "proc-board";
 		board-type = "UBC-220 A1";
-		board-cpu = "DualLiteSolo";
+		board-cpu = "DualQuad";
 	};
 
 	regulators {
@@ -218,10 +218,6 @@
 };
 
 &ldb {
-	lvds-channel@0 {
-		crtc = "ipu1-di0";
-	};
-
 	lvds-channel@1 {
 		status ="disabled";
 	};
@@ -232,6 +228,7 @@
 	disp_id = <1>;
 	status = "okay";
 };
+
 
 &mxcfb1 {
 	status = "okay";

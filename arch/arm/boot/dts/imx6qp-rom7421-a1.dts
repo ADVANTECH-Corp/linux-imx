@@ -46,15 +46,15 @@
 		power@1 {
 			label = "Power button";
 			gpios = <&gpio3 24 1>; /* GPIO_ACTIVE_LOW:1 */
-			linux,input-type = <1>; /* EV_KEY: 1 */
+			linux,input-type = <22>; /* EV_PWR */
 			linux,code = <116>; /* KEY_POWER:116 */
 			debounce_interval = <1>;
                 };
 		sleep@2 {
 			label = "Sleep Button";
 			gpios = <&gpio4 5 1>;
-			linux,input-type = <22>;
-			linux,code = <205>; /* KEY_SUSPEND */
+			linux,input-type = <1>; /* EV_KEY */
+			linux,code = <116>; /* KEY_SUSPEND */
 			debounce_interval = <1>;
 			wakeup-source;
 		};
@@ -591,10 +591,6 @@
 	status = "okay";
 };
 
-&wdog1 {
-	status = "disabled";
-};
-
 &fec {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_enet1_1 &pinctrl_enet1_rst_1>;
@@ -630,4 +626,8 @@
 &prg2 {
 	memory-region = <&memory>;
 	status = "okay";
+};
+
+&wdog1 {
+	status = "disabled";
 };

@@ -12,21 +12,18 @@
 
 /dts-v1/;
 
-#include "imx6dl.dtsi"
+#include "imx6q.dtsi"
 #include "imx6qdl-advantech.dtsi"
 
-/ {
-	model = "Freescale i.MX6 Solo ROM7421 A1";
-	compatible = "fsl,imx6dl-sabresd", "fsl,imx6dl";
 
-	aliases {
-		i2c3; /* Disabled i2c3 in imx6dl.dtsi */
-	};
+/ {
+	model = "Freescale i.MX6 Quad ROM7421 A1";
+	compatible = "fsl,imx6q-sabresd", "fsl,imx6q";
 
 	board {
 		compatible = "proc-board";
 		board-type = "ROM-7421 A1";
-		board-cpu = "DualLiteSolo";
+		board-cpu = "DualQuad";
 	};
 
 	regulators {
@@ -49,15 +46,15 @@
 		power@1 {
 			label = "Power button";
 			gpios = <&gpio3 24 1>; /* GPIO_ACTIVE_LOW:1 */
-			linux,input-type = <22>;	/* EV_PWR */
-			linux,code = <116>;		/* KEY_POWER */
+			linux,input-type = <22>; /* EV_PWR */
+			linux,code = <116>; /* KEY_POWER:116 */
 			debounce_interval = <1>;
                 };
 		sleep@2 {
 			label = "Sleep Button";
 			gpios = <&gpio4 5 1>;
-			linux,input-type = <1>;		/* EV_KEY */
-			linux,code = <205>;		/* KEY_SUSPEND */
+			linux,input-type = <1>; /* EV_KEY */
+			linux,code = <116>; /* KEY_SUSPEND */
 			debounce_interval = <1>;
 			wakeup-source;
 		};
@@ -110,7 +107,6 @@
 	cs-gpios = <&gpio3 19 0>;
 };
 
-/*
 &ecspi5 {
 	fsl,spi-num-chipselects = <2>;
 	cs-gpios = <&gpio1 17 0>, <&gpio1 19 0>;
@@ -129,7 +125,6 @@
 		reg = <1>;
 	};
 };
-*/
 
 &can1 {
 	pinctrl-names = "default";
@@ -387,9 +382,9 @@
 	mipi-csi {
 		pinctrl_mipi_csi_1: mipi_csi1grp-1{
 			fsl,pins = <
-				MX6QDL_PAD_GPIO_2__GPIO1_IO02		0x80000000	// MIPICSI_PWN
-				MX6QDL_PAD_GPIO_5__GPIO1_IO05		0x80000000	// MIPICSI_RST
-				MX6QDL_PAD_CSI0_MCLK__CCM_CLKO1		0x80000000	// CSI0_MCLK
+				MX6QDL_PAD_GPIO_2__GPIO1_IO02		0x80000000	/* MIPICSI_PWN */
+				MX6QDL_PAD_GPIO_5__GPIO1_IO05		0x80000000	/* MIPICSI_RST */
+				MX6QDL_PAD_CSI0_MCLK__CCM_CLKO1		0x80000000	/* CSI0_MCLK */
 			>;
 		};
 	};
@@ -409,7 +404,7 @@
 			>;
 		};
 	};
-/*
+
 	spi5 {
 		pinctrl_ecspi5_cs_0: ecspi5_cs_grp-0 {
 			fsl,pins = <
@@ -431,7 +426,7 @@
 			>;
 		};
 	};
-*/
+
 	uart2 {
                 pinctrl_uart2_3: uart2grp-3 {
                         fsl,pins = <
@@ -490,25 +485,20 @@
 	};
 };
 
-&ldb {
-	lvds-channel@0 {
-		crtc = "ipu1-di0";
-	};
+&hdmi_core {
+	ipu_id = <0>; 
+	disp_id = <0>; 
+};
 
+&ldb {
 	lvds-channel@1 {
-		status ="disabled";
+		crtc = "ipu2-di1";
 	};
 };
 
 &mipi_csi {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_mipi_csi_1>;
-	status = "okay";
-};
-
-&hdmi_core {
-	ipu_id = <0>;
-	disp_id = <1>;
 	status = "okay";
 };
 
@@ -520,6 +510,9 @@
 	status = "okay";
 };
 
+&mxcfb4 {
+	status = "okay";
+};
 
 &pcie {
 	pinctrl-names = "default";
@@ -534,11 +527,9 @@
 	status = "okay";
 };
 
-/*
 &sata {
 	status = "okay";
 };
-*/
 
 &uart1 {
 	pinctrl-names = "default";
@@ -596,7 +587,6 @@
 	no-1-8-v;
 	status = "okay";
 };
-
 
 &fec {
 	pinctrl-names = "default";

@@ -662,8 +662,13 @@ dtb-$(CONFIG_SOC_IMX7ULP) += \
 	imx7ulp-evkb-rm68191-qhd.dtb
 dtb-$(CONFIG_ARCH_ADVANTECH) += \
 	imx6dl-ubc220-a1.dtb \
+	imx6q-ubc220-a1.dtb \
 	imx6q-ubcds31-a1.dtb \
 	imx6q-rom3420-a1.dtb \
+	imx6q-epcrs200-a1.dtb \
+	imx6q-ebcjf02-a1.dtb \
+	imx6dl-rsb3430-a1.dtb \
+	imx6q-rsb3430-a1.dtb \
 	imx6q-rsb4411-a1.dtb \
 	imx6q-rsb4410-a1.dtb \
 	imx6q-rsb4410-a2.dtb \
@@ -673,7 +678,13 @@ dtb-$(CONFIG_ARCH_ADVANTECH) += \
 	imx6q-rom7420-a1.dtb \
 	imx6q-wise3310-a1.dtb \
 	imx6dl-rom7421-a1.dtb \
-	imx6qp-rom7421-a1.dtb
+	imx6qp-rom7421-a1.dtb \
+	imx6q-rsb6410-a1.dtb \
+	imx6q-rsb6410-a2.dtb \
+	imx6q-ebcrb01-a1.dtb \
+	imx6dl-ebcrs03-a1.dtb \
+	imx6q-ebcrs03-a1.dtb \
+	imx7d-ebcrm01-a1.dtb
 dtb-$(CONFIG_SOC_LS1021A) += \
 	ls1021a-qds.dtb \
 	ls1021a-twr.dtb

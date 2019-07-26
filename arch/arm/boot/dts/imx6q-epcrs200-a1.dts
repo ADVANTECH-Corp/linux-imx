@@ -16,12 +16,12 @@
 #include "imx6qdl-advantech.dtsi"
 
 / {
-	model = "Freescale i.MX6 Quad RSB4411 A1";
+	model = "Freescale i.MX6 Quad EPCRS200 A1";
 	compatible = "fsl,imx6q-sabresd", "fsl,imx6q";
 
 	board {
 		compatible = "proc-board";
-		board-type = "RSB-4411 A1";
+		board-type = "EPC-RS200 A1";
 		board-cpu = "DualQuad";
 	};
 	
@@ -223,8 +223,8 @@
 	pcie {
 		pinctrl_pcie_1: pciegrp-1 {
 			fsl,pins = <
-				MX6QDL_PAD_CSI0_DAT4__GPIO5_IO22	 0x80000000      /* PCIE_RST */
-				MX6QDL_PAD_NANDF_CS2__GPIO6_IO15	0x80000000	/* 3G_RF_OFF */
+				MX6QDL_PAD_CSI0_DAT4__GPIO5_IO22		0x80000000	/* PCIE RESET */
+				MX6QDL_PAD_NANDF_CS2__GPIO6_IO15		0x80000000	/* 3G_RF_OFF */
 			>;
 		};
 	};
