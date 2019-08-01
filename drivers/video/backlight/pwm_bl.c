@@ -506,7 +506,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	bl->props.brightness = data->dft_brightness;
 	bl->props.power = pwm_backlight_initial_power_state(pb);
 
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH) && !defined(CONFIG_FB_MXC_DISP_FRAMEWORK)
 	/* Inorder to power off pwm backlight for SI test */
 	bl->props.fb_blank = FB_BLANK_NORMAL;
 
