@@ -97,7 +97,7 @@ dtb-$(CONFIG_ARCH_FSL_IMX8MQ) += fsl-imx8mq-ddr3l-arm2.dtb \
 				 fsl-imx8mq-evk-pdm.dtb \
 				 fsl-imx8mq-evk-dcss-adv7535.dtb \
 				 fsl-imx8mq-evk-dcss-adv7535-b3.dtb \
-				 fsl-imx8mq-rom5720-a1-dcss-adv7535-b3.dtb \
+				 adv-imx8mq-rom5720-a1-dcss-adv7535-b3.dtb \
 				 fsl-imx8mq-evk-dcss-rm67191.dtb \
 				 fsl-imx8mq-evk-dcss-rm67191-b3.dtb \
 				 fsl-imx8mq-evk-dual-display.dtb \
@@ -123,8 +123,8 @@ dtb-$(CONFIG_ARCH_FSL_IMX8MM) += fsl-imx8mm-evk.dtb \
 				 fsl-imx8mm-evk-revb.dtb \
 				 fsl-imx8mm-evk-revb-rm67191.dtb \
 				 fsl-imx8mm-ddr4-evk-rm67191.dtb
-dtb-$(CONFIG_ARCH_ADVANTECH_IMX8MQ) += fsl-imx8mq-rom5720-a1.dtb 
-dtb-$(CONFIG_ARCH_ADVANTECH_IMX8QM) += imx8qm-rom7720-a1.dtb 
+dtb-$(CONFIG_ARCH_ADVANTECH) += adv-imx8mq-rom5720-a1.dtb 
+dtb-$(CONFIG_ARCH_ADVANTECH) += adv-imx8qm-rom7720-a1.dtb 
 always		:= $(dtb-y)
 subdir-y	:= $(dts-dirs)
 clean-files	:= *.dtb

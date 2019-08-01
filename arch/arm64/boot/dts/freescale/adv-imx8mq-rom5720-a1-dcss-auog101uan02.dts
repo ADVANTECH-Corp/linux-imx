@@ -12,7 +12,7 @@
  * GNU General Public License for more details.
  */
 
-#include "fsl-imx8mq-rom5720-a1.dts"
+#include "adv-imx8mq-rom5720-a1.dts"
 
 / {
 	sound-hdmi {

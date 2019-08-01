@@ -328,31 +328,7 @@ config ARCH_FSL_IMX8MM
 
 config ARCH_ADVANTECH
     bool "Advantech board"
-    depends on ARCH_FSL_IMX8MQ || ARCH_FSL_IMX8QM || ARCH_FSL_IMX8QXP
     help
       This enables support for Advantech Board.
-choice
-	prompt "SOC"
-    depends on ARCH_ADVANTECH
-
-config ARCH_ADVANTECH_IMX8MQ
-    bool "i.MX8MQ"
-    depends on ARCH_FSL_IMX8MQ
-    help
-      This enables support for Advantech i.MX8MQ SOC.
-
-config ARCH_ADVANTECH_IMX8QM
-    bool "i.MX8QM"
-    depends on ARCH_FSL_IMX8QM
-    help
-      This enables support for Advantech i.MX8QM SOC.
-
-config ARCH_ADVANTECH_IMX8QXP
-    bool "i.MX8QXP"
-    depends on ARCH_FSL_IMX8QXP
-    help
-      This enables support for Advantech i.MX8QXP SOC.
-
-endchoice
 
 endmenu

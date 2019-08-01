@@ -12,5 +12,5 @@
  * GNU General Public License for more details.
  */
 
-#include "fsl-imx8mq-rom5720-a1.dts"
-#include "fsl-imx8mq-rom5720-a1-dcss-adv7535.dtsi"
+#include "adv-imx8mq-rom5720-a1.dts"
+#include "adv-imx8mq-rom5720-a1-dcss-adv7535.dtsi"
