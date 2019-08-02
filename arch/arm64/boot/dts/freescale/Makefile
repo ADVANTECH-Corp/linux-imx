@@ -125,8 +125,9 @@ dtb-$(CONFIG_ARCH_FSL_IMX8MM) += fsl-imx8mm-evk.dtb \
 dtb-$(CONFIG_ARCH_ADVANTECH) += adv-imx8mq-rom5720-a1.dtb \
 				adv-imx8mq-rom5720-a1-dcss-adv7535-b3.dtb \
 				adv-imx8mq-rom5720-a1-dcss-auog101uan02.dtb \
-				adv-imx8mq-rom5720-a1-m2-sdio.dtb
-dtb-$(CONFIG_ARCH_ADVANTECH) += adv-imx8qm-rom7720-a1.dtb  
+				adv-imx8mq-rom5720-a1-m2-sdio.dtb \
+				adv-imx8qm-rom7720-a1.dtb \
+				adv-imx8qxp-rom5620-a1.dtb
 always		:= $(dtb-y)
 subdir-y	:= $(dts-dirs)
 clean-files	:= *.dtb
