@@ -17,7 +17,6 @@
 
 #define	ENABLE_CSI0
 #define	ENABLE_CSI1 
-/* #define	ENABLE_M2_SDIO */
 
 #include "fsl-imx8mq.dtsi"
 
@@ -80,15 +79,6 @@
 				<96000>,
 				<192000>;
 	};
-
-#ifdef	ENABLE_M2_SDIO
-        usdhc2_pwrseq: usdhc2_pwrseq {
-                compatible = "mmc-pwrseq-simple";
-                reset-gpios =   <&tca9538 0 1>,
-				<&tca9538 1 1>,
-				<&tca9538 4 1>;
-        };
-#endif
 
 	gpio-keys {
                 compatible = "gpio-keys";
@@ -723,9 +713,9 @@
                 reg = <0x2c>;
         };
 	
-	st33htpi: st33htpi@0{
+	st33htpi: st33htpi@0x2e{
 		compatible = "st,st33htpm-i2c";
-		reg= <0x2E>;
+		reg= <0x2e>;
 		pinctrl-names = "default";
                 pinctrl-0 = <&pinctrl_tpm>;
                 interrupt-parent = <&gpio5>;
@@ -827,12 +817,8 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usdhc2>, <&pinctrl_usdhc2_gpio>;
 	bus-width = <4>;
-#ifndef	ENABLE_M2_SDIO
 	cd-gpios = <&gpio2 12 GPIO_ACTIVE_LOW>;
 	wp-gpios = <&gpio2 20 GPIO_ACTIVE_HIGH>;
-#else
-	mmc-pwrseq = <&usdhc2_pwrseq>;
-#endif
 	vmmc-supply = <&reg_usdhc2_vmmc>;
 	status = "okay";
 };
