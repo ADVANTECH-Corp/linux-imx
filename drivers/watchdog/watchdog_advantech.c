@@ -27,6 +27,8 @@
 #include <linux/proc-board.h>
 #endif
 */
+#include <asm/system_misc.h>
+
 #define ADV_WDT_WCR		0x00		/* Control Register */
 #define ADV_WDT_WCR_WT		(0xFF << 8)	/* -> Watchdog Timeout Field */
 #define ADV_WDT_WCR_WRE	(1 << 3)	/* -> WDOG Reset Enable */
@@ -63,7 +65,6 @@ static int gpio_wdt_en;
 static int gpio_wdt_ping;
 static int gpio_wdt_out;
 
-
 struct i2c_client *adv_client;
 
 static struct {
@@ -79,6 +80,7 @@ static struct {
 static struct miscdevice adv_wdt_miscdev;
 
 static bool nowayout = WATCHDOG_NOWAYOUT;
+static void *original_arm_pm_restart;
 
 module_param(nowayout, bool, 0);
 
@@ -455,6 +457,9 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		goto fail;
 	}
 
+	original_arm_pm_restart = arm_pm_restart;
+	arm_pm_restart=NULL;
+	
 	return 0;
 
 fail:
@@ -475,7 +480,10 @@ static int __exit adv_wdt_i2c_remove(struct i2c_client *client)
 	clear_bit(ADV_WDT_EXPECT_CLOSE, &adv_wdt.status);
 	clear_bit(ADV_WDT_STATUS_OPEN, &adv_wdt.status);
 	clear_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status);
+
 	adv_wdt_miscdev.parent = NULL;
+	arm_pm_restart = original_arm_pm_restart;
+
 	return 0;
 }
 
