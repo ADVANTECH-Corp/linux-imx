@@ -85,3 +85,4 @@ obj-$(CONFIG_INPUT_MPL3115)		+= mpl3115.o
 obj-$(CONFIG_SENSOR_FXLS8471)       	+= fxls8471.o fxls8471_i2c.o
 obj-$(CONFIG_INPUT_ISL29023)            += isl29023.o
 obj-$(CONFIG_SENSOR_IMX_RPMSG)		+= rpmsg_input.o
+obj-$(CONFIG_GPIO_CTRL_ADV)		+= gpio_ctrl_adv.o
