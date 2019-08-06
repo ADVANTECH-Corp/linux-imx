@@ -699,8 +699,9 @@ int dm_old_init_request_queue(struct mapped_device *md, struct dm_table *t)
 
 	/* disable dm_old_request_fn's merge heuristic by default */
 	md->seq_rq_merge_deadline_usecs = 0;
-
+#ifndef CONFIG_ARCH_ADVANTECH
 	dm_init_normal_md_queue(md);
+#endif
 	blk_queue_softirq_done(md->queue, dm_softirq_done);
 
 	/* Initialize the request-based DM worker thread */
@@ -712,8 +713,9 @@ int dm_old_init_request_queue(struct mapped_device *md, struct dm_table *t)
 		md->kworker_task = NULL;
 		return error;
 	}
-
+#ifndef CONFIG_ARCH_ADVANTECH
 	elv_register_queue(md->queue);
+#endif
 
 	return 0;
 }
