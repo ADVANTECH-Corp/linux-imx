@@ -949,7 +949,7 @@
 	status = "okay";
 };
 
-/* DSI/LVDS port 0 */
+/* DSI/LVDS port 0 & 1 */
 &i2c0_mipi_lvds0 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -958,32 +958,16 @@
 	clock-frequency = <100000>;
 	status = "okay";
 
-};
-
-&ldb1_phy {
-	status = "okay";
-};
-
-&ldb1 {
-	status = "okay";
-
-	lvds-channel@0 {
-		fsl,data-mapping = "jeida";
-		fsl,data-width = <24>;
+	adv_bridge1: adv7535@3d {
+		compatible = "adi,adv7535", "adi,adv7533";
+		reg = <0x3d>;
+		adi,dsi-lanes = <4>;
+		adi,dsi-channel = <1>;
 		status = "okay";
 
-		display-timings {
-			native-mode = <&ldb1_timing01>;
-			ldb1_timing01: g070vw01v0 {
-				clock-frequency = <29500000>;
-				hactive = <800>;
-				vactive = <480>;
-				hback-porch = <96>;
-				hfront-porch = <24>;
-				vback-porch = <3>;
-				vfront-porch = <10>;
-				hsync-len = <72>;
-				vsync-len = <7>;
+		port {
+			adv7535_1_in: endpoint {
+				remote-endpoint = <&mipi_dsi_bridge1_out>;
 			};
 		};
 	};
@@ -1000,6 +984,12 @@
 
 &mipi_dsi_bridge1 {
 	status = "okay";
+
+	port@1 {
+		mipi_dsi_bridge1_out: endpoint {
+			remote-endpoint = <&adv7535_1_in>;
+		};
+	};
 };
 
 &pwm_mipi_lvds1 {
@@ -1008,7 +998,7 @@
 	status = "okay";
 };
 
-/* DSI/LVDS port 1 */
+/* General I2C Bus (not specific for DSI) */
 &i2c0_mipi_lvds1 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -1048,48 +1038,6 @@
 		#gpio-cells = <2>;
 	};
 #endif
-};
-
-&ldb2_phy {
-	status = "okay";
-};
-
-&ldb2 {
-	status = "okay";
-
-	lvds-channel@0 {
-		fsl,data-mapping = "jeida";
-		fsl,data-width = <24>;
-		status = "okay";
-
-		display-timings {
-			native-mode = <&ldb2_timing01>;
-			ldb2_timing01: g070vw01v0 {
-				clock-frequency = <29500000>;
-				hactive = <800>;
-				vactive = <480>;
-				hback-porch = <96>;
-				hfront-porch = <24>;
-				vback-porch = <3>;
-				vfront-porch = <10>;
-				hsync-len = <72>;
-				vsync-len = <7>;
-			};
-		};
-	};
-};
-
-&mipi_dsi_phy2 {
-	status = "okay";
-};
-
-&mipi_dsi2 {
-	pwr-delay = <10>;
-	status = "okay";
-};
-
-&mipi_dsi_bridge2 {
-	status = "okay";
 };
 
 &tsens {
