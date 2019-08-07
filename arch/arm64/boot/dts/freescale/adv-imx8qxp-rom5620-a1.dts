@@ -95,8 +95,8 @@
 			regulator-name = "usb_otg2_vbus";
 			regulator-min-microvolt = <3300000>;
 			regulator-max-microvolt = <3300000>;
-			gpio = <&gpio4 5 GPIO_ACTIVE_LOW>;
-			enable-active-high;
+			gpio = <&gpio4 5 GPIO_ACTIVE_HIGH>;
+			enable-active-low;
 		};
 	};
 
@@ -507,6 +507,18 @@
 				SC_P_QSPI0A_SS1_B_LSIO_GPIO3_IO15	0x06000021	/* TPM_IRQ */
 			>;
 		};
+
+		pinctrl_usbotg1: usbotg1_grp {
+			fsl,pins = <
+				SC_P_USB_SS3_TC0_LSIO_GPIO4_IO03	0x00000040	/* USB0_OTG_EN_OC# */
+			>;
+		};
+
+		pinctrl_usbotg3: usbotg3_grp {
+			fsl,pins = <
+				SC_P_USB_SS3_TC2_LSIO_GPIO4_IO05	0x00000020	/* USB1_EN_OC# */
+			>;
+		};
 	};
 };
 
@@ -547,14 +559,14 @@
 
 		ethphy0: ethernet-phy@0 {
 			compatible = "ethernet-phy-ieee802.3-c22";
-			reg = <0>;
+			reg = <4>;
 			at803x,eee-disabled;
 			at803x,vddio-1p8v;
 		};
 
 		ethphy1: ethernet-phy@1 {
 			compatible = "ethernet-phy-ieee802.3-c22";
-			reg = <1>;
+			reg = <6>;
 			at803x,eee-disabled;
 			at803x,vddio-1p8v;
 		};
@@ -738,6 +750,8 @@
 
 &usbotg1 {
 	vbus-supply = <&reg_usb_otg1_vbus>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbotg1>;
 	srp-disable;
 	hnp-disable;
 	adp-disable;
@@ -748,6 +762,8 @@
 
 &usbotg3 {
 	vbus-supply = <&reg_usb_otg2_vbus>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbotg3>;
 	dr_mode = "otg";
 	//extcon = <&typec_ptn5110>;
 	status = "okay";
