@@ -37,6 +37,17 @@ menuconfig USB_SUPPORT
 
 if USB_SUPPORT
 
+config USB_4761_BASE
+	tristate "USB_4761 base driver"
+	---help---
+	  Analog in module USB-4761, Advantech
+
+config USB_4761
+	tristate "USB_4761 driver"
+	depends on USB_4761_BASE
+	---help---
+	  Analog in module USB-4761, Advantech
+
 config USB_COMMON
 	tristate
 
