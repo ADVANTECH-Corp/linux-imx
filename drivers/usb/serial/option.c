@@ -1808,6 +1808,7 @@ static const struct usb_device_id option_ids[] = {
 #ifdef CONFIG_ARCH_ADVANTECH
 	{ USB_DEVICE(0x1546, 0x1102) }, //for EWM-C109F601E
 	{ USB_DEVICE(0x1546, 0x1146) }, //for EWM-C117FL06E
+	{ USB_DEVICE(0x2020, 0x2040) }, //for EWM-C145(BM817)
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9003)}, /* Quectel UC20 */
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9090)}, /* Quectel UC15 */
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9215)}, /* Quectel EC20 */
