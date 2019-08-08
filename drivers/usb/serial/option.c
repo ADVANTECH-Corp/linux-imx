@@ -239,7 +239,8 @@ static void option_instat_callback(struct urb *urb);
 #define QUECTEL_PRODUCT_UC20			0x9003
 #define QUECTEL_PRODUCT_UC15			0x9090
 #ifdef CONFIG_ARCH_ADVANTECH
-#define QUECTEL_PRODUCT_EC20            0x9215
+#define QUECTEL_PRODUCT_EC20			0x9215
+#define SIERRA_VENDOR_ID			0x1199
 #endif
 /* These u-blox products use Qualcomm's vendor ID */
 #define UBLOX_PRODUCT_R410M			0x90b2
@@ -1811,6 +1812,12 @@ static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9215)}, /* Quectel EC20 */
 	{ USB_DEVICE(QUECTEL_VENDOR_ID, 0x0125)}, /* Quectel EC25/EC20 R2.0*/
 	{ USB_DEVICE(QUECTEL_VENDOR_ID, 0x0121)}, /* Quectel EC21 */
+	{ USB_DEVICE_INTERFACE_CLASS(SIERRA_VENDOR_ID, 0x9071, 0xff),
+	  .driver_info = NCTRL(0) | NCTRL(2) | RSVD(8) | RSVD(10) | RSVD(11) }, /* Sierra MC7430 */
+	{ USB_DEVICE_INTERFACE_CLASS(SIERRA_VENDOR_ID, 0x68c0, 0xff),
+          .driver_info = NCTRL(0) | NCTRL(2) | RSVD(8) | RSVD(10) | RSVD(11) }, /* Sierra MC73xx */
+	{ USB_DEVICE_INTERFACE_CLASS(SIERRA_VENDOR_ID, 0x9041, 0xff),
+          .driver_info = NCTRL(0) | NCTRL(2) | RSVD(8) | RSVD(10) | RSVD(11) }, /* Sierra MC7305/MC7355*/
 #endif
 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
 	{ USB_DEVICE_AND_INTERFACE_INFO(HAIER_VENDOR_ID, HAIER_PRODUCT_CE81B, 0xff, 0xff, 0xff) },
