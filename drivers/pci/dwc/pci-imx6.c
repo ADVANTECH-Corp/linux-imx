@@ -10,7 +10,9 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
-
+#ifdef CONFIG_ARCH_ADVANTECH
+#define DEBUG 1
+#endif
 #include <dt-bindings/soc/imx8_hsio.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
@@ -81,6 +83,9 @@ struct imx_pcie {
 	int			dis_gpio;
 	int			power_on_gpio;
 	int			reset_gpio;
+#ifdef CONFIG_ARCH_ADVANTECH
+	int                     reset_time;
+#endif
 	bool			gpio_active_high;
 	struct clk		*pcie_bus;
 	struct clk		*pcie_phy;
@@ -965,7 +970,11 @@ static int imx_pcie_deassert_core_reset(struct imx_pcie *imx_pcie)
 	if (gpio_is_valid(imx_pcie->reset_gpio)) {
 		gpio_set_value_cansleep(imx_pcie->reset_gpio,
 					imx_pcie->gpio_active_high);
+#ifdef CONFIG_ARCH_ADVANTECH
+		mdelay(imx_pcie->reset_time);
+#else
 		mdelay(20);
+#endif
 		gpio_set_value_cansleep(imx_pcie->reset_gpio,
 					!imx_pcie->gpio_active_high);
 		mdelay(20);
@@ -1560,7 +1569,11 @@ static int imx_pcie_establish_link(struct imx_pcie *imx_pcie)
 	 * started in Gen2 mode, there is a possibility the devices on the
 	 * bus will not be detected at all.  This happens with PCIe switches.
 	 */
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (strstr(boot_command_line, "PCIE_SI_TEST")== NULL) {
+#else
 	if (!IS_ENABLED(CONFIG_PCI_IMX6_COMPLIANCE_TEST)) {
+#endif
 		tmp = dw_pcie_readl_dbi(pci, PCIE_RC_LCR);
 		tmp &= ~PCIE_RC_LCR_MAX_LINK_SPEEDS_MASK;
 		tmp |= PCIE_RC_LCR_MAX_LINK_SPEEDS_GEN1;
@@ -2439,6 +2452,11 @@ static int imx_pcie_probe(struct platform_device *pdev)
 		dev_err(dev, "pcie_bus clock source missing or invalid\n");
 		return PTR_ERR(imx_pcie->pcie_bus);
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_property_read_u32(node, "reset-time", &imx_pcie->reset_time) < 0)
+		imx_pcie->reset_time = 20;
+#endif
 
 	if (of_property_read_u32(node, "ext_osc", &imx_pcie->ext_osc) < 0)
 		imx_pcie->ext_osc = 0;
