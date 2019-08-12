@@ -31,6 +31,9 @@
 
 #define B0_SILICON_ID			0x11
 
+#ifdef  CONFIG_ARCH_ADVANTECH
+	int tx_txcc;
+#endif
 struct drm_display_mode *g_mode;
 uint8_t g_default_mode = 3;
 static struct drm_display_mode edid_cea_modes[] = {
@@ -1530,6 +1533,13 @@ static int imx_hdp_imx_bind(struct device *dev, struct device *master,
 
 	}
 
+#ifdef  CONFIG_ARCH_ADVANTECH
+        ret = of_property_read_u32(pdev->dev.of_node, "tx_txcc_cal_sclr_mult", &tx_txcc);
+	if (ret) { 
+		pr_info("No tx_txcc_cal_sclr_mult setting, use default value\n");
+		tx_txcc = 0x120;
+	}
+#endif
 	hdp->audio_type = devtype->audio_type;
 	hdp->ops = devtype->ops;
 	hdp->rw = devtype->rw;

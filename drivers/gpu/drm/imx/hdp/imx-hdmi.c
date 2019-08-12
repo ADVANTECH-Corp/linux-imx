@@ -135,7 +135,7 @@ static int hdmi_vendor_info_set(struct imx_hdp *hdp,
 static void hdmi_mode_set_vswing(state_struct *state)
 {
 	GENERAL_Read_Register_response regresp[12];
-
+	extern int tx_txcc;
 	Afe_write(state, 0x41e1, 0x7c0);
 	Afe_write(state, 0x43e1, 0x7c0);
 	Afe_write(state, 0x45e1, 0x7c0);
@@ -146,11 +146,17 @@ static void hdmi_mode_set_vswing(state_struct *state)
 	Afe_write(state, 0x444C, 0x0);
 	Afe_write(state, 0x464C, 0x0);
 
+#ifdef	CONFIG_ARCH_ADVANTECH
+	Afe_write(state, 0x4047, tx_txcc);
+	Afe_write(state, 0x4247, tx_txcc);
+	Afe_write(state, 0x4447, tx_txcc);
+	Afe_write(state, 0x4647, tx_txcc);
+#else 
 	Afe_write(state, 0x4047, 0x120);
 	Afe_write(state, 0x4247, 0x120);
 	Afe_write(state, 0x4447, 0x120);
 	Afe_write(state, 0x4647, 0x120);
-
+#endif
 	regresp[0].val = Afe_read(state, 0x41e1);
 	regresp[1].val = Afe_read(state, 0x43e1);
 	regresp[2].val = Afe_read(state, 0x45e1);

@@ -990,6 +990,7 @@
 #endif
 
 &hdmi {
+	tx_txcc_cal_sclr_mult = <0x160>;	//For SI test
 	status = "okay";
 };
 
