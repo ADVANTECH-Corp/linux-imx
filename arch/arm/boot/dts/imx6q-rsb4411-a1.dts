@@ -91,6 +91,10 @@
 };
 
 &i2c1 {
+        pinctrl-names = "default", "gpio";
+        pinctrl-1 = <&pinctrl_i2c1_gpio>;
+        scl-gpios = <&gpio5 27 GPIO_ACTIVE_HIGH>;
+        sda-gpios = <&gpio5 26 GPIO_ACTIVE_HIGH>;
 
 	codec: sgtl5000@0a {
 		compatible = "fsl,sgtl5000";
@@ -321,6 +325,14 @@
                 };
         };
 
+        i2c1 {
+                pinctrl_i2c1_gpio: i2c1_gpio_grp {
+                        fsl,pins = <
+                                MX6QDL_PAD_CSI0_DAT8__GPIO5_IO26                0x1b0b0
+                                MX6QDL_PAD_CSI0_DAT9__GPIO5_IO27                0x1b0b0
+                        >;
+                };
+        };
 };
 
 &mipi_csi {

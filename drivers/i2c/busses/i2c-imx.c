@@ -49,6 +49,9 @@
 #include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/of_dma.h>
+#ifdef	CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#endif
 #include <linux/platform_data/i2c-imx.h>
 #include <linux/platform_device.h>
 #include <linux/sched.h>
@@ -207,7 +210,12 @@ struct imx_i2c_struct {
 	unsigned int		cur_clk;
 	unsigned int		bitrate;
 	const struct imx_i2c_hwdata	*hwdata;
-
+#ifdef	CONFIG_ARCH_ADVANTECH
+	struct i2c_bus_recovery_info	rinfo;
+	struct pinctrl		*pinctrl;
+	struct pinctrl_state	*pinctrl_pins_default;
+	struct pinctrl_state	*pinctrl_pins_gpio;
+#endif
 	struct imx_i2c_dma	*dma;
 };
 
@@ -897,6 +905,16 @@ static int i2c_imx_xfer(struct i2c_adapter *adapter,
 
 	/* Start I2C transfer */
 	result = i2c_imx_start(i2c_imx);
+#ifdef	CONFIG_ARCH_ADVANTECH
+	if (result) {
+		if (i2c_imx->adapter.bus_recovery_info) {
+			i2c_recover_bus(&i2c_imx->adapter);
+			result = i2c_imx_start(i2c_imx);
+			if (result == 0)
+				dev_info(&i2c_imx->adapter.dev, "<%s> recovery done\n", __func__);
+		}
+	}
+#endif
 	if (result)
 		goto fail0;
 
@@ -956,7 +974,69 @@ fail0:
 			(result < 0) ? result : num);
 	return (result < 0) ? result : num;
 }
+#ifdef	CONFIG_ARCH_ADVANTECH
+static void i2c_imx_prepare_recovery(struct i2c_adapter *adap)
+{
+	struct imx_i2c_struct *i2c_imx;
 
+	i2c_imx = container_of(adap, struct imx_i2c_struct, adapter);
+
+	pinctrl_select_state(i2c_imx->pinctrl, i2c_imx->pinctrl_pins_gpio);
+}
+
+static void i2c_imx_unprepare_recovery(struct i2c_adapter *adap)
+{
+	struct imx_i2c_struct *i2c_imx;
+
+	i2c_imx = container_of(adap, struct imx_i2c_struct, adapter);
+
+	pinctrl_select_state(i2c_imx->pinctrl, i2c_imx->pinctrl_pins_default);
+}
+
+/*
+ * We switch SCL and SDA to their GPIO function and do some bitbanging
+ * for bus recovery. These alternative pinmux settings can be
+ * described in the device tree by a separate pinctrl state "gpio". If
+ * this is missing this is not a big problem, the only implication is
+ * that we can't do bus recovery.
+ */
+static int i2c_imx_init_recovery_info(struct imx_i2c_struct *i2c_imx,
+		struct platform_device *pdev)
+{
+	struct i2c_bus_recovery_info *rinfo = &i2c_imx->rinfo;
+
+	i2c_imx->pinctrl = devm_pinctrl_get(&pdev->dev);
+	if (!i2c_imx->pinctrl || IS_ERR(i2c_imx->pinctrl)) {
+		dev_info(&pdev->dev, "can't get pinctrl, bus recovery not supported\n");
+		return PTR_ERR(i2c_imx->pinctrl);
+	}
+
+	i2c_imx->pinctrl_pins_default = pinctrl_lookup_state(i2c_imx->pinctrl,
+			PINCTRL_STATE_DEFAULT);
+	i2c_imx->pinctrl_pins_gpio = pinctrl_lookup_state(i2c_imx->pinctrl,
+			"gpio");
+	rinfo->sda_gpio = of_get_named_gpio(pdev->dev.of_node, "sda-gpios", 0);
+	rinfo->scl_gpio = of_get_named_gpio(pdev->dev.of_node, "scl-gpios", 0);
+
+	if (!gpio_is_valid(rinfo->sda_gpio) ||
+	    !gpio_is_valid(rinfo->scl_gpio) ||
+	    IS_ERR(i2c_imx->pinctrl_pins_default) ||
+	    IS_ERR(i2c_imx->pinctrl_pins_gpio)) {
+		dev_dbg(&pdev->dev, "recovery information incomplete\n");
+		return 0;
+	}
+
+	dev_info(&pdev->dev, "using scl-gpio %d and sda-gpio %d for recovery\n",
+			rinfo->sda_gpio, rinfo->scl_gpio);
+
+	rinfo->prepare_recovery = i2c_imx_prepare_recovery;
+	rinfo->unprepare_recovery = i2c_imx_unprepare_recovery;
+	rinfo->recover_bus = i2c_generic_gpio_recovery;
+	i2c_imx->adapter.bus_recovery_info = rinfo;
+
+	return 0;
+}
+#endif
 static u32 i2c_imx_func(struct i2c_adapter *adapter)
 {
 	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL
@@ -1024,6 +1104,7 @@ static int i2c_imx_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "can't enable I2C clock\n");
 		return ret;
 	}
+
 	/* Request IRQ */
 	ret = devm_request_irq(&pdev->dev, irq, i2c_imx_isr,
 			       IRQF_NO_SUSPEND, pdev->name, i2c_imx);
@@ -1049,7 +1130,13 @@ static int i2c_imx_probe(struct platform_device *pdev)
 	imx_i2c_write_reg(i2c_imx->hwdata->i2cr_ien_opcode ^ I2CR_IEN,
 			i2c_imx, IMX_I2C_I2CR);
 	imx_i2c_write_reg(i2c_imx->hwdata->i2sr_clr_opcode, i2c_imx, IMX_I2C_I2SR);
-
+#ifdef	CONFIG_ARCH_ADVANTECH
+	/* Init optional bus recovery function */
+	ret = i2c_imx_init_recovery_info(i2c_imx, pdev);
+	/* Give it another chance if pinctrl used is not ready yet */
+	if (ret == -EPROBE_DEFER)
+		goto clk_disable;
+#endif
 	/* Add I2C adapter */
 	ret = i2c_add_numbered_adapter(&i2c_imx->adapter);
 	if (ret < 0) {
