@@ -14,7 +14,7 @@
 #define FLEXSPI0_QSPI0A
 #undef FLEXSPI0_QSPI1A
 
-#undef AUDIO_CODEC_SGTL5000
+#define AUDIO_CODEC_SGTL5000
 
 #define LVDS_CH0_ONLY 0
 #define LVDS_CH1_ONLY 1
@@ -93,7 +93,7 @@
 
 	board {
 		compatible = "proc-board";
-		board-type = "ROM-7720_A1";
+		board-type = "ROM-7720-A1";
 		board-cpu  = "iMX8QM";
 	};
 
@@ -437,20 +437,6 @@
 			fsl,pins = <
 				SC_P_HDMI_TX0_TS_SCL_DMA_I2C0_SCL   0xc600004c
 				SC_P_HDMI_TX0_TS_SDA_DMA_I2C0_SDA   0xc600004c
-			>;
-		};
-
-		pinctrl_csi0_lpi2c0: csi0lpi2c0grp {
-			fsl,pins = <
-				SC_P_MIPI_CSI0_I2C0_SCL_MIPI_CSI0_I2C0_SCL  0xc2000020
-				SC_P_MIPI_CSI0_I2C0_SDA_MIPI_CSI0_I2C0_SDA  0xc2000020
-			>;
-		};
-
-		pinctrl_csi1_lpi2c0: csi1lpi2c0grp {
-			fsl,pins = <
-				SC_P_MIPI_CSI1_I2C0_SCL_MIPI_CSI1_I2C0_SCL  0xc2000020
-				SC_P_MIPI_CSI1_I2C0_SDA_MIPI_CSI1_I2C0_SDA  0xc2000020
 			>;
 		};
 
@@ -909,38 +895,6 @@
 #endif
 
 
-&isi_0 {
-	status = "okay";
-};
-
-&isi_4 {
-	status = "okay";
-};
-
-&isi_1 {
-	status = "disabled";
-};
-
-&isi_2 {
-	status = "disabled";
-};
-
-&isi_3 {
-	status = "disabled";
-};
-
-&isi_5 {
-	status = "disabled";
-};
-
-&isi_6 {
-	status = "disabled";
-};
-
-&isi_7 {
-	status = "disabled";
-};
-
 #ifdef MIPI_CSI0
 &i2c0_mipi_csi0 {
 	#address-cells = <1>;
@@ -948,7 +902,6 @@
 	clock-frequency = <100000>;
 	status = "okay";
 	pinctrl-names = "default";
-    pinctrl-0 = <&pinctrl_csi0_lpi2c0>;
 
 	ov5640_mipi: ov5640_mipi@3c {
 		compatible = "ovti,ov5640_mipi_v3";
@@ -979,7 +932,6 @@
 	#size-cells = <0>;
 	clock-frequency = <100000>;
 	status = "okay";
-    pinctrl-0 = <&pinctrl_csi1_lpi2c0>;
 
 	ov5640_mipi@3c {
 		compatible = "ovti,ov5640_mipi_v3";
@@ -1003,6 +955,14 @@
 	};
 };
 #endif
+
+&isi_0 {
+	status = "okay";
+};
+
+&isi_4 {
+	status = "okay";
+};
 
 &i2c0 {
 	#address-cells = <1>;
@@ -1152,22 +1112,6 @@
 	status = "okay";
 };
 */
-
-&isi_0 {
-	status = "okay";
-};
-
-&isi_1 {
-	status = "okay";
-};
-
-&isi_2 {
-	status = "okay";
-};
-
-&isi_3 {
-	status = "okay";
-};
 
 &gpu_3d0 {
 	status = "okay";
