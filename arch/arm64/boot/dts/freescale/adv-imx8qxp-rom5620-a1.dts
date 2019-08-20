@@ -18,6 +18,16 @@
 /* Definitions */
 #define ROM_DB5901
 
+/* LVDS Panel : only choose one!
+ *   LVDS_AUO_7, LVDS_CHIMEI_15, LVDS_AUO_215
+ */
+#define LVDS_AUO_7
+//#define LVDS_CHIMEI_15
+//#define LVDS_AUO_215
+
+#ifdef LVDS_AUO_215
+  #define LVDS_DUAL_CHANNEL
+#endif
 /*************************** based on fsl-imx8qxp-mek.dtsi *****************************/
 
 / {
@@ -1003,13 +1013,23 @@
 &ldb1 {
 	status = "okay";
 
+#ifdef LVDS_DUAL_CHANNEL
+	fsl,dual-channel;
+	power-domains = <&pd_mipi_dsi_0_dual_lvds>;
+#endif
 	lvds-channel@0 {
 		fsl,data-mapping = "spwg";
 		fsl,data-width = <24>;
 		status = "okay";
 
 		display-timings {
+#ifdef LVDS_AUO_215
+			native-mode = <&ldb1_timing02>;
+#elif defined(LVDS_CHIMEI_15)
+			native-mode = <&ldb1_timing01>;
+#else /* LVDS_AUO_7 */
 			native-mode = <&ldb1_timing00>;
+#endif
 			ldb1_timing00: g070vw01v0 {
 				clock-frequency = <29500000>;
 				hactive = <800>;
@@ -1019,6 +1039,31 @@
 				vback-porch = <3>;
 				vfront-porch = <10>;
 				hsync-len = <72>;
+				vsync-len = <7>;
+			};
+
+			ldb1_timing01: g150xgel04 {
+				clock-frequency = <63500000>;
+				hactive = <1024>;
+				vactive = <768>;
+				hback-porch = <152>;
+				hfront-porch = <48>;
+				vback-porch = <3>;
+				vfront-porch = <23>;
+				hsync-len = <104>;
+				vsync-len = <4>;
+			};
+
+			/* Dual channel panel */
+			ldb1_timing02: g215hvn0 {
+				clock-frequency = <170000000>;
+				hactive = <1920>;
+				vactive = <1080>;
+				hback-porch = <90>;
+				hfront-porch = <30>;
+				vback-porch = <5>;
+				vfront-porch = <38>;
+				hsync-len = <60>;
 				vsync-len = <7>;
 			};
 		};
@@ -1058,15 +1103,22 @@
 };
 
 &ldb2 {
+#ifdef LVDS_DUAL_CHANNEL
+	status = "disabled";
+#else
 	status = "okay";
-
+#endif
 	lvds-channel@0 {
 		fsl,data-mapping = "spwg";
 		fsl,data-width = <24>;
 		status = "okay";
 
 		display-timings {
+#ifdef LVDS_CHIMEI_15
+			native-mode = <&ldb2_timing01>;
+#else /* LVDS_AUO_7 */
 			native-mode = <&ldb2_timing00>;
+#endif
 			ldb2_timing00: g070vw01v0 {
 				clock-frequency = <29500000>;
 				hactive = <800>;
@@ -1077,6 +1129,18 @@
 				vfront-porch = <10>;
 				hsync-len = <72>;
 				vsync-len = <7>;
+			};
+
+			ldb2_timing01: g150xgel04 {
+				clock-frequency = <63500000>;
+				hactive = <1024>;
+				vactive = <768>;
+				hback-porch = <152>;
+				hfront-porch = <48>;
+				vback-porch = <3>;
+				vfront-porch = <23>;
+				hsync-len = <104>;
+				vsync-len = <4>;
 			};
 		};
 	};
