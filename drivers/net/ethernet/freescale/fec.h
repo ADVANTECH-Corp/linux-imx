@@ -381,8 +381,13 @@ struct bufdesc_ex {
 #define FEC_ENET_TS_AVAIL       ((uint)0x00010000)
 #define FEC_ENET_TS_TIMER       ((uint)0x00008000)
 
-#ifdef CONFIG_ARCH_ADVANTECH
+#ifdef CONFIG_ARCH_ADVANTECH 
+#ifdef	CONFIG_SOC_IMX6Q
 #define FEC_ENET_MII_CLK        ((uint)2500000)
+#endif
+#ifdef	CONFIG_ARCH_FSL_IMX8MQ
+#define FEC_ENET_MII_CLK        ((uint)5000000)
+#endif
 #endif
 
 #define FEC_DEFAULT_IMASK (FEC_ENET_TXF | FEC_ENET_RXF | FEC_ENET_MII)
