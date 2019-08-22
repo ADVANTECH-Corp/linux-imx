@@ -115,6 +115,7 @@
 	cs-gpios = <&gpio1 17 0>, <&gpio1 19 0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_ecspi5_1 &pinctrl_ecspi5_cs_0 &pinctrl_ecspi5_cs_1>;
+	dmas = <&sdma 11 7 1>, <&sdma 12 7 2>;
 	status = "okay";
 
 	chip3: m25p80@0 {
