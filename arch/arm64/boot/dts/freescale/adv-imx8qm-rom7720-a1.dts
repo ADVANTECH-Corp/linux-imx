@@ -14,15 +14,15 @@
 #define FLEXSPI0_QSPI0A
 #undef FLEXSPI0_QSPI1A
 
-#define AUDIO_CODEC_SGTL5000
+#undef AUDIO_CODEC_SGTL5000
 
-#define LVDS_CH0_ONLY 0
-#define LVDS_CH1_ONLY 1
-#define LVDS_DUAL_ONLY 2
-#define HDMI_ONLY 3
-#define HDMI_AND_LVDS_CH0 30
-#define HDMI_AND_LVDS_CH1 31
-#define HDMI_AND_LVDS_DUAL 32
+#	define LVDS_CH0_ONLY 0
+#	define LVDS_CH1_ONLY 1
+#	define LVDS_DUAL_ONLY 2
+#	define HDMI_ONLY 3
+#	define HDMI_AND_LVDS_CH0 30
+#	define HDMI_AND_LVDS_CH1 31
+#	define HDMI_AND_LVDS_DUAL 32
 
 #define DISPLAY_MODE HDMI_ONLY
 
@@ -82,14 +82,16 @@
 	compatible = "fsl,imx8qm";
 
 	aliases {
-    	/delete-property/ i2c0;
-    	/delete-property/ i2c1;
-		i2c0=&i2c1;
-		i2c1=&i2c2;
-		i2c2=&i2c3;
-		i2c3=&i2c0_mipi_csi0;
-		i2c4=&i2c0_mipi_csi1;
-	};
+        /delete-property/ i2c0;
+        /delete-property/ i2c1;
+        i2c0=&i2c1;
+        i2c1=&i2c2;
+        i2c2=&i2c3;
+        i2c3=&i2c0_mipi_csi0;
+        i2c4=&i2c0_mipi_csi1;
+        mmc0 = &usdhc1;
+        mmc2 = &usdhc3;
+};
 
 	board {
 		compatible = "proc-board";
@@ -217,12 +219,21 @@
 			enable-active-high;
 		};
 
-		epdev_on: fixedregulator@100 {
+		pcieb_epdev_on: fixedregulator@100 {
 			compatible = "regulator-fixed";
 			regulator-min-microvolt = <3300000>;
 			regulator-max-microvolt = <3300000>;
-			regulator-name = "epdev_on";
+			regulator-name = "pcieb_epdev_on";
 			gpio = <&tca9538 0 GPIO_ACTIVE_HIGH>; // SDIO_M2_RESET#
+			enable-active-high;
+		};
+
+		pciea_epdev_on: fixedregulator@106 {
+			compatible = "regulator-fixed";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-name = "pciea_epdev_on";
+			gpio = <&tca9538 6 GPIO_ACTIVE_HIGH>; // PCIE_GP_RESET#
 			enable-active-high;
 		};
 	};
@@ -465,10 +476,8 @@
 			fsl,pins = <
 				SC_P_UART1_RX_DMA_UART1_RX		0x06000020
 				SC_P_UART1_TX_DMA_UART1_TX		0x06000020
-				/*
 				SC_P_UART1_CTS_B_DMA_UART1_CTS_B	0x06000020
 				SC_P_UART1_RTS_B_DMA_UART1_RTS_B	0x06000020
-				*/
 			>;
 		};
 
@@ -1057,20 +1066,6 @@
     linux,rs485-enabled-at-boot-time;
 	status = "okay";
 };
-/*
-&lpuart1 { // BT
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_lpuart1>;
-	resets = <&modem_reset>;
-	status = "okay";
-};
-
-&lpuart3 { // GPS
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_lpuart3>;
-	status = "okay";
-};
-*/
 
 #ifdef MIPI_CSI0
 &mipi_csi_0 {
@@ -1269,6 +1264,7 @@
 	reset-gpio = <&gpio4 29 GPIO_ACTIVE_LOW>;
 	disable-gpio = <&gpio4 28 GPIO_ACTIVE_LOW>;
 	clkreq-gpio = <&gpio4 27 GPIO_ACTIVE_LOW>;
+	epdev_on-supply = <&pciea_epdev_on>;
 	status = "okay";
 };
 
@@ -1280,8 +1276,8 @@
 	reset-gpio = <&gpio5 0 GPIO_ACTIVE_LOW>;
 	disable-gpio = <&gpio4 31 GPIO_ACTIVE_LOW>;
 	clkreq-gpio = <&gpio4 30 GPIO_ACTIVE_LOW>;
-	epdev_on-supply = <&epdev_on>;
-	status = "okay";
+	epdev_on-supply = <&pcieb_epdev_on>;
+	status = "disabled";
 };
 
 &sata {
@@ -1289,7 +1285,7 @@
 	clkreq-gpio = <&gpio4 27 GPIO_ACTIVE_LOW>;
 //	assigned-clocks = <&clk IMX8QM_HSIO_SATA_CLK>, <&clk IMX8QM_HSIO_SATA_PER_CLK>;
 //	assigned-clock-rates = <400000000>, <133333333>;
-	status = "okay";
+	status = "disabled";
 };
 
 &intmux_cm40 {
@@ -1537,6 +1533,42 @@
 		status = "okay";
 	};
 #endif
+};
+
+&tsens {
+	tsens-num = <6>;
+};
+
+&thermal_zones {
+	pmic-thermal0 {
+		polling-delay-passive = <250>;
+		polling-delay = <2000>;
+		thermal-sensors = <&tsens 5>;
+		trips {
+			pmic_alert0: trip0 {
+				temperature = <110000>;
+				hysteresis = <2000>;
+				type = "passive";
+			};
+			pmic_crit0: trip1 {
+				temperature = <125000>;
+				hysteresis = <2000>;
+				type = "critical";
+			};
+		};
+		cooling-maps {
+			map0 {
+				trip = <&pmic_alert0>;
+				cooling-device =
+				<&A53_0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
+			};
+			map1 {
+				trip = <&pmic_alert0>;
+				cooling-device =
+				<&A72_0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
+			};
+		};
+	};
 };
 
 &vpu_decoder {
