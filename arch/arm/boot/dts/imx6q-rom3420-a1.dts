@@ -660,3 +660,8 @@
 &v4l2_capture_1 {
 	status = "okay";
 };
+
+&weim {
+	/delete-property/ fsl,weim-cs-gpr;
+	status = "okay";
+};
