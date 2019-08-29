@@ -1045,6 +1045,13 @@ static int sgtl5000_set_power_regs(struct snd_soc_codec *codec)
 	size_t i;
 	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_machine_is_compatible("fsl,imx8mq") ||
+	    of_machine_is_compatible("fsl,imx8qxp")) {
+		dev_info(codec->dev, "skip setting power regulators\n");
+		return 0;
+	}
+#endif
 	vdda  = regulator_get_voltage(sgtl5000->supplies[VDDA].consumer);
 	vddio = regulator_get_voltage(sgtl5000->supplies[VDDIO].consumer);
 	vddd  = (sgtl5000->num_supplies > VDDD)
@@ -1199,12 +1206,12 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
 	int ret;
 	u16 reg;
 	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
-	if (!of_machine_is_compatible("fsl,imx8mq")) {
-		/* power up sgtl5000 */
-		ret = sgtl5000_set_power_regs(codec);
-		if (ret)
-			goto err;
-	}
+
+	/* power up sgtl5000 */
+	ret = sgtl5000_set_power_regs(codec);
+	if (ret)
+		goto err;
+
 	/* enable small pop, introduce 400ms delay in turning off */
 	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
 				SGTL5000_SMALL_POP, 1);

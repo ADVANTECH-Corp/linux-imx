@@ -65,15 +65,12 @@ static int imx_sgtl5000_probe(struct platform_device *pdev)
 	int int_port, ext_port;
 	int ret;
 
-	if (of_machine_is_compatible("fsl,imx8qm")) {
-		if (of_find_property(np, "no-audmux", NULL)) {
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_find_property(np, "no-audmux", NULL)) {
 		dev_info(&pdev->dev, "no-audmux specified, skipping audmux configuration\n");
 		goto audmux_config_done;
-		}
 	}
-	if (of_machine_is_compatible("fsl,imx8mq")) {
-		goto audmux_config_done;
-	}
+#endif
 	ret = of_property_read_u32(np, "mux-int-port", &int_port);
 	if (ret) {
 		dev_err(&pdev->dev, "mux-int-port missing or invalid\n");
@@ -109,9 +106,9 @@ static int imx_sgtl5000_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "audmux external port setup failed\n");
 		return ret;
 	}
-
+#ifdef CONFIG_ARCH_ADVANTECH
 audmux_config_done:
-
+#endif
 	ssi_np = of_parse_phandle(pdev->dev.of_node, "ssi-controller", 0);
 	codec_np = of_parse_phandle(pdev->dev.of_node, "audio-codec", 0);
 	if (!ssi_np || !codec_np) {

@@ -22,8 +22,6 @@
  *   LVDS_AUO_7, LVDS_CHIMEI_15, LVDS_AUO_215
  */
 #define LVDS_AUO_7
-//#define LVDS_CHIMEI_15
-//#define LVDS_AUO_215
 
 #ifdef LVDS_AUO_215
   #define LVDS_DUAL_CHANNEL
@@ -116,21 +114,13 @@
 		model = "sgtl50000";
 		ssi-controller = <&sai1>;
 		audio-codec = <&codec>;
-		codec-master;
+		no-audmux;
 		audio-routing =
 			"MIC_IN", "Mic Jack",
 			"Mic Jack", "Mic Bias",
 			"Headphone Jack", "HP_OUT";
 	};
 #endif
-
-	/* SAI0: M.2, SAI1: SGTL5000 */
-	sound-amix-sai {
-		compatible = "fsl,imx-audio-amix";
-		model = "amix-audio-sai";
-		dais = <&sai0>, <&sai1>;
-		amix-controller = <&amix>;
-	};
 
 	lvds_backlight0: lvds_backlight@0 {
 		compatible = "pwm-backlight";
@@ -212,7 +202,6 @@
 				SC_P_SPI3_SCK_LSIO_GPIO0_IO13	0x06000021	/* GPIO5 */
 				SC_P_SPI3_SDI_LSIO_GPIO0_IO15	0x06000021	/* GPIO6 */
 				SC_P_MCLK_IN0_LSIO_GPIO0_IO19	0x06000021	/* GPIO7 */
-				SC_P_MCLK_OUT0_LSIO_GPIO0_IO20	0x06000021	/* GPIO8 */
 				SC_P_CSI_PCLK_LSIO_GPIO3_IO00	0x06000021	/* GPIO9 */
 				SC_P_CSI_MCLK_LSIO_GPIO3_IO01	0x06000021	/* GPIO10 */
 				SC_P_CSI_EN_LSIO_GPIO3_IO02	0x06000021	/* GPIO11 */
@@ -380,7 +369,6 @@
 				SC_P_SAI0_TXC_ADMA_SAI0_TXC	0x06000040
 				SC_P_SAI0_TXFS_ADMA_SAI0_TXFS	0x06000040
 				SC_P_SAI0_TXD_ADMA_SAI0_TXD	0x06000040
-				SC_P_MCLK_IN1_ADMA_ACM_MCLK_IN1	0xc6000040
 			>;
 		};
 
@@ -389,7 +377,7 @@
 				SC_P_SAI1_RXD_ADMA_SAI1_RXD	0x06000040
 				SC_P_SAI1_RXC_ADMA_SAI1_TXC	0x06000040
 				SC_P_SAI1_RXFS_ADMA_SAI1_TXFS	0x06000040
-				SC_P_SPI0_CS1_ADMA_SAI1_TXD	0x06000060
+				SC_P_SPI0_CS1_ADMA_SAI1_TXD	0x06000040
 			>;
 		};
 
@@ -543,6 +531,12 @@
 			fsl,pins = <
 				SC_P_SPDIF0_EXT_CLK_LSIO_GPIO0_IO12	0x00000021	/* LCD1_VDD_EN */
 				SC_P_ENET0_REFCLK_125M_25M_LSIO_GPIO5_IO09	0x00000021	/* LCD1_BKLT_EN */
+			>;
+		};
+
+		pinctrl_sai_mclk: sai_mclk_grp {
+			fsl,pins = <
+				SC_P_MCLK_OUT0_ADMA_ACM_MCLK_OUT0	0x00000040	/* AUDIO_MCLK */
 			>;
 		};
 	};
@@ -1178,6 +1172,8 @@
 		reg = <0x0a>;
 		clocks = <&clk IMX8QXP_AUD_MCLKOUT0>;
 		clock-names = "mclk";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_sai_mclk>;
 		power-domains = <&pd_mclk_out0>;
 		assigned-clocks = <&clk IMX8QXP_AUD_PLL0_DIV>,
 				<&clk IMX8QXP_AUD_ACM_AUD_PLL_CLK0_DIV>,
