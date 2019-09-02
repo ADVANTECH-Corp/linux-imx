@@ -147,7 +147,7 @@
 		compatible = "fsl,adv-wdt-i2c";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
-		status = "okay";
+		status = "disabled";
 		wdt-en = <&gpio1 26 0>;
 		wdt-ping = <&gpio1 28 0>;
 		reg = <0x29>;
@@ -517,5 +517,5 @@
 };
 
 &wdog1 {
-	status = "disabled";
+	status = "okay";
 };
