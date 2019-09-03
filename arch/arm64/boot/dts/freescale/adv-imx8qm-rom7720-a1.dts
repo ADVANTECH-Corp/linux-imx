@@ -11,6 +11,12 @@
 #define ROMDB7503
 #define SDHC_LOW_SPEED_ONLY
 
+#define PCIE_SLOT
+#	undef PCIE_EPDEV_ON
+#undef M2_PCIE
+#	define M2_EPDEV_ON
+#define SATA
+
 #define FLEXSPI0_QSPI0A
 #undef FLEXSPI0_QSPI1A
 
@@ -219,16 +225,8 @@
 			enable-active-high;
 		};
 
-		pcieb_epdev_on: fixedregulator@100 {
-			compatible = "regulator-fixed";
-			regulator-min-microvolt = <3300000>;
-			regulator-max-microvolt = <3300000>;
-			regulator-name = "pcieb_epdev_on";
-			gpio = <&tca9538 0 GPIO_ACTIVE_HIGH>; // SDIO_M2_RESET#
-			enable-active-high;
-		};
-
-		pciea_epdev_on: fixedregulator@106 {
+#if defined(PCIE_SLOT) && defined(PCIE_EPDEV_ON)
+		pciea_epdev_on: fixedregulator@100 {
 			compatible = "regulator-fixed";
 			regulator-min-microvolt = <3300000>;
 			regulator-max-microvolt = <3300000>;
@@ -236,6 +234,18 @@
 			gpio = <&tca9538 6 GPIO_ACTIVE_HIGH>; // PCIE_GP_RESET#
 			enable-active-high;
 		};
+#endif
+
+#if defined(M2_PCIE) && defined(M2_EPDEV_ON)
+		pcieb_epdev_on: fixedregulator@106 {
+			compatible = "regulator-fixed";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-name = "pcieb_epdev_on";
+			gpio = <&tca9538 0 GPIO_ACTIVE_HIGH>; // SDIO_M2_RESET#
+			enable-active-high;
+		};
+#endif
 	};
 
 	/*
@@ -1256,37 +1266,42 @@
 	status = "okay";
 };
 
+#ifdef PCIE_SLOT
 &pciea{
 	ext_osc = <1>;
-//	hard-wired = <1>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pciea>;
 	reset-gpio = <&gpio4 29 GPIO_ACTIVE_LOW>;
-	disable-gpio = <&gpio4 28 GPIO_ACTIVE_LOW>;
 	clkreq-gpio = <&gpio4 27 GPIO_ACTIVE_LOW>;
+#	ifdef PCIE_EPDEV_ON 
 	epdev_on-supply = <&pciea_epdev_on>;
+#	endif
 	status = "okay";
 };
+#endif
 
+#ifdef M2_PCIE
 &pcieb{
 	ext_osc = <1>;
-//	hard-wired = <1>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcieb>;
+	disable-gpio = <&tca9538 1 GPIO_ACTIVE_LOW>;
 	reset-gpio = <&gpio5 0 GPIO_ACTIVE_LOW>;
-	disable-gpio = <&gpio4 31 GPIO_ACTIVE_LOW>;
 	clkreq-gpio = <&gpio4 30 GPIO_ACTIVE_LOW>;
+#	ifdef M2_EPDEV_ON 
 	epdev_on-supply = <&pcieb_epdev_on>;
-	status = "disabled";
+#	endif
+	status = "okay";
 };
+#endif
 
+#ifdef SATA
 &sata {
 	pinctrl-0 = <&pinctrl_pciea>;
 	clkreq-gpio = <&gpio4 27 GPIO_ACTIVE_LOW>;
-//	assigned-clocks = <&clk IMX8QM_HSIO_SATA_CLK>, <&clk IMX8QM_HSIO_SATA_PER_CLK>;
-//	assigned-clock-rates = <400000000>, <133333333>;
-	status = "disabled";
+	status = "okay";
 };
+#endif
 
 &intmux_cm40 {
 	status = "okay";
