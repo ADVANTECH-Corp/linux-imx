@@ -13,14 +13,14 @@
 
 #define PCIE_SLOT
 #	undef PCIE_EPDEV_ON
-#undef M2_PCIE
+#define M2_PCIE
 #	define M2_EPDEV_ON
 #define SATA
 
 #define FLEXSPI0_QSPI0A
 #undef FLEXSPI0_QSPI1A
 
-#undef AUDIO_CODEC_SGTL5000
+#define AUDIO_CODEC_SGTL5000
 
 #	define LVDS_CH0_ONLY 0
 #	define LVDS_CH1_ONLY 1
@@ -487,7 +487,7 @@
 				SC_P_UART1_RX_DMA_UART1_RX		0x06000020
 				SC_P_UART1_TX_DMA_UART1_TX		0x06000020
 				SC_P_UART1_CTS_B_DMA_UART1_CTS_B	0x06000020
-				SC_P_UART1_RTS_B_DMA_UART1_RTS_B	0x06000020
+				SC_P_UART1_RTS_B_LSIO_GPIO0_IO26	0x00000021
 			>;
 		};
 
@@ -1286,7 +1286,9 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcieb>;
 	disable-gpio = <&tca9538 1 GPIO_ACTIVE_LOW>;
+#if ! defined(PCIE_SLOT)
 	reset-gpio = <&gpio5 0 GPIO_ACTIVE_LOW>;
+#endif
 	clkreq-gpio = <&gpio4 30 GPIO_ACTIVE_LOW>;
 #	ifdef M2_EPDEV_ON 
 	epdev_on-supply = <&pcieb_epdev_on>;
@@ -1535,7 +1537,7 @@
 #ifdef AUDIO_CODEC_SGTL5000
 	sound: sound {
 		compatible = "fsl,imx-audio-sgtl5000";
-		model = "sgtl5000-autio";
+		model = "sgtl5000-audio";
 		ssi-controller = <&sai1>;
 		audio-routing =
 			"MIC_IN", "Mic Jack",
