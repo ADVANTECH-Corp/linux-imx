@@ -631,4 +631,11 @@ config CHARGER_RT9455
 	help
 	  Say Y to enable support for Richtek RT9455 battery charger.
 
+config FUEL_GAUGE_BQ40Z50
+	tristate "TI BQ40z50 battery charger driver"
+	depends on I2C
+	default y
+	help
+	  Say Y to enable support for TI bq40z50 fuel gauge driver
+
 endif # POWER_SUPPLY

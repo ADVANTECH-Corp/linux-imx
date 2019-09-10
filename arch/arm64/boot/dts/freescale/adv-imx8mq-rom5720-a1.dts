@@ -663,6 +663,12 @@
 	pinctrl-0 = <&pinctrl_i2c3>;
 	status = "okay";
 
+        bq40z50@0b {
+                compatible = "ti,bq40z50";
+                reg = <0x0b>;
+        };
+
+
 	codec: sgtl5000@0a {
 		compatible = "fsl,sgtl5000";
 		reg = <0x0a>;
