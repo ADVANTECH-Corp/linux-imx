@@ -136,7 +136,6 @@
 				MX8MQ_IOMUXC_SAI3_RXFS_GPIO4_IO28		0x19	/* GPIO10 */	
 				MX8MQ_IOMUXC_SAI1_RXFS_GPIO4_IO0		0x19	/* GPIO11 */
 
-				MX8MQ_IOMUXC_GPIO1_IO10_GPIO1_IO10		0x19	/* USB0_OTG_ID_1V8*/
 				MX8MQ_IOMUXC_GPIO1_IO12_GPIO1_IO12		0x19	/* USB1_OTG_VBUS */
 
 				MX8MQ_IOMUXC_GPIO1_IO14_CCMSRCGPCMIX_CLKO1	0x59
@@ -435,6 +434,7 @@
 
                 pinctrl_usbotg: usbotggrp {
                         fsl,pins = <
+				MX8MQ_IOMUXC_GPIO1_IO10_GPIO1_IO10		0x19	/* USB0_OTG_ID_1V8*/
 				MX8MQ_IOMUXC_SAI2_RXFS_GPIO4_IO21	0x16	/* USB_OTG0_OC */
                         >;
                 };
@@ -859,8 +859,10 @@
 };
 
 &usb_dwc3_0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbotg>;
 	status = "okay";
-	dr_mode = "host";
+	dr_mode = "otg";
 };
 
 &usb3_phy1 {

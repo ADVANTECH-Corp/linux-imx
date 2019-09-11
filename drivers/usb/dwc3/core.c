@@ -99,11 +99,13 @@ static int dwc3_get_dr_mode(struct dwc3 *dwc)
 
 	return 0;
 }
-
+#ifndef	CONFIG_ARCH_ADVANTECH
 static void dwc3_event_buffers_cleanup(struct dwc3 *dwc);
 static int dwc3_event_buffers_setup(struct dwc3 *dwc);
-
 static void dwc3_set_prtcap(struct dwc3 *dwc, u32 mode)
+#else
+void dwc3_set_prtcap(struct dwc3 *dwc, u32 mode)
+#endif
 {
 	u32 reg;
 
@@ -118,6 +120,13 @@ static void __dwc3_set_mode(struct work_struct *work)
 	struct dwc3 *dwc = work_to_dwc(work);
 	unsigned long flags;
 	int ret;
+#ifdef	CONFIG_ARCH_ADVANTECH
+	if (dwc->dr_mode != USB_DR_MODE_OTG)
+		return;
+
+	if (dwc->current_dr_role == DWC3_GCTL_PRTCAP_OTG)
+		dwc3_otg_update(dwc, 0);
+#endif
 
 	if (!dwc->desired_dr_role)
 		return;
@@ -125,12 +134,16 @@ static void __dwc3_set_mode(struct work_struct *work)
 	if (dwc->desired_dr_role == dwc->current_dr_role)
 		return;
 
+#ifndef	CONFIG_ARCH_ADVANTECH
 	if (dwc->dr_mode != USB_DR_MODE_OTG)
 		return;
 
 	if (dwc->desired_dr_role == DWC3_GCTL_PRTCAP_OTG)
 		return;
-
+#else
+	if (dwc->desired_dr_role == DWC3_GCTL_PRTCAP_OTG && dwc->edev)
+		return;
+#endif
 	switch (dwc->current_dr_role) {
 	case DWC3_GCTL_PRTCAP_HOST:
 		dwc3_host_exit(dwc);
@@ -139,6 +152,15 @@ static void __dwc3_set_mode(struct work_struct *work)
 		dwc3_gadget_exit(dwc);
 		dwc3_event_buffers_cleanup(dwc);
 		break;
+#ifdef	CONFIG_ARCH_ADVANTECH
+	case DWC3_GCTL_PRTCAP_OTG:
+		dwc3_otg_exit(dwc);
+		spin_lock_irqsave(&dwc->lock, flags);
+		dwc->desired_otg_role = DWC3_OTG_ROLE_IDLE;
+		spin_unlock_irqrestore(&dwc->lock, flags);
+		dwc3_otg_update(dwc, 1);
+		break;
+#endif
 	default:
 		break;
 	}
@@ -176,6 +198,12 @@ static void __dwc3_set_mode(struct work_struct *work)
 		if (ret)
 			dev_err(dwc->dev, "failed to initialize peripheral\n");
 		break;
+#ifdef	CONFIG_ARCH_ADVANTECH
+	case DWC3_GCTL_PRTCAP_OTG:
+		dwc3_otg_init(dwc);
+		dwc3_otg_update(dwc, 0);
+		break;
+#endif
 	default:
 		break;
 	}
@@ -397,7 +425,11 @@ static int dwc3_alloc_event_buffers(struct dwc3 *dwc, unsigned length)
  *
  * Returns 0 on success otherwise negative errno.
  */
+#ifdef	CONFIG_ARCH_ADVANTECH
+int dwc3_event_buffers_setup(struct dwc3 *dwc)
+#else
 static int dwc3_event_buffers_setup(struct dwc3 *dwc)
+#endif
 {
 	struct dwc3_event_buffer	*evt;
 
@@ -414,7 +446,11 @@ static int dwc3_event_buffers_setup(struct dwc3 *dwc)
 	return 0;
 }
 
+#ifdef	CONFIG_ARCH_ADVANTECH
+void dwc3_event_buffers_cleanup(struct dwc3 *dwc)
+#else
 static void dwc3_event_buffers_cleanup(struct dwc3 *dwc)
+#endif
 {
 	struct dwc3_event_buffer	*evt;
 
@@ -1374,7 +1410,11 @@ static int dwc3_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
+#ifdef	CONFIG_ARCH_ADVANTECH
+static int dwc3_suspend_common(struct dwc3 *dwc, pm_message_t msg)
+#else
 static int dwc3_suspend_common(struct dwc3 *dwc)
+#endif
 {
 	unsigned long	flags;
 
@@ -1385,16 +1425,40 @@ static int dwc3_suspend_common(struct dwc3 *dwc)
 		spin_unlock_irqrestore(&dwc->lock, flags);
 		dwc3_core_exit(dwc);
 		break;
+#ifdef	CONFIG_ARCH_ADVANTECH
+	case DWC3_GCTL_PRTCAP_OTG:
+		/* do nothing during runtime_suspend */
+		if (PMSG_IS_AUTO(msg))
+			break;
+
+		if (dwc->current_otg_role == DWC3_OTG_ROLE_DEVICE) {
+			spin_lock_irqsave(&dwc->lock, flags);
+			dwc3_gadget_suspend(dwc);
+			spin_unlock_irqrestore(&dwc->lock, flags);
+		}
+
+		dwc3_otg_exit(dwc);
+		dwc3_core_exit(dwc);
+		break;
+#endif
 	case DWC3_GCTL_PRTCAP_HOST:
 	default:
 		/* do nothing */
+#ifdef	CONFIG_ARCH_ADVANTECH
+		if (!PMSG_IS_AUTO(msg))
+			dwc3_core_exit(dwc);
+#endif
 		break;
 	}
 
 	return 0;
 }
 
+#ifdef	CONFIG_ARCH_ADVANTECH
+static int dwc3_resume_common(struct dwc3 *dwc, pm_message_t msg)
+#else
 static int dwc3_resume_common(struct dwc3 *dwc)
+#endif
 {
 	unsigned long	flags;
 	int		ret;
@@ -1405,13 +1469,47 @@ static int dwc3_resume_common(struct dwc3 *dwc)
 		if (ret)
 			return ret;
 
+#ifdef	CONFIG_ARCH_ADVANTECH
+		dwc3_set_prtcap(dwc, DWC3_GCTL_PRTCAP_DEVICE);
+#endif
 		spin_lock_irqsave(&dwc->lock, flags);
 		dwc3_gadget_resume(dwc);
 		spin_unlock_irqrestore(&dwc->lock, flags);
 		break;
+#ifdef	CONFIG_ARCH_ADVANTECH
+	case DWC3_GCTL_PRTCAP_OTG:
+		/* nothing to do on runtime_resume */
+		if (PMSG_IS_AUTO(msg))
+			break;
+
+		ret = dwc3_core_init(dwc);
+		if (ret)
+			return ret;
+
+		dwc3_set_prtcap(dwc, dwc->current_dr_role);
+
+		dwc3_otg_init(dwc);
+		if (dwc->current_otg_role == DWC3_OTG_ROLE_HOST) {
+			dwc3_otg_host_init(dwc);
+		} else if (dwc->current_otg_role == DWC3_OTG_ROLE_DEVICE) {
+			spin_lock_irqsave(&dwc->lock, flags);
+			dwc3_gadget_resume(dwc);
+			spin_unlock_irqrestore(&dwc->lock, flags);
+		}
+
+		break;
+#endif
 	case DWC3_GCTL_PRTCAP_HOST:
 	default:
 		/* do nothing */
+#ifdef	CONFIG_ARCH_ADVANTECH
+		if (!PMSG_IS_AUTO(msg)) {
+			ret = dwc3_core_init(dwc);
+			if (ret)
+				return ret;
+			dwc3_set_prtcap(dwc, DWC3_GCTL_PRTCAP_HOST);
+		}
+#endif
 		break;
 	}
 
@@ -1442,8 +1540,11 @@ static int dwc3_runtime_suspend(struct device *dev)
 
 	if (dwc3_runtime_checks(dwc))
 		return -EBUSY;
-
+#ifdef	CONFIG_ARCH_ADVANTECH
+	ret = dwc3_suspend_common(dwc, PMSG_AUTO_SUSPEND);
+#else
 	ret = dwc3_suspend_common(dwc);
+#endif
 	if (ret)
 		return ret;
 
@@ -1459,7 +1560,11 @@ static int dwc3_runtime_resume(struct device *dev)
 
 	device_init_wakeup(dev, false);
 
+#ifdef	CONFIG_ARCH_ADVANTECH
+	ret = dwc3_resume_common(dwc, PMSG_AUTO_RESUME);
+#else
 	ret = dwc3_resume_common(dwc);
+#endif
 	if (ret)
 		return ret;
 
@@ -1506,8 +1611,11 @@ static int dwc3_suspend(struct device *dev)
 {
 	struct dwc3	*dwc = dev_get_drvdata(dev);
 	int		ret;
-
+#ifdef	CONFIG_ARCH_ADVANTECH
+	ret = dwc3_suspend_common(dwc, PMSG_SUSPEND);
+#else
 	ret = dwc3_suspend_common(dwc);
+#endif
 	if (ret)
 		return ret;
 
@@ -1523,7 +1631,11 @@ static int dwc3_resume(struct device *dev)
 
 	pinctrl_pm_select_default_state(dev);
 
+#ifdef	CONFIG_ARCH_ADVANTECH
+	ret = dwc3_resume_common(dwc, PMSG_RESUME);
+#else
 	ret = dwc3_resume_common(dwc);
+#endif
 	if (ret)
 		return ret;
 
