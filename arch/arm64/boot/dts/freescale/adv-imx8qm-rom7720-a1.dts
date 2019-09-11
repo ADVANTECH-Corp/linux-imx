@@ -30,6 +30,10 @@
 #	define HDMI_AND_LVDS_CH1 31
 #	define HDMI_AND_LVDS_DUAL 32
 
+#	define LVDS_PANEL_G070VW01V0 "G070VW01V0"
+#	define LVDS_PANEL_G150XGEL04 "G150XGEL04"
+#	define LVDS_PANEL_G215HVN0   "G215HVN0"
+
 #define DISPLAY_MODE HDMI_ONLY
 
 #if DISPLAY_MODE == LVDS_CH0_ONLY
@@ -73,9 +77,14 @@
 #	if defined(LVDS_DUAL) && (defined(LVDS_SINGLE_0) || defined(LVDS_SINGLE_1))
 #		error "single/dual channel cannot be used simultaneously"
 #	endif
-//#	if defined(LVDS_SINGLE_0) && defined(LVDS_SINGLE_1)
-//#		error "single channel 0/1 cannot be used simultaneously"
-//#	endif
+#	if defined(LVDS_SINGLE_0) && defined(LVDS_SINGLE_1)
+#		error "single channel 0/1 cannot be used simultaneously"
+#	endif
+#	ifdef LVDS_DUAL
+#		define LVDS_PANEL_ID LVDS_PANEL_G215HVN0
+#	else
+#		define LVDS_PANEL_ID LVDS_PANEL_G070VW01V0
+#	endif
 #endif
 
 #if defined(FLEXSPI0_QSPI0A) && defined(FLEXSPI0_QSPI1A)
@@ -1331,7 +1340,7 @@
 	status = "okay";
 };
 
-
+#if defined(LVDS_DISPLAY)
 &lvds_backlight1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_lvds0_bklt>, <&pinctrl_lvds1_vdd>;
@@ -1348,90 +1357,66 @@
 	status = "okay";
 };
 
-#if defined(LVDS_DISPLAY) && defined(LVDS_DUAL)
 &ldb2 {
 	status = "okay";
+#ifdef LVDS_DUAL
 	fsl,dual-channel;
+#endif
 
+#if defined(LVDS_DUAL) || defined(LVDS_SINGLE_0)
 	lvds-channel@0 {
 		fsl,data-mapping = "spwg";
 		fsl,data-width = <24>;
 		status = "okay";
-
+#ifdef LVDS_PANEL_ID
+		display-panel = LVDS_PANEL_ID;
+#else //fill with the exact value by panel's spec
 		display-timings {
-			native-mode = <&timing30>;
-			//Dual channel panel 
-			timing30: g215hvn0 {
-				clock-frequency = <170000000>;
-				hactive = <1920>;
-				vactive = <1080>;
-				hback-porch = <90>;
-				hfront-porch = <30>;
-				vback-porch = <5>;
-				vfront-porch = <38>;
-				hsync-len = <60>;
-				vsync-len = <7>;
+			native-mode = <&ldb2_timing00>;
+			ldb2_timing00: ? {
+				clock-frequency = <?>;
+				hactive = <?>;
+				vactive = <?>;
+				hback-porch = <?>;
+				hfront-porch = <?>;
+				vback-porch = <?>;
+				vfront-porch = <?>;
+				hsync-len = <?>;
+				vsync-len = <?>;
 			};
 		};
+#endif
 	};
-};
-#else
-&ldb2 {
-#	ifdef LVDS_DISPLAY
-	status = "okay";
-#	else
-	status = "disabled";
-#	endif
+#endif
 
-	lvds-channel@0 {
-		fsl,data-mapping = "spwg";
-		fsl,data-width = <24>;
-#	ifdef LVDS_SINGLE_0
-		status = "okay";
-#	else
-		status = "disabled";
-#	endif
-		display-timings {
-			native-mode = <&timing00>;
-			timing00: g070vw01v0 {
-				clock-frequency = <29500000>;
-				hactive = <800>;
-				vactive = <480>;
-				hback-porch = <96>;
-				hfront-porch = <24>;
-				vback-porch = <3>;
-				vfront-porch = <10>;
-				hsync-len = <72>;
-				vsync-len = <7>;
-			};
-		};
-	};
-
+#if defined(LVDS_SINGLE_1)
 	lvds-channel@1 {
 		fsl,data-mapping = "spwg";
 		fsl,data-width = <24>;
-#	ifdef LVDS_SINGLE_1
 		status = "okay";
-#	else
-		status = "disabled";
-#	endif
+#ifdef LVDS_PANEL_ID
+		display-panel = LVDS_PANEL_ID;
+#else //fill with the exact value by panel's spec
 		display-timings {
-			native-mode = <&timing01>;
-			timing01: g070vw01v0 {
-				clock-frequency = <29500000>;
-				hactive = <800>;
-				vactive = <480>;
-				hback-porch = <96>;
-				hfront-porch = <24>;
-				vback-porch = <3>;
-				vfront-porch = <10>;
-				hsync-len = <72>;
-				vsync-len = <7>;
-			}; 
+			native-mode = <&ldb2_timing00>;
+			ldb2_timing00: ? {
+				clock-frequency = <?>;
+				hactive = <?>;
+				vactive = <?>;
+				hback-porch = <?>;
+				hfront-porch = <?>;
+				vback-porch = <?>;
+				vfront-porch = <?>;
+				hsync-len = <?>;
+				vsync-len = <?>;
+			};
 		};
-	};
-};
 #endif
+	};
+#endif
+};
+
+#endif  // of lvds_display 0001
 
 /delete-node/ &i2c1_lvds0;
 /delete-node/ &i2c1_lvds1;
