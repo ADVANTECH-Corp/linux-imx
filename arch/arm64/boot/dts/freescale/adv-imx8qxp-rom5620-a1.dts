@@ -187,13 +187,11 @@
 
 &iomuxc {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_hog>;
+	pinctrl-0 = <&pinctrl_gpio>;
 
 	imx8qxp-mek {
-		pinctrl_hog: hoggrp {
+		pinctrl_gpio: gpio_grp {
 			fsl,pins = <
-				SC_P_ADC_IN2_M40_UART0_RX	0x06000020	/* M40_UART_RX */
-				SC_P_ADC_IN3_M40_UART0_TX	0x06000020	/* M40_UART_TX */
 				SC_P_SPI2_CS0_LSIO_GPIO1_IO00	0x06000021	/* GPIO0 */
 				SC_P_SPI2_SCK_LSIO_GPIO1_IO03	0x06000021	/* GPIO1 */
 				SC_P_SPI2_SDI_LSIO_GPIO1_IO02	0x06000021	/* GPIO2 */
@@ -205,8 +203,6 @@
 				SC_P_CSI_PCLK_LSIO_GPIO3_IO00	0x06000021	/* GPIO9 */
 				SC_P_CSI_MCLK_LSIO_GPIO3_IO01	0x06000021	/* GPIO10 */
 				SC_P_CSI_EN_LSIO_GPIO3_IO02	0x06000021	/* GPIO11 */
-				SC_P_SPI3_SDO_LSIO_GPIO0_IO14	0x06000021	/* CHARGER# */
-				SC_P_CSI_RESET_LSIO_GPIO3_IO03	0x06000021	/* SMB_ALERT_1V8# */
 			>;
 		};
 
@@ -221,6 +217,7 @@
 			fsl,pins = <
 				SC_P_UART0_RX_ADMA_UART0_RX	0x06000020
 				SC_P_UART0_TX_ADMA_UART0_TX	0x06000020
+				SC_P_USDHC1_VSELECT_LSIO_GPIO4_IO20	0x06000021	/* DEBUG_UART_SEL */
 			>;
 		};
 
@@ -256,6 +253,7 @@
 				SC_P_ENET0_RGMII_RXD1_CONN_ENET0_RGMII_RXD1	0x00000061
 				SC_P_ENET0_RGMII_RXD2_CONN_ENET0_RGMII_RXD2	0x00000061
 				SC_P_ENET0_RGMII_RXD3_CONN_ENET0_RGMII_RXD3	0x00000061
+				SC_P_MIPI_CSI0_GPIO0_00_LSIO_GPIO3_IO08		0x06000021	/* ENET0_INT */
 			>;
 		};
 
@@ -273,6 +271,7 @@
 				SC_P_ESAI0_TX3_RX2_CONN_ENET1_RGMII_RXD1	0x00000060
 				SC_P_ESAI0_TX2_RX3_CONN_ENET1_RGMII_RXD2	0x00000060
 				SC_P_ESAI0_TX1_CONN_ENET1_RGMII_RXD3		0x00000060
+				SC_P_MIPI_CSI0_GPIO0_01_LSIO_GPIO3_IO07		0x06000021	/* ENET1_INT */
 			>;
 		};
 
@@ -523,7 +522,7 @@
 		pinctrl_ldb1: ldb1_grp {
 			fsl,pins = <
 				SC_P_QSPI0A_DQS_LSIO_GPIO3_IO13		0x00000021	/* LCD0_VDD_EN */
-				SC_P_SCU_GPIO0_00_SCU_GPIO0_IO00	0x00000021	/* LCD0_BKLT_EN */
+				SC_P_SCU_GPIO0_00_LSIO_GPIO2_IO03	0x00000021	/* LCD0_BKLT_EN */
 			>;
 		};
 
@@ -537,6 +536,14 @@
 		pinctrl_sai_mclk: sai_mclk_grp {
 			fsl,pins = <
 				SC_P_MCLK_OUT0_ADMA_ACM_MCLK_OUT0	0x00000040	/* AUDIO_MCLK */
+			>;
+		};
+
+		pinctrl_battery: battery_grp {
+			fsl,pins = <
+				SC_P_FLEXCAN2_RX_LSIO_GPIO1_IO19	0x06000021	/* CHARGER_PRSNT# */
+				SC_P_SPI3_SDO_LSIO_GPIO0_IO14	0x06000021	/* CHARGER# */
+				SC_P_CSI_RESET_LSIO_GPIO3_IO03	0x06000021	/* SMB_ALERT_1V8# */
 			>;
 		};
 	};
@@ -983,7 +990,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_ldb1>;
 	//lvds-vcc-enable = <&gpio3 13 GPIO_ACTIVE_HIGH>;
-	//lvds-bkl-enable = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+	//lvds-bkl-enable = <&gpio2 3 GPIO_ACTIVE_HIGH>;
 	gpios = <&gpio3 13 GPIO_ACTIVE_HIGH>, <&gpio0 0 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
