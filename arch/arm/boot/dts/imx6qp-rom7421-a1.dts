@@ -12,13 +12,12 @@
 
 /dts-v1/;
 
-#include "imx6q.dtsi"
-#include "imx6qdl-advantech.dtsi"
 #include "imx6qp.dtsi"
+#include "imx6qdl-advantech.dtsi"
 
 / {
 	model = "Freescale i.MX6DP ROM7421";
-	compatible = "fsl,imx6q-sabresd", "fsl,imx6q";
+	compatible = "fsl,imx6qp-sabresd", "fsl,imx6qp";
 
 	board {
 		compatible = "proc-board";
