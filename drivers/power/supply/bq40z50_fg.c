@@ -352,7 +352,7 @@ static int fg_mac_write_block(struct bq_fg_chip *bq, u16 cmd, u8 *data, u8 len)
 }
 #endif
 
-static void fg_read_fw_version(struct bq_fg_chip *bq)
+static int fg_read_fw_version(struct bq_fg_chip *bq)
 {
 
 	int ret;
@@ -362,7 +362,7 @@ static void fg_read_fw_version(struct bq_fg_chip *bq)
 
 	if (ret < 0) {
 		bq_err("Failed to send firmware version subcommand:%d\n", ret);
-		return;
+		return ret;
 	}
 
 	mdelay(2);
@@ -370,12 +370,14 @@ static void fg_read_fw_version(struct bq_fg_chip *bq)
 	ret = fg_mac_read_block(bq, bq->regs[BQ_FG_REG_MBA], buf, 11);
 	if (ret < 0) {
 		bq_err("Failed to read firmware version:%d\n", ret);
-		return;
+		return ret;
 	}
 
 	bq_log("FW Ver:%04X, Build:%04X\n",
 		buf[2] << 8 | buf[3], buf[4] << 8 | buf[5]);
 	bq_log("Ztrack Ver:%04X\n", buf[7] << 8 | buf[8]);
+
+	return 0;
 }
 
 
@@ -852,7 +854,7 @@ static ssize_t fg_attr_show_Qmax(struct device *dev,
 	u8 temp_buf[32];
 	int i, idx, len;
 
-	memset(t_buf, 0, 64);
+	memset(t_buf, 0, 32);
 	/* GaugingStatus3 register contains Qmax value */
 	ret = fg_mac_read_block(bq, 0x0075, t_buf, 24);
 	if (ret < 0)
@@ -994,20 +996,28 @@ static int bq_fg_probe(struct i2c_client *client,
 			"bq fuel gauge irq", bq);
 		if (ret < 0) {
 			bq_err("request irq for irq=%d failed, ret = %d\n", client->irq, ret);
-			goto err_1;
+			return ret;
 		}
 		enable_irq_wake(client->irq);
 	}
 
 	device_init_wakeup(bq->dev, 1);
 
-	fg_read_fw_version(bq);
+	ret = fg_read_fw_version(bq);
+	if (ret < 0) {
+		return ret;
+	}
 
-	fg_psy_register(bq);
+	ret = fg_psy_register(bq);
+	if (ret < 0) {
+		return ret;
+	}
 
 	ret = sysfs_create_group(&bq->dev->kobj, &fg_attr_group);
-	if (ret)
+	if (ret) {
 		bq_err("Failed to register sysfs, err:%d\n", ret);
+		goto err_1;
+	}
 
 	determine_initial_status(bq);
 
