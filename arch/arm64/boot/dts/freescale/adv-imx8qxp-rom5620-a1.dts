@@ -193,9 +193,9 @@
 		pinctrl_gpio: gpio_grp {
 			fsl,pins = <
 				SC_P_SPI2_CS0_LSIO_GPIO1_IO00	0x06000021	/* GPIO0 */
-				SC_P_SPI2_SCK_LSIO_GPIO1_IO03	0x06000021	/* GPIO1 */
+				//SC_P_SPI2_SCK_LSIO_GPIO1_IO03	0x06000021	/* GPIO1 */
 				SC_P_SPI2_SDI_LSIO_GPIO1_IO02	0x06000021	/* GPIO2 */
-				SC_P_SPI2_SDO_LSIO_GPIO1_IO01	0x06000021	/* GPIO3 */
+				//SC_P_SPI2_SDO_LSIO_GPIO1_IO01	0x06000021	/* GPIO3 */
 				SC_P_SPI3_CS0_LSIO_GPIO0_IO16	0x06000021	/* GPIO4 */
 				SC_P_SPI3_SCK_LSIO_GPIO0_IO13	0x06000021	/* GPIO5 */
 				SC_P_SPI3_SDI_LSIO_GPIO0_IO15	0x06000021	/* GPIO6 */
@@ -691,8 +691,12 @@
 	status = "okay";
 
 #ifdef ROM_DB5901
-	/* Battery */
-	/* CYPRESS_CYPD5126-40LQXIT */
+	battery: bq40z50@0b {
+		compatible = "ti,bq40z50";
+		reg = <0x0b>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_battery>;
+	};
 #endif
 };
 
@@ -1027,51 +1031,13 @@
 		fsl,data-width = <24>;
 		status = "okay";
 
-		display-timings {
-#ifdef LVDS_AUO_215
-			native-mode = <&ldb1_timing02>;
+#ifdef LVDS_AUO_215 /* Dual channel panel */
+		display-panel = "g215hvn0";
 #elif defined(LVDS_CHIMEI_15)
-			native-mode = <&ldb1_timing01>;
+		display-panel = "g150xgel04";
 #else /* LVDS_AUO_7 */
-			native-mode = <&ldb1_timing00>;
+		display-panel = "g070vw01v0";
 #endif
-			ldb1_timing00: g070vw01v0 {
-				clock-frequency = <29500000>;
-				hactive = <800>;
-				vactive = <480>;
-				hback-porch = <96>;
-				hfront-porch = <24>;
-				vback-porch = <3>;
-				vfront-porch = <10>;
-				hsync-len = <72>;
-				vsync-len = <7>;
-			};
-
-			ldb1_timing01: g150xgel04 {
-				clock-frequency = <63500000>;
-				hactive = <1024>;
-				vactive = <768>;
-				hback-porch = <152>;
-				hfront-porch = <48>;
-				vback-porch = <3>;
-				vfront-porch = <23>;
-				hsync-len = <104>;
-				vsync-len = <4>;
-			};
-
-			/* Dual channel panel */
-			ldb1_timing02: g215hvn0 {
-				clock-frequency = <170000000>;
-				hactive = <1920>;
-				vactive = <1080>;
-				hback-porch = <90>;
-				hfront-porch = <30>;
-				vback-porch = <5>;
-				vfront-porch = <38>;
-				hsync-len = <60>;
-				vsync-len = <7>;
-			};
-		};
 	};
 };
 
@@ -1118,36 +1084,11 @@
 		fsl,data-width = <24>;
 		status = "okay";
 
-		display-timings {
 #ifdef LVDS_CHIMEI_15
-			native-mode = <&ldb2_timing01>;
+		display-panel = "g150xgel04";
 #else /* LVDS_AUO_7 */
-			native-mode = <&ldb2_timing00>;
+		display-panel = "g070vw01v0";
 #endif
-			ldb2_timing00: g070vw01v0 {
-				clock-frequency = <29500000>;
-				hactive = <800>;
-				vactive = <480>;
-				hback-porch = <96>;
-				hfront-porch = <24>;
-				vback-porch = <3>;
-				vfront-porch = <10>;
-				hsync-len = <72>;
-				vsync-len = <7>;
-			};
-
-			ldb2_timing01: g150xgel04 {
-				clock-frequency = <63500000>;
-				hactive = <1024>;
-				vactive = <768>;
-				hback-porch = <152>;
-				hfront-porch = <48>;
-				vback-porch = <3>;
-				vfront-porch = <23>;
-				hsync-len = <104>;
-				vsync-len = <4>;
-			};
-		};
 	};
 };
 
