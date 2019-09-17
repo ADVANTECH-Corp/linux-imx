@@ -58,7 +58,11 @@ static const struct snd_soc_dapm_widget imx_sgtl5000_dapm_widgets[] = {
 static int imx_sgtl5000_probe(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct device_node *ssi_np=NULL, *codec_np=NULL;
+#else
 	struct device_node *ssi_np, *codec_np;
+#endif
 	struct platform_device *ssi_pdev;
 	struct i2c_client *codec_dev;
 	struct imx_sgtl5000_data *data = NULL;
@@ -126,7 +130,12 @@ audmux_config_done:
 	codec_dev = of_find_i2c_device_by_node(codec_np);
 	if (!codec_dev) {
 		dev_err(&pdev->dev, "failed to find codec platform device\n");
+#ifdef CONFIG_ARCH_ADVANTECH
+		ret = -EPROBE_DEFER;
+		goto fail;
+#else
 		return -EPROBE_DEFER;
+#endif
 	}
 
 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
@@ -172,6 +181,9 @@ audmux_config_done:
 	ret = devm_snd_soc_register_card(&pdev->dev, &data->card);
 	if (ret) {
 		dev_err(&pdev->dev, "snd_soc_register_card failed (%d)\n", ret);
+#ifdef CONFIG_ARCH_ADVANTECH
+		if (ret == -EPROBE_DEFER ) ret=-EINVAL;
+#endif
 		goto fail;
 	}
 
@@ -183,8 +195,13 @@ audmux_config_done:
 fail:
 	if (data && !IS_ERR(data->codec_clk))
 		clk_put(data->codec_clk);
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (ssi_np) of_node_put(ssi_np);
+	if (codec_np) of_node_put(codec_np);
+#else
 	of_node_put(ssi_np);
 	of_node_put(codec_np);
+#endif
 
 	return ret;
 }
