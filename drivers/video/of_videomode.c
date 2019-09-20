@@ -57,18 +57,23 @@ static struct panel_videomode {
 	{"1366x768@60", {  85500000, 1366,  70, 213, 143,  768,  3, 24, 3, SCAN_PROGRESSIVE | SYNC_POL_HV_PP} },
 //	{"1600x1200@60",{ 162000000, 1600,  64, 304, 192, 1200,  1, 46, 3, SCAN_PROGRESSIVE | SYNC_POL_HV_PP} },
 	{"1920x1080@60",{ 148500000, 1920,  88, 148,  44, 1080,  4, 36, 5, SCAN_PROGRESSIVE | SYNC_POL_HV_PP} },
+	{}
 };
 
-static int predefined_panels_count=sizeof(panel_videomodes)/sizeof(struct panel_videomode);
+//static int predefined_panels_count=sizeof(panel_videomodes)/sizeof(struct panel_videomode);
 
 static int get_lvds_panel_config(struct device_node *np, struct videomode *vm)
 {
 	const char *dp;
 	char display_panel[80];
 	struct panel_videomode *pv;
-	int ret, i;
-	char *p;
+	int ret;
 
+	if (panel_videomodes[0].vm.pixelclock) {
+		if (strcmp(lvds_panel, "lvds_vmode"))
+			printk("lvds_vmode already defined, 'lvds_panel=%s' ignored\n", lvds_panel);
+		strcpy(lvds_panel, "lvds_vmode");
+	}
 	if (*lvds_panel) {
 		strcpy(display_panel, lvds_panel);
 		goto processing_panel;
@@ -83,10 +88,9 @@ static int get_lvds_panel_config(struct device_node *np, struct videomode *vm)
 	strcpy(display_panel, dp);
 
 processing_panel:
-	for (p=display_panel ; *p; p++) *p = tolower(*p);
 	
-	for (i=0, pv=panel_videomodes; i< predefined_panels_count; pv++, i++) {
-		if (strcmp(display_panel, pv->id) == 0) {
+	for (pv=panel_videomodes; pv->id[0]; pv++) {
+		if (strcasecmp(display_panel, pv->id) == 0) {
 			vm->hactive=pv->vm.hactive;
 			vm->hback_porch=pv->vm.hback_porch;
 			vm->hfront_porch=pv->vm.hfront_porch;
