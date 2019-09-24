@@ -122,7 +122,7 @@ processing_panel:
 			vm->vsync_len=pv->vm.vsync_len;
 			vm->pixelclock=pv->vm.pixelclock;
 			vm->flags=pv->vm.flags;
-			pr_info("%pOFP: %s - %lu,%u,%u,%u,%u,%u,%u,%u,%u,%x", np, display_panel,
+			pr_info("%pOFP: %s - %lu,%u,%u,%u,%u,%u,%u,%u,%u,%u", np, display_panel,
 				vm->pixelclock,
 				vm->hactive, vm->hfront_porch, vm->hback_porch, vm->hsync_len,
 				vm->vactive, vm->vfront_porch, vm->vback_porch, vm->vsync_len,
@@ -142,7 +142,7 @@ static u32 parse_flag_directives(char *directives)
 	u32 flags=0;
 	char str[128], *p=str, *pS;
 
-	strcpy(str, directives);
+	strncpy(str, directives,127);
 	str[strlen(str)]=FLAG_DELIM;
 	while (p && *p) {
 		int i, matched=0;
