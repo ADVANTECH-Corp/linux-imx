@@ -30,6 +30,8 @@ static char lvds_panel[80]="";
 #define SYNC_POL_HV_PN (DISPLAY_FLAGS_HSYNC_HIGH | DISPLAY_FLAGS_VSYNC_LOW )
 #define SYNC_POL_HV_NP (DISPLAY_FLAGS_HSYNC_LOW  | DISPLAY_FLAGS_VSYNC_HIGH)
 
+#define FLAG_DELIM ','
+
 static struct panel_videomode {
 	char id[80];
 	struct videomode vm;
@@ -61,6 +63,25 @@ static struct panel_videomode {
 };
 
 //static int predefined_panels_count=sizeof(panel_videomodes)/sizeof(struct panel_videomode);
+
+static struct flag_directive {
+    enum display_flags flag;
+    char *directive;
+} flag_directives[] = {
+    {DISPLAY_FLAGS_HSYNC_LOW,       "HSYNC_LOW"},
+    {DISPLAY_FLAGS_HSYNC_HIGH,      "HSYNC_HIGH"},
+    {DISPLAY_FLAGS_VSYNC_LOW,       "VSYNC_LOW"},
+    {DISPLAY_FLAGS_VSYNC_HIGH,      "VSYNC_HIGH"},
+    {DISPLAY_FLAGS_DE_LOW,          "DE_LOW"},
+    {DISPLAY_FLAGS_DE_HIGH,         "DE_HIGH"},
+    {DISPLAY_FLAGS_PIXDATA_POSEDGE, "PIXDATA_POSEDGE"},
+    {DISPLAY_FLAGS_PIXDATA_NEGEDGE, "PIXDATA_NEGEDGE"},
+    {DISPLAY_FLAGS_INTERLACED,      "INTERLACED"},
+    {DISPLAY_FLAGS_DOUBLESCAN,      "DOUBLESCAN"},
+    {DISPLAY_FLAGS_DOUBLECLK,       "DOUBLECLK"},
+    {DISPLAY_FLAGS_SYNC_POSEDGE,    "SYNC_POSEDGE"},
+    {DISPLAY_FLAGS_SYNC_NEGEDGE,    "SYNC_NEGEDGE"},
+};
 
 static int get_lvds_panel_config(struct device_node *np, struct videomode *vm)
 {
@@ -113,6 +134,31 @@ processing_panel:
 	pr_warn("%pOFP: display-panel (%s) not in predefined panels\n", np, lvds_panel);
 
 	return 0;
+}
+
+static u32 parse_flag_directives(char *directives)
+{
+	const int totals=sizeof(flag_directives)/sizeof(struct flag_directive);
+	u32 flags=0;
+	char str[128], *p=str, *pS;
+
+	strcpy(str, directives);
+	str[strlen(str)]=FLAG_DELIM;
+	while (p && *p) {
+		int i, matched=0;
+
+		pS=p; p=strchr(pS,FLAG_DELIM);
+		if (p) { *p='\0'; p++; }
+		if (! *pS) continue;
+		for (i=0; i < totals; i++) {
+			if ( strcasecmp(flag_directives[i].directive, pS) ) continue;
+			flags |= flag_directives[i].flag;
+			matched=1;
+			break;
+		}
+		if (!matched) printk("lvds_vmode - unknown flag directive - %s\n", pS);
+	}
+	return flags;
 }
 #endif
 
@@ -178,8 +224,19 @@ static int __init lvds_vmode_setup(char *options)
 		else ret=sscanf(p,"%d",Vptr+i-1);
 		p=strchr(p,',');
 		if (p) p++ ;
-		i++;
+		if (++i > 8) break;  // last one (9th)
 	}
+
+	for (i=0, ret=1; *(p+i); i++) if (p[i] < '0' || p[i] > '9') { ret=0; break; }
+
+	if (ret) {
+        sscanf(p,"%d",Vptr+8);
+	} else {
+//		printk("lvds_vmode - flags : directive(s) conversion\n");
+        *(Vptr+8)=parse_flag_directives(p);
+		printk("lvds_vmode - flags : %u (%s)\n", *(Vptr+8), p);
+	}
+
 	strcpy(lvds_panel, "lvds_vmode");
 
 	return 1;
