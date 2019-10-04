@@ -757,7 +757,7 @@
 
 		pinctrl_lvds0_bklt: lvds0_bklt {
 			fsl,pins = <
-				SC_P_LVDS0_GPIO01_LSIO_GPIO1_IO05	0x00000021
+				SC_P_LVDS0_GPIO01_LSIO_GPIO1_IO05	0x00000041
 			>;
 		};
 
@@ -769,7 +769,7 @@
 
 		pinctrl_lvds1_vdd: lvds0_vdd {
 			fsl,pins = <
-                SC_P_LVDS1_GPIO01_LSIO_GPIO1_IO11	0x00000021
+                SC_P_LVDS1_GPIO01_LSIO_GPIO1_IO11	0x00000041
 			>;
 		};
 	};
@@ -1344,7 +1344,8 @@
 &lvds_backlight1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_lvds0_bklt>, <&pinctrl_lvds1_vdd>;
-	gpios = <&gpio1 5 GPIO_ACTIVE_LOW>, <&gpio1 11 GPIO_ACTIVE_LOW>;
+	lvds-bkl-enable = <&gpio1 5 1>;
+	lvds-vcc-enable = <&gpio1 11 1>;
 };
 
 &lvds1_pwm {

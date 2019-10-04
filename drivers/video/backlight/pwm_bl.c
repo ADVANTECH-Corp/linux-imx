@@ -96,6 +96,8 @@ enum of_gpio_flags bklt_vcc_flag;
 void enable_lcd_vdd_en(void)
 {
 	int ret;
+	printk(KERN_INFO "[LVDS Sequence] lvds_powseq_delay - %d,%d,%d\n",
+	       lvds_bkl_delay_value, bklt_pwm_delay_value, bklt_en_delay_value);
 	printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD.\n");
 
 	/* LVDS Panel power enable */
@@ -306,6 +308,14 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	{
 		bklt_en_delay_value = 20;
 	}
+{
+extern int lvds_powseq_param, lvds_powseq_delay_ms[];
+	if (lvds_powseq_param) {
+		lvds_bkl_delay_value=lvds_powseq_delay_ms[0];
+		bklt_pwm_delay_value=lvds_powseq_delay_ms[1];
+		bklt_en_delay_value=lvds_powseq_delay_ms[2];
+	}
+}
 #endif
 
 	return 0;
@@ -506,7 +516,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	bl->props.brightness = data->dft_brightness;
 	bl->props.power = pwm_backlight_initial_power_state(pb);
 
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH) && !defined(CONFIG_FB_MXC_DISP_FRAMEWORK)
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH) //&& !defined(CONFIG_FB_MXC_DISP_FRAMEWORK)
 	/* Inorder to power off pwm backlight for SI test */
 	bl->props.fb_blank = FB_BLANK_NORMAL;
 
