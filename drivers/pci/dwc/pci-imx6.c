@@ -1656,7 +1656,11 @@ err_reset_phy:
 		dw_pcie_readl_dbi(pci, PCIE_PHY_DEBUG_R1));
 	imx_pcie_reset_phy(imx_pcie);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (strstr(boot_command_line, "PCIE_SI_TEST")== NULL) {
+#else
 	if (!IS_ENABLED(CONFIG_PCI_IMX6_COMPLIANCE_TEST)) {
+#endif
 		pci_imx_clk_disable(dev);
 		pm_runtime_put_sync(pci->dev);
 		imx_pcie_phy_pwr_dn(imx_pcie);
@@ -2827,7 +2831,11 @@ static int imx_pcie_probe(struct platform_device *pdev)
 
 		ret = imx_add_pcie_port(imx_pcie, pdev);
 		if (ret < 0) {
+#ifdef CONFIG_ARCH_ADVANTECH
+			if (strstr(boot_command_line, "PCIE_SI_TEST")) {
+#else
 			if (IS_ENABLED(CONFIG_PCI_IMX6_COMPLIANCE_TEST)) {
+#endif
 				/* The PCIE clocks wouldn't be turned off */
 				dev_info(dev, "To do the compliance tests.\n");
 				ret = 0;
