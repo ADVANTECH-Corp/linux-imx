@@ -95,7 +95,6 @@
                 #size-cells = <0>;
                 pinctrl-0 = <&pinctrl_lid_key &pinctrl_sleep_key>;
                 pinctrl-names = "default";
-#ifdef LID
                 lid@1 {
                         label = "LID KEY";
                         gpios = <&gpio3 20 0>; /* GPIO_ACTIVE_LOW:1 */
@@ -103,7 +102,6 @@
                         linux,code = <116>;     /* KEY_POWER */
                         debounce_interval = <1>;
                 };
-#endif
                 sleep@2 {
                         label = "SLEEP KEY";
                         gpios = <&gpio3 25 0>; /* GPIO_ACTIVE_LOW:1 */
@@ -816,7 +814,7 @@
 		reg = <0>;
 		#address-cells = <1>;
 		#size-cells = <1>;
-		compatible = "micron,n25q256a";
+		compatible = "winbond,w25q64dw";
 		spi-max-frequency = <29000000>;
 		spi-nor,ddr-quad-read-dummy = <6>;
 	};
@@ -825,7 +823,7 @@
 		reg = <1>;
 		#address-cells = <1>;
 		#size-cells = <1>;
-		compatible = "micron,n25q256a";
+		compatible = "winbond,w25q64dw";
 		spi-max-frequency = <29000000>;
 		spi-nor,ddr-quad-read-dummy = <6>;
 	};
@@ -862,7 +860,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usbotg>;
 	status = "okay";
-	dr_mode = "otg";
+	dr_mode = "host";
 };
 
 &usb3_phy1 {
