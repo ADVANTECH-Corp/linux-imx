@@ -1735,15 +1735,6 @@ int drm_fb_helper_pan_display(struct fb_var_screeninfo *var,
 	struct drm_fb_helper *fb_helper = info->par;
 	struct drm_device *dev = fb_helper->dev;
 	int ret;
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-	static int first_flip_complete = 1;
-	extern void enable_lcd_vdd_en(void);
-
-	if (first_flip_complete) {
-		enable_lcd_vdd_en();
-		first_flip_complete = 0;
-	}
-#endif
 
 	if (oops_in_progress)
 		return -EBUSY;

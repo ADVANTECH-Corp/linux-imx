@@ -32,6 +32,11 @@
 #include "dpu-plane.h"
 #include "imx-drm.h"
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	static int first_flip_complete = 1;
+	extern void enable_lcd_vdd_en(void);
+#endif
+
 static inline struct dpu_plane_state **
 alloc_dpu_plane_states(struct dpu_crtc *dpu_crtc)
 {
@@ -245,7 +250,12 @@ static void dpu_crtc_atomic_enable(struct drm_crtc *crtc,
 	} else {
 		tcon_set_operation_mode(dpu_crtc->tcon);
 		framegen_wait_for_frame_counter_moving(dpu_crtc->fg);
-
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+		if (first_flip_complete) {
+			enable_lcd_vdd_en();
+			first_flip_complete = 0;
+		}
+#endif
 		framegen_wait_for_secondary_syncup(dpu_crtc->fg);
 
 		if (framegen_secondary_requests_to_read_empty_fifo(dpu_crtc->fg)) {

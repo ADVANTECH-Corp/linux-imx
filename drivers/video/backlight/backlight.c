@@ -33,7 +33,6 @@ static const char *const backlight_types[] = {
 
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
 int blank_count = 0;
-extern void enable_ldb_signal(void);
 extern void enable_ldb_bkl_vcc(void);
 extern void enable_ldb_bkl_pwm(void);
 #endif
@@ -52,23 +51,13 @@ static int fb_notifier_callback(struct notifier_block *self,
 	int node = evdata->info->node;
 	int fb_blank = 0;
 
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH) && \
-    ( defined(CONFIG_ARCH_FSL_IMX8QM) || defined(CONFIG_ARCH_FSL_IMX8QXP) )
-	blank_count=1;
-	goto unblank_directly;
-#endif
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	if (blank_count == 0)
+		blank_count++;
+#else
 	/* If we aren't interested in this event, skip it immediately ... */
 	if (event != FB_EVENT_BLANK && event != FB_EVENT_CONBLANK)
 		return 0;
-
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-	if (blank_count == 0)
-	{
-		//enable_ldb_signal();
-		blank_count++;
-		return 0;
-	}
-unblank_directly:
 #endif
 	bd = container_of(self, struct backlight_device, fb_notif);
 	mutex_lock(&bd->ops_lock);

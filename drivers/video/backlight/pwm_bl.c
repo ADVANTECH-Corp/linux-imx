@@ -95,20 +95,11 @@ enum of_gpio_flags bklt_vcc_flag;
 
 void enable_lcd_vdd_en(void)
 {
-	int ret;
-	printk(KERN_INFO "[LVDS Sequence] lvds_powseq_delay - %d,%d,%d\n",
-	       lvds_bkl_delay_value, bklt_pwm_delay_value, bklt_en_delay_value);
-	printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD.\n");
-
 	/* LVDS Panel power enable */
 	if (lvds_vcc_enable > 0)
 	{
-		ret = gpio_request(lvds_vcc_enable,"lvds_vcc_enable");
-
-                if (ret < 0)
-			printk("\nRequest lvds_vcc_enable failed!!\n");
-		else
-			gpio_direction_output(lvds_vcc_enable, lvds_vcc_flag);
+		printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD.\n");
+		gpio_set_value(lvds_vcc_enable, lvds_vcc_flag);
 	}
 
 	printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
@@ -121,19 +112,13 @@ void enable_lcd_vdd_en(void)
 
 void enable_ldb_bkl_vcc(void)
 {
-	int ret;
 	mdelay(lvds_bkl_delay_value); // T3 for AUO 7"
-	printk(KERN_INFO "[LVDS Sequence] 3 Start to enable backlight VCC.\n");
 
 	// Backlight On (VCC)
 	if (bklt_vcc_enable > 0)
 	{
-		ret = gpio_request(bklt_vcc_enable,"bklt_vdd_enable");
-
-		if (ret < 0)
-			printk("\nRequest bklt_vdd_enable failed!!\n");
-		else
-			gpio_direction_output(bklt_vcc_enable, bklt_vcc_flag);
+		printk(KERN_INFO "[LVDS Sequence] 3 Start to enable backlight VCC.\n");
+		gpio_set_value(bklt_vcc_enable, bklt_vcc_flag);
 	}
 
 	mdelay(bklt_pwm_delay_value); // T8 for AUO 7"
@@ -142,19 +127,13 @@ void enable_ldb_bkl_vcc(void)
 
 void enable_ldb_bkl_pwm(void)
 {
-	int ret;
 	mdelay(bklt_en_delay_value); // T9 for AUO 7"
-	printk(KERN_INFO "[LVDS Sequence] 5 Start to enable LVDS backlight.\n");
 	
 	// Backlight Enable (Display On/Off)
         if (lvds_bkl_enable > 0)
         {
-		ret = gpio_request(lvds_bkl_enable,"lvds_bkl_enable");
-
-		if (ret < 0)
-			printk("\nRequest lvds_bkl_enable failed!!\n");
-		else
-			gpio_direction_output(lvds_bkl_enable, lvds_bkl_flag);
+		printk(KERN_INFO "[LVDS Sequence] 5 Start to enable LVDS backlight.\n");
+		gpio_set_value(lvds_bkl_enable, lvds_bkl_flag);
 	}
 }
 #endif
@@ -288,6 +267,37 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	lvds_vcc_enable = of_get_named_gpio_flags(node, "lvds-vcc-enable", 0, &lvds_vcc_flag);
 	lvds_bkl_enable = of_get_named_gpio_flags(node, "lvds-bkl-enable", 0, &lvds_bkl_flag);
 	bklt_vcc_enable = of_get_named_gpio_flags(node, "bklt-vcc-enable", 0, &bklt_vcc_flag);
+
+	/* Set default to output low */
+	/* FIXME: It does not work for invert signals */
+	if (lvds_vcc_enable > 0)
+	{
+		ret = gpio_request(lvds_vcc_enable,"lvds_vcc_enable");
+
+		if (ret < 0)
+			printk("\nRequest lvds_vcc_enable failed!!\n");
+		else
+			gpio_direction_output(lvds_vcc_enable, 0);
+	}
+	if (bklt_vcc_enable > 0)
+	{
+		ret = gpio_request(bklt_vcc_enable,"bklt_vdd_enable");
+
+		if (ret < 0)
+			printk("\nRequest bklt_vdd_enable failed!!\n");
+		else
+			gpio_direction_output(bklt_vcc_enable, 0);
+	}
+	if (lvds_bkl_enable > 0)
+        {
+		ret = gpio_request(lvds_bkl_enable,"lvds_bkl_enable");
+
+		if (ret < 0)
+			printk("\nRequest lvds_bkl_enable failed!!\n");
+		else
+			gpio_direction_output(lvds_bkl_enable, 0);
+	}
+
 	/*ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds_vcc_delay_value);
 	if (ret < 0)
 	{
@@ -314,6 +324,8 @@ extern int lvds_powseq_param, lvds_powseq_delay_ms[];
 		lvds_bkl_delay_value=lvds_powseq_delay_ms[0];
 		bklt_pwm_delay_value=lvds_powseq_delay_ms[1];
 		bklt_en_delay_value=lvds_powseq_delay_ms[2];
+		printk(KERN_INFO "[LVDS Sequence] lvds_powseq_delay - %d,%d,%d\n",
+			lvds_bkl_delay_value, bklt_pwm_delay_value, bklt_en_delay_value);
 	}
 }
 #endif
