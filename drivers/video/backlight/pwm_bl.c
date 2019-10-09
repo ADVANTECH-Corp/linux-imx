@@ -265,15 +265,14 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	 */
 #ifdef CONFIG_ARCH_ADVANTECH
 	lvds_vcc_enable = of_get_named_gpio_flags(node, "lvds-vcc-enable", 0, &lvds_vcc_flag);
-	lvds_bkl_enable = of_get_named_gpio_flags(node, "lvds-bkl-enable", 0, &lvds_bkl_flag);
 	bklt_vcc_enable = of_get_named_gpio_flags(node, "bklt-vcc-enable", 0, &bklt_vcc_flag);
+	lvds_bkl_enable = of_get_named_gpio_flags(node, "lvds-bkl-enable", 0, &lvds_bkl_flag);
 
 	if (of_find_property(node, "skip-gpios-init", NULL)) {
 		printk("[LVDS] Skip setting GPIOs to default states\n");
 		goto get_delays;
 	}
-	/* Set default to output low */
-	/* FIXME: It does not work for invert signals */
+	/* Set default to output */
 	if (lvds_vcc_enable > 0)
 	{
 		ret = gpio_request(lvds_vcc_enable,"lvds_vcc_enable");
@@ -281,7 +280,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 		if (ret < 0)
 			printk("\nRequest lvds_vcc_enable failed!!\n");
 		else
-			gpio_direction_output(lvds_vcc_enable, 0);
+			gpio_direction_output(lvds_vcc_enable, (lvds_vcc_flag)?0:1);
 	}
 	if (bklt_vcc_enable > 0)
 	{
@@ -290,7 +289,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 		if (ret < 0)
 			printk("\nRequest bklt_vdd_enable failed!!\n");
 		else
-			gpio_direction_output(bklt_vcc_enable, 0);
+			gpio_direction_output(bklt_vcc_enable, (bklt_vcc_flag)?0:1);
 	}
 	if (lvds_bkl_enable > 0)
         {
@@ -299,7 +298,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 		if (ret < 0)
 			printk("\nRequest lvds_bkl_enable failed!!\n");
 		else
-			gpio_direction_output(lvds_bkl_enable, 0);
+			gpio_direction_output(lvds_bkl_enable, (lvds_bkl_flag)?0:1);
 	}
 
 get_delays:
