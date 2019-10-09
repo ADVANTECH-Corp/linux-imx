@@ -995,7 +995,12 @@
 	pinctrl-0 = <&pinctrl_ldb1>;
 	lvds-vcc-enable = <&gpio3 13 1>;
 	lvds-bkl-enable = <&gpio2 3 1>;
+#if defined(LVDS_SINGLE_0)
 	status = "okay";
+#else
+	skip-gpios-init;
+	status = "okay";
+#endif
 };
 
 &pwm_mipi_lvds0 {
@@ -1061,6 +1066,7 @@
 #if defined(LVDS_SINGLE_0)
 	status = "disabled";
 #else
+	skip-gpios-init;
 	status = "okay";
 #endif
 };

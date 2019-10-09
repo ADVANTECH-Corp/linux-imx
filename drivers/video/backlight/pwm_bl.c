@@ -268,6 +268,10 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	lvds_bkl_enable = of_get_named_gpio_flags(node, "lvds-bkl-enable", 0, &lvds_bkl_flag);
 	bklt_vcc_enable = of_get_named_gpio_flags(node, "bklt-vcc-enable", 0, &bklt_vcc_flag);
 
+	if (of_find_property(node, "skip-gpios-init", NULL)) {
+		printk("[LVDS] Skip setting GPIOs to default states\n");
+		goto get_delays;
+	}
 	/* Set default to output low */
 	/* FIXME: It does not work for invert signals */
 	if (lvds_vcc_enable > 0)
@@ -298,6 +302,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 			gpio_direction_output(lvds_bkl_enable, 0);
 	}
 
+get_delays:
 	/*ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds_vcc_delay_value);
 	if (ret < 0)
 	{
