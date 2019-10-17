@@ -997,6 +997,8 @@
 	lvds-bkl-enable = <&gpio2 3 1>;
 #if defined(LVDS_SINGLE_0)
 	status = "okay";
+#elif defined(LVDS_SINGLE_1)
+	status = "disabled";
 #else
 	skip-gpios-init;
 	status = "okay";
@@ -1024,7 +1026,11 @@
 };
 
 &ldb1 {
+#ifdef LVDS_SINGLE_1
+	status = "disabled";
+#else
 	status = "okay";
+#endif
 
 #ifdef LVDS_DUAL_CHANNEL
 	fsl,dual-channel;
@@ -1065,6 +1071,8 @@
 	lvds-bkl-enable = <&gpio5 9 1>;
 #if defined(LVDS_SINGLE_0)
 	status = "disabled";
+#elif defined(LVDS_SINGLE_1)
+	status = "okay";
 #else
 	skip-gpios-init;
 	status = "okay";
@@ -1086,6 +1094,8 @@
 	status = "disabled";
 #elif defined(LVDS_SINGLE_0)
 	status = "disabled";
+#elif defined(LVDS_SINGLE_1)
+	status = "okay";
 #else
 	status = "okay";
 #endif
