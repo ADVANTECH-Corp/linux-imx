@@ -774,6 +774,13 @@
                 SC_P_LVDS1_GPIO01_LSIO_GPIO1_IO11	0x00000041
 			>;
 		};
+
+		pinctrl_tpm: tpm_grp {
+			fsl,pins = <
+				SC_P_ENET1_RGMII_RXD2_LSIO_GPIO6_IO20	0x06000021	/* TPM_RESET */
+				SC_P_ENET1_RGMII_RXD3_LSIO_GPIO6_IO21	0x06000021	/* TPM_IRQ */
+			>;
+		};
 	};
 };
 
@@ -1034,6 +1041,16 @@
 		assigned-clock-rates = <786432000>, <49152000>, <12288000>, <12288000>;
 	};
 #	endif
+
+	tpm: st33htph@2e {
+		compatible = "st,st33htpm-i2c";
+		reg= <0x2e>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_tpm>;
+		interrupt-parent = <&gpio6>;
+		interrupts = <21 IRQ_TYPE_LEVEL_HIGH>;
+		status = "disabled";
+	};
 };
 #endif
 
