@@ -54,7 +54,8 @@ static int fb_notifier_callback(struct notifier_block *self,
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
 	if (blank_count == 0)
 		blank_count++;
-#else
+#endif
+#if defined(CONFIG_ANDROID)
 	/* If we aren't interested in this event, skip it immediately ... */
 	if (event != FB_EVENT_BLANK && event != FB_EVENT_CONBLANK)
 		return 0;
