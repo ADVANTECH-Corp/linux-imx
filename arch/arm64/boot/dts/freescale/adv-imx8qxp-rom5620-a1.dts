@@ -725,7 +725,7 @@
 		pinctrl-0 = <&pinctrl_tpm>;
 		interrupt-parent = <&gpio3>;
 		interrupts = <15 IRQ_TYPE_LEVEL_HIGH>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	rtc0: rx8900@32 {

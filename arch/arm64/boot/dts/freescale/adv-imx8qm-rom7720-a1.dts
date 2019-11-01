@@ -1049,7 +1049,7 @@
 		pinctrl-0 = <&pinctrl_tpm>;
 		interrupt-parent = <&gpio6>;
 		interrupts = <21 IRQ_TYPE_LEVEL_HIGH>;
-		status = "disabled";
+		status = "okay";
 	};
 };
 #endif
