@@ -25,6 +25,7 @@
 #include <linux/gpio.h>
 #include <linux/mfd/tps65910.h>
 #include <linux/regulator/of_regulator.h>
+#include <linux/delay.h>
 
 #define TPS65910_SUPPLY_STATE_ENABLED	0x1
 #define EXT_SLEEP_CONTROL (TPS65910_SLEEP_CONTROL_EXT_INPUT_EN1 |	\
@@ -36,7 +37,8 @@
 #define TPS65910_VIO_VALUE 0xc1
 #define TPS65910_VDD1_VALUE 0x2d
 #define TPS65910_VPLL_VALUE 0xc5
-#define TPS65910_DCDCCTRL_VALUE 0x01
+#define TPS65910_DCDCCTRL_VALUE1 0x38
+#define TPS65910_DCDCCTRL_VALUE2 0x00
 #endif
 
 /* supported VIO voltages in microvolts */
@@ -1260,8 +1262,10 @@ static int tps65910_probe(struct platform_device *pdev)
 		if(ret < 0)
 			dev_err(&pdev->dev, "Cannot read TPS65910_DCDCCTRL value!\n");	
 		else {
-			if(value != TPS65910_DCDCCTRL_VALUE)
-				tps65910_reg_write(pmic->mfd, TPS65910_DCDCCTRL, TPS65910_DCDCCTRL_VALUE);
+			/* Workaround for DCDC CLK Sync */
+			tps65910_reg_write(pmic->mfd, TPS65910_DCDCCTRL, TPS65910_DCDCCTRL_VALUE1);
+			msleep_interruptible(100);
+			tps65910_reg_write(pmic->mfd, TPS65910_DCDCCTRL, TPS65910_DCDCCTRL_VALUE2);
 		}
 	break;
 	case TPS65910:
