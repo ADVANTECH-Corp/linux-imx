@@ -123,18 +123,18 @@
                 pinctrl-0 = <&pinctrl_lid_key &pinctrl_sleep_key>;
                 pinctrl-names = "default";
                 lid@1 {
-                        label = "LID KEY";
-                        gpios = <&gpio3 20 0>; /* GPIO_ACTIVE_LOW:1 */
-                        linux,input-type = <1>; /* EV_KEY */
-                        linux,code = <116>;     /* KEY_POWER */
-                        debounce_interval = <1>;
+			label = "LID KEY";
+			gpios = <&gpio3 20 0>; /* GPIO_ACTIVE_LOW:1 */
+			linux,input-type = <1>; /* EV_KEY */
+			linux,code = <116>;     /* KEY_POWER */
+			wakeup-source;
                 };
                 sleep@2 {
-                        label = "SLEEP KEY";
-                        gpios = <&gpio3 25 0>; /* GPIO_ACTIVE_LOW:1 */
-                        linux,input-type = <1>; /* EV_KEY */
-                        linux,code = <116>;     /* KEY_POWER */
-                        debounce_interval = <1>;
+			label = "SLEEP KEY";
+			gpios = <&gpio3 25 0>; /* GPIO_ACTIVE_LOW:1 */
+			linux,input-type = <1>; /* EV_KEY */
+			linux,code = <116>;     /* KEY_POWER */
+			wakeup-source;
                 };
 	};
 
