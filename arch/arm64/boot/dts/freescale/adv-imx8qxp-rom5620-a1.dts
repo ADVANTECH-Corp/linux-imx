@@ -17,6 +17,7 @@
 
 /* Definitions */
 #define ROM_DB5901
+#define SDHC_LOW_SPEED_ONLY
 
 /* LVDS Panel : only choose one!
  *   LVDS_AUO_7, LVDS_CHIMEI_15, LVDS_AUO_215
@@ -815,14 +816,22 @@
 };
 
 &usdhc2 {
+#ifdef SDHC_LOW_SPEED_ONLY
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc2>, <&pinctrl_usdhc2_gpio>;
+#else
 	pinctrl-names = "default", "state_100mhz", "state_200mhz";
 	pinctrl-0 = <&pinctrl_usdhc2>, <&pinctrl_usdhc2_gpio>;
 	pinctrl-1 = <&pinctrl_usdhc2_100mhz>, <&pinctrl_usdhc2_gpio>;
 	pinctrl-2 = <&pinctrl_usdhc2_200mhz>, <&pinctrl_usdhc2_gpio>;
+#endif
 	bus-width = <4>;
 	cd-gpios = <&gpio4 22 GPIO_ACTIVE_LOW>;
 	wp-gpios = <&gpio4 21 GPIO_ACTIVE_HIGH>;
 	vmmc-supply = <&reg_usdhc2_vmmc>;
+#ifdef SDHC_LOW_SPEED_ONLY
+	no-1-8-v;
+#endif
 	status = "okay";
 };
 
