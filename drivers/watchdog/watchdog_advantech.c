@@ -63,8 +63,8 @@
 
 static int gpio_wdt_en;
 static int gpio_wdt_ping;
-static int gpio_wdt_out;
-
+//static int gpio_wdt_out;
+static int ping_delay;
 struct i2c_client *adv_client;
 
 static struct {
@@ -194,7 +194,7 @@ int adv_wdt_i2c_read_version(struct i2c_client *client, unsigned int *val)
 
 static inline void adv_wdt_ping(void)
 {
-	msleep(800);
+	msleep(ping_delay);
 	adv_wdt.wdt_ping_status= !adv_wdt.wdt_ping_status;
 	gpio_set_value(gpio_wdt_ping, adv_wdt.wdt_ping_status);
 	msleep(100);
@@ -455,6 +455,13 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 
 	original_arm_pm_restart = arm_pm_restart;
 	arm_pm_restart=NULL;
+
+        ret = of_property_read_u32(np, "wdt_ping_delay", &ping_delay);
+        if (ret) {
+                pr_info("No wdt_ping_delay setting, use default value\n");
+                ping_delay = 800;
+        }
+
 	
 	return 0;
 
