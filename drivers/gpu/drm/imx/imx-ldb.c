@@ -1019,11 +1019,23 @@ static u32 of_get_bus_format(struct device *dev, struct imx_ldb *ldb,
 	u32 datawidth = 0;
 	int ret, i;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	extern int lvds_data, lvds_data_mapping, lvds_data_width;
+	extern char *lvds_bus_formats[];
+
+	if (lvds_data == 1) {
+		bm=lvds_bus_formats[lvds_data_mapping];
+		datawidth = lvds_data_width;
+	} else {
+#endif
 	ret = of_property_read_string(np, "fsl,data-mapping", &bm);
 	if (ret < 0)
 		return ret;
 
 	of_property_read_u32(np, "fsl,data-width", &datawidth);
+#ifdef CONFIG_ARCH_ADVANTECH
+	}
+#endif
 
 	if (!ldb->capable_10bit && datawidth == 30) {
 		dev_err(dev, "invalid data width: %d-bit\n", datawidth);

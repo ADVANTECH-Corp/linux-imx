@@ -23,6 +23,12 @@ extern char *strrchr(const char *, int);
 
 int lvds_powseq_param=0;
 int lvds_powseq_delay_ms[3]={210, 20, 20};
+int lvds_data=0;
+
+enum {LVDS_BUS_SPWG, LVDS_BUS_JEDEC, LVDS_BUS_UNKNOWN};
+char *lvds_bus_formats[] = {"spwg", "jedec", "unknown"};
+int lvds_data_mapping=0;
+int lvds_data_width=0;
 
 static char lvds_panel[80]="";
 
@@ -163,6 +169,7 @@ static u32 parse_flag_directives(char *directives)
 	}
 	return flags;
 }
+
 #endif
 
 /**
@@ -258,8 +265,27 @@ static int __init lvds_powseq_delay_setup(char *options)
 	return 1;
 }
 
+static int __init lvds_data_setup(char *options)
+{
+	char mapping;
+	int width;
+
+	lvds_data=1;
+	sscanf(options,"%c,%d",&mapping, &width);
+	switch (mapping & 0x5F) {
+	case 'S': lvds_data_mapping=LVDS_BUS_SPWG; break;
+	case 'J': lvds_data_mapping=LVDS_BUS_JEDEC; break;
+	default:  lvds_data_mapping=LVDS_BUS_UNKNOWN;
+	}
+	if (width==18 || width==24 || width==30) lvds_data_width=width;
+	printk("lvds_data - %s, %d-bit", lvds_bus_formats[lvds_data_mapping], lvds_data_width);
+	
+	return 1;
+}
+
 __setup("lvds_panel=", lvds_panel_setup);
 __setup("lvds_vmode=", lvds_vmode_setup);
 __setup("lvds_powseq_delay=", lvds_powseq_delay_setup);
+__setup("lvds_data=", lvds_data_setup);
 #endif
 
