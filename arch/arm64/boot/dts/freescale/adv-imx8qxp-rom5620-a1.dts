@@ -39,7 +39,6 @@
 		i2c2 = &i2c0_mipi_lvds0;
 		i2c3 = &i2c0_mipi_lvds1;
 		i2c4 = &i2c1;
-		i2c5 = &i2c_sw1;
 	};
 
 	chosen {
@@ -736,26 +735,6 @@
 		epson,vdet-disable;
 		trickle-diode-disable;
 		status = "okay";
-	};
-
-	i2c_switch: pca9646pw@75 {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		compatible = "nxp,pca9646";
-		reg = <0x75>;
-
-		i2c_sw1: i2c0@0 {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			reg = <0>;
-
-			io_exp: pca9557pw@1d {
-				compatible = "nxp,pca9557";
-				reg = <0x1d>;
-				gpio-controller;
-				#gpio-cells = <2>;
-			};
-		};
 	};
 };
 
