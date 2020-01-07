@@ -13,7 +13,11 @@
  */
 
 /dts-v1/;
-
+/* #define	OV5640 */
+#define	DSI_BRIDGE
+#define	DSI2HDMI 
+/* #define	DSI2LVDS */
+/* #define	DSI2DP */
 #include "fsl-imx8mm.dtsi"
 
 / {
@@ -29,9 +33,10 @@
                 compatible = "mmc-pwrseq-simple";
                 pinctrl-names = "default";
                 pinctrl-0 = <&pinctrl_usdhc1_gpio>;
-                reset-gpios = <&gpio2 10 GPIO_ACTIVE_LOW>;
+                reset-gpios = <&gpio2 10 GPIO_ACTIVE_HIGH>;
         };
 
+#ifdef DSI2LVDS
 	lvds_backlight0: lvds_backlight@0 {
                 compatible = "pwm-backlight";
                 pwms = <&pwm4 0 1000000 0>;
@@ -65,6 +70,7 @@
                             100>;
                 default-brightness-level = <80>;
         };
+#endif
 	regulators {
 		compatible = "simple-bus";
 		#address-cells = <1>;
@@ -76,6 +82,15 @@
 			regulator-max-microvolt = <3300000>;
 			gpio = <&gpio2 19 GPIO_ACTIVE_HIGH>;
 			off-on-delay = <20000>;
+			enable-active-high;
+		};
+
+		reg_usb_otg1_vbus: regulator-vbus {
+			compatible = "regulator-fixed";
+			regulator-name = "usb_otg1_vbus";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			gpio = <&gpio1 12 GPIO_ACTIVE_HIGH>;
 			enable-active-high;
 		};
 	};
@@ -101,6 +116,39 @@
                         wakeup-source;
                 };
         };
+#ifdef DSI2DP
+	panel: edp_panel {
+			compatible ="lg,lp079qx1-sp0v", "simple-panel";
+                        status = "okay";
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+                        port@0 {
+                                reg = <0>;
+                                panel_in: endpoint {
+                                        remote-endpoint = <&sn65dsi86_out>;
+                                };
+                        };
+
+
+                };
+
+/*
+        edp_panel: edp-panel {
+                compatible ="lg,lp079qx1-sp0v", "simple-panel";
+           //     backlight = <&backlight>;
+           //     enable-gpios = <&gpio4 RK_PC6 GPIO_ACTIVE_HIGH>;
+           //     pinctrl-names = "default";
+           //     pinctrl-0 = <&lcd_panel_reset>;
+           //     power-supply = <&vcc3v3_s0>;
+
+                ports {
+                        sn65dsi86_out: endpoint {
+                                remote-endpoint = <&edp_out_panel>;
+                        };
+                };
+        };
+*/
+#endif
 };
 
 &clk {
@@ -532,23 +580,30 @@
                         >;
                 };
 
-                pinctrl_ldb1: ldb1_grp {
+                pinctrl_lcd0: lcd0_grp {
                         fsl,pins = <
-				MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x19		/* LCD0_VDD_EN */
-				MX8MM_IOMUXC_SAI2_RXD0_GPIO4_IO23	0x19		/* LCD0_BKLT_EN */
+				MX8MM_IOMUXC_SAI2_RXD0_GPIO4_IO23	0x19		/* LCD0_VDD_EN */
+				MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x19		/* LCD0_BKLT_EN */
                         >;
                 };
-
-                pinctrl_ldb2: ldb2_grp {
+                pinctrl_lcd1: lcd1_grp {
                         fsl,pins = <
 				MX8MM_IOMUXC_SAI2_TXD0_GPIO4_IO26	0x19		/* LCD1_VDD_EN */
 				MX8MM_IOMUXC_SAI2_TXFS_GPIO4_IO24	0x19		/* LCD1_BKLT_EN */
                         >;
                 };
 
+		pinctrl_i2c2_gpio: i2c2_gpio_grp {
+			fsl,pins = <
+				MX8MM_IOMUXC_I2C2_SCL_GPIO5_IO16		0x19
+				MX8MM_IOMUXC_I2C2_SDA_GPIO5_IO17		0x19
+			>;
+		};
+
+
 	};
 };
-
+#ifdef OV5640
 &csi1_bridge {
 	fsl,mipi-mode;
 	status = "okay";
@@ -558,7 +613,7 @@
 		};
 	};
 };
-
+#endif
 &flexspi {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_flexspi0>;
@@ -718,8 +773,12 @@
 
 &i2c2 {
 	clock-frequency = <400000>;
-	pinctrl-names = "default";
+	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl_i2c2>;
+        pinctrl-1 = <&pinctrl_i2c2_gpio>;
+        scl-gpios = <&gpio5 16 GPIO_ACTIVE_HIGH>;
+        sda-gpios = <&gpio5 17 GPIO_ACTIVE_HIGH>;
+
 	status = "okay";
 
         wdt@29 {
@@ -732,23 +791,73 @@
                 wdt-ping = <&gpio1 15 0>;
                 reg = <0x29>;
         };
+#ifdef DSI2DP
+        sn65dsi86@2d {
+		compatible = "ti,sn65dsi86";
+                reg = <0x2d>;
+//		adi,dsi-lanes = <4>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clock-names = "refclk";
+		clocks = <&osc_24m>;
 
-	adv_bridge: adv7535@3d {
-		compatible = "adi,adv7533";
-		reg = <0x3d>;
-		adi,addr-cec = <0x3b>;
-		adi,dsi-lanes = <4>;
-		status = "okay";
+                status = "okay";
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
 
-		port {
-			adv7535_from_dsim: endpoint {
-				remote-endpoint = <&dsim_to_adv7535>;
+			port@0 {
+				reg = <0>;
+				sn65dsi86_from_dsim: endpoint {
+					remote-endpoint = <&dsim_to_sn65dsi86>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+				sn65dsi86_out: endpoint {
+					data-lanes = <2 1 3 0>;
+					lane-polarities = <0 1 0 1>;
+					remote-endpoint = <&panel_in>;
+				};
 			};
 		};
-	};
+
+        };
+#endif
+#ifdef	DSI2LVDS
+	tc358775@0f {
+			compatible = "toshiba,tc358775";
+			reg = <0x0f>;
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_lvds>;
+
+			adi,dsi-lanes = <4>;
+//			dsi-sw-select-gpio = <&msmgpio 32 GPIO_ACTIVE_HIGH>;
+			stby-gpio = <&gpio3 23 GPIO_ACTIVE_LOW>;
+//			reset-gpio = <&msmgpio 72 GPIO_ACTIVE_LOW>;
+
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@0 {
+				reg = <0>;
+					tc358775_from_dsim: endpoint {
+						remote-endpoint = <&dsim_to_tc358775>;
+					};
+				};
+			};
+		};
+
+#endif
+
 	s35390a: s35390a@30 {
 		 compatible = "sii,s35390a";
 		 reg = <0x30>;
+		status = "okay";
 	};
 
 
@@ -806,7 +915,7 @@
 */
 };
 
-
+#ifdef OV5640
 &mipi_csi_1 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -825,9 +934,9 @@
 		};
 	};
 };
-
+#endif
 &i2c3 {
-	clock-frequency = <100000>;
+	clock-frequency = <400000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c3>;
 	status = "okay";
@@ -847,7 +956,7 @@
                         reg = <0>;
                         #address-cells = <1>;
                         #size-cells = <0>;
-
+#ifdef	OV5640 
 			ov5640_mipi: ov5640_mipi@3c {
 				compatible = "ovti,ov5640_mipi";
 				reg = <0x3c>;
@@ -871,25 +980,44 @@
 					};
 				};
 			};
+#endif
                 };
                 i2c@1 {
-                        reg = <0>;
+                        reg = <1>;
                         #address-cells = <1>;
                         #size-cells = <0>;
 		};
                 i2c@2 {
-                        reg = <0>;
+                        reg = <2>;
                         #address-cells = <1>;
                         #size-cells = <0>;
+#ifdef DSI2HDMI
+			adv_bridge: adv7535@3d {
+				compatible = "adi,adv7533";
+				reg = <0x3d>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_lcd0>;
+				adi,addr-cec = <0x3b>;
+				adi,dsi-lanes = <4>;
+				pd-gpios = <&gpio4 23 1>;
+				status = "okay";
+
+				port {
+					adv7535_from_dsim: endpoint {
+						remote-endpoint = <&dsim_to_adv7535>;
+					};
+				};
+			};
+#endif
 		};
                 i2c@3 {
-                        reg = <0>;
+                        reg = <3>;
                         #address-cells = <1>;
                         #size-cells = <0>;
 	
-			tca9538: pca9538@70 {
+			tca9538: pca9538@73 {
 				compatible = "nxp,pca9538";
-				reg = <0x70>;
+				reg = <0x73>;
 				#gpio-cells = <2>;
 				gpio-controller;
 			};
@@ -915,6 +1043,16 @@
 
         };
 
+	24c32@57 {				//DB5901-U19
+                compatible = "fsl,24c32";
+                reg = <0x57>;
+        };
+
+	24c32@50 {				//DB5901-I2C_GP_1
+                compatible = "fsl,24c32";
+                reg = <0x50>;
+        };
+
 };
 
 &lcdif {
@@ -923,12 +1061,41 @@
 
 &mipi_dsi {
 	status = "okay";
-
+#ifdef DSI2LVDS
+        panel@0 {
+                compatible = "raydium,rm67191";
+                reg = <0>;
+                pinctrl-0 = <&pinctrl_lcd0>;
+                reset-gpio = <&gpio4 23 GPIO_ACTIVE_HIGH>;
+                dsi-lanes = <4>;
+                video-mode = <2>;       /* 0: burst mode
+                                         * 1: non-burst mode with sync event
+                                         * 2: non-burst mode with sync pulse
+                                         */
+                panel-width-mm = <68>;
+                panel-height-mm = <121>;
+                status = "okay";
+        };
+#endif
+#ifdef DSI_BRIDGE
 	port@1 {
+#ifdef DSI2HDMI
 		dsim_to_adv7535: endpoint {
 			remote-endpoint = <&adv7535_from_dsim>;
 		};
+#endif
+#ifdef DSI2DP
+		dsim_to_sn65dsi86: endpoint {
+			remote-endpoint = <&sn65dsi86_from_dsim>;
+		};
+#endif
+#ifdef DSI2LVDS
+		dsim_to_tc358775: endpoint {
+			remote-endpoint = <&tc358775_from_dsim>;
+		};
+#endif
 	};
+#endif
 };
 
 &mu {
@@ -980,7 +1147,7 @@
 &pcie0{
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie0>;
-//	disable-gpio = <&gpio1 5 GPIO_ACTIVE_LOW>;
+	disable-gpio = <&gpio3 19 GPIO_ACTIVE_LOW>;
 	reset-gpio = <&gpio1 13 GPIO_ACTIVE_LOW>;
 	ext_osc = <1>;
 	status = "okay";
@@ -999,7 +1166,7 @@
 	pinctrl-0 = <&pinctrl_uart2>;
 //	assigned-clocks = <&clk IMX8MM_CLK_UART2_SRC>;
 //	assigned-clock-parents = <&clk IMX8MM_SYS_PLL1_80M>;
-//	fsl,uart-has-rtscts;
+	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
@@ -1017,15 +1184,16 @@
 	pinctrl-0 = <&pinctrl_uart4>;
 //	assigned-clocks = <&clk IMX8MM_CLK_UART4_SRC>;
 //	assigned-clock-parents = <&clk IMX8MM_SYS_PLL1_80M>;
-	status = "disabled";
+	status = "okay";
 };
 
 &usbotg1 {
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_usbotg>;
-	dr_mode = "host";
+	dr_mode = "otg";
 	//extcon = <0>, <&typec1_ptn5110>;
 	extcon = <0>;
+	vbus-supply = <&reg_usb_otg1_vbus>;
 	picophy,pre-emp-curr-control = <3>;
 	picophy,dc-vol-level-adjust = <7>;
 	status = "okay";
@@ -1112,7 +1280,7 @@
         cs-gpios = <&gpio5 13 0>, <&gpio3 21 0>;
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_ecspi2>;
-        status = "disabled";
+        status = "okay";
 
         flash0: m25p80@0 {
                 #address-cells = <1>;
@@ -1134,7 +1302,7 @@
         cs-gpios = <&gpio5 25 0>, <&gpio3 22 0>;
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_ecspi3>;
-        status = "disabled";
+        status = "okay";
 
         flash2: m25p80@0 {
                 #address-cells = <1>;
@@ -1163,19 +1331,20 @@
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_pwm4>;
 };
-
+#ifdef DSI2LVDS
 &lvds_backlight0 {
         pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_ldb1>;
-        lvds-vcc-enable = <&gpio4 27 1>;
-        lvds-bkl-enable = <&gpio4 23 1>;
+        pinctrl-0 = <&pinctrl_lcd0>;
+        lvds-vcc-enable = <&gpio4 23 1>;
+        lvds-bkl-enable = <&gpio4 27 1>;
         status = "okay";
 };
 
 &lvds_backlight1 {
         pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_ldb2>;
+        pinctrl-0 = <&pinctrl_lcd1>;
         lvds-vcc-enable = <&gpio4 26 1>;
         lvds-bkl-enable = <&gpio4 24 1>;
         status = "okay";
 };
+#endif
