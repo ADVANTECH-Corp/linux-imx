@@ -170,6 +170,47 @@
 		clock-names = "fspi";
 		power-domains = <&pd_lsio_flexspi1>;
 	};
+
+	lpspi3: lpspi@5a030000 {
+		compatible = "fsl,imx7ulp-spi";
+		reg = <0x0 0x5a030000 0x0 0x10000>;
+		interrupts = <GIC_SPI 219 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-parent = <&gic>;
+		clocks = <&clk IMX8QXP_SPI3_CLK>,
+				<&clk IMX8QXP_SPI3_IPG_CLK>;
+		clock-names = "per", "ipg";
+		assigned-clocks = <&clk IMX8QXP_SPI3_CLK>;
+		assigned-clock-rates = <20000000>;
+		power-domains = <&pd_dma2_chan7>;
+		dma-names = "tx","rx";
+		dmas = <&edma2 7 0 0>, <&edma2 6 0 1>;
+		status = "disabled";
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-0 = <&pinctrl_gpio_keys>;
+
+		lid@1 {
+			label = "LID KEY";
+			gpios = <&gpio1 19 GPIO_ACTIVE_LOW>; /* GPIO_ACTIVE_LOW:1 */
+			linux,input-type = <EV_PWR>;
+			linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_SLEEP 142
+			debounce-interval = <1>;
+			wakeup-source;
+		};
+
+		sleep@2 {
+			label = "SLEEP KEY";
+			gpios = <&gpio1 20 GPIO_ACTIVE_LOW>; /* GPIO_ACTIVE_LOW:1 */
+			linux,input-type = <EV_PWR>;
+			linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_SLEEP 142
+			wakeup-source;
+		};
+	};
 };
 
 &acm {
@@ -190,19 +231,28 @@
 	pinctrl-0 = <&pinctrl_gpio>;
 
 	imx8qxp-mek {
+		pinctrl_gpio_keys: gpio_keys_grp{
+			fsl,pins = <
+				SC_P_FLEXCAN2_RX_LSIO_GPIO1_IO19		0x00000021
+				SC_P_FLEXCAN2_TX_LSIO_GPIO1_IO20		0x00000021
+			>;
+		};
+
 		pinctrl_gpio: gpio_grp {
 			fsl,pins = <
 				SC_P_SPI2_CS0_LSIO_GPIO1_IO00	0x06000021	/* GPIO0 */
 				//SC_P_SPI2_SCK_LSIO_GPIO1_IO03	0x06000021	/* GPIO1 */
 				SC_P_SPI2_SDI_LSIO_GPIO1_IO02	0x06000021	/* GPIO2 */
 				//SC_P_SPI2_SDO_LSIO_GPIO1_IO01	0x06000021	/* GPIO3 */
-				SC_P_SPI3_CS0_LSIO_GPIO0_IO16	0x06000021	/* GPIO4 */
-				SC_P_SPI3_SCK_LSIO_GPIO0_IO13	0x06000021	/* GPIO5 */
-				SC_P_SPI3_SDI_LSIO_GPIO0_IO15	0x06000021	/* GPIO6 */
+				SC_P_SPI0_CS0_LSIO_GPIO1_IO08	0x06000021	/* GPIO4 */
+				SC_P_SPI0_SCK_LSIO_GPIO1_IO04	0x06000021	/* GPIO5 */
+				SC_P_SPI0_SDI_LSIO_GPIO1_IO05	0x06000021	/* GPIO6 */
 				SC_P_MCLK_IN0_LSIO_GPIO0_IO19	0x06000021	/* GPIO7 */
 				SC_P_CSI_PCLK_LSIO_GPIO3_IO00	0x06000021	/* GPIO9 */
 				SC_P_CSI_MCLK_LSIO_GPIO3_IO01	0x06000021	/* GPIO10 */
 				SC_P_CSI_EN_LSIO_GPIO3_IO02	0x06000021	/* GPIO11 */
+				SC_P_SAI0_RXD_LSIO_GPIO0_IO27	0x06000021	/* DEBUG_UART_SEL */
+				SC_P_MIPI_DSI1_GPIO0_01_LSIO_GPIO2_IO00	0x06000021	/* TEST */
 			>;
 		};
 
@@ -253,7 +303,7 @@
 				SC_P_ENET0_RGMII_RXD1_CONN_ENET0_RGMII_RXD1	0x00000061
 				SC_P_ENET0_RGMII_RXD2_CONN_ENET0_RGMII_RXD2	0x00000061
 				SC_P_ENET0_RGMII_RXD3_CONN_ENET0_RGMII_RXD3	0x00000061
-				SC_P_MIPI_CSI0_GPIO0_00_LSIO_GPIO3_IO08		0x06000021	/* ENET0_INT */
+				SC_P_ENET0_REFCLK_125M_25M_LSIO_GPIO5_IO09		0x06000021	/* ENET0_INT */
 			>;
 		};
 
@@ -271,7 +321,7 @@
 				SC_P_ESAI0_TX3_RX2_CONN_ENET1_RGMII_RXD1	0x00000060
 				SC_P_ESAI0_TX2_RX3_CONN_ENET1_RGMII_RXD2	0x00000060
 				SC_P_ESAI0_TX1_CONN_ENET1_RGMII_RXD3		0x00000060
-				SC_P_MIPI_CSI0_GPIO0_01_LSIO_GPIO3_IO07		0x06000021	/* ENET1_INT */
+				SC_P_PCIE_CTRL0_CLKREQ_B_LSIO_GPIO4_IO01		0x06000021	/* ENET1_INT */
 			>;
 		};
 
@@ -289,12 +339,18 @@
 			>;
 		};
 
-		pinctrl_lpspi0: lpspi0grp {
+		pinctrl_lpspi3: lpspi3grp {
 			fsl,pins = <
-				SC_P_SPI0_CS0_LSIO_GPIO1_IO08		0x00000040
-				SC_P_SPI0_SCK_ADMA_SPI0_SCK		0x00000040
-				SC_P_SPI0_SDI_ADMA_SPI0_SDI		0x00000040
-				SC_P_SPI0_SDO_ADMA_SPI0_SDO		0x00000040
+				SC_P_SPI3_SCK_ADMA_SPI3_SCK		0x0600004c
+				SC_P_SPI3_SDO_ADMA_SPI3_SDO		0x0600004c
+				SC_P_SPI3_SDI_ADMA_SPI3_SDI		0x0600004c
+				SC_P_SPI3_CS1_ADMA_SPI3_CS1		0x0600004c
+			>;
+		};
+
+		pinctrl_lpspi3_cs: lpspi3cs {
+			fsl,pins = <
+				SC_P_SPI3_CS0_LSIO_GPIO0_IO16		0x21
 			>;
 		};
 
@@ -364,7 +420,7 @@
 
 		pinctrl_sai0: sai0grp {
 			fsl,pins = <
-				SC_P_SAI0_RXD_ADMA_SAI0_RXD	0x06000040
+				SC_P_CSI_D01_ADMA_SAI0_RXD	0x06000040
 				SC_P_SAI0_TXC_ADMA_SAI0_TXC	0x06000040
 				SC_P_SAI0_TXFS_ADMA_SAI0_TXFS	0x06000040
 				SC_P_SAI0_TXD_ADMA_SAI0_TXD	0x06000040
@@ -475,7 +531,6 @@
 		pinctrl_pcieb: pcieagrp{
 			fsl,pins = <
 				SC_P_PCIE_CTRL0_PERST_B_LSIO_GPIO4_IO00		0x06000021	/* PCIE_A_RESET# */
-				SC_P_PCIE_CTRL0_CLKREQ_B_LSIO_GPIO4_IO01	0x06000021
 				SC_P_PCIE_CTRL0_WAKE_B_LSIO_GPIO4_IO02		0x04000021	/* PCIE_A_WAKE# */
 			>;
 		};
@@ -502,7 +557,6 @@
 
 		pinctrl_tpm: tpm_grp {
 			fsl,pins = <
-				SC_P_FLEXCAN2_TX_LSIO_GPIO1_IO20	0x06000021	/* TPM_RESET */
 				SC_P_QSPI0A_SS1_B_LSIO_GPIO3_IO15	0x06000021	/* TPM_IRQ */
 			>;
 		};
@@ -529,7 +583,7 @@
 		pinctrl_ldb2: ldb2_grp {
 			fsl,pins = <
 				SC_P_SPDIF0_EXT_CLK_LSIO_GPIO0_IO12	0x00000021	/* LCD1_VDD_EN */
-				SC_P_ENET0_REFCLK_125M_25M_LSIO_GPIO5_IO09	0x00000021	/* LCD1_BKLT_EN */
+				SC_P_MIPI_CSI0_GPIO0_00_LSIO_GPIO3_IO08	0x00000021	/* LCD1_BKLT_EN */
 			>;
 		};
 
@@ -541,8 +595,9 @@
 
 		pinctrl_battery: battery_grp {
 			fsl,pins = <
-				SC_P_FLEXCAN2_RX_LSIO_GPIO1_IO19	0x06000021	/* CHARGER_PRSNT# */
-				SC_P_SPI3_SDO_LSIO_GPIO0_IO14	0x06000021	/* CHARGER# */
+				SC_P_MIPI_CSI0_GPIO0_01_LSIO_GPIO3_IO07		0x06000021	/* BATLOW */
+				SC_P_MIPI_DSI0_GPIO0_01_LSIO_GPIO1_IO28		0x06000021	/* CHARGER_PRSNT# */
+				SC_P_SPI0_SDO_LSIO_GPIO1_IO06	0x06000021	/* CHARGER# */
 				SC_P_CSI_RESET_LSIO_GPIO3_IO03	0x06000021	/* SMB_ALERT_1V8# */
 			>;
 		};
@@ -624,13 +679,13 @@
 	status = "okay";
 };
 
-&lpspi0 {
+&lpspi3 {
 	#address-cells = <1>;
 	#size-cells = <0>;
-	fsl,spi-num-chipselects = <1>;
+	fsl,spi-num-chipselects = <2>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_lpspi0>;
-	cs-gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;
+	pinctrl-0 = <&pinctrl_lpspi3 &pinctrl_lpspi3_cs>;
+	cs-gpios = <&gpio0 16 GPIO_ACTIVE_LOW>;
 	status = "okay";
 
 #ifdef ROM_DB5901
@@ -638,6 +693,12 @@
 		compatible = "micron,n25qba16";
 		spi-max-frequency = <10000000>;
 		reg = <0>;
+	};
+
+	spi_nor1: m25p80@1 {
+		compatible = "micron,n25qba16";
+		spi-max-frequency = <10000000>;
+		reg = <1>;
 	};
 #endif
 };
@@ -1057,7 +1118,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_ldb2>;
 	lvds-vcc-enable = <&gpio0 12 1>;
-	lvds-bkl-enable = <&gpio5 9 1>;
+	lvds-bkl-enable = <&gpio3 8 1>;
 #if defined(LVDS_SINGLE_0)
 	status = "disabled";
 #elif defined(LVDS_SINGLE_1)
@@ -1185,6 +1246,28 @@
 				cooling-device =
 				<&A35_0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
 			};
+		};
+	};
+};
+
+&pd_dma_lpspi3 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	wakeup-irq = <339>;
+
+	pd_dma2_chan6: PD_LPSPI3_RX {
+		reg = <SC_R_DMA_2_CH6>;
+		power-domains =<&pd_dma_lpspi3>;
+		#power-domain-cells = <0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		pd_dma2_chan7: PD_LPSPI3_TX {
+			reg = <SC_R_DMA_2_CH7>;
+			power-domains =<&pd_dma2_chan6>;
+			#power-domain-cells = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
 		};
 	};
 };
