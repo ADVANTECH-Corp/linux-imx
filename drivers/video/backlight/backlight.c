@@ -51,14 +51,13 @@ static int fb_notifier_callback(struct notifier_block *self,
 	int node = evdata->info->node;
 	int fb_blank = 0;
 
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-	if (blank_count == 0)
-		blank_count++;
-#endif
-#if defined(CONFIG_ANDROID)
 	/* If we aren't interested in this event, skip it immediately ... */
 	if (event != FB_EVENT_BLANK && event != FB_EVENT_CONBLANK)
 		return 0;
+
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	if (blank_count == 0)
+		blank_count++;
 #endif
 	bd = container_of(self, struct backlight_device, fb_notif);
 	mutex_lock(&bd->ops_lock);
