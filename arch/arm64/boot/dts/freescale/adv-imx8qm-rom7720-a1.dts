@@ -322,6 +322,23 @@
 				    100>;
 		default-brightness-level = <100>;
 	};
+
+	fan0: pwm-fan {
+		compatible = "pwm-fan";
+		#cooling-min-state = <0>;
+		#cooling-max-state = <3>;
+		#cooling-cells = <2>;
+		pwms = <&pwm2 0 10000 0>;
+		#cooling-levels = <85 85 170 255>;
+		cooling-levels = <255>;
+	};
+};
+
+&pwm2{
+       pinctrl-names = "default";
+       power-domains = <&pd_lsio_pwm2>;
+       pinctrl-0 = <&pinctrl_pwm2>;
+       status = "okay";
 };
 
 &acm {
@@ -806,6 +823,12 @@
 			fsl,pins = <
 				SC_P_ENET1_RGMII_RXD2_LSIO_GPIO6_IO20	0x06000021	/* TPM_RESET */
 				SC_P_ENET1_RGMII_RXD3_LSIO_GPIO6_IO21	0x06000021	/* TPM_IRQ */
+			>;
+		};
+
+		pinctrl_pwm2: pwm2grp {
+			fsl,pins = <
+				SC_P_GPT1_COMPARE_LSIO_PWM2_OUT	0x00000020 /* FAN_PWMOUT */
 			>;
 		};
 	};
