@@ -15,7 +15,7 @@
 /dts-v1/;
 /* #define	OV5640 */
 #define	DSI_BRIDGE
-#define	DSI2HDMI 
+#define	DSI2HDMI
 /* #define	DSI2LVDS */
 /* #define	DSI2DP */
 #include "fsl-imx8mm.dtsi"
@@ -117,8 +117,17 @@
                 };
         };
 #ifdef DSI2DP
+	clocks {
+			osc_27m: clock@6 {
+	                compatible = "fixed-clock";
+	                reg = <7>;
+	                #clock-cells = <0>;
+	                clock-frequency= <27000000>;
+	                clock-output-names = "osc_27m";
+	        };
+	};
 	panel: edp_panel {
-			compatible ="lg,lp079qx1-sp0v", "simple-panel";
+			compatible ="std,1080p", "simple-panel";
                         status = "okay";
                         #address-cells = <1>;
                         #size-cells = <0>;
@@ -128,26 +137,7 @@
                                         remote-endpoint = <&sn65dsi86_out>;
                                 };
                         };
-
-
                 };
-
-/*
-        edp_panel: edp-panel {
-                compatible ="lg,lp079qx1-sp0v", "simple-panel";
-           //     backlight = <&backlight>;
-           //     enable-gpios = <&gpio4 RK_PC6 GPIO_ACTIVE_HIGH>;
-           //     pinctrl-names = "default";
-           //     pinctrl-0 = <&lcd_panel_reset>;
-           //     power-supply = <&vcc3v3_s0>;
-
-                ports {
-                        sn65dsi86_out: endpoint {
-                                remote-endpoint = <&edp_out_panel>;
-                        };
-                };
-        };
-*/
 #endif
 };
 
@@ -799,7 +789,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		clock-names = "refclk";
-		clocks = <&osc_24m>;
+		clocks = <&osc_27m>;
 
                 status = "okay";
 		ports {
