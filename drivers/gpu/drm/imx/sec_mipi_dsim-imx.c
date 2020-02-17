@@ -36,6 +36,11 @@
 
 #define DRIVER_NAME "imx_sec_dsim_drv"
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+        static int first_flip_complete = 1;
+        extern void enable_lcd_vdd_en(void);
+#endif
+
 /* Dispmix Control & GPR Registers */
 #define DISPLAY_MIX_SFT_RSTN_CSR		0X00
    #define MIPI_DSI_I_PRESETn_SFT_EN		BIT(5)
@@ -296,7 +301,6 @@ static const struct component_ops imx_sec_dsim_ops = {
 static int imx_sec_dsim_probe(struct platform_device *pdev)
 {
 	dev_dbg(&pdev->dev, "%s: dsim probe begin\n", __func__);
-
 	return component_add(&pdev->dev, &imx_sec_dsim_ops);
 }
 
@@ -360,6 +364,12 @@ static int imx_sec_dsim_runtime_resume(struct device *dev)
 	imx_sec_dsim_lanes_reset(dsim_dev->gpr, false);
 
 	sec_mipi_dsim_resume(dev);
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+                if (first_flip_complete) {
+                        enable_lcd_vdd_en();
+                        first_flip_complete = 0;
+                }
+#endif
 
 	return 0;
 }

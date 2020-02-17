@@ -13,13 +13,15 @@
  */
 
 /dts-v1/;
-/* #define	OV5640 */
+#define	OV5640
 #define	DSI_BRIDGE
 #define	DSI2HDMI
 /* #define	DSI2LVDS */
+/* #define PANEL_21 */
+/* #define PANEL_7 */
 /* #define	DSI2DP */
 #include "fsl-imx8mm.dtsi"
-
+#include <dt-bindings/display/drm_mipi_dsi.h>
 / {
 	model = "FSL i.MX8MM EVK board";
 	compatible = "fsl,imx8mm-evk", "fsl,imx8mm";
@@ -116,6 +118,21 @@
                         wakeup-source;
                 };
         };
+
+        sound {
+                compatible = "fsl,sgtl5000",
+                             "fsl,imx-audio-sgtl5000";
+                model = "sgtl5000";
+                codec-master;
+                ssi-controller = <&sai1>;
+                audio-codec = <&codec>;
+                audio-routing =
+                        "MIC_IN", "Mic Jack",
+                        "Mic Jack", "Mic Bias",
+                        "Headphone Jack", "HP_OUT";
+                no-audmux;
+        };
+
 #ifdef DSI2DP
 	clocks {
 			osc_27m: clock@6 {
@@ -137,7 +154,9 @@
                                         remote-endpoint = <&sn65dsi86_out>;
                                 };
                         };
+
                 };
+
 #endif
 };
 
@@ -153,8 +172,6 @@
                 pinctrl_hog: hoggrp {
                         fsl,pins = <
 				MX8MM_IOMUXC_GPIO1_IO05_GPIO1_IO5		0x19	/* WDT_TIME_OUT */
-				MX8MM_IOMUXC_ECSPI1_SCLK_GPIO5_IO6		0x19	/* CAM1_PWR */
-				MX8MM_IOMUXC_GPIO1_IO08_GPIO1_IO8		0x19	/* CAM1_RST */	
 				MX8MM_IOMUXC_SPDIF_TX_GPIO5_IO3			0x19	/* GPIO11 */
 				MX8MM_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5		0x19	/* GPIO5 */
 				MX8MM_IOMUXC_SAI3_RXFS_GPIO4_IO28		0x19	/* RESET_OUT */	
@@ -166,6 +183,19 @@
                                 MX8MM_IOMUXC_GPIO1_IO14_CCMSRCGPCMIX_CLKO1      0x59
                         >;
                 };
+
+                pinctrl_csi1_pwn: csi1_pwn_grp {
+                        fsl,pins = <
+				MX8MM_IOMUXC_ECSPI1_SCLK_GPIO5_IO6		0x19	/* CAM1_PWR */
+                        >;
+                };
+
+                pinctrl_csi1_rst: csi1_rst_grp {
+                        fsl,pins = <
+				MX8MM_IOMUXC_GPIO1_IO08_GPIO1_IO8		0x19	/* CAM1_RST */	
+                        >;
+                };
+
 /*
 		pinctrl_ir_recv: ir_recv {
 			fsl,pins = <
@@ -573,13 +603,13 @@
                 pinctrl_lcd0: lcd0_grp {
                         fsl,pins = <
 				MX8MM_IOMUXC_SAI2_RXD0_GPIO4_IO23	0x19		/* LCD0_VDD_EN */
-				MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x19		/* LCD0_BKLT_EN */
+				MX8MM_IOMUXC_SAI2_TXFS_GPIO4_IO24	0x19		/* LCD0_BKLT_EN */
                         >;
                 };
                 pinctrl_lcd1: lcd1_grp {
                         fsl,pins = <
-				MX8MM_IOMUXC_SAI2_TXD0_GPIO4_IO26	0x19		/* LCD1_VDD_EN */
-				MX8MM_IOMUXC_SAI2_TXFS_GPIO4_IO24	0x19		/* LCD1_BKLT_EN */
+				MX8MM_IOMUXC_SAI2_TXD0_GPIO4_IO26	0x19		/* LCD0_VDD_EN */
+				MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x19		/* LCD0_BKLT_EN */
                         >;
                 };
 
@@ -815,35 +845,6 @@
 
         };
 #endif
-#ifdef	DSI2LVDS
-	tc358775@0f {
-			compatible = "toshiba,tc358775";
-			reg = <0x0f>;
-			status = "okay";
-			pinctrl-names = "default";
-			pinctrl-0 = <&pinctrl_lvds>;
-
-			adi,dsi-lanes = <4>;
-//			dsi-sw-select-gpio = <&msmgpio 32 GPIO_ACTIVE_HIGH>;
-			stby-gpio = <&gpio3 23 GPIO_ACTIVE_LOW>;
-//			reset-gpio = <&msmgpio 72 GPIO_ACTIVE_LOW>;
-
-
-			ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-
-				port@0 {
-				reg = <0>;
-					tc358775_from_dsim: endpoint {
-						remote-endpoint = <&dsim_to_tc358775>;
-					};
-				};
-			};
-		};
-
-#endif
-
 	s35390a: s35390a@30 {
 		 compatible = "sii,s35390a";
 		 reg = <0x30>;
@@ -937,10 +938,6 @@
                 #size-cells = <0>;
                 compatible = "nxp,pca9545";
                 reg = <0x70>;
-                pinctrl-names = "default";
-                pinctrl-0 = <&pinctrl_i2c_switch>;
-                interrupt-parent = <&gpio1>;
-                interrupts = <7 IRQ_TYPE_LEVEL_LOW>;
 		
                 i2c@0 {
                         reg = <0>;
@@ -952,16 +949,16 @@
 				reg = <0x3c>;
 				status = "okay";
 				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_csi_clk>;
+				pinctrl-0 = <&pinctrl_csi_clk>, <&pinctrl_csi1_pwn>, <&pinctrl_csi1_rst>;
 				clocks = <&clk IMX8MM_CLK_CLKO1_DIV>;
 				clock-names = "csi_mclk";
 				assigned-clocks = <&clk IMX8MM_CLK_CLKO1_SRC>,
 						  <&clk IMX8MM_CLK_CLKO1_DIV>;
 				assigned-clock-parents = <&clk IMX8MM_CLK_24M>;
 				assigned-clock-rates = <0>, <24000000>;
-				csi_id = <0>;
-				pwn-gpios = <&tca9538 0 GPIO_ACTIVE_HIGH>;	/* GPIO0 or CAM0_PWR */
-				rst-gpios = <&tca9538 1 GPIO_ACTIVE_HIGH>;	/* GPIO2 or CAM0_RST */
+				csi_id = <1>;
+				pwn-gpios = <&gpio5 6 GPIO_ACTIVE_HIGH>;	/* GPIO1 or CAM1_PWR */
+				rst-gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;	/* GPIO3 or CAM1_RST */
 				mclk = <24000000>;
 				mclk_source = <0>;
 				port {
@@ -1008,8 +1005,13 @@
 			tca9538: pca9538@73 {
 				compatible = "nxp,pca9538";
 				reg = <0x73>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_i2c_switch>;
 				#gpio-cells = <2>;
 				gpio-controller;
+				interrupt-controller;
+				interrupt-parent = <&gpio1>;
+				interrupts = <7 IRQ_TYPE_LEVEL_LOW>;
 			};
 		};
 
@@ -1030,7 +1032,16 @@
                 clock-names = "mclk";
                 pinctrl-names = "default";
                 pinctrl-0 = <&pinctrl_sai1_mclk>;
+        };
 
+	24c32@57 {				//DB5901-U19
+                compatible = "fsl,24c32";
+                reg = <0x57>;
+        };
+
+	24c32@50 {				//DB5901-I2C_GP_1
+                compatible = "fsl,24c32";
+                reg = <0x50>;
         };
 
 	24c32@57 {				//DB5901-U19
@@ -1052,20 +1063,115 @@
 &mipi_dsi {
 	status = "okay";
 #ifdef DSI2LVDS
-        panel@0 {
-                compatible = "raydium,rm67191";
-                reg = <0>;
-                pinctrl-0 = <&pinctrl_lcd0>;
-                reset-gpio = <&gpio4 23 GPIO_ACTIVE_HIGH>;
-                dsi-lanes = <4>;
-                video-mode = <2>;       /* 0: burst mode
-                                         * 1: non-burst mode with sync event
-                                         * 2: non-burst mode with sync pulse
-                                         */
-                panel-width-mm = <68>;
-                panel-height-mm = <121>;
-                status = "okay";
-        };
+	panel@0 {
+		compatible = "toshiba,tc358775";
+		reg = <0>;
+		//backlight = <&backlight>;
+
+		dsi,flags = <(MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET)>;
+		dsi,format = <MIPI_DSI_FMT_RGB888>;
+		dsi,lanes = <4>;
+		bus-format = <0x100a>;
+		bus-flags = <10>;
+#ifdef PANEL_7
+		panel-init-sequence = [
+			29 00 06 3C 01 03 00 02	00
+			29 00 06 14 01 02 00 00	00
+			29 00 06 64 01 00 00 00	00
+			29 00 06 68 01 00 00 00	00
+			29 00 06 6C 01 00 00 00	00
+			29 00 06 70 01 00 00 00	00
+			29 00 06 34 01 1F 00 00	00
+			29 00 06 10 02 1F 00 00	00
+			29 00 06 04 01 01 00 00	00
+			29 00 06 04 02 01 00 00	00
+			29 00 06 50 04 20 01 F0	03
+			29 00 06 54 04 06 00 32	00
+			29 00 06 58 04 20 03 C8	00
+			29 00 06 5C 04 04 00 04	00
+			29 00 06 60 04 E0 01 14	00
+			29 00 06 64 04 01 00 00	00
+			29 01 06 A0 04 2D 80 44	00
+			29 00 06 A0 04 2D 80 04	00
+			29 00 06 04 05 04 00 00	00
+			29 00 06 80 04 00 01 02	03
+			29 00 06 84 04 04 07 05	08
+			29 00 06 88 04 09 0A 0E	0F
+			29 00 06 8C 04 0B 0C 0D	10
+			29 00 06 90 04 16 17 11	12
+			29 00 06 94 04 13 14 15	1B
+			29 14 06 98 04 18 19 1A	06
+			29 78 06 9C 04 31 00 00	00
+		];
+		display-timings {
+			native-mode = <&timing0>;
+			timing0: timing0 {
+				clock-frequency = <33300000>;
+				hactive = <800>;
+				vactive = <480>;
+				hback-porch = <50>;
+				hfront-porch = <200>;
+				vback-porch = <4>;
+				vfront-porch = <20>;
+				hsync-len = <6>;
+				vsync-len = <4>;
+				hsync-active = <0>;
+				vsync-active = <0>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+ 			};
+ 		};
+#endif
+#ifdef PANEL_21
+		panel-init-sequence = [
+                                29 00 06 3C 01 0C 00 0A 00
+                                29 00 06 14 01 08 00 00 00
+                                29 00 06 64 01 0B 00 00 00
+                                29 00 06 68 01 0B 00 00 00
+                                29 00 06 6C 01 0B 00 00 00
+                                29 00 06 70 01 0B 00 00 00
+                                29 00 06 34 01 1F 00 00 00
+                                29 00 06 10 02 1F 00 00 00
+                                29 00 06 04 01 01 00 00 00
+                                29 00 06 04 02 01 00 00 00
+                                29 00 06 50 04 20 01 F0 03
+                                29 00 06 54 04 0A 00 14 00
+                                29 00 06 58 04 80 07 96 00
+                                29 00 06 5C 04 0A 00 14 00
+                                29 00 06 60 04 38 04 14 00
+                                29 00 06 64 04 01 00 00 00
+                                29 01 06 A0 04 06 80 44 00
+                                29 00 06 A0 04 06 80 04 00
+                                29 00 06 04 05 04 00 00 00
+                                29 00 06 80 04 00 01 02 03
+                                29 00 06 84 04 04 07 05 08
+                                29 00 06 88 04 09 0A 0E 0F
+                                29 00 06 8C 04 0B 0C 0D 10
+                                29 00 06 90 04 16 17 11 12
+                                29 00 06 94 04 13 14 15 1B
+                                29 14 06 98 04 18 19 1A 06
+                                29 78 06 9C 04 63 02 00 00
+		];
+		display-timings {
+			native-mode = <&timing0>;
+			timing0: timing0 {
+                        clock-frequency = <148500000>;
+                        hactive = <1920>;
+                        vactive = <1080>;
+                        hback-porch = <20>;
+                        hfront-porch = <150>;
+                        vback-porch = <20>;
+                        vfront-porch = <20>;
+                        hsync-len = <10>;
+                        vsync-len = <10>;
+				hsync-active = <0>;
+				vsync-active = <0>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+ 			};
+ 		};
+#endif
+ 	};
 #endif
 #ifdef DSI_BRIDGE
 	port@1 {
@@ -1079,11 +1185,6 @@
 			remote-endpoint = <&sn65dsi86_from_dsim>;
 		};
 #endif
-#ifdef DSI2LVDS
-		dsim_to_tc358775: endpoint {
-			remote-endpoint = <&tc358775_from_dsim>;
-		};
-#endif
 	};
 #endif
 };
@@ -1093,14 +1194,34 @@
 };
 
 &sai1 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_sai1>;
+        assigned-clocks = <&clk IMX8MM_CLK_SAI1_SRC>,
+                        <&clk IMX8MM_CLK_SAI1_DIV>;
+        assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
+        assigned-clock-rates = <0>, <49152000>;
+        clocks = <&clk IMX8MM_CLK_SAI1_IPG>, <&clk IMX8MM_CLK_DUMMY>,
+                <&clk IMX8MM_CLK_SAI1_ROOT>, <&clk IMX8MM_CLK_DUMMY>,
+                <&clk IMX8MM_CLK_DUMMY>, <&clk IMX8MM_AUDIO_PLL1_OUT>,
+                <&clk IMX8MM_AUDIO_PLL2_OUT>;
+        clock-names = "bus", "mclk0", "mclk1", "mclk2", "mclk3", "pll8k", "pll11k";
+        fsl,sai-multi-lane;
+        fsl,dataline,dsd = <0 0xff 0xff 2 0xff 0x11>;
+        dmas = <&sdma2 0 26 0>, <&sdma2 1 26 0>;
+        status = "okay";
+};
+
+#ifdef	TEST
+&sai1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sai1>;
 	assigned-clocks = <&clk IMX8MM_CLK_SAI1_SRC>,
 			<&clk IMX8MM_CLK_SAI1_DIV>;
 	assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
-	assigned-clock-rates = <0>, <24576000>;
+	assigned-clock-rates = <24576000>;
 	status = "okay";
 };
+#endif
 
 &sai6 {
 	pinctrl-names = "default";
@@ -1321,12 +1442,13 @@
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_pwm4>;
 };
+
 #ifdef DSI2LVDS
 &lvds_backlight0 {
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_lcd0>;
         lvds-vcc-enable = <&gpio4 23 1>;
-        lvds-bkl-enable = <&gpio4 27 1>;
+        lvds-bkl-enable = <&gpio4 24 1>;
         status = "okay";
 };
 
@@ -1334,7 +1456,7 @@
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_lcd1>;
         lvds-vcc-enable = <&gpio4 26 1>;
-        lvds-bkl-enable = <&gpio4 24 1>;
-        status = "okay";
+        lvds-bkl-enable = <&gpio4 27 1>;
+        status = "disabled";
 };
 #endif
