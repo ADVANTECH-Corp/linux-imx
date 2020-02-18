@@ -196,21 +196,23 @@
 
 		lid@1 {
 			label = "LID KEY";
-			gpios = <&gpio1 19 GPIO_ACTIVE_LOW>; /* GPIO_ACTIVE_LOW:1 */
-			linux,input-type = <EV_PWR>;
-			linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_SLEEP 142
-			debounce-interval = <1>;
-			wakeup-source;
+			gpios = <&gpio1 19 GPIO_ACTIVE_LOW>; // GPIO_ACTIVE_LOW:1
+			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
+			linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_POWER 116
 		};
 
 		sleep@2 {
 			label = "SLEEP KEY";
-			gpios = <&gpio1 20 GPIO_ACTIVE_LOW>; /* GPIO_ACTIVE_LOW:1 */
-			linux,input-type = <EV_PWR>;
-			linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_SLEEP 142
-			wakeup-source;
+			gpios = <&gpio1 20 GPIO_ACTIVE_LOW>; // GPIO_ACTIVE_LOW:1
+			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
+			linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_POWER 116
 		};
 	};
+};
+
+&gpio1 {
+	pad-wakeup-num = <2>;
+	pad-wakeup = <SC_P_FLEXCAN2_RX 6 19 SC_P_FLEXCAN2_TX 5 20>;
 };
 
 &acm {
