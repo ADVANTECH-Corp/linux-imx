@@ -1515,6 +1515,16 @@
 
 };
 
+&gpio0 {
+	pad-wakeup-num = <1>;
+	pad-wakeup = <SC_P_SCU_GPIO0_02 5 30>;
+};
+
+&gpio1 {
+	pad-wakeup-num = <1>;
+	pad-wakeup = <SC_P_SCU_GPIO0_05 5 1>;
+};
+
 /******************************************************************************/
 
 / {
@@ -1531,8 +1541,6 @@
 			gpios = <&gpio1 1 GPIO_ACTIVE_LOW>;
 			linux,input-type = <EV_PWR>;
 			linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_SLEEP 142
-			debounce-interval = <1>;
-			wakeup-source;
 		};
 
 		wake@2 {
@@ -1540,8 +1548,6 @@
 			gpios = <&gpio0 30 GPIO_ACTIVE_LOW>;
 			linux,input-type = <EV_PWR>;
 			linux,code = <KEY_WAKEUP>; //KEY_WAKEUP 143
-			debounce-interval = <1>;
-			wakeup-source;
 		};
 	};
 	
