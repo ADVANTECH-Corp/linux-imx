@@ -338,7 +338,7 @@
        pinctrl-names = "default";
        power-domains = <&pd_lsio_pwm2>;
        pinctrl-0 = <&pinctrl_pwm2>;
-       status = "okay";
+       status = "disabled";
 };
 
 &acm {
