@@ -84,7 +84,7 @@
 			regulator-min-microvolt = <3300000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-name = "epdev_on";
-			gpio = <&gpio_exp 4 GPIO_ACTIVE_HIGH>;
+			gpio = <&gpio_exp2 4 GPIO_ACTIVE_HIGH>;
 			enable-active-high;
 		};
 		/* USB0_OTG_EN_OC# */
@@ -196,23 +196,23 @@
 
 		lid@1 {
 			label = "LID KEY";
-			gpios = <&gpio1 19 GPIO_ACTIVE_LOW>; // GPIO_ACTIVE_LOW:1
+			gpios = <&gpio_exp1 6 GPIO_ACTIVE_LOW>;
 			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
 			linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_POWER 116
 		};
 
 		sleep@2 {
 			label = "SLEEP KEY";
-			gpios = <&gpio1 20 GPIO_ACTIVE_LOW>; // GPIO_ACTIVE_LOW:1
+			gpios = <&gpio_exp1 7 GPIO_ACTIVE_LOW>;
 			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
 			linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_POWER 116
 		};
 	};
 };
 
-&gpio1 {
-	pad-wakeup-num = <2>;
-	pad-wakeup = <SC_P_FLEXCAN2_RX 6 19 SC_P_FLEXCAN2_TX 5 20>;
+&gpio2 {
+	pad-wakeup-num = <1>;
+	pad-wakeup = <SC_P_SCU_GPIO0_00 6 3>;
 };
 
 &acm {
@@ -235,8 +235,7 @@
 	imx8qxp-mek {
 		pinctrl_gpio_keys: gpio_keys_grp{
 			fsl,pins = <
-				SC_P_FLEXCAN2_RX_LSIO_GPIO1_IO19		0x00000021
-				SC_P_FLEXCAN2_TX_LSIO_GPIO1_IO20		0x00000021
+				SC_P_SCU_GPIO0_00_LSIO_GPIO2_IO03		0x00000021
 			>;
 		};
 
@@ -250,11 +249,11 @@
 				SC_P_SPI0_SCK_LSIO_GPIO1_IO04	0x06000021	/* GPIO5 */
 				SC_P_SPI0_SDI_LSIO_GPIO1_IO05	0x06000021	/* GPIO6 */
 				SC_P_MCLK_IN0_LSIO_GPIO0_IO19	0x06000021	/* GPIO7 */
+				SC_P_SPI0_SDO_LSIO_GPIO1_IO06	0x06000021	/* GPIO8 */
 				SC_P_CSI_PCLK_LSIO_GPIO3_IO00	0x06000021	/* GPIO9 */
 				SC_P_CSI_MCLK_LSIO_GPIO3_IO01	0x06000021	/* GPIO10 */
 				SC_P_CSI_EN_LSIO_GPIO3_IO02	0x06000021	/* GPIO11 */
 				SC_P_SAI0_RXD_LSIO_GPIO0_IO27	0x06000021	/* DEBUG_UART_SEL */
-				SC_P_MIPI_DSI1_GPIO0_01_LSIO_GPIO2_IO00	0x06000021	/* TEST */
 			>;
 		};
 
@@ -346,13 +345,18 @@
 				SC_P_SPI3_SCK_ADMA_SPI3_SCK		0x0600004c
 				SC_P_SPI3_SDO_ADMA_SPI3_SDO		0x0600004c
 				SC_P_SPI3_SDI_ADMA_SPI3_SDI		0x0600004c
-				SC_P_SPI3_CS1_ADMA_SPI3_CS1		0x0600004c
 			>;
 		};
 
-		pinctrl_lpspi3_cs: lpspi3cs {
+		pinctrl_lpspi3_cs_0: lpspi3cs0 {
 			fsl,pins = <
 				SC_P_SPI3_CS0_LSIO_GPIO0_IO16		0x21
+			>;
+		};
+
+		pinctrl_lpspi3_cs_1: lpspi3cs1 {
+			fsl,pins = <
+				SC_P_FLEXCAN2_RX_LSIO_GPIO1_IO19		0x21
 			>;
 		};
 
@@ -578,7 +582,7 @@
 		pinctrl_ldb1: ldb1_grp {
 			fsl,pins = <
 				SC_P_QSPI0A_DQS_LSIO_GPIO3_IO13		0x00000021	/* LCD0_VDD_EN */
-				SC_P_SCU_GPIO0_00_LSIO_GPIO2_IO03	0x00000021	/* LCD0_BKLT_EN */
+				SC_P_MIPI_CSI0_GPIO0_01_LSIO_GPIO3_IO07	0x00000021	/* LCD0_BKLT_EN */
 			>;
 		};
 
@@ -597,9 +601,6 @@
 
 		pinctrl_battery: battery_grp {
 			fsl,pins = <
-				SC_P_MIPI_CSI0_GPIO0_01_LSIO_GPIO3_IO07		0x06000021	/* BATLOW */
-				SC_P_MIPI_DSI0_GPIO0_01_LSIO_GPIO1_IO28		0x06000021	/* CHARGER_PRSNT# */
-				SC_P_SPI0_SDO_LSIO_GPIO1_IO06	0x06000021	/* CHARGER# */
 				SC_P_CSI_RESET_LSIO_GPIO3_IO03	0x06000021	/* SMB_ALERT_1V8# */
 			>;
 		};
@@ -686,8 +687,8 @@
 	#size-cells = <0>;
 	fsl,spi-num-chipselects = <2>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_lpspi3 &pinctrl_lpspi3_cs>;
-	cs-gpios = <&gpio0 16 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&pinctrl_lpspi3 &pinctrl_lpspi3_cs_0 &pinctrl_lpspi3_cs_1>;
+	cs-gpios = <&gpio0 16 GPIO_ACTIVE_LOW>, <&gpio1 19 GPIO_ACTIVE_LOW>;
 	status = "okay";
 
 #ifdef ROM_DB5901
@@ -799,6 +800,13 @@
 		trickle-diode-disable;
 		status = "okay";
 	};
+
+	gpio_exp1: tca9538@70 {
+		compatible = "nxp,pca9538";
+		reg = <0x70>;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
 };
 
 &sai0 {
@@ -883,7 +891,7 @@
 	ext_osc = <1>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcieb>;
-	disable-gpio = <&gpio_exp 0 GPIO_ACTIVE_LOW>; /* W_DISABLE1# */
+	disable-gpio = <&gpio_exp2 0 GPIO_ACTIVE_LOW>; /* W_DISABLE1# */
 	reset-gpio = <&gpio4 0 GPIO_ACTIVE_LOW>;
 	epdev_on-supply = <&epdev_on>;
 	status = "okay";
@@ -1047,7 +1055,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_ldb1>;
 	lvds-vcc-enable = <&gpio3 13 1>;
-	lvds-bkl-enable = <&gpio2 3 1>;
+	lvds-bkl-enable = <&gpio3 7 1>;
 #if defined(LVDS_SINGLE_0)
 	status = "okay";
 #elif defined(LVDS_SINGLE_1)
@@ -1213,7 +1221,7 @@
 		reg = <0x57>;
 	};
 
-	gpio_exp: tca9538@70 {
+	gpio_exp2: tca9538@70 {
 		compatible = "nxp,pca9538";
 		reg = <0x70>;
 		gpio-controller;
