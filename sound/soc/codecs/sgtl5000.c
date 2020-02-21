@@ -1046,7 +1046,7 @@ static int sgtl5000_set_power_regs(struct snd_soc_codec *codec)
 	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
 
 #ifdef CONFIG_ARCH_ADVANTECH
-	if (of_machine_is_compatible("fsl,imx8mq") ||
+	if (of_machine_is_compatible("fsl,imx8mq") || of_machine_is_compatible("fsl,imx8mm") ||
 	    of_machine_is_compatible("fsl,imx8qxp")) {
 		dev_info(codec->dev, "skip setting power regulators\n");
 		return 0;

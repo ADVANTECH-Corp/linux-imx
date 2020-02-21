@@ -36,14 +36,6 @@
 		bootargs = "console=ttymxc1,115200 earlycon=ec_imx6q,0x30890000,115200";
 		stdout-path = &uart2;
 	};
-
-        usdhc1_pwrseq: usdhc1_pwrseq {
-                compatible = "mmc-pwrseq-simple";
-                pinctrl-names = "default";
-                pinctrl-0 = <&pinctrl_usdhc1_gpio>;
-                reset-gpios = <&gpio2 10 GPIO_ACTIVE_HIGH>;
-        };
-
 #ifdef DSI2LVDS
 	lvds_backlight0: lvds_backlight@0 {
                 compatible = "pwm-backlight";
@@ -83,6 +75,17 @@
 		compatible = "simple-bus";
 		#address-cells = <1>;
 		#size-cells = <0>;
+                reg_sd1_vmmc: sd1_regulator {
+                        compatible = "regulator-fixed";
+                        regulator-name = "WLAN_EN";
+                        regulator-min-microvolt = <3300000>;
+                        regulator-max-microvolt = <3300000>;
+                        gpio = <&gpio2 10 GPIO_ACTIVE_HIGH>;
+                        off-on-delay = <20000>;
+                        startup-delay-us = <100>;
+                        enable-active-high;
+                };
+
 		reg_usdhc2_vmmc: regulator-usdhc2 {
 			compatible = "regulator-fixed";
 			regulator-name = "VSD_3V3";
@@ -124,7 +127,6 @@
                         wakeup-source;
                 };
         };
-
         sound {
                 compatible = "fsl,sgtl5000",
                              "fsl,imx-audio-sgtl5000";
@@ -138,7 +140,6 @@
                         "Headphone Jack", "HP_OUT";
                 no-audmux;
         };
-
 #ifdef DSI2DP
 	clocks {
 			osc_27m: clock@6 {
@@ -167,8 +168,8 @@
 };
 
 &clk {
-	assigned-clocks = <&clk IMX8MM_AUDIO_PLL1>, <&clk IMX8MM_AUDIO_PLL2>;
-	assigned-clock-rates = <786432000>, <722534400>;
+        assigned-clocks = <&clk IMX8MM_AUDIO_PLL1>, <&clk IMX8MM_AUDIO_PLL2>;
+        assigned-clock-rates = <786432000>, <722534400>;
 };
 
 &iomuxc {
@@ -313,13 +314,11 @@
 				MX8MM_IOMUXC_SAI1_RXD0_SAI1_RX_DATA0	0xd6	/* SAI1_SDIN */
 			>;
 		};
-
                 pinctrl_sai1_mclk: sai1grp_mclk {
                         fsl,pins = <
 				MX8MM_IOMUXC_SAI1_MCLK_SAI1_MCLK	0xd6	/* SAI1_MCLK */
                         >;
                 };
-
 		pinctrl_sai6: sai6grp {
 			fsl,pins = <
 				MX8MM_IOMUXC_SAI1_RXD6_SAI6_TX_SYNC	0xd6	/* SAI6_LRCK */
@@ -603,6 +602,7 @@
 		pinctrl_lvds: lvdsgrp {
                         fsl,pins = <
 				MX8MM_IOMUXC_SAI5_RXD2_GPIO3_IO23	0x19	/* LVDS_STBY */
+				MX8MM_IOMUXC_SAI5_RXD3_GPIO3_IO24	0x19	/* LVDS_RESET */
                         >;
                 };
 
@@ -1038,17 +1038,11 @@
                 clock-names = "mclk";
                 pinctrl-names = "default";
                 pinctrl-0 = <&pinctrl_sai1_mclk>;
-        };
-
-	24c32@57 {				//DB5901-U19
-                compatible = "fsl,24c32";
-                reg = <0x57>;
-        };
-
-	24c32@50 {				//DB5901-I2C_GP_1
-                compatible = "fsl,24c32";
-                reg = <0x50>;
-        };
+		assigned-clocks = <&clk IMX8MM_CLK_SAI1_SRC>,
+				<&clk IMX8MM_CLK_SAI1_DIV>;
+		assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
+		assigned-clock-rates = <0>, <24576000>;
+	};
 
 	24c32@57 {				//DB5901-U19
                 compatible = "fsl,24c32";
@@ -1217,17 +1211,11 @@
         status = "okay";
 };
 
-#ifdef	TEST
 &sai1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sai1>;
-	assigned-clocks = <&clk IMX8MM_CLK_SAI1_SRC>,
-			<&clk IMX8MM_CLK_SAI1_DIV>;
-	assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
-	assigned-clock-rates = <24576000>;
 	status = "okay";
 };
-#endif
 
 &sai6 {
 	pinctrl-names = "default";
@@ -1326,22 +1314,16 @@
 };
 
 &usdhc1 {	/* wifi bt */
-        #address-cells = <1>;
-        #size-cells = <0>;
-	pinctrl-0 = <&pinctrl_usdhc1>, <&pinctrl_wlan>;
-	pinctrl-1 = <&pinctrl_usdhc1_100mhz>, <&pinctrl_wlan>;
-	pinctrl-2 = <&pinctrl_usdhc1_200mhz>, <&pinctrl_wlan>;
-        cap-power-off-card;
-        mmc-pwrseq = <&usdhc1_pwrseq>;
-/*
-        brcmf: bcrmf@1 {
-                reg = <1>;
-                compatible = "brcm,bcm4329-fmac";
-                interrupt-parent = <&gpio2>;
-                interrupts = <9 IRQ_TYPE_LEVEL_HIGH>;
-                interrupt-names = "host-wake";
-        };
-*/
+	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-0 = <&pinctrl_usdhc1>, <&pinctrl_usdhc1_gpio>;
+	pinctrl-1 = <&pinctrl_usdhc1_100mhz>, <&pinctrl_usdhc1_gpio>;
+	pinctrl-2 = <&pinctrl_usdhc1_200mhz>, <&pinctrl_usdhc1_gpio>;
+	vmmc-supply = <&reg_sd1_vmmc>;
+	bus-width = <4>;
+	pm-ignore-notify;
+	keep-power-in-suspend;
+	non-removable;
+	status = "okay";
 };
 
 &usdhc2 {
