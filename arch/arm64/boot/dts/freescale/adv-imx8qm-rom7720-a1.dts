@@ -122,8 +122,14 @@
 
 /***************************copy from fsl-imx8q-arm2.dtsi***************************************************/
 / {
-	model = "Advantech iMX8QM Qseven series";
+	model = "NXP i.MX8QM Qseven 2.1 Computer-on-Module";
 	compatible = "fsl,imx8qm";
+
+	board {
+		compatible = "proc-board";
+		board-type = "ROM-7720 A1";
+		board-cpu = "IMX8QM";
+	};
 
 	aliases {
         /delete-property/ i2c0;

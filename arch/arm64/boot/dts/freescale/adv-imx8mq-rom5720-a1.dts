@@ -48,8 +48,14 @@
 };
 
 / {
-	model = "Freescale i.MX8MQ EVK";
+	model = "NXP i.MX8MQ SMARC 2.0 Computer-on-Module";
 	compatible = "fsl,imx8mq-evk", "fsl,imx8mq";
+
+	board {
+		compatible = "proc-board";
+		board-type = "ROM-5720 A1";
+		board-cpu = "IMX8MQ";
+	};
 
 	chosen {
 		bootargs = "console=ttymxc0,115200 earlycon=ec_imx6q,0x30860000,115200";
@@ -206,7 +212,7 @@
 
                 pinctrl_csi2_rst: csi2_rst_grp {
                         fsl,pins = <
-                                MX8MQ_IOMUXC_GPIO1_IO06_GPIO1_IO6               0x19
+                                MX8MQ_IOMUXC_GPIO1_IO06_GPIO1_IO6               0x19	/* GPIO3 or CAM1_RST*/
                         >;
                 };
 

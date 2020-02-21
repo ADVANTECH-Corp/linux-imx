@@ -23,8 +23,14 @@
 #include "fsl-imx8mm.dtsi"
 #include <dt-bindings/display/drm_mipi_dsi.h>
 / {
-	model = "FSL i.MX8MM EVK board";
+	model = "NXP i.MX8MM SMARC 2.0 Computer-on-Module";
 	compatible = "fsl,imx8mm-evk", "fsl,imx8mm";
+
+	board {
+		compatible = "proc-board";
+		board-type = "ROM-5721 A1";
+		board-cpu = "IMX8MM";
+	};
 
 	chosen {
 		bootargs = "console=ttymxc1,115200 earlycon=ec_imx6q,0x30890000,115200";
