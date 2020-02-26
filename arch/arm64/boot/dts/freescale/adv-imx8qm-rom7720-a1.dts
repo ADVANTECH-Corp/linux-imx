@@ -141,12 +141,6 @@
         i2c4=&i2c0_mipi_csi1;
         mmc0 = &usdhc1;
         mmc2 = &usdhc3;
-};
-
-	board {
-		compatible = "proc-board";
-		board-type = "ROM-7720-A1";
-		board-cpu  = "iMX8QM";
 	};
 
 	chosen {
