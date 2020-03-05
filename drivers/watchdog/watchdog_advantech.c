@@ -64,7 +64,6 @@
 static int gpio_wdt_en;
 static int gpio_wdt_ping;
 //static int gpio_wdt_out;
-static int ping_delay;
 struct i2c_client *adv_client;
 
 static struct {
@@ -194,10 +193,9 @@ int adv_wdt_i2c_read_version(struct i2c_client *client, unsigned int *val)
 
 static inline void adv_wdt_ping(void)
 {
-	msleep(ping_delay);
+	/* watchdog counter refresh input. Both edge trigger */
 	adv_wdt.wdt_ping_status= !adv_wdt.wdt_ping_status;
 	gpio_set_value(gpio_wdt_ping, adv_wdt.wdt_ping_status);
-	msleep(100);
 	//printk("adv_wdt_ping:%x\n", adv_wdt.wdt_ping_status);
 	//printk("wdt_en_ping:%x\n", gpio_get_value(gpio_wdt_en));
 }
@@ -345,12 +343,14 @@ static int adv_wdt_restart_handle(struct notifier_block *this, unsigned long mod
 {
 	if (test_and_set_bit(ADV_WDT_STATUS_OPEN, &adv_wdt.status))
 		return -EBUSY;
+
+	/* don't sleep in restart handler */
 	adv_wdt_start();
-	adv_wdt.timeout = 1;
-	adv_wdt_i2c_set_timeout(adv_client, adv_wdt.timeout);
-	//wait to show "Rebooting..." messages
-	mdelay(500);
-	adv_wdt_ping();
+
+	/* wait for wdog to fire */
+	while(true)
+		;
+
 	return NOTIFY_DONE;
 }
 
@@ -456,13 +456,6 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	original_arm_pm_restart = arm_pm_restart;
 	arm_pm_restart=NULL;
 
-        ret = of_property_read_u32(np, "wdt_ping_delay", &ping_delay);
-        if (ret) {
-                pr_info("No wdt_ping_delay setting, use default value\n");
-                ping_delay = 800;
-        }
-
-	
 	return 0;
 
 fail:
@@ -512,10 +505,9 @@ static int adv_wdt_i2c_suspend(struct device *dev)
 static void adv_wdt_i2c_shutdown(struct i2c_client *client)
 {
 	if (test_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status)) {
-		/* we are running, we need to delete the timer but will give
-		 * max timeout before reboot will take place */
+		/* set timeout to 1 sec here and expect WDT_EN in restart handler */
 		gpio_set_value(gpio_wdt_en, adv_wdt.wdt_en_off);
-		adv_wdt_i2c_set_timeout(client, ADV_WDT_MAX_TIME);
+		adv_wdt_i2c_set_timeout(client, 1);
 		adv_wdt_ping();
 
 		dev_crit(adv_wdt_miscdev.parent,
