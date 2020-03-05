@@ -785,7 +785,6 @@
 		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
 		wdt-en = <&gpio1 13 0>;
 		wdt-ping = <&gpio1 14 0>;
-		wdt_ping_delay = <600>;
 		status = "okay";
 	};
 
