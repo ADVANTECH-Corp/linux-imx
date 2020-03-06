@@ -1167,7 +1167,7 @@ static int adv7511_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		adv7511->type = id->driver_data;
 
 	memset(&link_config, 0, sizeof(link_config));
-
+	
 	if (adv7511->type == ADV7511)
 		ret = adv7511_parse_dt(dev->of_node, &link_config);
 	else
@@ -1195,7 +1195,6 @@ static int adv7511_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		pkt_i2c_addr = adv7511->addr_pkt << 1;
 	else
 		adv7511->addr_pkt = pkt_i2c_addr >> 1;
-
 	/*
 	 * The power down GPIO is optional. If present, toggle it from active to
 	 * inactive to wake up the encoder.
@@ -1211,6 +1210,9 @@ static int adv7511_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		gpiod_set_value_cansleep(adv7511->gpio_pd, 0);
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	mdelay(50);
+#endif
 	adv7511->regmap = devm_regmap_init_i2c(i2c, &adv7511_regmap_config);
 	if (IS_ERR(adv7511->regmap)) {
 		ret = PTR_ERR(adv7511->regmap);
