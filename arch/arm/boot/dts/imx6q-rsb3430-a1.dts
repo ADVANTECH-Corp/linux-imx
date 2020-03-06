@@ -110,6 +110,15 @@
 		wdt-ping = <&gpio1 9 0>;
 		reg = <0x29>;
 	};
+
+	st33htph@2e {
+		compatible = "st,st33htpm-i2c";
+		reg= <0x2e>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_tpm>;
+		interrupt-parent = <&gpio7>;
+		interrupts = <11 IRQ_TYPE_LEVEL_HIGH>;
+	};
 };
 
 &i2c2 {
@@ -253,7 +262,7 @@
 		};
 	};
 
-	wdt{
+	wdt {
 		pinctrl_wdt_en_1: wdt_engrp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_NANDF_D5__GPIO2_IO05		0x80000000
@@ -263,6 +272,15 @@
 		pinctrl_wdt_ping_1: wdt_pinggrp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_GPIO_9__GPIO1_IO09		0x80000000
+			>;
+		};
+	};
+
+	tpm {
+		pinctrl_tpm: tpm_grp {
+			fsl,pins = <
+				MX6QDL_PAD_GPIO_7__GPIO1_IO07		0x80000000	/* TPM_PP */
+				MX6QDL_PAD_GPIO_16__GPIO7_IO11		0x80000000	/* TPM_IRQ# */
 			>;
 		};
 	};
