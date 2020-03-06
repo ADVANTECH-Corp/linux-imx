@@ -118,6 +118,7 @@
                         linux,input-type = <1>; /* EV_KEY */
                         linux,code = <116>;     /* KEY_POWER */
                         wakeup-source;
+			debounce-interval = <100>;
                 };
                 sleep@2 {
                         label = "SLEEP KEY";
@@ -125,6 +126,7 @@
                         linux,input-type = <1>; /* EV_KEY */
                         linux,code = <116>;     /* KEY_POWER */
                         wakeup-source;
+			debounce-interval = <100>;
                 };
         };
         sound {
