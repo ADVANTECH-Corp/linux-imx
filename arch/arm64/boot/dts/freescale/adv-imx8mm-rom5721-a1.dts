@@ -519,7 +519,7 @@
 
                 pinctrl_usbotg: usbotggrp {
                         fsl,pins = <
-				MX8MM_IOMUXC_GPIO1_IO10_GPIO1_IO10		0x19	/* USB1_OTG_ID */
+		/*		MX8MM_IOMUXC_GPIO1_IO10_GPIO1_IO10		0x19 */	/* USB1_OTG_ID */
 				MX8MM_IOMUXC_GPIO1_IO12_GPIO1_IO12		0x19	/* USB1_OTG_EN */
                         >;
                 };
@@ -978,6 +978,13 @@
                         reg = <1>;
                         #address-cells = <1>;
                         #size-cells = <0>;
+			battery: bq40z50@0b {
+				compatible = "ti,bq40z50";
+				reg = <0x0b>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_battery>;
+			};
+
 		};
                 i2c@2 {
                         reg = <2>;
