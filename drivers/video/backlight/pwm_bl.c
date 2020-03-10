@@ -93,6 +93,11 @@ enum of_gpio_flags lvds_vcc_flag;
 enum of_gpio_flags lvds_bkl_flag;
 enum of_gpio_flags bklt_vcc_flag;
 
+int lvds_pwm_period=-1;
+int lvds_pwm_polarity=-1;
+int lvds_bl_level=-1;
+int lvds_bl_scale=-1;
+
 void enable_lcd_vdd_en(void)
 {
 	/* LVDS Panel power enable */
@@ -246,6 +251,18 @@ static int pwm_backlight_parse_dt(struct device *dev,
 					   &value);
 		if (ret < 0)
 			return ret;
+#ifdef CONFIG_ARCH_ADVANTECH
+		if (lvds_bl_level != -1) {
+			value=lvds_bl_level;
+			if (lvds_bl_scale != -1) {
+				data->levels = NULL;
+				data->max_brightness=lvds_bl_scale+1;
+			} else {
+				lvds_bl_scale = data->max_brightness;
+			}
+			printk("lvds_bl - %d,%d\n", value, lvds_bl_scale);
+		}
+#endif
 
 		data->dft_brightness = value;
 		data->max_brightness--;
@@ -503,6 +520,12 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	 * via the PWM lookup table.
 	 */
 	pwm_get_args(pb->pwm, &pargs);
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (lvds_pwm_period != -1)  pargs.period=lvds_pwm_period;
+	if (lvds_pwm_polarity!= -1) pargs.polarity=lvds_pwm_polarity;
+	if (lvds_bl_scale != -1) pb->scale=lvds_bl_scale;
+#endif
+
 	pb->period = pargs.period;
 	if (!pb->period && (data->pwm_period_ns > 0))
 		pb->period = data->pwm_period_ns;
@@ -620,6 +643,33 @@ static struct platform_driver pwm_backlight_driver = {
 	.remove		= pwm_backlight_remove,
 	.shutdown	= pwm_backlight_shutdown,
 };
+
+#ifdef CONFIG_ARCH_ADVANTECH
+static int __init lvds_pwm_setup(char *options)
+{
+	int i=0, period, polarity;
+
+	i=sscanf(options,"%d,%d",&period, &polarity);
+	if (i >=1) lvds_pwm_period = 1000000000 / period;
+	if (i ==2 && (polarity==0 || polarity==1) ) lvds_pwm_polarity = polarity;
+	printk("lvds_pwm - %d,%d\n", period, polarity);
+
+	return 1;
+}
+
+static int __init lvds_bl_setup(char *options)
+{
+	sscanf(options,"%d,%d",&lvds_bl_level, &lvds_bl_scale);
+	if (lvds_bl_scale <= 0 || lvds_bl_scale > 1000) lvds_bl_scale=-1;
+	if (lvds_bl_level < 0  || lvds_bl_level > 1000) lvds_bl_level=-1;
+
+	return 1;
+}
+
+__setup("lvds_pwm=", lvds_pwm_setup);
+__setup("lvds_bl=", lvds_bl_setup);
+#endif
+
 
 module_platform_driver(pwm_backlight_driver);
 

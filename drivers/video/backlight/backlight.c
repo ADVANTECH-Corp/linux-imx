@@ -231,7 +231,13 @@ static ssize_t brightness_store(struct device *dev,
 	int rc;
 	struct backlight_device *bd = to_backlight_device(dev);
 	unsigned long brightness;
+#ifdef CONFIG_ARCH_ADVANTECH
+// if lvds_bl is specified, prevent systemd to restore backlight value
+	extern int lvds_bl_level;
+	static int called=0;
 
+	if (lvds_bl_level!=-1 && 0==called++) return 0;
+#endif
 	rc = kstrtoul(buf, 0, &brightness);
 	if (rc)
 		return rc;
