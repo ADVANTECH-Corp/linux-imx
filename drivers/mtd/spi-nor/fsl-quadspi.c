@@ -1373,8 +1373,17 @@ static struct platform_driver fsl_qspi_driver = {
 	.probe          = fsl_qspi_probe,
 	.remove		= fsl_qspi_remove,
 };
-module_platform_driver(fsl_qspi_driver);
 
+#if CONFIG_ARCH_ADVANTECH 
+//workaround for kernel panic without 2nd QSPI flash
+static int __init qspi_init(void)
+{
+        return platform_driver_register(&fsl_qspi_driver);
+}
+late_initcall(qspi_init);
+#else
+module_platform_driver(fsl_qspi_driver);
+#endif
 MODULE_DESCRIPTION("Freescale QuadSPI Controller Driver");
 MODULE_AUTHOR("Freescale Semiconductor Inc.");
 MODULE_LICENSE("GPL v2");
