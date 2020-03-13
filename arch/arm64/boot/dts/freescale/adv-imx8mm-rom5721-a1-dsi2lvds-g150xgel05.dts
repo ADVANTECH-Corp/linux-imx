@@ -12,7 +12,7 @@
  * GNU General Public License for more details.
  */
 
-#include "adv-imx8mm-rom5721-a1-dsi2lvds.dts"
+#include "adv-imx8mm-rom5721-a1.dts"
 
 / {
         lvds_backlight0: lvds_backlight@0 {
