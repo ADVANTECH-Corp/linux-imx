@@ -44,3 +44,8 @@
 		};
         };
 };
+
+&lvds_backlight0 {
+        status = "disabled";
+};
+
