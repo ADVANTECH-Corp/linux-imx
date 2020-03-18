@@ -549,13 +549,13 @@
 
 		pinctrl_wdt_en_1: wdt_engrp-1 {
 			fsl,pins = <
-				SC_P_ADC_IN5_LSIO_GPIO1_IO13	0x06000021	/* WDT_EN */
+				SC_P_ADC_IN5_LSIO_GPIO1_IO13	0x06000041	/* WDT_EN */
 			>;
 		};
 
 		pinctrl_wdt_ping_1: wdt_pinggrp-1 {
 			fsl,pins = <
-				SC_P_ADC_IN4_LSIO_GPIO1_IO14	0x06000021	/* WDOG_TRIG */
+				SC_P_ADC_IN4_LSIO_GPIO1_IO14	0x06000041	/* WDOG_TRIG */
 			>;
 		};
 
