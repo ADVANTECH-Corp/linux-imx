@@ -265,12 +265,26 @@
 			>;
 		};
 
+                pinctrl_i2c1_gpio: i2c1_gpio_grp {
+                        fsl,pins = <
+                                MX8MQ_IOMUXC_I2C1_SCL_GPIO5_IO14                0x19
+                                MX8MQ_IOMUXC_I2C1_SDA_GPIO5_IO15                0x19
+                        >;
+                };
+
 		pinctrl_i2c2: i2c2grp {
 			fsl,pins = <
 				MX8MQ_IOMUXC_I2C2_SCL_I2C2_SCL			0x40000067
 				MX8MQ_IOMUXC_I2C2_SDA_I2C2_SDA			0x40000067
 			>;
 		};
+
+                pinctrl_i2c2_gpio: i2c2_gpio_grp {
+                        fsl,pins = <
+                                MX8MQ_IOMUXC_I2C2_SCL_GPIO5_IO16                0x19
+                                MX8MQ_IOMUXC_I2C2_SDA_GPIO5_IO17                0x19
+                        >;
+                };
 
 		pinctrl_i2c3: i2c3grp {
 			fsl,pins = <
@@ -279,6 +293,12 @@
 			>;
 		};
 
+                pinctrl_i2c3_gpio: i2c3_gpio_grp {
+                        fsl,pins = <
+                                MX8MQ_IOMUXC_I2C3_SCL_GPIO5_IO18                0x19
+                                MX8MQ_IOMUXC_I2C3_SDA_GPIO5_IO19                0x19
+                        >;
+                };
 		pinctrl_i2c4: i2c4grp {
 			fsl,pins = <
 				MX8MQ_IOMUXC_I2C4_SCL_I2C4_SCL			0x40000067
@@ -286,6 +306,12 @@
 			>;
 		};
 
+                pinctrl_i2c4_gpio: i2c4_gpio_grp {
+                        fsl,pins = <
+                                MX8MQ_IOMUXC_I2C4_SCL_GPIO5_IO20                0x19
+                                MX8MQ_IOMUXC_I2C4_SDA_GPIO5_IO21                0x19
+                        >;
+                };
 		pinctrl_dvfs: dvfsgrp {
 			fsl,pins = <
 				MX8MQ_IOMUXC_GPIO1_IO13_GPIO1_IO13	0x16
@@ -533,8 +559,11 @@
 
 &i2c1 {
 	clock-frequency = <400000>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_i2c1>;
+        pinctrl-names = "default", "gpio";
+        pinctrl-0 = <&pinctrl_i2c1>;
+        pinctrl-1 = <&pinctrl_i2c1_gpio>;
+        scl-gpios = <&gpio5 14 GPIO_ACTIVE_HIGH>;
+        sda-gpios = <&gpio5 15 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
 	wdt@29 {
@@ -651,8 +680,11 @@
 
 &i2c2 {
 	clock-frequency = <100000>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_i2c2>;
+        pinctrl-names = "default", "gpio";
+        pinctrl-0 = <&pinctrl_i2c2>;
+        pinctrl-1 = <&pinctrl_i2c2_gpio>;
+        scl-gpios = <&gpio5 16 GPIO_ACTIVE_HIGH>;
+        sda-gpios = <&gpio5 17 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 #ifdef	ENABLE_CSI1	
 	ov5640_mipi2: ov5640_mipi2@3c {
@@ -702,8 +734,11 @@
 
 &i2c3 {
 	clock-frequency = <100000>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_i2c3>;
+        pinctrl-names = "default", "gpio";
+        pinctrl-0 = <&pinctrl_i2c3>;
+        pinctrl-1 = <&pinctrl_i2c3_gpio>;
+        scl-gpios = <&gpio5 18 GPIO_ACTIVE_HIGH>;
+        sda-gpios = <&gpio5 19 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
         battery: bq40z50@0b {
@@ -767,8 +802,11 @@
 
 &i2c4 {
 	clock-frequency = <100000>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_i2c4>;
+        pinctrl-names = "default", "gpio";
+        pinctrl-0 = <&pinctrl_i2c4>;
+        pinctrl-1 = <&pinctrl_i2c4_gpio>;
+        scl-gpios = <&gpio5 20 GPIO_ACTIVE_HIGH>;
+        sda-gpios = <&gpio5 21 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
 	rtc: rtc@32 {
