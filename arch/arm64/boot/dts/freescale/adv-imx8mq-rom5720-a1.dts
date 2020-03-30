@@ -17,7 +17,7 @@
 
 #define	ENABLE_CSI0
 #define	ENABLE_CSI1 
-
+//#define ENABLE_2ND_QSPI
 #include "fsl-imx8mq.dtsi"
 
 / {
@@ -334,6 +334,7 @@
                                 MX8MQ_IOMUXC_NAND_DATA01_QSPI_A_DATA1   0x82
                                 MX8MQ_IOMUXC_NAND_DATA02_QSPI_A_DATA2   0x82
                                 MX8MQ_IOMUXC_NAND_DATA03_QSPI_A_DATA3   0x82
+#ifdef ENABLE_2ND_QSPI
                                 MX8MQ_IOMUXC_NAND_CLE_QSPI_B_SCLK       0x82
  				MX8MQ_IOMUXC_NAND_CE3_B_QSPI_B_SS1_B	0x82 
                                 MX8MQ_IOMUXC_NAND_CE2_B_QSPI_B_SS0_B    0x82
@@ -341,6 +342,7 @@
                                 MX8MQ_IOMUXC_NAND_DATA05_QSPI_B_DATA1   0x82
                                 MX8MQ_IOMUXC_NAND_DATA06_QSPI_B_DATA2   0x82
                                 MX8MQ_IOMUXC_NAND_DATA07_QSPI_B_DATA3   0x82
+#endif
                         >;
                 };
 
@@ -903,6 +905,7 @@
 		spi-max-frequency = <29000000>;
 		spi-nor,ddr-quad-read-dummy = <6>;
 	};
+#ifdef ENABLE_2ND_QSPI
 	flash1: n25q256a@1 {
 		reg = <1>;
 		#address-cells = <1>;
@@ -911,6 +914,7 @@
 		spi-max-frequency = <29000000>;
 		spi-nor,ddr-quad-read-dummy = <6>;
 	};
+#endif
 };
 
 &usdhc1 {
