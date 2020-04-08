@@ -20,6 +20,13 @@
 #include <soc/imx8/sc/sci.h>
 #include <soc/imx8/sc/svc/irq/api.h>
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#include <linux/delay.h>
+#define LED_TIME 200
+static int gpio_wdt_ping_led;
+#endif
+
 #define DEFAULT_TIMEOUT 60
 /*
  * Software timer tick implemented in scfw side, support 10ms to 0xffffffff ms
@@ -59,6 +66,15 @@ static int imx8_wdt_ping(struct watchdog_device *wdog)
 
 	arm_smccc_smc(FSL_SIP_SRTC, FSL_SIP_SRTC_PING_WDOG, 0, 0, 0, 0, 0, 0,
 			&res);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (gpio_is_valid(gpio_wdt_ping_led))
+	{
+		gpio_set_value(gpio_wdt_ping_led, 1);
+		msleep(LED_TIME);
+		gpio_set_value(gpio_wdt_ping_led, 0);
+	}
+#endif
 
 	return res.a0;
 }
@@ -164,6 +180,10 @@ static int imx8_wdt_probe(struct platform_device *pdev)
 {
 	struct watchdog_device *wdt = &imx8_wdd;
 	int err;
+#ifdef CONFIG_ARCH_ADVANTECH
+	enum of_gpio_flags flags;
+	struct device_node *np = pdev->dev.of_node;
+#endif
 
 	platform_set_drvdata(pdev, wdt);
 	/* init the wdd */
@@ -186,6 +206,21 @@ static int imx8_wdt_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to register watchdog device\n");
 		return err;
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	//Setting GPIO
+	gpio_wdt_ping_led = of_get_named_gpio_flags(np, "wdt-ping-led", 0, &flags);
+	if (!gpio_is_valid(gpio_wdt_ping_led))
+		return register_scu_notifier(&imx8_wdt_notifier);
+
+	err = devm_gpio_request_one(&pdev->dev, gpio_wdt_ping_led,
+				GPIOF_OUT_INIT_LOW, "wdt_ping_led");
+	if (err < 0) {
+		dev_err(&pdev->dev, "request gpio failed: %d\n", err);
+		return register_scu_notifier(&imx8_wdt_notifier);
+	}
+	gpio_direction_output(gpio_wdt_ping_led, flags);
+#endif
 
 	return register_scu_notifier(&imx8_wdt_notifier);
 }

@@ -712,7 +712,7 @@
 				SC_P_FLEXCAN0_RX_DMA_FLEXCAN0_RX	0x21
 			>;
 		};
-
+/*
 		pinctrl_flexcan2: flexcan1grp {
 			fsl,pins = <
 				SC_P_FLEXCAN1_TX_DMA_FLEXCAN1_TX	0x21
@@ -726,6 +726,7 @@
 				SC_P_FLEXCAN2_RX_DMA_FLEXCAN2_RX	0x21
 			>;
 		};
+*/
 /*
 		pinctrl_flexspi0: flexspi0grp {
 			fsl,pins = <
@@ -1549,6 +1550,13 @@
 			linux,input-type = <EV_PWR>;
 			linux,code = <KEY_WAKEUP>; //KEY_WAKEUP 143
 		};
+
+		wdt@3 {
+			label = "SW WDT Button";
+			gpios = <&gpio3 31 GPIO_ACTIVE_LOW>;
+			linux,input-type = <EV_KEY>;
+			linux,code = <KEY_PROG1>; //KEY_PROG1 148
+		};
 	};
 	
 #ifdef GOT_FROM_MEK
@@ -1669,6 +1677,7 @@
 			fsl,pins = <
 				SC_P_SCU_GPIO0_05_LSIO_GPIO1_IO01		0x00000021
 				SC_P_SCU_GPIO0_02_LSIO_GPIO0_IO30		0x00000021
+				SC_P_FLEXCAN1_RX_LSIO_GPIO3_IO31		0x00000021
 			>;
 		};
 
@@ -1735,6 +1744,12 @@
 				SC_P_MIPI_CSI1_MCLK_OUT_MIPI_CSI1_ACM_MCLK_OUT	0xC0000041
 				SC_P_MIPI_CSI1_GPIO0_00_LSIO_GPIO1_IO30         0x00000021
 				SC_P_MIPI_CSI1_GPIO0_01_LSIO_GPIO1_IO31         0x00000021
+			>;
+		};
+
+		pinctrl_wdt_ping_led: wdt_ping_led_grp {
+			fsl,pins = <
+				SC_P_FLEXCAN1_TX_LSIO_GPIO4_IO00	0x06000021	/* WDOUT */
 			>;
 		};
 	};
@@ -1809,3 +1824,8 @@
 };
 #endif
 #endif
+
+&wdog {
+	pinctrl-0 = <&pinctrl_wdt_ping_led>;
+	wdt-ping-led = <&gpio4 0 0>;
+};
