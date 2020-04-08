@@ -4,5 +4,7 @@ obj-$(CONFIG_LIBERTAS_THINFIRM)	+= libertas_tf/
 obj-$(CONFIG_MWIFIEX)	+= mwifiex/
 obj-$(CONFIG_MWIFIEX_PCIE_8897)	+= mrvl8897/
 obj-$(CONFIG_MWIFIEX_USB_8897)	+= mrvl8897/
+obj-$(CONFIG_MWIFI_SDIO_8997)	+= mrvl8997/
+obj-$(CONFIG_MBT_SDIO_8997)	+= mrvl8997/
 
 obj-$(CONFIG_MWL8K)	+= mwl8k.o
