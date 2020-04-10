@@ -18,6 +18,7 @@
 /* Definitions */
 #define ROM_DB5901
 #define SDHC_LOW_SPEED_ONLY
+//#define ENABLE_2ND_QSPI
 
 /* LVDS Panel : only choose one!
  *   LVDS_AUO_7, LVDS_CHIMEI_15, LVDS_AUO_215
@@ -368,25 +369,22 @@
 
 		pinctrl_flexspi0: flexspi0grp {
 			fsl,pins = <
-				SC_P_QSPI0A_DATA0_LSIO_QSPI0A_DATA0	0x06000021
-				SC_P_QSPI0A_DATA1_LSIO_QSPI0A_DATA1	0x06000021
-				SC_P_QSPI0A_DATA2_LSIO_QSPI0A_DATA2	0x06000021
-				SC_P_QSPI0A_DATA3_LSIO_QSPI0A_DATA3	0x06000021
-				SC_P_QSPI0A_SS0_B_LSIO_QSPI0A_SS0_B	0x06000021
-				SC_P_QSPI0A_SCLK_LSIO_QSPI0A_SCLK	0x06000021
-			>;
-		};
-
-		pinctrl_flexspi1: flexspi1grp {
-			fsl,pins = <
-				SC_P_QSPI0B_SCLK_LSIO_QSPI1A_SCLK	0x06000021
-				SC_P_QSPI0B_DATA0_LSIO_QSPI1A_DATA0	0x06000021
-				SC_P_QSPI0B_DATA1_LSIO_QSPI1A_DATA1	0x06000021
-				SC_P_QSPI0B_DATA2_LSIO_QSPI1A_DATA2	0x06000021
-				SC_P_QSPI0B_DATA3_LSIO_QSPI1A_DATA3	0x06000021
-				SC_P_QSPI0B_DQS_LSIO_QSPI1A_DQS		0x06000021
-				SC_P_QSPI0B_SS0_B_LSIO_QSPI1A_SS0_B	0x06000021
-				SC_P_QSPI0B_SS1_B_LSIO_QSPI1A_SS1_B	0x06000021
+				SC_P_QSPI0A_DATA0_LSIO_QSPI0A_DATA0	0x0600004c
+				SC_P_QSPI0A_DATA1_LSIO_QSPI0A_DATA1	0x0600004c
+				SC_P_QSPI0A_DATA2_LSIO_QSPI0A_DATA2	0x0600004c
+				SC_P_QSPI0A_DATA3_LSIO_QSPI0A_DATA3	0x0600004c
+				SC_P_QSPI0A_SS0_B_LSIO_QSPI0A_SS0_B	0x0600004c
+				SC_P_QSPI0A_SCLK_LSIO_QSPI0A_SCLK	0x0600004c
+#if defined(ROM_DB5901) && defined(ENABLE_2ND_QSPI)
+				SC_P_QSPI0B_SCLK_LSIO_QSPI0B_SCLK	0x0600004c
+				SC_P_QSPI0B_DATA0_LSIO_QSPI0B_DATA0	0x0600004c
+				SC_P_QSPI0B_DATA1_LSIO_QSPI0B_DATA1	0x0600004c
+				SC_P_QSPI0B_DATA2_LSIO_QSPI0B_DATA2	0x0600004c
+				SC_P_QSPI0B_DATA3_LSIO_QSPI0B_DATA3	0x0600004c
+				SC_P_QSPI0B_DQS_LSIO_QSPI0B_DQS		0x0600004c
+				SC_P_QSPI0B_SS0_B_LSIO_QSPI0B_SS0_B	0x0600004c
+				SC_P_QSPI0B_SS1_B_LSIO_QSPI0B_SS1_B	0x0600004c
+#endif
 			>;
 		};
 
@@ -717,29 +715,20 @@
 	pinctrl-0 = <&pinctrl_flexspi0>;
 	status = "okay";
 
-	qspi_nor: w25q64fwssig@0 {
+	qspi_nor0: w25q64fwssig@0 {
 		reg = <0>;
 		#address-cells = <1>;
 		#size-cells = <1>;
 		compatible = "jedec,spi-nor", "winbond,w25q64";
 		spi-max-frequency = <29000000>;
-		spi-nor,quad-read = <4>;
 	};
-};
-
-&flexspi1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_flexspi1>;
-	status = "okay";
-
-#ifdef ROM_DB5901
-	qspi_nor1: w25q64fwssig@0 {
-		reg = <0>;
+#if defined(ROM_DB5901) && defined(ENABLE_2ND_QSPI)
+	qspi_nor1: w25q64fwssig@1 {
+		reg = <1>;
 		#address-cells = <1>;
 		#size-cells = <1>;
 		compatible = "jedec,spi-nor", "winbond,w25q64";
 		spi-max-frequency = <29000000>;
-		spi-nor,quad-read = <4>;
 	};
 #endif
 };

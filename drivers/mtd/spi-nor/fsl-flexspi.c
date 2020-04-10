@@ -1082,9 +1082,15 @@ static int fsl_flexspi_nor_setup(struct fsl_flexspi *flex)
 	/* Disable the module */
 	writel(FLEXSPI_MCR0_MDIS_MASK, base + FLEXSPI_MCR0);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	/* enable module */
+	writel(FLEXSPI_MCR0_AHB_TIMEOUT_MASK | FLEXSPI_MCR0_IP_TIMEOUT_MASK,
+		base + FLEXSPI_MCR0);
+#else
 	/* enable module */
 	writel(FLEXSPI_MCR0_AHB_TIMEOUT_MASK | FLEXSPI_MCR0_IP_TIMEOUT_MASK |
 	       FLEXSPI_MCR0_OCTCOMB_EN_MASK, base + FLEXSPI_MCR0);
+#endif
 
 	/* Reset the FLASHxCR2 */
 	writel(0, base + FLEXSPI_FLSHA1CR2);
