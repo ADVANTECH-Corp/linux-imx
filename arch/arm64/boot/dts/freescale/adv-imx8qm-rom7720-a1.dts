@@ -20,8 +20,6 @@
 #define FLEXSPI0_QSPI0A
 #undef FLEXSPI0_QSPI1A
 
-#undef AUDIO_CODEC_SGTL5000
-
 #	define LVDS_CH0_ONLY 0
 #	define LVDS_CH1_ONLY 1
 #	define LVDS_DUAL_ONLY 2
