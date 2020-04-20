@@ -323,20 +323,22 @@
 
 	fan0: pwm-fan {
 		compatible = "pwm-fan";
-		#cooling-min-state = <0>;
-		#cooling-max-state = <3>;
+		cooling-min-state = <0>;
+		cooling-max-state = <3>;
 		#cooling-cells = <2>;
 		pwms = <&pwm2 0 10000 0>;
-		#cooling-levels = <85 85 170 255>;
-		cooling-levels = <255>;
+		cooling-levels = <0 100 180 255>;
 	};
 };
 
 &pwm2{
        pinctrl-names = "default";
+       clocks = <&clk IMX8QM_PWM2_IPG_MSTR_CLK>,
+			<&clk IMX8QM_PWM2_CLK>;
+       assigned-clocks = <&clk IMX8QM_PWM2_CLK>;
        power-domains = <&pd_lsio_pwm2>;
        pinctrl-0 = <&pinctrl_pwm2>;
-       status = "disabled";
+       status = "okay";
 };
 
 &acm {
