@@ -89,7 +89,13 @@ static int imx8_wdt_start(struct watchdog_device *wdog)
 	if (res.a0)
 		return res.a0;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	arm_smccc_smc(FSL_SIP_SRTC, FSL_SIP_SRTC_SET_WDOG_ACT, SC_TIMER_WDOG_ACTION_BOARD, 0, 0, 0, 0, 0, &res);
+
+	return res.a0;
+#else
 	return 0;
+#endif
 }
 
 static int imx8_wdt_stop(struct watchdog_device *wdog)
