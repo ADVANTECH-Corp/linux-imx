@@ -313,6 +313,9 @@
 			fsl,pins = <
 				MX8MM_IOMUXC_SAI2_RXFS_UART1_TX 	0x140
 				MX8MM_IOMUXC_SAI2_RXC_UART1_RX		0x140
+				MX8MM_IOMUXC_SAI2_RXD0_UART1_RTS_B	0x140
+				MX8MM_IOMUXC_SAI2_TXFS_UART1_CTS_B	0x140
+
 			>;
 		};
 
@@ -325,9 +328,7 @@
                 };
 */
 		pinctrl_uart2: uart2grp {
-			fsl,pins = <
-				MX8MM_IOMUXC_SAI3_RXD_UART2_RTS_B	0x140                                  
-				MX8MM_IOMUXC_SAI3_RXC_UART2_CTS_B	0x140                     
+			fsl,pins = <            
 				MX8MM_IOMUXC_SAI3_TXC_UART2_TX		0x140
 				MX8MM_IOMUXC_SAI3_TXFS_UART2_RX		0x140
 			>;
@@ -500,7 +501,6 @@
 
                 pinctrl_usbotg: usbotggrp {
                         fsl,pins = <
-		/*		MX8MM_IOMUXC_GPIO1_IO10_GPIO1_IO10		0x19 */	/* USB1_OTG_ID */
 				MX8MM_IOMUXC_GPIO1_IO12_GPIO1_IO12		0x19	/* USB1_OTG_EN */
                         >;
                 };
@@ -531,7 +531,7 @@
 				MX8MM_IOMUXC_SAI3_TXD_GPIO5_IO1			0x19	/* CHARGING */
 				MX8MM_IOMUXC_SAI5_MCLK_GPIO3_IO25		0x19    /* SMB_ALERT_1V8 */	
 				MX8MM_IOMUXC_NAND_READY_B_GPIO3_IO16		0x19	/* CHARGER_PRSNT */
-                        >;
+			>;
                 };
 
                 pinctrl_lid_key: gpio_userkeygrp-1 {
@@ -564,7 +564,6 @@
                                 MX8MM_IOMUXC_SD1_DATA7_GPIO2_IO9                0x111	/* WL_WAKE_HOST */
 				MX8MM_IOMUXC_SD1_DATA6_GPIO2_IO8		0x111	/* BT_WAKE_HOST */
 				MX8MM_IOMUXC_SAI5_RXC_GPIO3_IO20		0x19	/* WL_PRESENT */
-				
                         >;
                 };
 
@@ -589,8 +588,8 @@
 
                 pinctrl_lcd0: lcd0_grp {
                         fsl,pins = <
-				MX8MM_IOMUXC_SAI2_RXD0_GPIO4_IO23	0x19		/* LCD0_VDD_EN */
-				MX8MM_IOMUXC_SAI2_TXFS_GPIO4_IO24	0x19		/* LCD0_BKLT_EN */
+				MX8MM_IOMUXC_SAI3_RXD_GPIO4_IO30	0x10		/* LCD0_VDD_EN */
+				MX8MM_IOMUXC_SAI3_RXC_GPIO4_IO29	0x19		/* LCD0_BKLT_EN */
                         >;
                 };
                 pinctrl_lcd1: lcd1_grp {
@@ -599,10 +598,7 @@
 				MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x19		/* LCD0_BKLT_EN */
                         >;
                 };
-
-
-
-	};
+	};	
 };
 &csi1_bridge {
 	fsl,mipi-mode;
@@ -914,13 +910,13 @@
 };
 
 &i2c4 {
-	clock-frequency = <100000>;
-	pinctrl-names = "default", "gpio";
-	pinctrl-0 = <&pinctrl_i2c4>;
+		clock-frequency = <100000>;
+		pinctrl-names = "default", "gpio";
+		pinctrl-0 = <&pinctrl_i2c4>;
         pinctrl-1 = <&pinctrl_i2c4_gpio>;
         scl-gpios = <&gpio5 20 GPIO_ACTIVE_HIGH>;
         sda-gpios = <&gpio5 21 GPIO_ACTIVE_HIGH>;
-	status = "okay";
+		status = "okay";
 
         codec: sgtl5000@0a {
                 compatible = "fsl,sgtl5000";
@@ -929,18 +925,18 @@
                 clock-names = "mclk";
                 pinctrl-names = "default";
                 pinctrl-0 = <&pinctrl_sai1_mclk>;
-		assigned-clocks = <&clk IMX8MM_CLK_SAI1_SRC>,
+				assigned-clocks = <&clk IMX8MM_CLK_SAI1_SRC>,
 				<&clk IMX8MM_CLK_SAI1_DIV>;
-		assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
-		assigned-clock-rates = <0>, <24576000>;
-	};
+				assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
+				assigned-clock-rates = <0>, <24576000>;
+		};
 
-	24c32@57 {				//DB5901-U19
+		24c32@57 {				//DB5901-U19
                 compatible = "fsl,24c32";
                 reg = <0x57>;
         };
 
-	24c32@50 {				//DB5901-I2C_GP_1
+		24c32@50 {				//DB5901-I2C_GP_1
                 compatible = "fsl,24c32";
                 reg = <0x50>;
         };
@@ -1089,25 +1085,19 @@
 &uart1 { 
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1>;
-	//assigned-clocks = <&clk IMX8MM_CLK_UART1_SRC>;
-	//assigned-clock-parents = <&clk IMX8MM_SYS_PLL1_80M>;
+	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
 &uart2 { /* A53 console */
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart2>;
-//	assigned-clocks = <&clk IMX8MM_CLK_UART2_SRC>;
-//	assigned-clock-parents = <&clk IMX8MM_SYS_PLL1_80M>;
-	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
 &uart3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart3>;
-	//assigned-clocks = <&clk IMX8MM_CLK_UART3_SRC>;
-	//assigned-clock-parents = <&clk IMX8MM_SYS_PLL1_80M>;
 	fsl,uart-has-rtscts;
 	status = "okay";
 };
@@ -1115,8 +1105,6 @@
 &uart4 { /* M4 debug */
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart4>;
-//	assigned-clocks = <&clk IMX8MM_CLK_UART4_SRC>;
-//	assigned-clock-parents = <&clk IMX8MM_SYS_PLL1_80M>;
 	status = "okay";
 };
 
@@ -1262,7 +1250,7 @@
 &lvds_backlight0 {
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_lcd0>;
-        lvds-vcc-enable = <&gpio4 23 1>;
-        lvds-bkl-enable = <&gpio4 24 1>;
+        lvds-vcc-enable = <&gpio4 30 1>;
+        lvds-bkl-enable = <&gpio4 29 1>;
         status = "okay";
 };
