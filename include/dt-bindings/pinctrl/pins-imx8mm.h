@@ -490,9 +490,7 @@
 
 #define MX8MM_IOMUXC_SAI2_RXFS_UART1_TX	                                    0x1B0 0x418 0x000 0x4 0x0
 #define MX8MM_IOMUXC_SAI2_RXC_UART1_RX                                      0x1B4 0x41C 0x4F4 0x4 0x3
-#define MX8MM_IOMUXC_SAI3_RXD_UART2_RTS_B                                   0x1D4 0x43C 0x4F8 0x4 0x3
-#define MX8MM_IOMUXC_SAI3_RXC_UART2_CTS_B                                   0x1D0 0x438 0x000 0x4 0x0
-#define MX8MM_IOMUXC_SAI3_TXC_UART2_TX					    0x1DC 0x444 0x000 0x4 0x0	
+#define MX8MM_IOMUXC_SAI3_TXC_UART2_TX				                	    0x1DC 0x444 0x000 0x4 0x0	
 #define MX8MM_IOMUXC_SAI3_TXFS_UART2_RX	                                    0x1D8 0x440 0x4FC 0x4 0x2
 
 #define MX8MM_IOMUXC_SAI3_TXC_SAI3_TX_BCLK                                  0x1DC 0x444 0x000 0x0 0x0
