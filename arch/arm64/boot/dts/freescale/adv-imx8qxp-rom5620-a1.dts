@@ -194,12 +194,12 @@
 		status = "disabled";
 	};
 
-	gpio-keys {
-		compatible = "gpio-keys";
+	gpio-keys-polled {
+		compatible = "gpio-keys-polled";
 		pinctrl-names = "default";
 		#address-cells = <1>;
 		#size-cells = <0>;
-		pinctrl-0 = <&pinctrl_gpio_keys>;
+		poll-interval = <100>;
 
 		lid@1 {
 			label = "LID KEY";
@@ -240,12 +240,6 @@
 	pinctrl-0 = <&pinctrl_gpio>;
 
 	imx8qxp-mek {
-		pinctrl_gpio_keys: gpio_keys_grp{
-			fsl,pins = <
-				SC_P_SCU_GPIO0_00_LSIO_GPIO2_IO03		0x00000021
-			>;
-		};
-
 		pinctrl_gpio: gpio_grp {
 			fsl,pins = <
 				SC_P_SPI2_CS0_LSIO_GPIO1_IO00	0x06000021	/* GPIO0 */
