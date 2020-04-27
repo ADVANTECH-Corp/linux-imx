@@ -146,6 +146,7 @@ dtb-$(CONFIG_ARCH_ADVANTECH) += adv-imx8mq-rom5720-a1.dtb \
 				adv-imx8qxp-rom5620-a1-hdmi-bridge.dtb \
 				adv-imx8qxp-rom5620-a1-m2-sdio.dtb \
 				adv-imx8qxp-rom5620-a1-auog101uan02.dtb \
+				adv-imx8qxp-rom5620-a1-qspi-b.dtb \
 				adv-imx8mm-rom5721-a1.dtb \
 				adv-imx8mm-rom5721-a1-m2-sdio.dtb \
 				adv-imx8mm-rom5721-a1-adv7535.dtb \

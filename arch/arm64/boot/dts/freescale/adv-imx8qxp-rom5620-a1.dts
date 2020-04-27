@@ -18,7 +18,6 @@
 /* Definitions */
 #define ROM_DB5901
 #define SDHC_LOW_SPEED_ONLY
-//#define ENABLE_2ND_QSPI
 
 /* LVDS Panel : only choose one!
  *   LVDS_AUO_7, LVDS_CHIMEI_15, LVDS_AUO_215
