@@ -24,7 +24,7 @@
                                 pinctrl-0 = <&pinctrl_lcd0>;
                                 adi,addr-cec = <0x3b>;
                                 adi,dsi-lanes = <4>;
-                                pd-gpios = <&gpio4 23 1>;
+                                pd-gpios = <&gpio4 30 1>;
                                 status = "okay";
                                 port {
                                         adv7535_from_dsim: endpoint {
