@@ -1,0 +1,52 @@
+/*
+ * Copyright 2018 NXP
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "imx8mm-rom5721-a1.dts"
+
+&i2c3 {
+        i2c-switcih@70 {
+                i2c@2 {
+                        adv_bridge: adv7535@3d {
+                                compatible = "adi,adv7533";
+                                reg = <0x3d>;
+                                pinctrl-names = "default";
+                                pinctrl-0 = <&pinctrl_lcd0>;
+                                adi,addr-cec = <0x3b>;
+                                adi,dsi-lanes = <4>;
+                                pd-gpios = <&gpio4 30 1>;
+                                status = "okay";
+                                port {
+                                        adv7535_from_dsim: endpoint {
+                                                remote-endpoint = <&dsim_to_adv7535>;
+                                        };
+                                };
+                        };
+                };
+        };
+};
+
+&mipi_dsi {
+	/delete-node/panel@0;
+	port@1 {
+		dsim_to_adv7535: endpoint {
+			remote-endpoint = <&adv7535_from_dsim>;
+			attach-bridge;
+		};
+	};
+};
+
+&lvds_backlight0 {
+        status = "disabled";
+};
+
