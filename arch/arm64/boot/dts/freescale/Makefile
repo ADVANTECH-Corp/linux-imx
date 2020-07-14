@@ -148,6 +148,7 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mm-rom5721-a1-adv7535.dtb \
 			  imx8mm-rom5721-a1-dsi2lvds-g215hvn01.dtb \
 			  imx8mm-rom5721-a1-m2-sdio.dtb \
 			  imx8mm-rom5721-a1.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mp-rsb3720-a1.dtb
 
 dtb-$(CONFIG_ARCH_S32) += s32v234-evb.dtb \
 			  s32v234-sbc.dtb
