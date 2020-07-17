@@ -392,7 +392,7 @@
 		};
 	};
 
-	lvds_bridge: lvds-to-hdmi-bridge@4c {
+	/*lvds_bridge: lvds-to-hdmi-bridge@4c {
 		compatible = "ite,it6263";
 		reg = <0x4c>;
 		reset-gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
@@ -402,7 +402,7 @@
 				remote-endpoint = <&lvds_out>;
 			};
 		};
-	};
+	};*/
 
 	ov5640_0: ov5640_mipi@3c {
 		compatible = "ovti,ov5640";
@@ -416,7 +416,7 @@
 		assigned-clock-rates = <24000000>;
 		csi_id = <0>;
 		powerdown-gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
+		//reset-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
 		mclk = <24000000>;
 		mclk_source = <0>;
 		mipi_csi;
@@ -548,13 +548,13 @@
 		fsl,data-width = <24>;
 		status = "okay";
 
-		port@1 {
+		/*port@1 {
 			reg = <1>;
 
 			lvds_out: endpoint {
 				remote-endpoint = <&it6263_in>;
 			};
-		};
+		};*/
 	};
 };
 
@@ -590,8 +590,10 @@
 &pcie{
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie>;
-	disable-gpio = <&gpio2 6 GPIO_ACTIVE_LOW>;
-	reset-gpio = <&gpio2 7 GPIO_ACTIVE_LOW>;
+	clkreq-gpio = <&gpio5 20 GPIO_ACTIVE_HIGH>;
+	power-on-gpio = <&gpio1 9 GPIO_ACTIVE_LOW>;
+	disable-gpio = <&gpio1 11 GPIO_ACTIVE_LOW>;	/* M2_W_DIS1# */
+	reset-gpio = <&gpio1 10 GPIO_ACTIVE_HIGH>;
 	ext_osc = <0>;
 	clocks = <&clk IMX8MP_CLK_HSIO_AXI_DIV>,
 		 <&clk IMX8MP_CLK_PCIE_AUX>,
@@ -750,7 +752,7 @@
 
 	pinctrl_pwm2: pwm2grp {
 		fsl,pins = <
-			MX8MP_IOMUXC_GPIO1_IO11__PWM2_OUT	0x116
+			//MX8MP_IOMUXC_GPIO1_IO11__PWM2_OUT	0x116
 		>;
 	};
 
@@ -874,15 +876,22 @@
 
 	pinctrl_mipi_dsi_en: mipi_dsi_en {
 		fsl,pins = <
-			MX8MP_IOMUXC_GPIO1_IO08__GPIO1_IO08	0x16
+			//MX8MP_IOMUXC_GPIO1_IO08__GPIO1_IO08	0x16
 		>;
 	};
 
 	pinctrl_pcie: pciegrp {
 		fsl,pins = <
-			MX8MP_IOMUXC_I2C4_SCL__HSIOMIX_PCIE_CLKREQ_B	0x61 /* open drain, pull up */
-			MX8MP_IOMUXC_SD1_DATA4__GPIO2_IO06		0x41
-			MX8MP_IOMUXC_SD1_DATA5__GPIO2_IO07		0x41
+			MX8MP_IOMUXC_I2C4_SCL__GPIO5_IO20		0x41 	/* PCIE_CLKREQ# */
+			MX8MP_IOMUXC_I2C4_SDA__GPIO5_IO21		0x41	/* M2_IRQ# */
+			MX8MP_IOMUXC_GPIO1_IO09__GPIO1_IO09		0x41	/* M2_PWR_EN */
+			MX8MP_IOMUXC_GPIO1_IO10__GPIO1_IO10		0x41	/* M2_RESET# */
+			MX8MP_IOMUXC_GPIO1_IO11__GPIO1_IO11		0x41	/* M2_W_DIS1# */
+			MX8MP_IOMUXC_GPIO1_IO12__GPIO1_IO12		0x41	/* M2_W_DIS2# */
+			MX8MP_IOMUXC_GPIO1_IO05__GPIO1_IO05		0x41	/* MINICARD_PWR_EN */
+			MX8MP_IOMUXC_GPIO1_IO06__GPIO1_IO06		0x41	/* MINICARD_RESET# */
+			MX8MP_IOMUXC_GPIO1_IO07__GPIO1_IO07		0x41	/* MINICARD_W_DIS# */
+			MX8MP_IOMUXC_GPIO1_IO08__GPIO1_IO08		0x41	/* MINICARD_DET# */
 		>;
 	};
 
@@ -916,7 +925,7 @@
 
 	pinctrl_i2c2_synaptics_dsx_io: synaptics_dsx_iogrp {
 		fsl,pins = <
-			MX8MP_IOMUXC_GPIO1_IO09__GPIO1_IO09		0x16
+			//MX8MP_IOMUXC_GPIO1_IO09__GPIO1_IO09		0x16
 		>;
 	};
 
@@ -1089,7 +1098,7 @@
 
 	pinctrl_csi0_rst: csi0_rst_grp {
 		fsl,pins = <
-			MX8MP_IOMUXC_GPIO1_IO06__GPIO1_IO06		0x19
+			//MX8MP_IOMUXC_GPIO1_IO06__GPIO1_IO06		0x19
 			MX8MP_IOMUXC_GPIO1_IO15__CCMSRCGPCMIX_CLKO2	0x59
 		>;
 	};
