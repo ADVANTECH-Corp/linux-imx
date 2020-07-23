@@ -19,6 +19,10 @@
 #include <linux/pwm_backlight.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#include <linux/delay.h>
+#endif
 
 struct pwm_bl_data {
 	struct pwm_device	*pwm;
@@ -88,6 +92,15 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 	pb->enabled = false;
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+int lvds_vcc_enable;
+int lvds_bkl_enable;
+int bklt_vcc_enable;
+enum of_gpio_flags lvds_vcc_flag;
+enum of_gpio_flags lvds_bkl_flag;
+enum of_gpio_flags bklt_vcc_flag;
+#endif
+
 static int compute_duty_cycle(struct pwm_bl_data *pb, int brightness)
 {
 	unsigned int lth = pb->lth_brightness;
@@ -156,7 +169,7 @@ static const struct backlight_ops pwm_backlight_ops = {
  *
  * The CIE 1931 lightness formula is what actually describes how we perceive
  * light:
- *          Y = (L* / 902.3)           if L* ≤ 0.08856
+ *          Y = (L* / 902.3)           if L* <= 0.08856
  *          Y = ((L* + 16) / 116)^3    if L* > 0.08856
  *
  * Where Y is the luminance, the amount of light coming out of the screen, and
@@ -379,6 +392,43 @@ static int pwm_backlight_parse_dt(struct device *dev,
 
 		data->max_brightness--;
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	lvds_vcc_enable = of_get_named_gpio_flags(node, "lvds-vcc-enable", 0, &lvds_vcc_flag);
+	bklt_vcc_enable = of_get_named_gpio_flags(node, "bklt-vcc-enable", 0, &bklt_vcc_flag);
+	lvds_bkl_enable = of_get_named_gpio_flags(node, "lvds-bkl-enable", 0, &lvds_bkl_flag);
+
+	/* Set default to output */
+	if (lvds_vcc_enable >= 0)
+	{
+		ret = gpio_request(lvds_vcc_enable,"lvds_vcc_enable");
+
+		if (ret < 0)
+			printk("\nRequest lvds_vcc_enable failed!!\n");
+		else
+			gpio_direction_output(lvds_vcc_enable, (lvds_vcc_flag)?0:1);
+	}
+	if (bklt_vcc_enable >= 0)
+	{
+		ret = gpio_request(bklt_vcc_enable,"bklt_vdd_enable");
+
+		if (ret < 0)
+			printk("\nRequest bklt_vdd_enable failed!!\n");
+		else
+			gpio_direction_output(bklt_vcc_enable, (bklt_vcc_flag)?0:1);
+	}
+	if (lvds_bkl_enable >= 0)
+        {
+		ret = gpio_request(lvds_bkl_enable,"lvds_bkl_enable");
+
+		if (ret < 0)
+			printk("\nRequest lvds_bkl_enable failed!!\n");
+		else
+			gpio_direction_output(lvds_bkl_enable, (lvds_bkl_flag)?0:1);
+	}
+
+#endif
+
 	return 0;
 }
 
@@ -657,6 +707,14 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 
 	bl->props.brightness = data->dft_brightness;
 	bl->props.power = pwm_backlight_initial_power_state(pb);
+
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH) //&& !defined(CONFIG_FB_MXC_DISP_FRAMEWORK)
+	/* Inorder to power off pwm backlight for SI test */
+	//bl->props.fb_blank = FB_BLANK_NORMAL;
+
+	printk(KERN_INFO "[LVDS Sequence] 0 Set to power off pwm backlight at first.\n");
+#endif
+
 	backlight_update_status(bl);
 
 	platform_set_drvdata(pdev, bl);
