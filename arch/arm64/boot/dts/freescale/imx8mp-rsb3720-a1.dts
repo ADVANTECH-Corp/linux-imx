@@ -397,6 +397,16 @@
 			};
 		};
 	};
+
+	wdt: msp430g2202@29 {
+		compatible = "fsl,adv-wdt-i2c";
+		reg = <0x29>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+		wdt-en = <&gpio3 19 0>;
+		wdt-ping = <&gpio4 20 0>;
+		status = "okay";
+	};
 };
 
 &i2c2 {
@@ -771,7 +781,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_wdog>;
 	fsl,ext-reset-output;
-	status = "okay";
+	status = "disabled";
 };
 
 &iomuxc {
@@ -1151,6 +1161,19 @@
 			MX8MP_IOMUXC_GPIO1_IO01__GPIO1_IO01	0x19	/* VDD_BKLT1_EN */
 		>;
 	};
+
+	pinctrl_wdt_en_1: wdt_engrp-1 {
+		fsl,pins = <
+			MX8MP_IOMUXC_SAI5_RXFS__GPIO3_IO19      0x19    /* WDT_EN_1V8 */
+		>;
+	};
+
+	pinctrl_wdt_ping_1: wdt_pinggrp-1 {
+		fsl,pins = <
+			MX8MP_IOMUXC_SAI1_MCLK__GPIO4_IO20      0x19    /* WDT_TRIG_1V8 */
+		>;
+	};
+
 };
 
 &vpu_g1 {
