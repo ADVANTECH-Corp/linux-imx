@@ -246,6 +246,15 @@ static int pca9450_i2c_probe(struct i2c_client *i2c,
 	if (ret < 0)
 		goto err;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	ret = pca9450_reg_write(pca9450, PCA9450_CONFIG2, 0x03);
+	if (ret < 0) {
+		dev_err(pca9450->dev, "%s(): Write PCA9450_CONFIG2 failed!\n",
+			__func__);
+		goto err;
+	}
+#endif
+
 	return ret;
 
 err:
