@@ -664,7 +664,7 @@
 	disable-gpio = <&gpio1 11 GPIO_ACTIVE_LOW>;	/* M2_W_DIS1# */
 	reset-gpio = <&gpio1 10 GPIO_ACTIVE_HIGH>;	/* M2_RESET# */
 	usb-host-pwr-en = <&gpio1 5 GPIO_ACTIVE_LOW>; /* MINICARD_PWR_EN */
-	ext_osc = <0>;
+	ext_osc = <1>;
 	clocks = <&clk IMX8MP_CLK_HSIO_AXI_DIV>,
 		 <&clk IMX8MP_CLK_PCIE_AUX>,
 		 <&clk IMX8MP_CLK_PCIE_PHY>,
