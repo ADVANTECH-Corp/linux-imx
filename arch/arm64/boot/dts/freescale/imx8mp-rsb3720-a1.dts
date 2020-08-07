@@ -408,6 +408,12 @@
 		status = "okay";
 	};
 
+	s35390a: s35390a@30 {
+		compatible = "sii,s35390a";
+		reg = <0x30>;
+		status = "okay";
+	};
+
 	gpio_exp2: tca9538@71 {
 		compatible = "nxp,pca9538";
 		reg = <0x71>;
