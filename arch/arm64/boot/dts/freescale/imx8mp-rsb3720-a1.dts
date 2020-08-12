@@ -61,18 +61,6 @@
 		enable-active-high;
 	};
 
-	reg_usb1_host_vbus: regulator-usb1-vbus {
-		compatible = "regulator-fixed";
-		regulator-name = "usb1_host_vbus";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_usb1_vbus>;
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		gpio = <&gpio1 14 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-always-on;
-	};
-
 	reg_usdhc2_vmmc: regulator-usdhc2 {
 		compatible = "regulator-fixed";
 		regulator-name = "VSD_3V3";
@@ -465,15 +453,15 @@
 		compatible = "ovti,ov5640";
 		reg = <0x3c>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_csi0_pwn>, <&pinctrl_csi0_rst>, <&pinctrl_csi_mclk>;
-		clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO2>;
+		pinctrl-0 = <&pinctrl_csi0_pwn>, <&pinctrl_csi0_rst>, <&pinctrl_csi0_mclk>;
+		clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO1>;
 		clock-names = "xclk";
-		assigned-clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO2>;
+		assigned-clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO1>;
 		assigned-clock-parents = <&clk IMX8MP_CLK_24M>;
 		assigned-clock-rates = <24000000>;
 		csi_id = <0>;
-		powerdown-gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>;
-		//reset-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
+		powerdown-gpios = <&gpio2 6 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio2 7 GPIO_ACTIVE_LOW>;
 		mclk = <24000000>;
 		mclk_source = <0>;
 		mipi_csi;
@@ -506,19 +494,19 @@
 		compatible = "ovti,ov5640";
 		reg = <0x3c>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_csi0_pwn>, <&pinctrl_csi0_rst>, <&pinctrl_csi_mclk>;
+		pinctrl-0 = <&pinctrl_csi1_pwn>, <&pinctrl_csi1_rst>, <&pinctrl_csi1_mclk>;
 		clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO2>;
 		clock-names = "xclk";
 		assigned-clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO2>;
 		assigned-clock-parents = <&clk IMX8MP_CLK_24M>;
 		assigned-clock-rates = <24000000>;
 		csi_id = <0>;
-		powerdown-gpios = <&gpio4 1 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio4 0 GPIO_ACTIVE_LOW>;
+		powerdown-gpios = <&gpio2 8 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio2 9 GPIO_ACTIVE_LOW>;
 		mclk = <24000000>;
 		mclk_source = <0>;
 		mipi_csi;
-		status = "disabled";
+		status = "okay";
 
 		port {
 			ov5640_mipi_1_ep: endpoint {
@@ -998,12 +986,6 @@
 		>;
 	};
 
-	pinctrl_usb1_vbus: usb1grp {
-		fsl,pins = <
-			MX8MP_IOMUXC_GPIO1_IO14__GPIO1_IO14	0x19
-		>;
-	};
-
 	pinctrl_usdhc1: usdhc1grp {
 		fsl,pins = <
 			MX8MP_IOMUXC_SD1_CLK__USDHC1_CLK	0x190
@@ -1136,21 +1118,39 @@
 
 	pinctrl_csi0_pwn: csi0_pwn_grp {
 		fsl,pins = <
-			MX8MP_IOMUXC_SD1_STROBE__GPIO2_IO11	0x19
+			MX8MP_IOMUXC_SD1_DATA4__GPIO2_IO06	0x19
 		>;
 	};
 
 	pinctrl_csi0_rst: csi0_rst_grp {
 		fsl,pins = <
-			//MX8MP_IOMUXC_GPIO1_IO06__GPIO1_IO06		0x19
+			MX8MP_IOMUXC_SD1_DATA5__GPIO2_IO07              0x19
 		>;
 	};
 
-	pinctrl_csi_mclk: csi_mclk_grp {
+	pinctrl_csi0_mclk: csi0_mclk_grp {
 		fsl,pins = <
-			MX8MP_IOMUXC_GPIO1_IO15__CCM_CLKO2	0x59
+			MX8MP_IOMUXC_GPIO1_IO14__CCM_CLKO1	0x59
 		>;
 	};
+
+	pinctrl_csi1_pwn: csi1_pwn_grp {
+		fsl,pins = <
+			MX8MP_IOMUXC_SD1_DATA6__GPIO2_IO08	0x19
+		>;
+	};
+
+	pinctrl_csi1_rst: csi1_rst_grp {
+		fsl,pins = <
+			MX8MP_IOMUXC_SD1_DATA7__GPIO2_IO09		0x19
+		>;
+	};
+
+        pinctrl_csi1_mclk: csi1_mclk_grp {
+                fsl,pins = <
+                        MX8MP_IOMUXC_GPIO1_IO15__CCM_CLKO2      0x59
+                >;
+        };
 
 	pinctrl_lvds_vcc: lvds_vcc_grp {
 		fsl,pins = <
