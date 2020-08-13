@@ -113,6 +113,11 @@ struct panel_simple {
 	struct drm_display_mode override_mode;
 };
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+extern void enable_ldb_bkl_vcc(void);
+extern void enable_ldb_bkl_pwm(void);
+#endif
+
 static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
 {
 	return container_of(panel, struct panel_simple, base);
@@ -309,7 +314,13 @@ static int panel_simple_enable(struct drm_panel *panel)
 	if (p->backlight) {
 		p->backlight->props.state &= ~BL_CORE_FBBLANK;
 		p->backlight->props.power = FB_BLANK_UNBLANK;
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+		enable_ldb_bkl_vcc();
+		backlight_update_status(p->backlight); //PWM
+		enable_ldb_bkl_pwm();
+#else
 		backlight_update_status(p->backlight);
+#endif
 	}
 
 	p->enabled = true;
