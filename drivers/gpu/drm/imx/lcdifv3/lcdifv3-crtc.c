@@ -28,6 +28,12 @@ struct lcdifv3_crtc {
 	u32 pix_fmt;		/* drm fourcc */
 };
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+static int first_flip_complete = 1;
+extern void enable_lcd_vdd_en(void);
+extern void enable_ldb_signal(void);
+#endif
+
 #define to_lcdifv3_crtc(crtc) container_of(crtc, struct lcdifv3_crtc, base)
 
 static void lcdifv3_crtc_reset(struct drm_crtc *crtc)
@@ -167,6 +173,14 @@ static void lcdifv3_crtc_atomic_enable(struct drm_crtc *crtc,
 
 	/* config LCDIF output bus format */
 	lcdifv3_set_bus_fmt(lcdifv3, imx_crtc_state->bus_format);
+
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	if (first_flip_complete) {
+		enable_lcd_vdd_en();
+		enable_ldb_signal();
+		first_flip_complete = 0;
+	}
+#endif
 
 	/* run LCDIFv3 */
 	lcdifv3_enable_controller(lcdifv3);
