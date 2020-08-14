@@ -110,7 +110,11 @@ static int wait_startup(struct tpm_chip *chip, int l)
 
 		if (access & TPM_ACCESS_VALID)
 			return 0;
+#ifdef CONFIG_ARCH_ADVANTECH
+		tpm_msleep_opt(TPM_TIMEOUT);
+#else
 		tpm_msleep(TPM_TIMEOUT);
+#endif
 	} while (time_before(jiffies, stop));
 	return -1;
 }
@@ -223,7 +227,11 @@ again:
 		do {
 			if (check_locality(chip, l))
 				return l;
+#ifdef CONFIG_ARCH_ADVANTECH
+			tpm_msleep_opt(TPM_TIMEOUT);
+#else
 			tpm_msleep(TPM_TIMEOUT);
+#endif
 		} while (time_before(jiffies, stop));
 	}
 	return -1;
@@ -270,7 +278,11 @@ static int get_burstcount(struct tpm_chip *chip)
 		burstcnt = (value >> 8) & 0xFFFF;
 		if (burstcnt)
 			return burstcnt;
+#ifdef CONFIG_ARCH_ADVANTECH
+		tpm_msleep_opt(TPM_TIMEOUT);
+#else
 		usleep_range(TPM_TIMEOUT_USECS_MIN, TPM_TIMEOUT_USECS_MAX);
+#endif
 	} while (time_before(jiffies, stop));
 	return -EBUSY;
 }
@@ -281,6 +293,12 @@ static int recv_data(struct tpm_chip *chip, u8 *buf, size_t count)
 	int size = 0, burstcnt, rc;
 
 	while (size < count) {
+#ifdef CONFIG_ARCH_ADVANTECH
+		if (priv->interface_id)
+			burstcnt = 1280;
+		else
+			burstcnt = 32;
+#else
 		rc = wait_for_tpm_stat(chip,
 				 TPM_STS_DATA_AVAIL | TPM_STS_VALID,
 				 chip->timeout_c,
@@ -292,6 +310,7 @@ static int recv_data(struct tpm_chip *chip, u8 *buf, size_t count)
 			dev_err(&chip->dev, "Unable to read burstcount\n");
 			return burstcnt;
 		}
+#endif
 		burstcnt = min_t(int, burstcnt, count - size);
 
 		rc = tpm_tis_read_bytes(priv, TPM_DATA_FIFO(priv->locality),
@@ -306,10 +325,15 @@ static int recv_data(struct tpm_chip *chip, u8 *buf, size_t count)
 
 static int tpm_tis_recv(struct tpm_chip *chip, u8 *buf, size_t count)
 {
+#ifdef CONFIG_ARCH_ADVANTECH
+	int size = 0;
+	u32 expected;
+#else
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 	int size = 0;
 	int status;
 	u32 expected;
+#endif
 
 	if (count < TPM_HEADER_SIZE) {
 		size = -EIO;
@@ -336,7 +360,7 @@ static int tpm_tis_recv(struct tpm_chip *chip, u8 *buf, size_t count)
 		size = -ETIME;
 		goto out;
 	}
-
+#ifndef CONFIG_ARCH_ADVANTECH
 	if (wait_for_tpm_stat(chip, TPM_STS_VALID, chip->timeout_c,
 				&priv->int_queue, false) < 0) {
 		size = -ETIME;
@@ -348,6 +372,7 @@ static int tpm_tis_recv(struct tpm_chip *chip, u8 *buf, size_t count)
 		size = -EIO;
 		goto out;
 	}
+#endif
 
 out:
 	tpm_tis_ready(chip);
@@ -364,7 +389,9 @@ static int tpm_tis_send_data(struct tpm_chip *chip, const u8 *buf, size_t len)
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 	int rc, status, burstcnt;
 	size_t count = 0;
+#ifndef CONFIG_ARCH_ADVANTECH
 	bool itpm = priv->flags & TPM_TIS_ITPM_WORKAROUND;
+#endif
 
 	status = tpm_tis_status(chip);
 	if ((status & TPM_STS_COMMAND_READY) == 0) {
@@ -376,7 +403,15 @@ static int tpm_tis_send_data(struct tpm_chip *chip, const u8 *buf, size_t len)
 			goto out_err;
 		}
 	}
+#ifdef CONFIG_ARCH_ADVANTECH
+	while (count < len ) {
+		if (priv->interface_id)
+			burstcnt = 1280;
+		else
+			burstcnt = 32;
 
+		burstcnt = min_t(int, burstcnt, len - count);
+#else
 	while (count < len - 1) {
 		burstcnt = get_burstcount(chip);
 		if (burstcnt < 0) {
@@ -385,13 +420,14 @@ static int tpm_tis_send_data(struct tpm_chip *chip, const u8 *buf, size_t len)
 			goto out_err;
 		}
 		burstcnt = min_t(int, burstcnt, len - count - 1);
+#endif
 		rc = tpm_tis_write_bytes(priv, TPM_DATA_FIFO(priv->locality),
 					 burstcnt, buf + count);
 		if (rc < 0)
 			goto out_err;
 
 		count += burstcnt;
-
+#ifndef CONFIG_ARCH_ADVANTECH
 		if (wait_for_tpm_stat(chip, TPM_STS_VALID, chip->timeout_c,
 					&priv->int_queue, false) < 0) {
 			rc = -ETIME;
@@ -418,6 +454,7 @@ static int tpm_tis_send_data(struct tpm_chip *chip, const u8 *buf, size_t len)
 	if (!itpm && (status & TPM_STS_DATA_EXPECT) != 0) {
 		rc = -EIO;
 		goto out_err;
+#endif
 	}
 
 	return 0;
@@ -860,6 +897,9 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
 	u32 vendor;
 	u32 intfcaps;
 	u32 intmask;
+#ifdef CONFIG_ARCH_ADVANTECH
+	u32 BusInterface;
+#endif
 	u32 clkrun_val;
 	u8 rid;
 	int rc, probe;
@@ -936,6 +976,18 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
 	dev_info(dev, "%s TPM (device-id 0x%X, rev-id %d)\n",
 		 (chip->flags & TPM_CHIP_FLAG_TPM2) ? "2.0" : "1.2",
 		 vendor >> 16, rid);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	rc = tpm_tis_read32(priv, TPM_INTF_CAPABILITY(0), &BusInterface);
+	if (rc < 0)
+		goto out_err;
+
+	priv->interface_id = BusInterface;
+
+	dev_info(dev, " TPM %s / Interface : %s)\n",
+		(chip->flags & TPM_CHIP_FLAG_TPM2) ? "2.0" : "1.2",
+		(priv->interface_id) ? "I2C" : "SPI" );
+#endif
 
 	probe = probe_itpm(chip);
 	if (probe < 0) {
