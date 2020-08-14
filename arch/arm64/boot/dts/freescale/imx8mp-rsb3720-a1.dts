@@ -402,6 +402,15 @@
 		status = "okay";
 	};
 
+	st33htpi: st33htpi@2e {
+		compatible = "st,st33htpm-i2c";
+		reg = <0x2e>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_tpm>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <23 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
 	gpio_exp2: tca9538@71 {
 		compatible = "nxp,pca9538";
 		reg = <0x71>;
@@ -1194,6 +1203,12 @@
 		>;
 	};
 
+	pinctrl_tpm: tpm_grp {
+		fsl,pins = <
+			MX8MP_IOMUXC_SAI5_RXD1__GPIO3_IO22      0x19    /* TPM_PRESENSE_1V8 */
+			MX8MP_IOMUXC_SAI5_RXD2__GPIO3_IO23      0x19    /* TPM_IRQ#_1V8 */
+		>;
+	};
 };
 
 &vpu_g1 {
