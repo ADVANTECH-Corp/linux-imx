@@ -32,6 +32,7 @@ struct lcdifv3_crtc {
 static int first_flip_complete = 1;
 extern void enable_lcd_vdd_en(void);
 extern void enable_ldb_signal(void);
+extern void disable_lcd_vdd_en(void);
 #endif
 
 #define to_lcdifv3_crtc(crtc) container_of(crtc, struct lcdifv3_crtc, base)
@@ -81,6 +82,7 @@ static struct drm_crtc_state *lcdifv3_crtc_duplicate_state(struct drm_crtc *crtc
 static void lcdifv3_crtc_destroy_state(struct drm_crtc *crtc,
 				     struct drm_crtc_state *state)
 {
+
 	__drm_atomic_helper_crtc_destroy_state(state);
 	kfree(to_imx_crtc_state(state));
 }
@@ -191,6 +193,10 @@ static void lcdifv3_crtc_atomic_disable(struct drm_crtc *crtc,
 {
 	struct lcdifv3_crtc *lcdifv3_crtc = to_lcdifv3_crtc(crtc);
 	struct lcdifv3_soc *lcdifv3 = dev_get_drvdata(lcdifv3_crtc->dev->parent);
+
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	disable_lcd_vdd_en();
+#endif
 
 	spin_lock_irq(&crtc->dev->event_lock);
 	if (crtc->state->event) {
