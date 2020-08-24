@@ -100,6 +100,8 @@ int lvds_vcc_delay_value;
 int lvds_bkl_delay_value;
 int bklt_pwm_delay_value;
 int bklt_en_delay_value;
+int lvds_bkl_disable_delay_value;
+int bklt_en_disable_delay_value;
 enum of_gpio_flags lvds_vcc_flag;
 enum of_gpio_flags lvds_bkl_flag;
 enum of_gpio_flags bklt_vcc_flag;
@@ -141,12 +143,47 @@ void enable_ldb_bkl_pwm(void)
 	mdelay(bklt_en_delay_value); // T9 for AUO 7"
 
 	// Backlight Enable (Display On/Off)
-        if (lvds_bkl_enable >= 0)
-        {
+	if (lvds_bkl_enable >= 0)
+	{
 		printk(KERN_INFO "[LVDS Sequence] 5 Start to enable LVDS backlight.\n");
 		gpio_set_value(lvds_bkl_enable, lvds_bkl_flag);
 	}
 }
+
+void disable_lcd_vdd_en(void)
+{
+	if (lvds_vcc_enable >= 0)
+	{
+		printk(KERN_INFO "[LVDS Sequence] 5 Start to disable LVDS VDD.\n");
+		gpio_set_value(lvds_vcc_enable, (lvds_vcc_flag)?0:1);
+	}
+}
+
+void disable_ldb_bkl_vcc(void)
+{
+	mdelay(lvds_bkl_disable_delay_value);
+
+	if (bklt_vcc_enable >= 0)
+	{
+		printk(KERN_INFO "[LVDS Sequence] 3 Start to disable backlight VCC.\n");
+		gpio_set_value(bklt_vcc_enable, (bklt_vcc_flag)?0:1);
+	}
+
+	printk(KERN_INFO "[LVDS Sequence] 4 Start to disable LVDS signal.\n");
+}
+
+void disable_ldb_bkl_pwm(void)
+{
+	if (lvds_bkl_enable >= 0)
+	{
+		printk(KERN_INFO "[LVDS Sequence] 1 Start to disable LVDS backlight.\n");
+		gpio_set_value(lvds_bkl_enable, (lvds_bkl_flag)?0:1);
+	}
+
+	mdelay(bklt_en_disable_delay_value);
+	printk(KERN_INFO "[LVDS Sequence] 2 Start to disable backlight PWM.\n");
+}
+
 #endif
 
 static int compute_duty_cycle(struct pwm_bl_data *pb, int brightness)
@@ -500,6 +537,16 @@ get_delays:
 	if (ret < 0)
 	{
 		bklt_en_delay_value = 20;
+	}
+	ret = of_property_read_u32(node,"bklt-en-disable-delay-time",&lvds_bkl_disable_delay_value);
+	if (ret < 0)
+	{
+		lvds_bkl_disable_delay_value = 10;
+	}
+	ret = of_property_read_u32(node,"bklt-en-disable-delay-time",&bklt_en_disable_delay_value);
+	if (ret < 0)
+	{
+		bklt_en_disable_delay_value = 5;
 	}
 #endif
 
