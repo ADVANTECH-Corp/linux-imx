@@ -424,19 +424,14 @@
 		gpio-controller;
 		#gpio-cells = <2>;
 	};
-};
-
-&i2c2 {
-	clock-frequency = <100000>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_i2c2>;
-	status = "okay";
 
 	adv_bridge: adv7535@3d {
 		compatible = "adi,adv7533";
 		reg = <0x3d>;
 		adi,addr-cec = <0x3b>;
 		adi,dsi-lanes = <4>;
+		pinctrl-0 = <&pinctrl_mipi_dsi_en>;
+		dsi-vcc-enable-gpio = <&gpio1 13 GPIO_ACTIVE_LOW>;	/* LCD_VDD_EN */
 		status = "okay";
 
 		port {
@@ -445,6 +440,13 @@
 			};
 		};
 	};
+};
+
+&i2c2 {
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c2>;
+	status = "okay";
 
 	/*lvds_bridge: lvds-to-hdmi-bridge@4c {
 		compatible = "ite,it6263";
@@ -931,6 +933,12 @@
 		fsl,pins = <
 			MX8MP_IOMUXC_ECSPI2_MISO__I2C4_SCL			0x400001c3
 			MX8MP_IOMUXC_ECSPI2_SS0__I2C4_SDA			0x400001c3
+		>;
+	};
+
+	pinctrl_mipi_dsi_en: mipi_dsi_en {
+		fsl,pins = <
+			MX8MP_IOMUXC_GPIO1_IO13__GPIO1_IO13	0x19	/* LCD_VDD_EN */
 		>;
 	};
 
