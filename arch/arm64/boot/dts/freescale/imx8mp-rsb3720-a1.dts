@@ -729,6 +729,12 @@
 	status = "okay";
 };
 
+&uart4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart4>;
+	status = "okay";
+};
+
 &usb3_phy0 {
 	fsl,phy-tx-vref-tune = <6>;
 	fsl,phy-tx-rise-tune = <0>;
@@ -997,6 +1003,13 @@
 			MX8MP_IOMUXC_ECSPI1_MOSI__UART3_DCE_TX		0x140
 			MX8MP_IOMUXC_ECSPI1_SS0__UART3_DCE_RTS		0x140
 			MX8MP_IOMUXC_ECSPI1_MISO__UART3_DCE_CTS		0x140
+		>;
+	};
+
+	pinctrl_uart4: uart4grp {
+		fsl,pins = <
+			MX8MP_IOMUXC_UART4_RXD__UART4_DCE_RX	0x49
+			MX8MP_IOMUXC_UART4_TXD__UART4_DCE_TX	0x49
 		>;
 	};
 
