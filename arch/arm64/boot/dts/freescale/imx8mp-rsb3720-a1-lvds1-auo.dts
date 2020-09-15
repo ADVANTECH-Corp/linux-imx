@@ -3,7 +3,38 @@
  * Copyright 2019 NXP
  */
 
-#define LVDS_PANEL
 #define LVDS_SINGLE_1
-#define LVDS_AUO_7
 #include "imx8mp-rsb3720-a1.dts"
+
+&lvds_backlight0 {
+	status = "disabled";
+};
+
+&lvds_panel {
+    backlight = <&lvds_backlight1>;
+};
+
+&ldb {
+    lvds-channel@1 {
+        fsl,data-mapping = "spwg";
+        fsl,data-width = <24>;
+        status = "okay";
+
+        port@1 {
+            reg = <1>;
+
+            lvds_out: endpoint {
+                    remote-endpoint = <&panel_lvds_in>;
+            };
+		};
+    };
+};
+
+&lvds_backlight1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_lvds_vcc &pinctrl_lvds_bkl_1 &pinctrl_bklt_vcc_1>;
+	lvds-vcc-enable = <&gpio1 13 GPIO_ACTIVE_HIGH>;	/* LCD_VDD_EN */
+	lvds-bkl-enable = <&gpio5 10 GPIO_ACTIVE_LOW>;	/* LCD_BKLT1_EN */
+	bklt-vcc-enable = <&gpio1 1 GPIO_ACTIVE_HIGH>;	/* VDD_BKLT1_EN */
+	status = "okay";
+};

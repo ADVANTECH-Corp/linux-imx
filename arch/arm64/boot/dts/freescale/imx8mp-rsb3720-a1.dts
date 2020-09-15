@@ -118,7 +118,7 @@
 	lvds_backlight1: lvds_backlight@1 {
 		compatible = "pwm-backlight";
 		pwms = <&pwm3 0 5000000>;
-		status = "okay";
+		status = "disabled";
 
 		brightness-levels = < 0  1  2  3  4  5  6  7  8  9
 				     10 11 12 13 14 15 16 17 18 19
@@ -134,25 +134,16 @@
 		default-brightness-level = <80>;
 	};
 
-#if defined(LVDS_PANEL)
-	lvds_panel {
-#if defined(LVDS_AUO_215)
-			compatible = "auo,t215hvn01";
-#else /* LVDS_AUO_7 */
-            compatible = "auo,g070vvn01";
-#endif
-#if defined(LVDS_DUAL) || defined(LVDS_SINGLE_0)
-            backlight = <&lvds_backlight0>;
-#else
-			backlight = <&lvds_backlight1>;
-#endif
-            port {
-                    panel_lvds_in: endpoint {
-                            remote-endpoint = <&lvds_out>;
-                    };
+	lvds_panel: lvds_panel {
+        compatible = "auo,g070vvn01";
+        backlight = <&lvds_backlight0>;
+
+        port {
+            panel_lvds_in: endpoint {
+                    remote-endpoint = <&lvds_out>;
             };
+        };
     };
-#endif
 
 	sound {
 		compatible = "fsl,sgtl5000", "fsl,imx-audio-sgtl5000";
@@ -405,22 +396,6 @@
 		#gpio-cells = <2>;
 	};
 
-	adv_bridge: adv7535@3d {
-		compatible = "adi,adv7533";
-		reg = <0x3d>;
-		adi,addr-cec = <0x3b>;
-		adi,dsi-lanes = <4>;
-		pinctrl-0 = <&pinctrl_mipi_dsi_en>;
-		dsi-vcc-enable-gpio = <&gpio1 13 GPIO_ACTIVE_LOW>;	/* LCD_VDD_EN */
-		status = "okay";
-
-		port {
-			adv7535_from_dsim: endpoint {
-				remote-endpoint = <&dsim_to_adv7535>;
-			};
-		};
-	};
-
 	codec: sgtl5000@a {
 		compatible = "fsl,sgtl5000";
 		reg = <0x0a>;
@@ -435,18 +410,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c2>;
 	status = "okay";
-
-	/*lvds_bridge: lvds-to-hdmi-bridge@4c {
-		compatible = "ite,it6263";
-		reg = <0x4c>;
-		reset-gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
-
-		port {
-			it6263_in: endpoint {
-				remote-endpoint = <&lvds_out>;
-			};
-		};
-	};*/
 
 	ov5640_0: ov5640_mipi@3c {
 		compatible = "ovti,ov5640";
@@ -481,13 +444,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c3>;
 	status = "okay";
-
-	pca6416: gpio@20 {
-		compatible = "ti,tca6416";
-		reg = <0x20>;
-		gpio-controller;
-		#gpio-cells = <2>;
-	};
 
 	ov5640_1: ov5640_mipi@3c {
 		compatible = "ovti,ov5640";
@@ -581,28 +537,9 @@
 
 &ldb {
 	status = "okay";
-#if defined(LVDS_DUAL)
-	fsl,dual-channel;
-#endif
 
-#if defined(LVDS_DUAL) || defined(LVDS_SINGLE_0)
-    lvds-channel@0 {
-        fsl,data-mapping = "spwg";
-        fsl,data-width = <24>;
-        status = "okay";
-
-        port@1 {
-            reg = <1>;
-
-            lvds_out: endpoint {
-                    remote-endpoint = <&panel_lvds_in>;
-            };
-		};
-    };
-#endif
-
-#if defined(LVDS_SINGLE_1)
-    lvds-channel@1 {
+#if !defined(LVDS_SINGLE_1)
+	lvds-channel@0 {
         fsl,data-mapping = "spwg";
         fsl,data-width = <24>;
         status = "okay";
@@ -624,13 +561,6 @@
 
 &mipi_dsi {
 	status = "okay";
-
-	port@1 {
-		dsim_to_adv7535: endpoint {
-			remote-endpoint = <&adv7535_from_dsim>;
-			attach-bridge;
-		};
-	};
 };
 
 &easrc {
@@ -917,12 +847,6 @@
 		fsl,pins = <
 			MX8MP_IOMUXC_ECSPI2_MISO__I2C4_SCL			0x400001c3
 			MX8MP_IOMUXC_ECSPI2_SS0__I2C4_SDA			0x400001c3
-		>;
-	};
-
-	pinctrl_mipi_dsi_en: mipi_dsi_en {
-		fsl,pins = <
-			MX8MP_IOMUXC_GPIO1_IO13__GPIO1_IO13	0x19	/* LCD_VDD_EN */
 		>;
 	};
 
@@ -1298,24 +1222,5 @@
 	lvds-vcc-enable = <&gpio1 13 GPIO_ACTIVE_HIGH>;	/* LCD_VDD_EN */
 	lvds-bkl-enable = <&gpio5 11 GPIO_ACTIVE_LOW>;	/* LCD_BKLT0_EN */
 	bklt-vcc-enable = <&gpio1 0 GPIO_ACTIVE_HIGH>;	/* VDD_BKLT0_EN */
-	//skip-gpios-init;
-#if defined(LVDS_DUAL) || defined(LVDS_SINGLE_0)
 	status = "okay";
-#else
-	status = "disabled";
-#endif
-};
-
-&lvds_backlight1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_lvds_vcc &pinctrl_lvds_bkl_1 &pinctrl_bklt_vcc_1>;
-	lvds-vcc-enable = <&gpio1 13 GPIO_ACTIVE_HIGH>;	/* LCD_VDD_EN */
-	lvds-bkl-enable = <&gpio5 10 GPIO_ACTIVE_LOW>;	/* LCD_BKLT1_EN */
-	bklt-vcc-enable = <&gpio1 1 GPIO_ACTIVE_HIGH>;	/* VDD_BKLT1_EN */
-	//skip-gpios-init;
-#if defined(LVDS_SINGLE_1)
-	status = "okay";
-#else
-	status = "disabled";
-#endif
 };
