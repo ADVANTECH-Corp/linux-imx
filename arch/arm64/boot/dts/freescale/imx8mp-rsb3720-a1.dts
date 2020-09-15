@@ -81,15 +81,6 @@
 		off-on-delay-us = <12000>;
 	};
 
-	reg_audio_pwr: regulator-audio-pwr {
-		compatible = "regulator-fixed";
-		regulator-name = "audio-pwr";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio4 29 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-	};
-
 	sound-hdmi {
 		compatible = "fsl,imx-audio-cdnhdmi";
 		model = "audio-hdmi";
@@ -103,39 +94,6 @@
 				<96000>,
 				<192000>;
 		status = "okay";
-	};
-
-	sound-wm8960 {
-		compatible = "fsl,imx7d-evk-wm8960", "fsl,imx-audio-wm8960";
-		model = "wm8960-audio";
-		cpu-dai = <&sai3>;
-		audio-codec = <&codec>;
-		asrc-controller = <&easrc>;
-		codec-master;
-		/* JD2: hp detect high for headphone*/
-		hp-det = <3 0>;
-		hp-det-gpios = <&gpio4 28 0>;
-		mic-det-gpios = <&gpio4 28 0>;
-		audio-routing =
-			"Headphone Jack", "HP_L",
-			"Headphone Jack", "HP_R",
-			"Ext Spk", "SPK_LP",
-			"Ext Spk", "SPK_LN",
-			"Ext Spk", "SPK_RP",
-			"Ext Spk", "SPK_RN",
-			"LINPUT1", "Mic Jack",
-			"LINPUT3", "Mic Jack",
-			"Mic Jack", "MICB",
-			"CPU-Playback", "ASRC-Playback",
-			"Playback", "CPU-Playback",
-			"ASRC-Capture", "CPU-Capture",
-			"CPU-Capture", "Capture";
-	};
-
-	sound-xcvr {
-		compatible = "fsl,imx-audio-xcvr";
-		model = "imx-audio-xcvr";
-		cpu-dai = <&xcvr>;
 	};
 
 	lvds_backlight0: lvds_backlight@0 {
@@ -195,6 +153,19 @@
             };
     };
 #endif
+
+	sound {
+		compatible = "fsl,sgtl5000", "fsl,imx-audio-sgtl5000";
+		model = "sgtl5000";
+		codec-master;
+		ssi-controller = <&sai3>;
+		audio-codec = <&codec>;
+		audio-routing =
+			"MIC_IN", "Mic Jack",
+			"Mic Jack", "Mic Bias",
+			"Line Out Jack", "LINE_OUT";
+		no-audmux;
+	};
 };
 
 &aud2htx {
@@ -449,6 +420,14 @@
 			};
 		};
 	};
+
+	codec: sgtl5000@a {
+		compatible = "fsl,sgtl5000";
+		reg = <0x0a>;
+		clocks = <&audiomix_clk IMX8MP_CLK_AUDIOMIX_SAI3_MCLK1>;
+		clock-names = "mclk";
+		pinctrl-names = "default";
+	};
 };
 
 &i2c2 {
@@ -535,15 +514,6 @@
 				clock-lanes = <0>;
 			};
 		};
-	};
-
-	codec: wm8960@1a {
-		compatible = "wlf,wm8960";
-		reg = <0x1a>;
-		clocks = <&audiomix_clk IMX8MP_CLK_AUDIOMIX_SAI3_MCLK1>;
-		clock-names = "mclk";
-		wlf,shared-lrclk;
-		SPKVDD1-supply = <&reg_audio_pwr>;
 	};
 };
 
@@ -708,11 +678,6 @@
 		 <&clk IMX8MP_CLK_DUMMY>;
 	clock-names = "bus", "mclk0", "mclk1", "mclk2", "mclk3";
 	fsl,sai-mclk-direction-output;
-	status = "okay";
-};
-
-&xcvr {
-	#sound-dai-cells = <0>;
 	status = "okay";
 };
 
@@ -992,8 +957,6 @@
 			MX8MP_IOMUXC_SAI3_RXD__AUDIOMIX_SAI3_RX_DATA00	0xd6
 			MX8MP_IOMUXC_SAI3_TXD__AUDIOMIX_SAI3_TX_DATA00	0xd6
 			MX8MP_IOMUXC_SAI3_MCLK__AUDIOMIX_SAI3_MCLK	0xd6
-			MX8MP_IOMUXC_SAI3_RXFS__GPIO4_IO28		0xd6
-			MX8MP_IOMUXC_SAI3_RXC__GPIO4_IO29		0xd6
 		>;
 	};
 
