@@ -119,6 +119,7 @@ obj-$(CONFIG_SOC_IMX53) += suspend-imx53.o
 obj-$(CONFIG_SOC_IMX7ULP) += suspend-imx7ulp.o
 endif
 obj-$(CONFIG_SOC_IMX6) += pm-imx6.o
+obj-$(CONFIG_ARCH_ADVANTECH) += proc-board.o
 
 obj-$(CONFIG_SOC_IMX1) += mach-imx1.o
 obj-$(CONFIG_SOC_IMX50) += mach-imx50.o
