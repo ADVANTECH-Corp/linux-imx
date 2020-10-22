@@ -1153,7 +1153,8 @@ static int adv7511_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	unsigned int val;
 	int ret;
 #ifdef CONFIG_ARCH_ADVANTECH
-	int dsi_vcc_enable_gpio;
+	int dsi_vcc_enable_gpio, bklt_vcc_enable_gpio;
+	enum of_gpio_flags dsi_vcc_enable_flag, bklt_vcc_enable_flag;
 #endif
 
 	if (!dev->of_node)
@@ -1217,10 +1218,26 @@ static int adv7511_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	}
 
 #ifdef CONFIG_ARCH_ADVANTECH
-	dsi_vcc_enable_gpio = of_get_named_gpio(dev->of_node, "dsi-vcc-enable-gpio", 0);
-	if (gpio_is_valid(dsi_vcc_enable_gpio)) {
-		ret = devm_gpio_request_one(dev, dsi_vcc_enable_gpio, GPIOF_OUT_INIT_LOW,
-			"dsi_vcc_enable_gpio");
+	dsi_vcc_enable_gpio = of_get_named_gpio_flags(dev->of_node, "dsi-vcc-enable-gpio", 0, &dsi_vcc_enable_flag);
+	if (dsi_vcc_enable_gpio >= 0)
+	{
+		ret = gpio_request(dsi_vcc_enable_gpio, "dsi_vcc_enable_gpio");
+
+		if (ret < 0)
+			printk("\nRequest dsi_vcc_enable_gpio failed!!\n");
+		else
+			gpio_direction_output(dsi_vcc_enable_gpio, dsi_vcc_enable_flag);
+	}
+
+	bklt_vcc_enable_gpio = of_get_named_gpio_flags(dev->of_node, "bklt-vcc-enable-gpio", 0, &bklt_vcc_enable_flag);
+	if (bklt_vcc_enable_gpio >= 0)
+	{
+		ret = gpio_request(bklt_vcc_enable_gpio, "bklt_vcc_enable_gpio");
+
+		if (ret < 0)
+			printk("\nRequest bklt_vcc_enable_gpio failed!!\n");
+		else
+			gpio_direction_output(bklt_vcc_enable_gpio, bklt_vcc_enable_flag);
 	}
 
 	mdelay(50);
