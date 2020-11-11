@@ -1230,3 +1230,7 @@
 	bklt-vcc-enable = <&gpio1 0 GPIO_ACTIVE_LOW>;	/* VDD_BKLT0_EN */
 	status = "okay";
 };
+
+&snvs_rtc {
+	status = "disabled";
+};
