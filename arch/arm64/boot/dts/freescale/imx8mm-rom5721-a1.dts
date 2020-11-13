@@ -220,7 +220,7 @@
 &uart4 { /* M4 debug */
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart4>;
-	status = "disabled";
+	status = "okay";
 };
 
 &usbotg1 {
