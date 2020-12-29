@@ -3,31 +3,40 @@
  * Copyright 2019 NXP
  */
 
-#define LVDS_SINGLE_1
 #include "imx8mp-rsb3720-a1.dts"
 
-&lvds_backlight0 {
-	status = "disabled";
-};
+/ {
+	lvds_panel: lvds_panel {
+		compatible = "auo,g070vvn01";
+		backlight = <&lvds_backlight1>;
 
-&lvds_panel {
-    backlight = <&lvds_backlight1>;
+		port {
+			panel_lvds_in: endpoint {
+				remote-endpoint = <&lvds_out>;
+			};
+		};
+	};
 };
 
 &ldb {
-    lvds-channel@1 {
-        fsl,data-mapping = "spwg";
-        fsl,data-width = <24>;
-        status = "okay";
+	status = "okay";
 
-        port@1 {
-            reg = <1>;
+	lvds-channel@1 {
+		fsl,data-mapping = "spwg";
+		fsl,data-width = <24>;
+		status = "okay";
 
-            lvds_out: endpoint {
-                    remote-endpoint = <&panel_lvds_in>;
-            };
+		port@1 {
+			reg = <1>;
+			lvds_out: endpoint {
+				remote-endpoint = <&panel_lvds_in>;
+			};
 		};
-    };
+	};
+};
+
+&ldb_phy {
+	status = "okay";
 };
 
 &lvds_backlight1 {
