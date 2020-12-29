@@ -79,7 +79,7 @@
 	lvds_backlight0: lvds_backlight@0 {
 		compatible = "pwm-backlight";
 		pwms = <&pwm2 0 5000000>;
-		status = "okay";
+		status = "disabled";
 
 		brightness-levels = < 0  1  2  3  4  5  6  7  8  9
 				     10 11 12 13 14 15 16 17 18 19
@@ -113,17 +113,6 @@
 				    100>;
 		default-brightness-level = <80>;
 	};
-
-	lvds_panel: lvds_panel {
-        compatible = "auo,g070vvn01";
-        backlight = <&lvds_backlight0>;
-
-        port {
-            panel_lvds_in: endpoint {
-                    remote-endpoint = <&lvds_out>;
-            };
-        };
-    };
 
 	sound {
 		compatible = "fsl,sgtl5000", "fsl,imx-audio-sgtl5000";
@@ -517,31 +506,15 @@
 };
 
 &ldb {
-	status = "okay";
-
-#if !defined(LVDS_SINGLE_1)
-	lvds-channel@0 {
-        fsl,data-mapping = "spwg";
-        fsl,data-width = <24>;
-        status = "okay";
-
-        port@1 {
-            reg = <1>;
-
-            lvds_out: endpoint {
-                    remote-endpoint = <&panel_lvds_in>;
-            };
-		};
-    };
-#endif
+	status = "disabled";
 };
 
 &ldb_phy {
-	status = "okay";
+	status = "disabled";
 };
 
 &mipi_dsi {
-	status = "okay";
+	status = "disabled";
 };
 
 &easrc {
@@ -1219,15 +1192,6 @@
 };
 
 &dsp {
-	status = "okay";
-};
-
-&lvds_backlight0 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_lvds_vcc &pinctrl_lvds_bkl_0 &pinctrl_bklt_vcc_0>;
-	lvds-vcc-enable = <&gpio1 13 GPIO_ACTIVE_HIGH>;	/* LCD_VDD_EN */
-	lvds-bkl-enable = <&gpio5 11 GPIO_ACTIVE_LOW>;	/* LCD_BKLT0_EN */
-	bklt-vcc-enable = <&gpio1 0 GPIO_ACTIVE_LOW>;	/* VDD_BKLT0_EN */
 	status = "okay";
 };
 

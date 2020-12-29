@@ -7,7 +7,7 @@
 
 / {
 	lvds_panel: lvds_panel {
-		compatible = "auo,t215hvn01";
+		compatible = "auo,g070vvn01";
 		backlight = <&lvds_backlight0>;
 
 		port {
@@ -20,7 +20,6 @@
 
 &ldb {
 	status = "okay";
-	fsl,dual-channel;
 
 	lvds-channel@0 {
 		fsl,data-mapping = "spwg";
