@@ -15,15 +15,13 @@
 #include "imx8mm-rom5721-a1.dts"
 
 / {
-        clocks {
-                        osc_27m: clock@6 {
-                        compatible = "fixed-clock";
-                        reg = <7>;
-                        #clock-cells = <0>;
-                        clock-frequency= <27000000>;
-                        clock-output-names = "osc_27m";
-                };
-        };
+	osc_27m: clock-osc-27m {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <27000000>;
+		clock-output-names = "osc_27m";
+	};
+
         panel: edp_panel {
                         compatible ="std,1080p", "simple-panel";
                         status = "okay";
