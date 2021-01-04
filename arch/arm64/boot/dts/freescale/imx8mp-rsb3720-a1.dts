@@ -57,7 +57,7 @@
 		pinctrl-0 = <&pinctrl_flexcan2_reg>;
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio4 27 GPIO_ACTIVE_HIGH>;
+		//gpio = <&gpio4 27 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 	};
 
@@ -632,10 +632,11 @@
 &pcie{
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie>;
-	//clkreq-gpio = <&gpio5 20 GPIO_ACTIVE_HIGH>;
-	power-on-gpio = <&gpio1 9 GPIO_ACTIVE_LOW>;
+	//clkreq-gpio = <&gpio5 20 GPIO_ACTIVE_HIGH>;	/* PCIE_CLKREQ# */
+	power-on-gpio = <&gpio1 9 GPIO_ACTIVE_LOW>;	/* M2_PWR_EN */
 	disable-gpio = <&gpio1 11 GPIO_ACTIVE_LOW>;	/* M2_W_DIS1# */
-	reset-gpio = <&gpio1 10 GPIO_ACTIVE_HIGH>;
+	reset-gpio = <&gpio1 10 GPIO_ACTIVE_HIGH>;	/* M2_RESET# */
+	usb-host-pwr-en = <&gpio1 5 GPIO_ACTIVE_LOW>; /* MINICARD_PWR_EN */
 	ext_osc = <1>;
 	clocks = <&clk IMX8MP_CLK_HSIO_AXI_DIV>,
 		 <&clk IMX8MP_CLK_PCIE_AUX>,
@@ -860,7 +861,7 @@
 
 	pinctrl_flexcan2_reg: flexcan2reggrp {
 		fsl,pins = <
-			MX8MP_IOMUXC_SAI2_MCLK__GPIO4_IO27	0x154	/* CAN2_STBY */
+			//MX8MP_IOMUXC_SAI2_MCLK__GPIO4_IO27	0x154	/* CAN2_STBY */
 		>;
 	};
 

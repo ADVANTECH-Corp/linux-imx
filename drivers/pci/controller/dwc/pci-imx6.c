@@ -125,6 +125,7 @@ struct imx6_pcie {
 	int			reset_gpio;
 #ifdef CONFIG_ARCH_ADVANTECH
 	int			power_on_gpio;
+	int			usb_host_pwr_en_gpio;
 	int                     reset_time;
 #endif
 	bool			gpio_active_high;
@@ -2482,19 +2483,33 @@ static int imx6_pcie_probe(struct platform_device *pdev)
 	}
 
 #ifdef CONFIG_ARCH_ADVANTECH
-        imx6_pcie->power_on_gpio = of_get_named_gpio(node, "power-on-gpio", 0);
-        if (gpio_is_valid(imx6_pcie->power_on_gpio)) {
-                ret = devm_gpio_request_one(&pdev->dev,
-                                            imx6_pcie->power_on_gpio,
-                                            GPIOF_OUT_INIT_LOW,
-                                            "PCIe power enable");
-                if (ret) {
-                        dev_err(&pdev->dev, "unable to get power-on gpio\n");
-                        return ret;
-                }
-        } else if (imx6_pcie->power_on_gpio == -EPROBE_DEFER) {
-                return imx6_pcie->power_on_gpio;
-        }
+	imx6_pcie->power_on_gpio = of_get_named_gpio(node, "power-on-gpio", 0);
+	if (gpio_is_valid(imx6_pcie->power_on_gpio)) {
+		ret = devm_gpio_request_one(&pdev->dev,
+					    imx6_pcie->power_on_gpio,
+					    GPIOF_OUT_INIT_LOW,
+					    "PCIe power enable");
+		if (ret) {
+			dev_err(&pdev->dev, "unable to get power-on gpio\n");
+			return ret;
+		}
+	} else if (imx6_pcie->power_on_gpio == -EPROBE_DEFER) {
+		return imx6_pcie->power_on_gpio;
+	}
+
+	imx6_pcie->usb_host_pwr_en_gpio = of_get_named_gpio(node, "usb-host-pwr-en", 0);
+	if (gpio_is_valid(imx6_pcie->usb_host_pwr_en_gpio)) {
+		ret = devm_gpio_request_one(&pdev->dev,
+					    imx6_pcie->usb_host_pwr_en_gpio,
+					    GPIOF_OUT_INIT_HIGH,
+					    "usb-host-pwr-en");
+		if (ret) {
+			dev_err(&pdev->dev, "unable to get usb-host-pwr-en gpio\n");
+			return ret;
+		}
+	} else if (imx6_pcie->usb_host_pwr_en_gpio == -EPROBE_DEFER) {
+		return imx6_pcie->usb_host_pwr_en_gpio;
+	}
 #endif
 
 	imx6_pcie->epdev_on = devm_regulator_get(&pdev->dev, "epdev_on");
