@@ -126,6 +126,14 @@
 			"Line Out Jack", "LINE_OUT";
 		no-audmux;
 	};
+
+	rtl8367 {
+		compatible = "realtek,rtl8367b";
+		pinctrl-names = "default";
+		gpio-sda = <&gpio5 10 GPIO_ACTIVE_HIGH>;
+		gpio-sck = <&gpio5 11 GPIO_ACTIVE_HIGH>;
+		realtek,extif0 = <1 0 1 1 1 1 1 1 2>;
+	};
 };
 
 &aud2htx {
