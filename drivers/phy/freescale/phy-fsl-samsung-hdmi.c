@@ -17,6 +17,11 @@
 
 #include "phy-fsl-samsung-hdmi.h"
 
+#ifdef CONFIG_ARCH_ADVANTECH
+int tx_vl_5c = 0;	//For SI test
+int tx_vl_60 = 0;	//For SI test
+#endif
+
 struct samsung_hdmi_phy {
 	struct device *dev;
 	void __iomem *regs;
@@ -76,6 +81,12 @@ static int samsung_hdmi_phy_clk_set_rate(struct clk_hw *hw,
 	const struct phy_config *phy_cfg = samsung_phy_cfg_table;
 	int i;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	int ret;
+	ret = of_property_read_u32(samsung->dev->of_node, "tx_vl_5c", &tx_vl_5c);
+	ret = of_property_read_u32(samsung->dev->of_node, "tx_vl_60", &tx_vl_60);
+#endif
+
 	dev_dbg(samsung->dev, "%s\n", __func__);
 
 	for (; phy_cfg->clk_rate != 0; phy_cfg++)
@@ -91,6 +102,10 @@ static int samsung_hdmi_phy_clk_set_rate(struct clk_hw *hw,
 	for (i = 0; i < 48; i++)
 		writeb(phy_cfg->regs[i], samsung->regs + i * 4);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	writeb(tx_vl_5c, samsung->regs + 0x5c);
+	writeb(tx_vl_60, samsung->regs + 0x60);
+#endif
 	writeb(0x82, samsung->regs + 0x84);
 
 	/* Wait for PHY PLL lock */
