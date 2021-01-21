@@ -96,7 +96,7 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 int lvds_vcc_enable;
 int lvds_bkl_enable;
 int bklt_vcc_enable;
-int lvds_vcc_delay_value;
+//int lvds_vcc_delay_value;
 int lvds_bkl_delay_value;
 int bklt_pwm_delay_value;
 int bklt_en_delay_value;
@@ -109,7 +109,7 @@ enum of_gpio_flags bklt_vcc_flag;
 void enable_lcd_vdd_en(void)
 {
 	/* LVDS Panel power enable */
-	if (lvds_vcc_enable >= 0)
+	if (lvds_vcc_enable > 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD.\n");
 		gpio_set_value(lvds_vcc_enable, lvds_vcc_flag);
@@ -118,17 +118,17 @@ void enable_lcd_vdd_en(void)
 	printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
 }
 
-void enable_ldb_signal(void)
+/*void enable_ldb_signal(void)
 {
 	mdelay(lvds_vcc_delay_value); // T2 for AUO 7"
-}
+}*/
 
 void enable_ldb_bkl_vcc(void)
 {
 	mdelay(lvds_bkl_delay_value); // T3 for AUO 7"
 
 	// Backlight On (VCC)
-	if (bklt_vcc_enable >= 0)
+	if (bklt_vcc_enable > 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 3 Start to enable backlight VCC.\n");
 		gpio_set_value(bklt_vcc_enable, bklt_vcc_flag);
@@ -143,7 +143,7 @@ void enable_ldb_bkl_pwm(void)
 	mdelay(bklt_en_delay_value); // T9 for AUO 7"
 
 	// Backlight Enable (Display On/Off)
-	if (lvds_bkl_enable >= 0)
+        if (lvds_bkl_enable > 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 5 Start to enable LVDS backlight.\n");
 		gpio_set_value(lvds_bkl_enable, lvds_bkl_flag);
@@ -489,7 +489,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	}
 
 	/* Set default to output */
-	if (lvds_vcc_enable >= 0)
+	if (lvds_vcc_enable > 0)
 	{
 		ret = gpio_request(lvds_vcc_enable,"lvds_vcc_enable");
 
@@ -498,7 +498,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 		else
 			gpio_direction_output(lvds_vcc_enable, (lvds_vcc_flag)?0:1);
 	}
-	if (bklt_vcc_enable >= 0)
+	if (bklt_vcc_enable > 0)
 	{
 		ret = gpio_request(bklt_vcc_enable,"bklt_vdd_enable");
 
@@ -507,7 +507,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 		else
 			gpio_direction_output(bklt_vcc_enable, (bklt_vcc_flag)?0:1);
 	}
-	if (lvds_bkl_enable >= 0)
+	if (lvds_bkl_enable > 0)
         {
 		ret = gpio_request(lvds_bkl_enable,"lvds_bkl_enable");
 
@@ -518,11 +518,11 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	}
 
 get_delays:
-	ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds_vcc_delay_value);
+	/*ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds_vcc_delay_value);
 	if (ret < 0)
 	{
-		lvds_vcc_delay_value = 25;
-	}
+		lvds_vcc_delay_value = 10;
+	}*/
 	ret = of_property_read_u32(node,"lvds-bkl-delay-time",&lvds_bkl_delay_value);
 	if (ret < 0)
 	{

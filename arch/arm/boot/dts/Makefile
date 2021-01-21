@@ -655,6 +655,7 @@ dtb-$(CONFIG_SOC_IMX6UL) += \
 	imx6ulz-14x14-evk-emmc.dtb
 dtb-$(CONFIG_ARCH_ADVANTECH) += \
         imx6q-rsb4410-a1.dtb \
+        imx6q-rsb4411-a1.dtb 
 dtb-$(CONFIG_SOC_IMX7D) += \
 	imx7d-cl-som-imx7.dtb \
 	imx7d-colibri-emmc-eval-v3.dtb \

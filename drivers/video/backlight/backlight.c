@@ -32,6 +32,11 @@ static const char *const backlight_types[] = {
 	[BACKLIGHT_FIRMWARE] = "firmware",
 };
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+int blank_count2 = 0;
+extern void enable_ldb_bkl_vcc(void);
+extern void enable_ldb_bkl_pwm(void);
+#endif
 static const char *const backlight_scale_types[] = {
 	[BACKLIGHT_SCALE_UNKNOWN]	= "unknown",
 	[BACKLIGHT_SCALE_LINEAR]	= "linear",
@@ -51,24 +56,56 @@ static int fb_notifier_callback(struct notifier_block *self,
 	struct fb_event *evdata = data;
 	int node = evdata->info->node;
 	int fb_blank = 0;
-
+#if defined(CONFIG_SOC_IMX6)
 	/* If we aren't interested in this event, skip it immediately ... */
 	if (event != FB_EVENT_BLANK)
 		return 0;
-
+#endif
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	if (blank_count2 == 0)
+		blank_count2++;
+#endif
 	bd = container_of(self, struct backlight_device, fb_notif);
 	mutex_lock(&bd->ops_lock);
 	if (bd->ops)
 		if (!bd->ops->check_fb ||
 		    bd->ops->check_fb(bd, evdata->info)) {
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+			if (evdata->data == NULL) {
+				mutex_unlock(&bd->ops_lock);
+				return 0;
+			}
+#endif
+#if defined(CONFIG_ANDROID)
+			if(event == FB_EVENT_FB_REGISTERED)
+				fb_blank = 0;
+			else
+				fb_blank = *(int *)evdata->data;
+#else
 			fb_blank = *(int *)evdata->data;
+#endif
 			if (fb_blank == FB_BLANK_UNBLANK &&
 			    !bd->fb_bl_on[node]) {
 				bd->fb_bl_on[node] = true;
 				if (!bd->use_count++) {
 					bd->props.state &= ~BL_CORE_FBBLANK;
 					bd->props.fb_blank = FB_BLANK_UNBLANK;
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+					switch (blank_count2)
+					{
+					case 1:
+						enable_ldb_bkl_vcc();
+						backlight_update_status(bd); //PWM
+						enable_ldb_bkl_pwm();
+						blank_count2++;
+						break;
+					default:
+						backlight_update_status(bd);
+						break;
+					}
+#else
 					backlight_update_status(bd);
+#endif
 				}
 			} else if (fb_blank != FB_BLANK_UNBLANK &&
 				   bd->fb_bl_on[node]) {
