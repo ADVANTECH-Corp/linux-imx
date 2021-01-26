@@ -96,7 +96,7 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 int lvds_vcc_enable;
 int lvds_bkl_enable;
 int bklt_vcc_enable;
-//int lvds_vcc_delay_value;
+int lvds_vcc_delay_value;
 int lvds_bkl_delay_value;
 int bklt_pwm_delay_value;
 int bklt_en_delay_value;
@@ -118,10 +118,10 @@ void enable_lcd_vdd_en(void)
 	printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
 }
 
-/*void enable_ldb_signal(void)
+void enable_ldb_signal(void)
 {
 	mdelay(lvds_vcc_delay_value); // T2 for AUO 7"
-}*/
+}
 
 void enable_ldb_bkl_vcc(void)
 {
