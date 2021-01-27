@@ -716,6 +716,8 @@
 			MX8MP_IOMUXC_SAI1_RXFS__GPIO4_IO00	0x1c4	/* I2C_EXP_INT0# */
 			MX8MP_IOMUXC_SAI1_RXC__GPIO4_IO01	0x1c4	/* I2C_EXP_INT1# */
 			MX8MP_IOMUXC_SPDIF_EXT_CLK__GPIO5_IO05	0x1c4	/* UART1_WAKE# */
+			MX8MP_IOMUXC_ECSPI2_MOSI__GPIO5_IO11	0x19		/* GPIO 11 */
+			MX8MP_IOMUXC_ECSPI2_SCLK__GPIO5_IO10	0x19		/* GPIO 12 */
 		>;
 	};
 
@@ -1111,21 +1113,9 @@
 		>;
 	};
 
-	pinctrl_lvds_bkl_0: lvds_bkl_0_grp {
-		fsl,pins = <
-			MX8MP_IOMUXC_ECSPI2_MOSI__GPIO5_IO11	0x19	/* LCD_BKLT0_EN */
-		>;
-	};
-
 	pinctrl_bklt_vcc_0: bklt_vcc_0_grp {
 		fsl,pins = <
 			MX8MP_IOMUXC_GPIO1_IO00__GPIO1_IO00	0x19	/* VDD_BKLT0_EN */
-		>;
-	};
-
-	pinctrl_lvds_bkl_1: lvds_bkl_1_grp {
-		fsl,pins = <
-			MX8MP_IOMUXC_ECSPI2_SCLK__GPIO5_IO10	0x19	/* LCD_BKLT1_EN */
 		>;
 	};
 
