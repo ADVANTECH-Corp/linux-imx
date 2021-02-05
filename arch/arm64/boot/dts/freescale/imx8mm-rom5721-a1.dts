@@ -17,6 +17,13 @@
 		board-type = "ROM-5721 A1";
 		board-cpu = "IMX8MM";
 	};
+
+
+        aliases {
+                rtc0 = &s35390a;
+                rtc1 = &snvs_rtc;
+        };
+
 	reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
