@@ -564,6 +564,8 @@
 };
 
 &pcie_phy{
+	ext_osc = <1>;
+	tx_drv_lvl_ctrl_g1 = <0x38>;    //For SI test
 	status = "okay";
 };
 
