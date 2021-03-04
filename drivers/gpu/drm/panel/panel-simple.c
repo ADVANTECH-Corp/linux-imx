@@ -33,13 +33,37 @@
 #endif
 
 #include <video/display_timing.h>
-#include <video/of_display_timing.h>
 #include <video/videomode.h>
 
 #include <drm/drm_crtc.h>
 #include <drm/drm_device.h>
 #include <drm/drm_mipi_dsi.h>
 #include <drm/drm_panel.h>
+
+
+
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <video/mipi_display.h>
+#include <video/of_display_timing.h>
+struct dsi_ctrl_hdr {
+	u8 dtype;	/* data type */
+	u8 wait;	/* ms */
+	u8 dlen;	/* payload len */
+} __packed;
+
+struct dsi_cmd_desc {
+	struct dsi_ctrl_hdr dchdr;
+	u8 *payload;
+};
+
+struct dsi_panel_cmds {
+	u8 *buf;
+	int blen;
+	struct dsi_cmd_desc *cmds;
+	int cmd_cnt;
+};
+#endif
+
 
 /**
  * @modes: Pointer to array of fixed modes appropriate for this panel.  If
@@ -114,12 +138,18 @@ struct panel_simple {
 	struct gpio_desc *enable_gpio;
 
 	struct drm_display_mode override_mode;
+	#ifdef CONFIG_ARCH_ADVANTECH
+	struct mipi_dsi_device *dsi;
+	struct device *dev;
+	struct dsi_panel_cmds *on_cmds;
+	struct dsi_panel_cmds *off_cmds;
+	#endif
+
 };
 
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
 int blank_count = 0;
-extern void enable_ldb_bkl_vcc(void);
-extern void enable_ldb_bkl_pwm(void);
+
 extern void disable_ldb_bkl_vcc(void);
 extern void disable_ldb_bkl_pwm(void);
 extern void disable_ldb_signal(void);
@@ -129,6 +159,126 @@ static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
 {
 	return container_of(panel, struct panel_simple, base);
 }
+
+#ifdef CONFIG_ARCH_ADVANTECH
+static int panel_simple_dsi_parse_dcs_cmds(struct device *dev,
+					   const u8 *data, int blen,
+					   struct dsi_panel_cmds *pcmds)
+{
+	int len;
+	char *buf, *bp;
+	struct dsi_ctrl_hdr *dchdr;
+	int i, cnt;
+
+	if (!pcmds)
+		return -EINVAL;
+
+	buf = kmemdup(data, blen, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	/* scan dcs commands */
+	bp = buf;
+	len = blen;
+	cnt = 0;
+	while (len > sizeof(*dchdr)) {
+		dchdr = (struct dsi_ctrl_hdr *)bp;
+
+		if (dchdr->dlen > len) {
+			dev_err(dev, "%s: error, len=%d", __func__,
+				dchdr->dlen);
+			return -EINVAL;
+		}
+
+		bp += sizeof(*dchdr);
+		len -= sizeof(*dchdr);
+		bp += dchdr->dlen;
+		len -= dchdr->dlen;
+		cnt++;
+	}
+
+	if (len != 0) {
+		dev_err(dev, "%s: dcs_cmd=%x len=%d error!",
+			__func__, buf[0], blen);
+		kfree(buf);
+		return -EINVAL;
+	}
+
+	pcmds->cmds = kcalloc(cnt, sizeof(struct dsi_cmd_desc), GFP_KERNEL);
+	if (!pcmds->cmds) {
+		kfree(buf);
+		return -ENOMEM;
+	}
+
+	pcmds->cmd_cnt = cnt;
+	pcmds->buf = buf;
+	pcmds->blen = blen;
+
+	bp = buf;
+	len = blen;
+	for (i = 0; i < cnt; i++) {
+		dchdr = (struct dsi_ctrl_hdr *)bp;
+		len -= sizeof(*dchdr);
+		bp += sizeof(*dchdr);
+		pcmds->cmds[i].dchdr = *dchdr;
+		pcmds->cmds[i].payload = bp;
+		bp += dchdr->dlen;
+		len -= dchdr->dlen;
+	}
+
+	dev_info(dev, "%s: dcs_cmd=%x len=%d, cmd_cnt=%d\n", __func__,
+		 pcmds->buf[0], pcmds->blen, pcmds->cmd_cnt);
+	return 0;
+}
+
+static int panel_simple_dsi_send_cmds(struct panel_simple *panel,
+				      struct dsi_panel_cmds *cmds)
+{
+	struct mipi_dsi_device *dsi = panel->dsi;
+	int i, err;
+
+
+    //dev_err(panel->base.dev, "Warren panel_simple_dsi_send_cmds into  \n");
+	if (!cmds)
+		return -EINVAL;
+
+	for (i = 0; i < cmds->cmd_cnt; i++) {
+		struct dsi_cmd_desc *cmd = &cmds->cmds[i];
+		switch (cmd->dchdr.dtype) {
+		case MIPI_DSI_GENERIC_SHORT_WRITE_0_PARAM:
+		case MIPI_DSI_GENERIC_SHORT_WRITE_1_PARAM:
+		case MIPI_DSI_GENERIC_SHORT_WRITE_2_PARAM:
+		case MIPI_DSI_GENERIC_LONG_WRITE:
+		    //dev_err(panel->base.dev, "Warren mipi_dsi_generic_write \n");
+			err = mipi_dsi_generic_write(dsi, cmd->payload,
+						     cmd->dchdr.dlen);
+			break;
+		case MIPI_DSI_DCS_SHORT_WRITE:
+		case MIPI_DSI_DCS_SHORT_WRITE_PARAM:
+		case MIPI_DSI_DCS_LONG_WRITE:
+		    //dev_err(panel->base.dev, "Warren mipi_dsi_dcs_write_buffer \n");
+			err = mipi_dsi_dcs_write_buffer(dsi, cmd->payload,
+							cmd->dchdr.dlen);
+			break;
+		default:
+			return -EINVAL;
+		}
+
+		if (err < 0)
+			dev_err(panel->base.dev, "Warren failed to write dcs cmd: %d\n",
+				err);
+
+		if (cmd->dchdr.wait)
+			msleep(cmd->dchdr.wait);
+	}
+
+
+	return 0;
+}
+#endif
+
+
+
 
 static unsigned int panel_simple_get_timings_modes(struct panel_simple *panel)
 {
@@ -317,31 +467,44 @@ static int panel_simple_prepare(struct drm_panel *panel)
 static int panel_simple_enable(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
+    int err;
 
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
 	if (blank_count == 0)
 	{
 		blank_count++;
 	}
-#endif
 
+#endif
 
 	if (p->enabled)
 		return 0;
-
+     
 	if (p->desc->delay.enable)
 		msleep(p->desc->delay.enable);
+   
+	#ifdef CONFIG_ARCH_ADVANTECH
+	if (p->on_cmds) {
+		err = panel_simple_dsi_send_cmds(p, p->on_cmds);
+		if (err)
+			dev_err(p->dev, "failed to send on cmds\n");
+	}
+    #endif
+
 
 	if (p->backlight) {
 		p->backlight->props.state &= ~BL_CORE_FBBLANK;
 		p->backlight->props.power = FB_BLANK_UNBLANK;
+
+
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
 		switch (blank_count)
 		{
 		case 1:
-			enable_ldb_bkl_vcc();
+
+			//msleep(260);
 			backlight_update_status(p->backlight); //PWM
-			enable_ldb_bkl_pwm();
+
 			blank_count++;
 			break;
 		default:
@@ -3799,7 +3962,40 @@ static const struct panel_desc_dsi auo_g101uan02 = {
     .format = MIPI_DSI_FMT_RGB888,
     .lanes = 4,
 };
+
 #endif
+#if defined(CONFIG_ARCH_ADVANTECH)
+static const struct drm_display_mode auo_g070vw01v0_mode = {
+    .clock = 29500,
+    .hdisplay = 800,
+    .hsync_start = 800 + 24,
+    .hsync_end = 800 + 24 + 72,
+    .htotal = 800 + 24 + 72 + 96,
+    .vdisplay = 480,
+    .vsync_start = 480 + 10,
+    .vsync_end = 480 + 10 + 7,
+    .vtotal = 480 + 10 + 3 + 7,
+    .vrefresh = 60,
+};
+
+static const struct panel_desc_dsi auo_g070vw01v0 = {
+    .desc = {
+        .modes = &auo_g070vw01v0_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 170,
+            .height = 110,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
+
+#endif
+
 
 static const struct of_device_id dsi_of_match[] = {
 	{
@@ -3809,6 +4005,11 @@ static const struct of_device_id dsi_of_match[] = {
 #if defined(CONFIG_DRM_PANEL_AUO_G101UAN02)
 		.compatible = "auo,g101uan02",
 		.data = &auo_g101uan02
+	}, {
+#endif
+#if defined(CONFIG_ARCH_ADVANTECH)
+		.compatible = "auo,g070vw01v0",
+		.data = &auo_g070vw01v0
 	}, {
 #endif
 		.compatible = "boe,tv080wum-nl0",
@@ -3842,6 +4043,9 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 #if defined(CONFIG_ARCH_ADVANTECH)
 	int dsi_vcc_enable_gpio, bklt_vcc_enable_gpio, bkl_enable_gpio;
 	enum of_gpio_flags vcc_enable_flag, bklt_vcc_enable_flag, bkl_enable_flag;
+	struct panel_simple *panel;
+	const void *data;
+	int len;
 #endif
 
 	id = of_match_node(dsi_of_match, dsi->dev.of_node);
@@ -3849,7 +4053,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 		return -ENODEV;
 
 	desc = id->data;
-
+/*
 #if defined(CONFIG_ARCH_ADVANTECH)
 	dsi_vcc_enable_gpio = of_get_named_gpio_flags(dsi->dev.of_node, "dsi-vcc-enable-gpio", 0, &vcc_enable_flag);
 	if (dsi_vcc_enable_gpio >= 0)
@@ -3884,7 +4088,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 			gpio_direction_output(bkl_enable_gpio, bkl_enable_flag);
 	}
 #endif
-
+*/
 	err = panel_simple_probe(&dsi->dev, &desc->desc);
 	if (err < 0)
 		return err;
@@ -3892,6 +4096,50 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	dsi->mode_flags = desc->flags;
 	dsi->format = desc->format;
 	dsi->lanes = desc->lanes;
+
+	//--------------------------------------------------------------
+	//Warren
+
+	panel = dev_get_drvdata(&dsi->dev);
+	panel->dsi = dsi;
+
+	data = of_get_property(dsi->dev.of_node, "panel-init-sequence", &len);
+	if (data) {
+		panel->on_cmds = devm_kzalloc(&dsi->dev,
+					      sizeof(*panel->on_cmds),
+					      GFP_KERNEL);
+		if (!panel->on_cmds)
+			return -ENOMEM;
+
+		err = panel_simple_dsi_parse_dcs_cmds(&dsi->dev, data, len,
+						      panel->on_cmds);
+		if (err) {
+			dev_err(&dsi->dev, "failed to parse panel init sequence\n");
+			return err;
+		}
+	}
+
+    data = of_get_property(dsi->dev.of_node, "panel-exit-sequence", &len);
+	if (data) {
+		panel->off_cmds = devm_kzalloc(&dsi->dev,
+					       sizeof(*panel->off_cmds),
+					       GFP_KERNEL);
+		if (!panel->off_cmds)
+			return -ENOMEM;
+
+		err = panel_simple_dsi_parse_dcs_cmds(&dsi->dev, data, len,
+						      panel->off_cmds);
+		if (err) {
+			dev_err(&dsi->dev, "failed to parse panel exit sequence\n");
+			return err;
+		}
+	}
+
+
+
+	//--------------------------------------------------------------
+
+
 
 	err = mipi_dsi_attach(dsi);
 	if (err) {

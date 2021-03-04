@@ -96,6 +96,9 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 int lvds_vcc_enable;
 int lvds_bkl_enable;
 int bklt_vcc_enable;
+int lvds_stby_enable;
+int lvds_reset_enable;
+
 int lvds_vcc_delay_value;
 int lvds_bkl_delay_value;
 int bklt_pwm_delay_value;
@@ -105,21 +108,49 @@ int bklt_en_disable_delay_value;
 enum of_gpio_flags lvds_vcc_flag;
 enum of_gpio_flags lvds_bkl_flag;
 enum of_gpio_flags bklt_vcc_flag;
+enum of_gpio_flags lvds_reset_flag;
+enum of_gpio_flags lvds_stby_flag;
 
 void enable_lcd_vdd_en(void)
 {
 	/* LVDS Panel power enable */
 	if (lvds_vcc_enable >= 0)
 	{
-		printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD.\n");
+		printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD. lvds_vcc_flag=%d\n",lvds_vcc_flag);
 		gpio_set_value_cansleep(lvds_vcc_enable, lvds_vcc_flag);
 	}
 
 	printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
 }
 
-void enable_ldb_signal(void)
+void enable_bridge_stdy_en(void)
 {
+	/* Bridge IC　standby */
+
+	if (lvds_stby_enable < 0)
+		return;
+	printk(KERN_INFO "[LVDS Sequence] Bridge IC  standby and reset enable\n");
+
+	gpio_direction_output(lvds_stby_enable, lvds_stby_flag);
+	msleep(10);
+	gpio_direction_output(lvds_reset_enable, 1);
+}
+
+void disable_bridge_stdy_en(void)
+{
+	/* Bridge IC　standby */
+	if (lvds_stby_enable < 0)
+		return;
+	printk(KERN_INFO "[LVDS Sequence] Bridge IC  standby and reset disable \n");
+
+	gpio_direction_output(lvds_reset_enable, 0);
+	msleep(10);
+	gpio_direction_output(lvds_stby_enable, 0);
+
+}
+
+void enable_ldb_signal(void)
+{		
 	mdelay(lvds_vcc_delay_value); // T2 for AUO 7"
 }
 
@@ -130,7 +161,7 @@ void enable_ldb_bkl_vcc(void)
 	// Backlight On (VCC)
 	if (bklt_vcc_enable >= 0)
 	{
-		printk(KERN_INFO "[LVDS Sequence] 3 Start to enable backlight VCC.\n");
+		printk(KERN_INFO "[LVDS Sequence] 3 Start to enable backlight VCC. bklt_vcc_flag=%d\n",bklt_vcc_flag);
 		gpio_set_value_cansleep(bklt_vcc_enable, bklt_vcc_flag);
 	}
 
@@ -157,6 +188,7 @@ void disable_lcd_vdd_en(void)
 		printk(KERN_INFO "[LVDS Sequence] 5 Start to disable LVDS VDD.\n");
 		gpio_set_value_cansleep(lvds_vcc_enable, (lvds_vcc_flag)?0:1);
 	}
+
 }
 
 void disable_ldb_bkl_vcc(void)
@@ -194,12 +226,14 @@ static int compute_duty_cycle(struct pwm_bl_data *pb, int brightness)
 
 	pwm_get_state(pb->pwm, &state);
 
+
 	if (pb->levels)
 		duty_cycle = pb->levels[brightness];
 	else
 		duty_cycle = brightness;
 
 	duty_cycle *= state.period - lth;
+
 	do_div(duty_cycle, pb->scale);
 
 	return duty_cycle + lth;
@@ -211,13 +245,17 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
 	int brightness = bl->props.brightness;
 	struct pwm_state state;
 
+
+#ifndef CONFIG_ARCH_ADVANTECH
 	if (bl->props.power != FB_BLANK_UNBLANK ||
 	    bl->props.fb_blank != FB_BLANK_UNBLANK ||
 	    bl->props.state & BL_CORE_FBBLANK)
 		brightness = 0;
+#endif
 
 	if (pb->notify)
 		brightness = pb->notify(pb->dev, brightness);
+
 
 	if (brightness > 0) {
 		pwm_get_state(pb->pwm, &state);
@@ -226,6 +264,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
 		pwm_backlight_power_on(pb);
 	} else
 		pwm_backlight_power_off(pb);
+
 
 	if (pb->notify_after)
 		pb->notify_after(pb->dev, brightness);
@@ -483,11 +522,14 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	bklt_vcc_enable = of_get_named_gpio_flags(node, "bklt-vcc-enable", 0, &bklt_vcc_flag);
 	lvds_bkl_enable = of_get_named_gpio_flags(node, "lvds-bkl-enable", 0, &lvds_bkl_flag);
 
+	lvds_reset_enable = of_get_named_gpio_flags(node, "lvds-reset", 0, &lvds_reset_flag);
+	lvds_stby_enable = of_get_named_gpio_flags(node, "lvds-stby", 0, &lvds_stby_flag);
+
+
 	if (of_find_property(node, "skip-gpios-init", NULL)) {
 		printk("[LVDS] Skip setting GPIOs to default states\n");
 		goto get_delays;
 	}
-
 	/* Set default to output */
 	if (lvds_vcc_enable >= 0)
 	{
@@ -498,6 +540,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 		else
 			gpio_direction_output(lvds_vcc_enable, (lvds_vcc_flag)?0:1);
 	}
+
 	if (bklt_vcc_enable >= 0)
 	{
 		ret = gpio_request(bklt_vcc_enable,"bklt_vdd_enable");
@@ -516,6 +559,31 @@ static int pwm_backlight_parse_dt(struct device *dev,
 		else
 			gpio_direction_output(lvds_bkl_enable, (lvds_bkl_flag)?0:1);
 	}
+
+	if (lvds_reset_enable >= 0)
+	{
+		ret = gpio_request(lvds_reset_enable, "lvds_reset_enable");
+
+		if (ret < 0)
+			printk("\nRequest lvds_reset_enable failed!!\n");
+		else
+		{
+			gpio_direction_output(lvds_reset_enable, 0);
+
+		}
+	}
+
+	if (lvds_stby_enable >= 0)
+	{
+		ret = gpio_request(lvds_stby_enable, "lvds_stby_enable");
+
+		if (ret < 0)
+			printk("\nRequest lvds_stby_enable failed!!\n");
+		else
+			gpio_direction_output(lvds_stby_enable, lvds_stby_flag);
+	}
+
+
 
 get_delays:
 	/*ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds_vcc_delay_value);
@@ -537,6 +605,11 @@ get_delays:
 	if (ret < 0)
 	{
 		bklt_en_delay_value = 20;
+	}
+	ret = of_property_read_u32(node,"bklt-en-disable-delay-time",&lvds_bkl_disable_delay_value);
+	if (ret < 0)
+	{
+		lvds_bkl_disable_delay_value = 50;
 	}
 	ret = of_property_read_u32(node,"bklt-en-disable-delay-time",&lvds_bkl_disable_delay_value);
 	if (ret < 0)
@@ -838,8 +911,8 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	printk(KERN_INFO "[LVDS Sequence] 0 Set to power off pwm backlight at first.\n");
 #endif
 
-	backlight_update_status(bl);
 
+	backlight_update_status(bl);
 	platform_set_drvdata(pdev, bl);
 	return 0;
 
@@ -893,8 +966,6 @@ static int pwm_backlight_suspend(struct device *dev)
 static int pwm_backlight_resume(struct device *dev)
 {
 	struct backlight_device *bl = dev_get_drvdata(dev);
-
-	backlight_update_status(bl);
 
 	return 0;
 }

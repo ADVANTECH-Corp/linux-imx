@@ -37,6 +37,12 @@
 
 #define DRIVER_NAME "imx_sec_dsim_drv"
 
+/*#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+        static int first_flip_complete = 1;
+        extern void enable_lcd_vdd_en(void);
+#endif*/
+
+
 struct imx_sec_dsim_device {
 	struct device *dev;
 	struct drm_encoder encoder;
@@ -347,7 +353,7 @@ static int imx_sec_dsim_bind(struct device *dev, struct device *master,
 		return ret;
 	}
 
-	dev_dbg(dev, "%s: dsim bind end\n", __func__);
+	dev_err(dev, "%s: dsim bind end\n", __func__);
 
 	return 0;
 }
@@ -464,6 +470,13 @@ static int imx_sec_dsim_runtime_resume(struct device *dev)
 	}
 
 	sec_mipi_dsim_resume(dev);
+
+    /*#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+		if (first_flip_complete) {
+				enable_lcd_vdd_en();
+				first_flip_complete = 0;
+		}
+    #endif*/
 
 	return 0;
 }
