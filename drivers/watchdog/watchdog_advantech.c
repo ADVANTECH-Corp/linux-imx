@@ -29,6 +29,7 @@
 */
 #include <asm/system_misc.h>
 
+#define ADV_WDT_MAX_RETRIES	3
 #define ADV_WDT_WCR		0x00		/* Control Register */
 #define ADV_WDT_WCR_WT		(0xFF << 8)	/* -> Watchdog Timeout Field */
 #define ADV_WDT_WCR_WRE	(1 << 3)	/* -> WDOG Reset Enable */
@@ -103,6 +104,9 @@ struct watchdog_info adv_wdt_info = {
 static int adv_wdt_i2c_write_reg(struct i2c_client *client, u8 reg, void *buf, size_t len)
 {
 	u8 val[1 + len];
+	u8 retry = 0;
+	int err;
+
 	struct i2c_msg msg[1] = {
 		{
 			.addr = client->addr,
@@ -115,17 +119,27 @@ static int adv_wdt_i2c_write_reg(struct i2c_client *client, u8 reg, void *buf, s
 	val[0] = reg;
 	memcpy(&val[1], buf, len);
 
-	if (i2c_transfer(client->adapter, msg, 1) != 1) {
-		dev_err(&client->dev, "adv_wdt_i2c_write: i2c transfer failed\n");
-		return -EIO;
-	}
+	do {
+		err = i2c_transfer(client->adapter, msg, 1);
+		if (err == 1) {
+			msleep(100);
+			return 0;
+		}
 
-	msleep(100);
-	return 0;
+		retry++;
+		dev_err(&client->dev, "adv_wdt_i2c_write_reg : i2c transfer failed, retrying\n");
+		//msleep(3);
+	} while (retry <= ADV_WDT_MAX_RETRIES);
+
+	dev_err(&client->dev, "adv_wdt_i2c_write: i2c transfer failed\n");
+	return -EIO;
 }
 
 static int adv_wdt_i2c_read_reg(struct i2c_client *client, u8 reg, void *buf, size_t len)
 {
+	u8 retry = 0;
+	int err;
+
 	struct i2c_msg msg[2] = {
 		{
 			.addr	= client->addr,
@@ -141,13 +155,20 @@ static int adv_wdt_i2c_read_reg(struct i2c_client *client, u8 reg, void *buf, si
 		}
 	};
 
-	if (i2c_transfer(client->adapter, msg, 2) != 2) {
-		dev_err(&client->dev, "adv_wdt_i2c_read: i2c transfer failed\n");
-		return -EIO;
-	}
+	do {
+		err = i2c_transfer(client->adapter, msg, 2);
+		if (err == 2) {
+			msleep(100);
+			return 0;
+		}
 
-	msleep(100);
-	return 0;
+		retry++;
+		dev_err(&client->dev, "adv_wdt_i2c_read : i2c transfer failed, retrying\n");
+		//msleep(3);
+	} while (retry <= ADV_WDT_MAX_RETRIES);
+
+	dev_err(&client->dev, "adv_wdt_i2c_read: i2c transfer failed\n");
+	return -EIO;
 }
 
 int adv_wdt_i2c_set_timeout(struct i2c_client *client, unsigned int val)
