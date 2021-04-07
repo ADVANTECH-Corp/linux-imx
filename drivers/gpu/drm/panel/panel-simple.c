@@ -3994,6 +3994,63 @@ static const struct panel_desc_dsi auo_g070vw01v0 = {
     .lanes = 4,
 };
 
+static const struct drm_display_mode auo_g150xgel05_mode = {
+    .clock = 63500,
+    .hdisplay = 1024,
+    .hsync_start = 1024 + 48,
+    .hsync_end = 1024 + 48 + 104,
+    .htotal = 1024 + 48 + 104 + 152,
+    .vdisplay = 768,
+    .vsync_start = 768 + 23,
+    .vsync_end = 768 + 23 + 4,
+    .vtotal = 768 + 23 + 3 + 4,
+    .vrefresh = 60,
+};
+
+static const struct panel_desc_dsi auo_g150xgel05 = {
+    .desc = {
+        .modes = &auo_g150xgel05_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 223,
+            .height = 125,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
+
+static const struct drm_display_mode auo_g215hvn01_mode = {
+    .clock = 148500,
+    .hdisplay = 1920,
+    .hsync_start = 1920 + 150,
+    .hsync_end = 1920 + 150 + 10,
+    .htotal = 1920 + 150 + 10 + 20,
+    .vdisplay = 1080,
+    .vsync_start = 1080 + 20,
+    .vsync_end = 1080 + 20 + 10,
+    .vtotal = 1080 + 20 + 20 + 10,
+    .vrefresh = 60,
+};
+
+static const struct panel_desc_dsi auo_g215hvn01 = {
+    .desc = {
+        .modes = &auo_g215hvn01_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 320,
+            .height = 187,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
 #endif
 
 
@@ -4010,6 +4067,12 @@ static const struct of_device_id dsi_of_match[] = {
 #if defined(CONFIG_ARCH_ADVANTECH)
 		.compatible = "auo,g070vw01v0",
 		.data = &auo_g070vw01v0
+	}, {
+		.compatible = "auo,g150xgel05",
+		.data = &auo_g150xgel05
+	}, {
+		.compatible = "auo,g215hvn01",
+		.data = &auo_g215hvn01
 	}, {
 #endif
 		.compatible = "boe,tv080wum-nl0",

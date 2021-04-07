@@ -199,6 +199,14 @@
 	status = "okay";
 };
 
+&sai6 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_sai6>;
+        assigned-clocks = <&clk IMX8MM_CLK_SAI6>;
+        assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
+        assigned-clock-rates = <0>, <24576000>;
+        status = "okay";
+};
 
 &snvs_pwrkey {
 	status = "okay";
