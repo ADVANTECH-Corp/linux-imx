@@ -17,15 +17,30 @@
 / {
 	usdhc2_pwrseq: usdhc2_pwrseq {
                 compatible = "mmc-pwrseq-simple";
-                reset-gpios =   <&tca9538_2 0 1>,
-                                <&tca9538_2 1 1>,
-                                <&tca9538_2 4 1>;
+                post-power-on-delay-ms = <80>;
+                reset-gpios =   <&tca9538_2 4 GPIO_ACTIVE_LOW>;
         };
+};
+
+&tca9538_2 {
+	W_DISABLE1 {
+		gpio-hog;
+		gpios = <0 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "W_DISABLE1";
+	};
+	W_DISABLE2 {
+		gpio-hog;
+		gpios = <1 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "W_DISABLE1";
+	};
 };
 
 &usdhc2 {
 	/delete-property/cd-gpios;
 	/delete-property/wp-gpios;
+	/delete-property/ vmmc-supply;
         mmc-pwrseq = <&usdhc2_pwrseq>;
 };
 
