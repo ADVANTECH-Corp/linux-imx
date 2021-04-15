@@ -217,11 +217,20 @@ static inline void adv_wdt_ping(void)
 	/* watchdog counter refresh input. Both edge trigger */
 	adv_wdt.wdt_ping_status= !adv_wdt.wdt_ping_status;
 	gpio_set_value(gpio_wdt_ping, adv_wdt.wdt_ping_status);
+	msleep(50);
 	//printk("adv_wdt_ping:%x\n", adv_wdt.wdt_ping_status);
 	//printk("wdt_en_ping:%x\n", gpio_get_value(gpio_wdt_en));
 }
 
-static void adv_wdt_start(void)
+static inline void adv_wdt_ping_nosleep(void)
+{
+	/* watchdog counter refresh input. Both edge trigger */
+	adv_wdt.wdt_ping_status= !adv_wdt.wdt_ping_status;
+	gpio_set_value(gpio_wdt_ping, adv_wdt.wdt_ping_status);
+
+}
+
+static void adv_wdt_start(u8 sleep)
 {
 	if (!test_and_set_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status)) 
 	{
@@ -230,7 +239,10 @@ static void adv_wdt_start(void)
 	} 
 
 	/* Watchdog is enabled - time to reload the timeout value */
-	adv_wdt_ping();
+	if(sleep == 1)
+		adv_wdt_ping();
+	else
+		adv_wdt_ping_nosleep();
 }
 
 static void adv_wdt_stop(void)
@@ -246,7 +258,7 @@ static int adv_wdt_open(struct inode *inode, struct file *file)
 {
 	if (test_and_set_bit(ADV_WDT_STATUS_OPEN, &adv_wdt.status))
 		return -EBUSY;
-	adv_wdt_start();
+	adv_wdt_start(1);
 	return nonseekable_open(inode, file);
 }
 
@@ -273,7 +285,7 @@ static long adv_wdt_ioctl(struct file *file, unsigned int cmd,
 	int __user *p = argp;
 	unsigned int new_value = 0;
 //	u16 val;
-
+	int myopt = 0;
 	switch (cmd) {
 	case WDIOC_GETSUPPORT:
 		adv_wdt_ping();
@@ -309,13 +321,23 @@ static long adv_wdt_ioctl(struct file *file, unsigned int cmd,
 	case WDIOC_GETTIMEOUT:
 		adv_wdt_i2c_read_timeout(adv_client, &adv_wdt.timeout);
 		//printk("WDIOC_GETTIMEOUT:%x\n", adv_wdt.timeout);
-		return put_user(adv_wdt.timeout & 0xFFFF, p);
+		return put_user((int)(adv_wdt.timeout & 0xFFFF)/10, p);
 
 	case WDIOC_GETTIMELEFT:
 		adv_wdt_i2c_read_remain_time(adv_client, &adv_wdt.remain_time);
 		//printk("WDIOC_GETTIMELEFT:%x\n", adv_wdt.remain_time);
-		return put_user(adv_wdt.remain_time & 0xFFFF, p);
-
+		return put_user((int)(adv_wdt.remain_time & 0xFFFF)/10, p);
+	case WDIOC_SETOPTIONS:
+		get_user(myopt, p);
+		if(WDIOS_DISABLECARD & myopt)
+		{
+			adv_wdt_stop();	
+		}
+		else if(WDIOS_ENABLECARD & myopt)
+		{
+			adv_wdt_start(1);
+		}
+		return 	0;
 	default:
 		return -ENOTTY;
 	}
@@ -366,7 +388,7 @@ static int adv_wdt_restart_handle(struct notifier_block *this, unsigned long mod
 		return -EBUSY;
 
 	/* don't sleep in restart handler */
-	adv_wdt_start();
+	adv_wdt_start(0);
 
 	/* wait for wdog to fire */
 	while(true)
