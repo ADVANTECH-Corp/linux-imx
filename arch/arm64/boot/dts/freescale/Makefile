@@ -161,6 +161,7 @@ dtb-$(CONFIG_ARCH_MXC) += imx8dxl-evk.dtb imx8dxl-evk-rpmsg.dtb \
 			  imx8dxl-evk-lcdif.dtb \
 			  imx8dxl-ddr3-evk.dtb imx8dxl-ddr3-evk-rpmsg.dtb \
 			  imx8dxl-evk-root.dtb imx8dxl-evk-inmate.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mq-rom5720-a1.dtb 
 dtb-$(CONFIG_ARCH_MXC) += imx8mm-rom5721-a1-adv7535.dtb \
 			  imx8mm-rom5721-a1-auog101uan02.dtb \
 			  imx8mm-rom5721-a1-dsi2dp.dtb \
