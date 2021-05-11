@@ -518,11 +518,11 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	}
 
 get_delays:
-	/*ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds_vcc_delay_value);
+	ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds_vcc_delay_value);
 	if (ret < 0)
 	{
-		lvds_vcc_delay_value = 10;
-	}*/
+		lvds_vcc_delay_value = 25;
+	}
 	ret = of_property_read_u32(node,"lvds-bkl-delay-time",&lvds_bkl_delay_value);
 	if (ret < 0)
 	{
