@@ -2562,6 +2562,9 @@ static int mxc_hdmi_disp_init(struct mxc_dispdrv_handle *disp,
 
 	dev_dbg(&hdmi->pdev->dev, "Enabled HDMI clocks\n");
 
+	/* Disable HDMI PHY before we use it */
+	hdmi_writeb(HDMI_MC_PHYRSTZ_DEASSERT, HDMI_MC_PHYRSTZ);
+
 	/* Init DDC pins for HDCP  */
 	if (hdcp_init) {
 		hdmi->pinctrl = devm_pinctrl_get_select_default(&hdmi->pdev->dev);
