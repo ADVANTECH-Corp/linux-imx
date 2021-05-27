@@ -32,7 +32,9 @@
 #include <linux/of_device.h>
 #include <linux/io.h>
 #include <linux/dma-mapping.h>
-
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#endif
 #include <asm/irq.h>
 #include <linux/busfreq-imx.h>
 #include <linux/pm_qos.h>
@@ -228,6 +230,10 @@ struct imx_port {
 	dma_cookie_t		rx_cookie;
 	unsigned int		tx_bytes;
 	unsigned int		dma_tx_nents;
+#ifdef CONFIG_ARCH_ADVANTECH
+	/* RS-485 fields */
+	struct serial_rs485	rs485;
+#endif
 	unsigned int            saved_reg[10];
 	bool			context_saved;
 
@@ -451,10 +457,14 @@ static void imx_uart_stop_tx(struct uart_port *port)
 	if (port->rs485.flags & SER_RS485_ENABLED &&
 	    imx_uart_readl(sport, USR2) & USR2_TXDC) {
 		u32 ucr2 = imx_uart_readl(sport, UCR2), ucr4;
+#ifdef CONFIG_ARCH_ADVANTECH
+		ucr2 &= ~UCR2_CTS;
+#else
 		if (port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
 			imx_uart_rts_active(sport, &ucr2);
 		else
 			imx_uart_rts_inactive(sport, &ucr2);
+#endif
 		imx_uart_writel(sport, ucr2, UCR2);
 
 		imx_uart_start_rx(port);
@@ -666,10 +676,14 @@ static void imx_uart_start_tx(struct uart_port *port)
 		u32 ucr2;
 
 		ucr2 = imx_uart_readl(sport, UCR2);
+#ifndef CONFIG_ARCH_ADVANTECH
 		if (port->rs485.flags & SER_RS485_RTS_ON_SEND)
 			imx_uart_rts_active(sport, &ucr2);
 		else
 			imx_uart_rts_inactive(sport, &ucr2);
+#else
+		ucr2 |= UCR2_CTS;
+#endif
 		imx_uart_writel(sport, ucr2, UCR2);
 
 		if (!(port->rs485.flags & SER_RS485_RX_DURING_TX))
@@ -1015,6 +1029,10 @@ static void imx_uart_set_mctrl(struct uart_port *port, unsigned int mctrl)
 		}
 		imx_uart_writel(sport, ucr2, UCR2);
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	else	return;
+#endif
 
 	ucr3 = imx_uart_readl(sport, UCR3) & ~UCR3_DSR;
 	if (!(mctrl & TIOCM_DTR))
@@ -1631,6 +1649,7 @@ imx_uart_set_termios(struct uart_port *port, struct ktermios *termios,
 	if (!sport->have_rtscts)
 		termios->c_cflag &= ~CRTSCTS;
 
+#ifndef CONFIG_ARCH_ADVANTECH
 	if (port->rs485.flags & SER_RS485_ENABLED) {
 		/*
 		 * RTS is mandatory for rs485 operation, so keep
@@ -1650,6 +1669,7 @@ imx_uart_set_termios(struct uart_port *port, struct ktermios *termios,
 		if (ucr2 & UCR2_CTS)
 			ucr2 |= UCR2_CTSC;
 	}
+#endif
 
 	if (termios->c_cflag & CRTSCTS)
 		ucr2 &= ~UCR2_IRTS;
@@ -1896,10 +1916,16 @@ static int imx_uart_rs485_config(struct uart_port *port,
 
 		/* disable transmitter */
 		ucr2 = imx_uart_readl(sport, UCR2);
+#ifndef CONFIG_ARCH_ADVANTECH
 		if (rs485conf->flags & SER_RS485_RTS_AFTER_SEND)
 			imx_uart_rts_active(sport, &ucr2);
 		else
 			imx_uart_rts_inactive(sport, &ucr2);
+#else
+		ucr2 &= ~UCR2_CTSC;
+		ucr2 &= ~UCR2_CTS;
+		ucr2 |= UCR2_IRTS;
+#endif
 		imx_uart_writel(sport, ucr2, UCR2);
 	}
 
@@ -1912,6 +1938,39 @@ static int imx_uart_rs485_config(struct uart_port *port,
 
 	return 0;
 }
+
+#ifdef CONFIG_ARCH_ADVANTECH
+/*
+ * Handle TIOCSRS485 & TIOCSRS485 ioctl for RS-485 support
+ */
+static int imx_uart_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
+{
+	struct serial_rs485 rs485conf;
+	struct imx_port *sport = (struct imx_port *)port;
+
+	switch (cmd) {
+		case TIOCSRS485:
+			if (copy_from_user(&rs485conf,
+			    (struct serial_rs485 *) arg,
+			    sizeof(rs485conf)))
+				return -EFAULT;
+			imx_uart_rs485_config(port, &rs485conf);
+			break;
+
+		case TIOCGRS485:
+			if (copy_to_user((struct serial_rs485 *) arg,
+			    &(sport->rs485),
+			    sizeof(rs485conf)))
+				return -EFAULT;
+			break;
+
+		default:
+			return -ENOIOCTLCMD;
+	}
+
+	return 0;
+}
+#endif
 
 static const struct uart_ops imx_uart_pops = {
 	.tx_empty	= imx_uart_tx_empty,
@@ -1929,6 +1988,9 @@ static const struct uart_ops imx_uart_pops = {
 	.type		= imx_uart_type,
 	.config_port	= imx_uart_config_port,
 	.verify_port	= imx_uart_verify_port,
+#ifdef CONFIG_ARCH_ADVANTECH
+	.ioctl		= imx_uart_ioctl,
+#endif
 #if defined(CONFIG_CONSOLE_POLL)
 	.poll_init      = imx_uart_poll_init,
 	.poll_get_char  = imx_uart_poll_get_char,
@@ -2427,6 +2489,40 @@ static int imx_uart_probe(struct platform_device *pdev)
 	imx_uart_ports[sport->port.line] = sport;
 
 	platform_set_drvdata(pdev, sport);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct device *dev = &pdev->dev;
+	enum of_gpio_flags flags;
+
+	int uart_mode_sel_gpio =
+		of_get_named_gpio_flags(dev->of_node, "uart-sel-gpio", 0, &flags);
+
+	if (gpio_is_valid(uart_mode_sel_gpio))
+	{
+		ret = gpio_request(uart_mode_sel_gpio,"UART Mode Select");
+
+		if(ret){
+			dev_warn(dev, "Could not request GPIO %d : %d\n",
+			uart_mode_sel_gpio, ret);
+			return -EFAULT;
+		}
+
+		ret = gpio_direction_input(uart_mode_sel_gpio);
+		if(ret){
+			dev_warn(dev, "Could not drive GPIO %d :%d\n",
+			uart_mode_sel_gpio, ret);
+			return -EFAULT;
+		}
+
+		//read gpio value; H =>RS232  L =>RS485
+		if(gpio_get_value(uart_mode_sel_gpio) == 0){
+			dev_warn(dev,"RS485 MODE\n");
+			sport->port.rs485.flags |= SER_RS485_ENABLED;
+		}else{
+			dev_warn(dev,"RS232 MODE\n");
+		}
+	}
+#endif
 
 	return uart_add_one_port(&imx_uart_uart_driver, &sport->port);
 }
