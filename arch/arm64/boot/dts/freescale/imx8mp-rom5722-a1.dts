@@ -129,6 +129,31 @@
 			"Headphone Jack", "HP_OUT";
 	};
 #endif
+
+	gpio-keys {
+		compatible = "gpio-keys";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+
+		lid@1 {
+			label = "LID KEY";
+			gpios = <&gpio_exp1 6 GPIO_ACTIVE_HIGH>;
+			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
+			linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_SLEEP 142, KEY_POWER 116
+			wakeup-source;
+			debounce-interval = <100>;
+		};
+
+		sleep@2 {
+			label = "SLEEP KEY";
+			gpios = <&gpio_exp1 7 GPIO_ACTIVE_HIGH>;
+			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
+			linux,code = <KEY_SLEEP>; //KEY_SUSPEND 205, KEY_SLEEP 142, KEY_POWER 116
+			wakeup-source;
+			debounce-interval = <100>;
+		};
+	};
 };
 
 &aud2htx {
@@ -396,8 +421,13 @@
 	gpio_exp1: tca9538@70 {
 		compatible = "nxp,pca9538";
 		reg = <0x70>;
+		pinctrl-0 = <&pinctrl_tca9538_1>;
+		interrupt-parent = <&gpio4>;
+		interrupts = <0 IRQ_TYPE_NONE>;
 		gpio-controller;
 		#gpio-cells = <2>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
 	};
 
 	st33htpi: st33htpi@2e {
@@ -782,7 +812,6 @@
 			MX8MP_IOMUXC_HDMI_DDC_SCL__HDMIMIX_HDMI_SCL	0x400001c3
 			MX8MP_IOMUXC_HDMI_DDC_SDA__HDMIMIX_HDMI_SDA	0x400001c3
 			MX8MP_IOMUXC_HDMI_HPD__HDMIMIX_HDMI_HPD		0x40000019
-			MX8MP_IOMUXC_SAI1_RXFS__GPIO4_IO00	0x1c4	/* I2C_EXP_INT0# */
 			MX8MP_IOMUXC_SAI1_RXC__GPIO4_IO01	0x1c4	/* I2C_EXP_INT1# */
 			//MX8MP_IOMUXC_SAI1_TXD6__GPIO4_IO18	0x19		/* GPIO0 / CAM0_PWR# */
 			//MX8MP_IOMUXC_SAI1_TXD7__GPIO4_IO19	0x19		/* GPIO1 / CAM1_PWR#  */
@@ -795,7 +824,11 @@
 		>;
 	};
 
-
+	pinctrl_tca9538_1: tca9538_1_grp {
+		fsl,pins = <
+			MX8MP_IOMUXC_SAI1_RXFS__GPIO4_IO00	0x1c4	/* I2C_EXP_INT0# */
+		>;
+	};
 
 	pinctrl_pwm2: pwm2grp {
 		fsl,pins = <

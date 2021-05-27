@@ -493,6 +493,7 @@ static int pca953x_gpio_get_value(struct gpio_chip *gc, unsigned off)
 	mutex_lock(&chip->i2c_lock);
 	ret = regmap_read(chip->regmap, inreg, &reg_val);
 	mutex_unlock(&chip->i2c_lock);
+
 	if (ret < 0) {
 		/* NOTE:  diagnostic already emitted; that's all we should
 		 * do unless gpio_*_value_cansleep() calls become different
@@ -1204,6 +1205,10 @@ static int pca953x_suspend(struct device *dev)
 {
 	struct pca953x_chip *chip = dev_get_drvdata(dev);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	return 0;
+#endif
+
 	regcache_cache_only(chip->regmap, true);
 
 	if (atomic_read(&chip->wakeup_path))
@@ -1219,6 +1224,10 @@ static int pca953x_resume(struct device *dev)
 {
 	struct pca953x_chip *chip = dev_get_drvdata(dev);
 	int ret;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	return 0;
+#endif
 
 	regcache_cache_only(chip->regmap, false);
 
