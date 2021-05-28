@@ -414,8 +414,13 @@
 	gpio_exp2: tca9538@71 {
 		compatible = "nxp,pca9538";
 		reg = <0x71>;
+		pinctrl-0 = <&pinctrl_tca9538_2>;
+		interrupt-parent = <&gpio4>;
+		interrupts = <1 IRQ_TYPE_NONE>;
 		gpio-controller;
 		#gpio-cells = <2>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
 	};
 
 	gpio_exp1: tca9538@70 {
@@ -434,19 +439,17 @@
 		compatible = "st,st33htpm-i2c";
 		reg = <0x2e>;
 		pinctrl-names = "default";
-		interrupt-parent = <&gpio4>;
-		interrupts = <1 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	wdt: msp430g2202@29 {
-                compatible = "fsl,adv-wdt-i2c";
-                reg = <0x29>;
-                pinctrl-names = "default";
-                pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
-                wdt-en = <&gpio3 19 0>;
-                wdt-ping = <&gpio4 20 0>;
-                status = "okay";
-        };
+		compatible = "fsl,adv-wdt-i2c";
+		reg = <0x29>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+		wdt-en = <&gpio3 19 0>;
+		wdt-ping = <&gpio4 20 0>;
+		status = "okay";
+	};
 };
 
 &i2c2 {
@@ -812,7 +815,6 @@
 			MX8MP_IOMUXC_HDMI_DDC_SCL__HDMIMIX_HDMI_SCL	0x400001c3
 			MX8MP_IOMUXC_HDMI_DDC_SDA__HDMIMIX_HDMI_SDA	0x400001c3
 			MX8MP_IOMUXC_HDMI_HPD__HDMIMIX_HDMI_HPD		0x40000019
-			MX8MP_IOMUXC_SAI1_RXC__GPIO4_IO01	0x1c4	/* I2C_EXP_INT1# */
 			//MX8MP_IOMUXC_SAI1_TXD6__GPIO4_IO18	0x19		/* GPIO0 / CAM0_PWR# */
 			//MX8MP_IOMUXC_SAI1_TXD7__GPIO4_IO19	0x19		/* GPIO1 / CAM1_PWR#  */
 			//MX8MP_IOMUXC_SAI3_RXFS__GPIO4_IO28	0x19		/* GPIO2 / CAM0_RST# */
@@ -827,6 +829,12 @@
 	pinctrl_tca9538_1: tca9538_1_grp {
 		fsl,pins = <
 			MX8MP_IOMUXC_SAI1_RXFS__GPIO4_IO00	0x1c4	/* I2C_EXP_INT0# */
+		>;
+	};
+
+	pinctrl_tca9538_2: tca9538_2_grp {
+		fsl,pins = <
+			MX8MP_IOMUXC_SAI1_RXC__GPIO4_IO01	0x1c4	/* I2C_EXP_INT1# */
 		>;
 	};
 
