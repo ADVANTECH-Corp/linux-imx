@@ -490,6 +490,19 @@
 			};
 		};
 	};
+        adv_bridge: adv7535@3d {
+                compatible = "adi,adv7535";
+                reg = <0x3d>;
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinctrl_lcd0>;
+		pd-gpios = <&gpio5 6 1>;
+                adi,addr-cec = <0x3b>;
+                adi,dsi-lanes = <4>;
+                interrupt-parent = <&gpio5>;
+                interrupts = <7 IRQ_TYPE_LEVEL_LOW>;
+                status = "disabled";
+        };
+
 };
 
 &i2c4 {
