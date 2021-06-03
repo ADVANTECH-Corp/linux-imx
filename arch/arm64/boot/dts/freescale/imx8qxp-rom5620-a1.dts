@@ -27,6 +27,11 @@
 	model = "NXP i.MX8X SMARC 2.0 Computer-on-Module";
 	compatible = "fsl,imx8qxp-mek", "fsl,imx8qxp";
 
+	aliases {
+		rtc0 = &rtc0;
+		rtc1 = &rtc;
+	};
+
 	board {
 		compatible = "proc-board";
 		board-type = "ROM-5620 A1";
