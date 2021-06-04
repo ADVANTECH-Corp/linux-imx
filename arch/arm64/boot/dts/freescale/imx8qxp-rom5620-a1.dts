@@ -1312,3 +1312,7 @@
 		>;
 	};
 };
+
+&watchdog {
+	status = "disabled";
+};
