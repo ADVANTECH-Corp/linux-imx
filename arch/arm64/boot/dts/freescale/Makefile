@@ -164,6 +164,7 @@ dtb-$(CONFIG_ARCH_MXC) += imx8dxl-evk.dtb imx8dxl-evk-rpmsg.dtb \
 dtb-$(CONFIG_ARCH_MXC) += imx8mq-rom5720-a1.dtb \
 			  imx8mq-rom5720-a1-dcss-adv7535.dtb \
 			  imx8mq-rom5720-a1-lcdif-adv7535.dtb \
+			  imx8mq-rom5720-a1-dcss-adv7535.dtb \
 			  imx8mq-rom5720-a1-m2-sdio.dtb \
 			  imx8mq-rom5720-a1-otg.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mm-rom5721-a1-adv7535.dtb \

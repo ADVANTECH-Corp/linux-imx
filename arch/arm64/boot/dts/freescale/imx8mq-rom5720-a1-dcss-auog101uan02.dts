@@ -37,8 +37,8 @@
 	};
 	pinctrl_mipi_dsi_en: mipi_dsi_en {
 		fsl,pins = <
-			MX8MQ_IOMUXC_ECSPI1_SCLK_GPIO5_IO6	0x16
-			MX8MQ_IOMUXC_GPIO1_IO15_GPIO1_IO15	0x16
+			MX8MQ_IOMUXC_ECSPI1_SCLK_GPIO5_IO6	0x16	/* LCD0_VDD_EN */
+			MX8MQ_IOMUXC_GPIO1_IO15_GPIO1_IO15	0x16	/* LCD0_BKLT_EN */
 		>;
 	};
 };
@@ -92,7 +92,7 @@
 
 &mipi_dsi {
 	status = "okay";
-	//fsl,clock-drop-level = <2>;
+	fsl,clock-drop-level = <2>;
 
 	panel@0 {
 		compatible = "auo,g101uan02";
