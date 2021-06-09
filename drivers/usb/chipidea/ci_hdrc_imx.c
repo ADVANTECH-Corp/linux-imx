@@ -7,6 +7,7 @@
 
 #include <linux/module.h>
 #include <linux/of_platform.h>
+#include <linux/of_gpio.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/usb/chipidea.h>
@@ -114,6 +115,10 @@ static struct imx_usbmisc_data *usbmisc_get_init_data(struct device *dev)
 	struct of_phandle_args args;
 	struct imx_usbmisc_data *data;
 	int ret;
+#ifdef CONFIG_ARCH_ADVANTECH
+	int gpio_num;
+	enum of_gpio_flags flag;
+#endif
 
 	/*
 	 * In case the fsl,usbmisc property is not present this device doesn't
@@ -171,6 +176,16 @@ static struct imx_usbmisc_data *usbmisc_get_init_data(struct device *dev)
 	of_property_read_u32(np, "picophy,dc-vol-level-adjust",
 			&data->dc_vol_level_adjust);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	gpio_num = of_get_named_gpio_flags(np, "power-en-gpio", 0, &flag);
+	if(gpio_is_valid(gpio_num))
+	{
+		if(flag)
+			gpio_request_one(gpio_num, GPIOF_OUT_INIT_LOW, "usb-power-en-gpio");
+		else
+			gpio_request_one(gpio_num, GPIOF_OUT_INIT_HIGH, "usb-power-en-gpio");
+	}
+#endif
 	return data;
 }
 
