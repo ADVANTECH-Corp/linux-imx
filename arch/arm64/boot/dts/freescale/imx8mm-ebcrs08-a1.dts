@@ -36,7 +36,7 @@
 	};
 
 	chosen {
-		stdout-path = &uart2;
+		stdout-path = &uart4;
 	};
 	lvds_backlight0: lvds_backlight@0 {
                 compatible = "pwm-backlight";
@@ -94,24 +94,15 @@
 		enable-active-high;
 	};
 
-
         gpio-keys {
                 compatible = "gpio-keys";
                 #address-cells = <1>;
                 #size-cells = <0>;
-                pinctrl-0 = <&pinctrl_lid_key &pinctrl_sleep_key>;
+                pinctrl-0 = <&pinctrl_lid_key>;
                 pinctrl-names = "default";
                 lid@1 {
                         label = "LID KEY";
                         gpios = <&gpio1 11 0>; /* GPIO_ACTIVE_LOW:1 */
-                        linux,input-type = <1>; /* EV_KEY */
-                        linux,code = <116>;     /* KEY_POWER */
-                        wakeup-source;
-			debounce-interval = <100>;
-                };
-                sleep@2 {
-                        label = "SLEEP KEY";
-                        gpios = <&gpio1 1 0>; /* GPIO_ACTIVE_LOW:1 */
                         linux,input-type = <1>; /* EV_KEY */
                         linux,code = <116>;     /* KEY_POWER */
                         wakeup-source;
@@ -142,11 +133,6 @@
 &csi1_bridge {
 	fsl,mipi-mode;
 	status = "disabled";
-	port {
-		csi1_ep: endpoint {
-			remote-endpoint = <&csi1_mipi_ep>;
-		};
-	};
 };
 
 &fec1 {
@@ -181,7 +167,7 @@
 		 <&pcie0_refclk>;
 	clock-names = "pcie", "pcie_aux", "pcie_phy", "pcie_bus";
 	ext_osc = <1>;
-	status = "okay";
+	status = "disabled";
 };
 
 &sai1 {
@@ -218,9 +204,9 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1>;
 	fsl,uart-has-rtscts;
-/*	rs485-rts-active-low;
-	rts-gpios = <&gpio4 23 GPIO_ACTIVE_HIGH>;*/
-	rs485-rx-during-tx;
+	/*rs485-rts-active-low;
+	rts-gpios = <&gpio4 23 GPIO_ACTIVE_LOW>;
+	rs485-rx-during-tx;*/
 	linux,rs485-enabled-at-boot-time;
 	status = "okay";
 };
@@ -235,9 +221,9 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart3>;
 	fsl,uart-has-rtscts;
-/*	rs485-rts-active-low;
-	rts-gpios = <&gpio5 9 GPIO_ACTIVE_HIGH>;*/
-	rs485-rx-during-tx;
+	/*rs485-rts-active-low;
+	rts-gpios = <&gpio5 9 GPIO_ACTIVE_LOW>;
+	rs485-rx-during-tx;*/
 	linux,rs485-enabled-at-boot-time;
 	status = "okay";
 };
@@ -264,6 +250,7 @@
 
 &usbotg2 {
 	dr_mode = "host";
+	power-en-gpio = <&gpio1 1 GPIO_ACTIVE_HIGH>;
 
 	status = "okay";
 };
@@ -287,7 +274,7 @@
 	pinctrl-1 = <&pinctrl_usdhc2_100mhz>, <&pinctrl_usdhc2_gpio>;
 	pinctrl-2 = <&pinctrl_usdhc2_200mhz>, <&pinctrl_usdhc2_gpio>;
 	cd-gpios = <&gpio2 12 GPIO_ACTIVE_LOW>;
-	wp-gpios = <&gpio2 20 GPIO_ACTIVE_HIGH>;
+	/*wp-gpios = <&gpio2 20 GPIO_ACTIVE_HIGH>;*/
 	bus-width = <4>;
 	vmmc-supply = <&reg_usdhc2_vmmc>;
 	status = "okay";
@@ -452,33 +439,11 @@
         sda-gpios = <&gpio5 17 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
-        wdt@29 {
-                compatible = "fsl,adv-wdt-i2c";
-                pinctrl-names = "default";
-                pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
-                status = "okay";
-                wdt-en = <&gpio1 9 0>;
-                wdt-ping = <&gpio1 15 0>;
-                reg = <0x29>;
-        };
 	s35390a: s35390a@30 {
 		 compatible = "sii,s35390a";
 		 reg = <0x30>;
 		status = "okay";
 	};
-       st33htpi: st33htpi@2e{
-                compatible = "st,st33htpm-i2c";
-                reg= <0x2e>;
-                pinctrl-names = "default";
-                pinctrl-0 = <&pinctrl_tpm>;
-                interrupt-parent = <&gpio5>;
-                interrupts = <7 IRQ_TYPE_LEVEL_HIGH>;
-        };
-
-	usb2514b@2c {
-                compatible = "microchip,usb2514b";
-                reg = <0x2c>;
-        };
 	
 };
 
@@ -486,19 +451,6 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	status = "disabled";
-	port {
-		mipi1_sensor_ep: endpoint@1 {
-			remote-endpoint = <&ov5640_mipi1_ep>;
-			data-lanes = <2>;
-			csis-hs-settle = <13>;
-			csis-clk-settle = <2>;
-			csis-wclk;
-		};
-
-		csi1_mipi_ep: endpoint@2 {
-			remote-endpoint = <&csi1_ep>;
-		};
-	};
 };
 &i2c3 {
 	clock-frequency = <100000>;
@@ -509,75 +461,16 @@
         sda-gpios = <&gpio5 19 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
-        i2c-switcih@70 {
-                #address-cells = <1>;
-                #size-cells = <0>;
-                compatible = "nxp,pca9545";
-                reg = <0x70>;
-		
-                i2c@0 {
-                        reg = <0>;
-                        #address-cells = <1>;
-                        #size-cells = <0>;
-			ov5640_mipi: ov5640_mipi@3c {
-				compatible = "ovti,ov5640_mipi";
-				reg = <0x3c>;
-				status = "okay";
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_csi_clk>, <&pinctrl_csi1_pwn>, <&pinctrl_csi1_rst>;
-				clocks = <&clk IMX8MM_CLK_CLKO1>;
-				clock-names = "csi_mclk";
-				assigned-clocks = <&clk IMX8MM_CLK_CLKO1>;
-				assigned-clock-parents = <&clk IMX8MM_CLK_24M>;
-				assigned-clock-rates = <24000000>;
-				csi_id = <1>;
-				pwn-gpios = <&gpio5 6 GPIO_ACTIVE_HIGH>;	/* GPIO1 or CAM1_PWR */
-				rst-gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;	/* GPIO3 or CAM1_RST */
-				mclk = <24000000>;
-				mclk_source = <0>;
-				port {
-					ov5640_mipi1_ep: endpoint {
-						remote-endpoint = <&mipi1_sensor_ep>;
-					};
-				};
-			};
-                };
-                i2c@1 {
-                        reg = <1>;
-                        #address-cells = <1>;
-                        #size-cells = <0>;
-			battery: bq40z50@b {
-				compatible = "ti,bq40z50";
-				reg = <0x0b>;
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_battery>;
-			};
-
-		};
-                i2c@2 {
-                        reg = <2>;
-                        #address-cells = <1>;
-                        #size-cells = <0>;
-		};
-                i2c@3 {
-                        reg = <3>;
-                        #address-cells = <1>;
-                        #size-cells = <0>;
-	
-			tca9538: pca9538@73 {
-				compatible = "nxp,pca9538";
-				reg = <0x73>;
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_i2c_switch>;
-				#gpio-cells = <2>;
-				gpio-controller;
-				interrupt-controller;
-				interrupt-parent = <&gpio1>;
-				interrupts = <7 IRQ_TYPE_LEVEL_LOW>;
-			};
-		};
-
+	wdt@29 {
+		compatible = "fsl,adv-wdt-i2c";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+		status = "okay";
+		wdt-en = <&gpio1 9 0>;
+		wdt-ping = <&gpio1 15 0>;
+		reg = <0x29>;
 	};
+
 };
 &i2c4 {
 	clock-frequency = <100000>;
@@ -586,7 +479,7 @@
         pinctrl-1 = <&pinctrl_i2c4_gpio>;
         scl-gpios = <&gpio5 20 GPIO_ACTIVE_HIGH>;
         sda-gpios = <&gpio5 21 GPIO_ACTIVE_HIGH>;
-	status = "okay";
+	status = "disabled";
 
 /*
         codec: sgtl5000@a {
@@ -619,6 +512,8 @@
         };
 
 };
+
+
 &iomuxc {
 	pinctrl-names = "default";
 
@@ -792,7 +687,7 @@
 			MX8MM_IOMUXC_SAI2_RXFS_UART1_TX 	0x140
 			MX8MM_IOMUXC_SAI2_RXC_UART1_RX		0x140
 			MX8MM_IOMUXC_SAI2_RXD0_UART1_RTS_B	0x140
-			/*MX8MM_IOMUXC_SAI2_RXD0_GPIO4_IO23	0x41*/
+			/*MX8MM_IOMUXC_SAI2_RXD0_GPIO4_IO23	0x146*/
 			MX8MM_IOMUXC_SAI2_TXFS_UART1_CTS_B	0x140
 
 		>;
@@ -807,11 +702,11 @@
 
 	pinctrl_uart3: uart3grp {
 		fsl,pins = <
-			MX8MM_IOMUXC_UART3_RXD_UART3_DCE_RX		0x140
-			MX8MM_IOMUXC_UART3_TXD_UART3_DCE_TX		0x140
-			MX8MM_IOMUXC_ECSPI1_SS0_UART3_DCE_RTS_B		0x140
-			/*MX8MM_IOMUXC_ECSPI1_SS0_GPIO5_IO9		0x41*/
-			MX8MM_IOMUXC_ECSPI1_MISO_UART3_DCE_CTS_B	0x140
+			MX8MM_IOMUXC_UART3_RXD_UART3_DCE_RX		0x146
+			MX8MM_IOMUXC_UART3_TXD_UART3_DCE_TX		0x146
+			MX8MM_IOMUXC_ECSPI1_SS0_UART3_DCE_RTS_B		0x146
+			/*MX8MM_IOMUXC_ECSPI1_SS0_GPIO5_IO9		0x146*/
+			MX8MM_IOMUXC_ECSPI1_MISO_UART3_DCE_CTS_B	0x146
 		>;
 	};
 
@@ -976,6 +871,13 @@
                 >;
         };
 
+	pinctrl_usbotg2_pwr: usbotg2_pwr_grp {
+		fsl,pins = <
+			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0         0x177 /* DSI2DP IRQ */
+			MX8MM_IOMUXC_GPIO1_IO01_GPIO1_IO1         0x177    /* SLEEP */
+		>;
+	};
+
 	pinctrl_ecspi2: ecspi2grp {
                 fsl,pins = <
 			MX8MM_IOMUXC_ECSPI2_SCLK_ECSPI2_SCLK		0x82	/* ECSPI2_SCLK */
@@ -1011,12 +913,6 @@
                 >;
         };
 
-        pinctrl_sleep_key: gpio_userkeygrp-2 {
-                fsl,pins = <
-			MX8MM_IOMUXC_GPIO1_IO01_GPIO1_IO1		0x19	/* SLEEP */
-                >;
-        };
-
         pinctrl_wdt_en_1: wdt_engrp-1 {
                 fsl,pins = <
                         MX8MM_IOMUXC_GPIO1_IO09_GPIO1_IO9		0x19    /* WDT_EN */
@@ -1037,12 +933,6 @@
                 >;
         };
 	
-	pinctrl_dsi2dp_irq: dsi2dpgrp {
-		fsl,pins = <
-			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0         0x159	/* DSI2DP IRQ */
-		>;
-	};
-
 	pinctrl_pwm2: pwm2grp {
                 fsl,pins = <
                         MX8MM_IOMUXC_SPDIF_RX_PWM2_OUT         0x06	/* LCD1_BKLT_PWM */
@@ -1085,19 +975,6 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	status = "disabled";
-	port {
-		mipi1_sensor_ep: endpoint@1 {
-			remote-endpoint = <&ov5640_mipi1_ep>;
-			data-lanes = <2>;
-			csis-hs-settle = <13>;
-			csis-clk-settle = <2>;
-			csis-wclk;
-		};
-
-		csi1_mipi_ep: endpoint@2 {
-			remote-endpoint = <&csi1_ep>;
-		};
-	};
 };
 
 &mipi_dsi {

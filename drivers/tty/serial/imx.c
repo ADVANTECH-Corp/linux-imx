@@ -458,7 +458,10 @@ static void imx_uart_stop_tx(struct uart_port *port)
 	    imx_uart_readl(sport, USR2) & USR2_TXDC) {
 		u32 ucr2 = imx_uart_readl(sport, UCR2), ucr4;
 #ifdef CONFIG_ARCH_ADVANTECH
-		ucr2 &= ~UCR2_CTS;
+		if (port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
+			ucr2 &= ~UCR2_CTS;
+		else
+			ucr2 |= UCR2_CTS;
 #else
 		if (port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
 			imx_uart_rts_active(sport, &ucr2);
@@ -682,7 +685,10 @@ static void imx_uart_start_tx(struct uart_port *port)
 		else
 			imx_uart_rts_inactive(sport, &ucr2);
 #else
-		ucr2 |= UCR2_CTS;
+		if (port->rs485.flags & SER_RS485_RTS_ON_SEND)
+			ucr2 &= ~UCR2_CTS;
+		else
+			ucr2 |= UCR2_CTS;
 #endif
 		imx_uart_writel(sport, ucr2, UCR2);
 
@@ -1923,7 +1929,7 @@ static int imx_uart_rs485_config(struct uart_port *port,
 			imx_uart_rts_inactive(sport, &ucr2);
 #else
 		ucr2 &= ~UCR2_CTSC;
-		ucr2 &= ~UCR2_CTS;
+		ucr2 |= UCR2_CTS;
 		ucr2 |= UCR2_IRTS;
 #endif
 		imx_uart_writel(sport, ucr2, UCR2);
