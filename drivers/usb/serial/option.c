@@ -2100,6 +2100,10 @@ static struct usb_serial_driver option_1port_device = {
 	.suspend           = usb_wwan_suspend,
 	.resume            = usb_wwan_resume,
 #endif
+#ifdef CONFIG_ARCH_ADVANTECH
+	.reset_resume = usb_wwan_resume,
+#endif
+
 };
 
 static struct usb_serial_driver * const serial_drivers[] = {
