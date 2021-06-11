@@ -24,38 +24,51 @@
 
 &mipi0_dsi_host {
 	status = "okay";
+	fsl,clock-drop-level = <2>;
 
-		panel@0 {
+	panel@0 {
                 compatible = "auo,g101uan02";
                 reg = <0>;
-                port {
+                #address-cells = <1>;
+                #size-cells = <0>;
+                port@0 {
+                        reg = <0>;
                         panel1_in: endpoint {
                                 remote-endpoint = <&mipi_dsi1_bridge_out>;
                         };
                 };
         };
-        port@2 {
-                mipi_dsi1_bridge_out: endpoint {
-                        remote-endpoint = <&panel1_in>;
+        ports {
+                port@1 {
+                        reg = <1>;
+                        mipi_dsi1_bridge_out: endpoint {
+                                remote-endpoint = <&panel1_in>;
+                        };
                 };
         };
 };
-
 &mipi1_dsi_host {
 	status = "okay";
+	fsl,clock-drop-level = <2>;
 
-		panel@0 {
+	panel@0 {
                 compatible = "auo,g101uan02";
                 reg = <0>;
-                port {
+                #address-cells = <1>;
+                #size-cells = <0>;
+                port@0 {
+                        reg = <0>;
                         panel2_in: endpoint {
                                 remote-endpoint = <&mipi_dsi2_bridge_out>;
                         };
                 };
         };
-        port@2 {
-                mipi_dsi2_bridge_out: endpoint {
-                        remote-endpoint = <&panel2_in>;
+        ports {
+                port@1 {
+                        reg = <1>;
+			mipi_dsi2_bridge_out: endpoint {
+				remote-endpoint = <&panel2_in>;
+			};
                 };
         };
 };
