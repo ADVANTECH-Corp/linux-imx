@@ -277,6 +277,27 @@
 			no-map;
 		};
 	};
+        gpio-keys-polled {
+                compatible = "gpio-keys-polled";
+                #address-cells = <1>;
+                #size-cells = <0>;
+                poll-interval = <100>;
+
+                lid@1 {
+                        label = "LID KEY";
+                        gpios = <&gpio_exp1 6 GPIO_ACTIVE_LOW>;
+                        linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
+                        linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_POWER 116
+                };
+
+                sleep@2 {
+                        label = "SLEEP KEY";
+                        gpios = <&gpio_exp1 7 GPIO_ACTIVE_LOW>;
+                        linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
+                        linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_POWER 116
+                };
+        };
+
 };
 
 &lsio_gpio2 {
