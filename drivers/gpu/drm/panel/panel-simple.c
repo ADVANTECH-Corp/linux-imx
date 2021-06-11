@@ -149,6 +149,8 @@ struct panel_simple {
 
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
 int blank_count = 0;
+extern void enable_ldb_bkl_vcc(void);
+extern void enable_ldb_bkl_pwm(void);
 
 extern void disable_ldb_bkl_vcc(void);
 extern void disable_ldb_bkl_pwm(void);
@@ -502,9 +504,10 @@ static int panel_simple_enable(struct drm_panel *panel)
 		{
 		case 1:
 
+			enable_ldb_bkl_vcc();
 			//msleep(260);
 			backlight_update_status(p->backlight); //PWM
-
+			enable_ldb_bkl_pwm();
 			blank_count++;
 			break;
 		default:
@@ -4116,7 +4119,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 		return -ENODEV;
 
 	desc = id->data;
-/*
+
 #if defined(CONFIG_ARCH_ADVANTECH)
 	dsi_vcc_enable_gpio = of_get_named_gpio_flags(dsi->dev.of_node, "dsi-vcc-enable-gpio", 0, &vcc_enable_flag);
 	if (dsi_vcc_enable_gpio >= 0)
@@ -4151,7 +4154,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 			gpio_direction_output(bkl_enable_gpio, bkl_enable_flag);
 	}
 #endif
-*/
+
 	err = panel_simple_probe(&dsi->dev, &desc->desc);
 	if (err < 0)
 		return err;
