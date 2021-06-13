@@ -661,7 +661,7 @@
 	status = "okay";
 };
 
-/*&lpspi3 {
+&lpspi3 {
 	#address-cells = <1>;
 	#size-cells = <0>;
 	fsl,spi-num-chipselects = <2>;
@@ -683,7 +683,7 @@
 		reg = <1>;
 	};
 #endif
-};*/
+};
 
 &flexspi0 {
 	pinctrl-names = "default";
