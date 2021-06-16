@@ -205,7 +205,7 @@
 #ifdef ROM_DB5901
 	sound: sound {
 		compatible = "fsl,imx-audio-sgtl5000";
-		model = "sgtl50000";
+		model = "sgtl5000";
 #ifdef ROM_DB5901_I2S_CN3
 		ssi-controller = <&sai1>;
 #else
@@ -515,16 +515,15 @@
 	codec: sgtl5000@a {
 		compatible = "fsl,sgtl5000";
 		reg = <0x0a>;
-		//clocks = <&clk IMX8QXP_AUD_MCLKOUT0>;
+		clocks = <&mclkout0_lpcg 0>;
 		clock-names = "mclk";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_sai_mclk>;
-		/*power-domains = <&pd_mclk_out0>;
-		assigned-clocks = <&clk IMX8QXP_AUD_PLL0_DIV>,
-				<&clk IMX8QXP_AUD_ACM_AUD_PLL_CLK0_DIV>,
-				<&clk IMX8QXP_AUD_ACM_AUD_REC_CLK0_DIV>,
-				<&clk IMX8QXP_AUD_MCLKOUT0>;
-		assigned-clock-rates = <786432000>, <49152000>, <24000000>, <24000000>;*/
+		assigned-clocks = <&clk IMX_SC_R_AUDIO_PLL_0 IMX_SC_PM_CLK_PLL>,
+					<&clk IMX_SC_R_AUDIO_PLL_0 IMX_SC_PM_CLK_SLV_BUS>,
+					<&clk IMX_SC_R_AUDIO_PLL_0 IMX_SC_PM_CLK_MST_BUS>,
+					<&mclkout0_lpcg 0>;
+		assigned-clock-rates = <786432000>, <49152000>, <24000000>, <24000000>;
 	};
 
 	i2c_gp_1: 24c32@50 {
