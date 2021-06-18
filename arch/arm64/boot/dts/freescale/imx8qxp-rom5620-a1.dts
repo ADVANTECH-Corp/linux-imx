@@ -298,6 +298,37 @@
                 };
         };
 
+	lvds_panel0: lvds_panel@0 {
+#ifdef LVDS_AUO_215 /* Dual channel panel */
+		compatible = "auo,t215hvn01";
+#elif defined(LVDS_CHIMEI_15)
+		compatible = "auo,g150xgel04";
+#else /* LVDS_AUO_7 */
+		compatible = "auo,g070vvn01";
+#endif
+		backlight = <&lvds_backlight0>;
+
+		port {
+			panel_lvds_in0: endpoint {
+				remote-endpoint = <&lvds_out0>;
+			};
+		};
+	};
+
+	lvds_panel1: lvds_panel@1 {
+#ifdef LVDS_CHIMEI_15
+		compatible = "auo,g150xgel04";
+#else /* LVDS_AUO_7 */
+		compatible = "auo,g070vvn01";
+#endif
+		backlight = <&lvds_backlight1>;
+
+		port {
+			panel_lvds_in1: endpoint {
+				remote-endpoint = <&lvds_out1>;
+			};
+		};
+	};
 };
 
 &lsio_gpio2 {
@@ -433,13 +464,12 @@
 		fsl,data-width = <24>;
 		status = "okay";
 
-#ifdef LVDS_AUO_215 /* Dual channel panel */
-		display-panel = "g215hvn0";
-#elif defined(LVDS_CHIMEI_15)
-		display-panel = "g150xgel04";
-#else /* LVDS_AUO_7 */
-		display-panel = "g070vw01v0";
-#endif
+		port@1 {
+			reg = <1>;
+			lvds_out0: endpoint {
+				remote-endpoint = <&panel_lvds_in0>;
+			};
+		};
 	};
 };
 
@@ -564,11 +594,12 @@
 		fsl,data-width = <24>;
 		status = "okay";
 
-#ifdef LVDS_CHIMEI_15
-		display-panel = "g150xgel04";
-#else /* LVDS_AUO_7 */
-		display-panel = "g070vw01v0";
-#endif
+		port@1 {
+			reg = <1>;
+			lvds_out1: endpoint {
+				remote-endpoint = <&panel_lvds_in1>;
+			};
+		};
 	};
 };
 

@@ -1131,6 +1131,35 @@ static const struct panel_desc auo_t215hvn01 = {
 	}
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static const struct drm_display_mode auo_g150xgel04_mode = {
+	.clock = 63500,
+	.hdisplay = 1024,
+	.hsync_start = 1024 + 48,
+	.hsync_end = 1024 + 48 + 104,
+	.htotal = 1024 + 48 + 104 + 152,
+	.vdisplay = 768,
+	.vsync_start = 768 + 23,
+	.vsync_end = 768 + 23 + 4,
+	.vtotal = 768 + 23 + 3 + 4,
+	.vrefresh = 60,
+};
+
+static const struct panel_desc auo_g150xgel04 = {
+	.modes = &auo_g150xgel04_mode,
+	.num_modes = 1,
+	.bpc = 8,
+	.size = {
+		.width = 223,
+		.height = 125,
+	},
+	.delay = {
+		.disable = 100,
+		.unprepare = 5,
+	},
+};
+#endif
+
 static const struct drm_display_mode avic_tm070ddh03_mode = {
 	.clock = 51200,
 	.hdisplay = 1024,
@@ -3409,6 +3438,11 @@ static const struct of_device_id platform_of_match[] = {
 		.compatible = "auo,t215hvn01",
 		.data = &auo_t215hvn01,
 	}, {
+#if defined(CONFIG_ARCH_ADVANTECH)
+		.compatible = "auo,g150xgel04",
+		.data = &auo_g150xgel04,
+	}, {
+#endif
 		.compatible = "avic,tm070ddh03",
 		.data = &avic_tm070ddh03,
 	}, {
