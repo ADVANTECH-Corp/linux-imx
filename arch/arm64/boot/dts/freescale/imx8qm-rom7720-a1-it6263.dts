@@ -1,0 +1,73 @@
+
+/dts-v1/;
+
+#define I2C1_LVDS1
+
+#include "imx8qm-rom7720-a1.dts"
+
+&iomuxc {
+	pinctrl_lvds1_lpi2c1: lvds1lpi2c1grp {
+		fsl,pins = <
+			IMX8QM_LVDS1_I2C1_SCL_LVDS1_I2C1_SCL      0xc600004c
+			IMX8QM_LVDS1_I2C1_SDA_LVDS1_I2C1_SDA      0xc600004c
+		>;
+	};
+};
+
+&lvds_backlight1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_lvds0_bklt>, <&pinctrl_lvds1_vdd>;
+	lvds-bkl-enable = <&lsio_gpio1 5 1>;
+	lvds-vcc-enable = <&lsio_gpio1 11 1>;
+	status = "okay";
+};
+
+&pwm_lvds1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pwm_lvds1>;
+	status = "okay";
+};
+
+&ldb2_phy {
+	status = "okay";
+};
+
+&ldb2 {
+        status = "okay";
+
+        lvds-channel@1 {
+                fsl,data-mapping = "jeida";
+                fsl,data-width = <24>;
+                status = "okay";
+
+                port@1 {
+                        reg = <1>;
+
+                        lvds1_out: endpoint {
+                                remote-endpoint = <&it6263_1_in>;
+                        };
+                };
+        };
+};
+
+&i2c1_lvds1 {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_lvds1_lpi2c1>;
+        clock-frequency = <100000>;
+        status = "okay";
+
+        lvds-to-hdmi-bridge@4c {
+                compatible = "ite,it6263";
+                reg = <0x4c>;
+
+                port {
+                        it6263_1_in: endpoint {
+                                clock-lanes = <4>;
+                                data-lanes = <0 1 2 3>;
+                                remote-endpoint = <&lvds1_out>;
+                        };
+                };
+        };
+};

@@ -1,0 +1,7 @@
+
+/dts-v1/;
+
+#define AUDIO_CODEC_SGTL5000
+
+#include "imx8qm-rom7720-a1.dts"
+

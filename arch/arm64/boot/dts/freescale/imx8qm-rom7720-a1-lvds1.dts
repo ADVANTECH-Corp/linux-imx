@@ -1,0 +1,6 @@
+
+/dts-v1/;
+
+#define DISPLAY_MODE 1
+
+#include "imx8qm-rom7720-a1.dts"
