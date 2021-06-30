@@ -17,8 +17,8 @@
 &lvds_backlight1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_lvds0_bklt>, <&pinctrl_lvds1_vdd>;
-	lvds-bkl-enable = <&lsio_gpio1 5 1>;
-	lvds-vcc-enable = <&lsio_gpio1 11 1>;
+	lvds-bkl-enable = <&lsio_gpio1 5 GPIO_ACTIVE_LOW>;
+	lvds-vcc-enable = <&lsio_gpio1 11 GPIO_ACTIVE_LOW>;
 	status = "okay";
 };
 

@@ -25,10 +25,6 @@
 #	define HDMI_AND_LVDS_CH1 31
 #	define HDMI_AND_LVDS_DUAL 32
 
-#	define LVDS_PANEL_G070VW01V0 "G070VW01V0"
-#	define LVDS_PANEL_G150XGEL04 "G150XGEL04"
-#	define LVDS_PANEL_G215HVN0   "G215HVN0"
-
 #ifndef DISPLAY_MODE
 #define DISPLAY_MODE HDMI_ONLY
 #endif
@@ -77,11 +73,6 @@
 #	if defined(LVDS_SINGLE_0) && defined(LVDS_SINGLE_1)
 #		error "single channel 0/1 cannot be used simultaneously"
 #	endif
-#	ifdef LVDS_DUAL
-#		define LVDS_PANEL_ID LVDS_PANEL_G215HVN0
-#	else
-#		define LVDS_PANEL_ID LVDS_PANEL_G070VW01V0
-#	endif
 #endif
 
 / {
@@ -104,6 +95,7 @@
 		rtc1 = &rtc;
 	};
 
+#ifdef HDMI_DISPLAY
 	sound-hdmi-tx {
 		compatible = "fsl,imx-audio-cdnhdmi";
  		model = "imx-audio-hdmi-tx";
@@ -111,6 +103,7 @@
  		protocol = <1>;
 		hdmi-out;
 	};
+#endif
 
 	chosen {
 		stdout-path = &lpuart0;
@@ -430,6 +423,23 @@
 		//pwms = <&pwm2 0 10000 0>;
 		cooling-levels = <0 100 180 255>;
 	};
+
+#ifdef LVDS_DISPLAY
+	lvds_panel: lvds_panel@0 {
+#ifdef LVDS_DUAL /* Dual channel panel */
+		compatible = "auo,t215hvn01";
+#else /* LVDS_SINGLE_0 or LVDS_SINGLE_1*/
+		compatible = "auo,g070vvn01";
+#endif
+		backlight = <&lvds_backlight1>;
+
+		port {
+			panel_lvds_in: endpoint {
+				remote-endpoint = <&lvds_out>;
+			};
+		};
+	};
+#endif
 };
 
 &cm41_intmux {
@@ -647,6 +657,16 @@
 	status = "okay";
 };
 
+
+#if defined(LVDS_DISPLAY)
+&lvds_backlight1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_lvds0_bklt>, <&pinctrl_lvds1_vdd>;
+	lvds-bkl-enable = <&lsio_gpio1 5 GPIO_ACTIVE_LOW>;
+	lvds-vcc-enable = <&lsio_gpio1 11 GPIO_ACTIVE_LOW>;
+	status = "okay";
+};
+
 &pwm_lvds1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pwm_lvds1>;
@@ -659,8 +679,44 @@
 
 &ldb2 {
 	status = "okay";
+#ifdef LVDS_DUAL
+	fsl,dual-channel;
+#endif
+
+#if defined(LVDS_DUAL) || defined(LVDS_SINGLE_0)
+	lvds-channel@0 {
+		fsl,data-mapping = "spwg";
+		fsl,data-width = <24>;
+		status = "okay";
+
+		port@1 {
+			reg = <1>;
+			lvds_out: endpoint {
+				remote-endpoint = <&panel_lvds_in>;
+			};
+		};
+	};
+#endif
+
+#if defined(LVDS_SINGLE_1)
+	lvds-channel@1 {
+		fsl,data-mapping = "spwg";
+		fsl,data-width = <24>;
+		status = "okay";
+
+		port@1 {
+			reg = <1>;
+			lvds_out: endpoint {
+				remote-endpoint = <&panel_lvds_in>;
+			};
+		};
+	};
+#endif
 };
 
+#endif  //LVDS_DISPLAY
+
+#ifdef HDMI_DISPLAY
 &irqsteer_hdmi {
 	status = "okay";
 };
@@ -715,6 +771,7 @@
 	lane-mapping = <0x93>;
 	status = "okay";
 };
+#endif
 
 &lpuart0 {
 	pinctrl-names = "default";
