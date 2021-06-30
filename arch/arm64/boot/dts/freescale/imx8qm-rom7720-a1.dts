@@ -758,21 +758,24 @@
 };
 
 &lpspi0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
 	fsl,spi-num-chipselects = <2>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_lpspi0 &pinctrl_lpspi0_cs_0 &pinctrl_lpspi0_cs_1>;
 	cs-gpios = <&lsio_gpio3 5 GPIO_ACTIVE_LOW>, <&lsio_gpio3 6 GPIO_ACTIVE_LOW>;
+	assigned-clock-rates = <60000000>;
 	status = "okay";
 
 	chip1: m25p80@0 {
-		compatible = "n25qba16";
-		spi-max-frequency = <5000000>;
+		compatible = "micron,n25qba16";
+		spi-max-frequency = <10000000>;
 		reg = <0>;
 	};
 
 	chip2: m25p80@1 {
-		compatible = "n25qba16";
-		spi-max-frequency = <5000000>;
+		compatible = "micron,n25qba16";
+		spi-max-frequency = <10000000>;
 		reg = <1>;
 	};
 
