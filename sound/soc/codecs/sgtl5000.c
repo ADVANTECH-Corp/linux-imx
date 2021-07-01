@@ -1306,11 +1306,8 @@ static int sgtl5000_set_power_regs(struct snd_soc_component *component)
 	struct sgtl5000_priv *sgtl5000 = snd_soc_component_get_drvdata(component);
 
 #ifdef CONFIG_ARCH_ADVANTECH
-		if (of_machine_is_compatible("fsl,imx8mq") || of_machine_is_compatible("fsl,imx8mm") ||
-			of_machine_is_compatible("fsl,imx8mp") || of_machine_is_compatible("fsl,imx8qxp")) {
-			dev_info(component->dev, "skip setting power regulators\n");
-			return 0;
-		}
+		dev_info(component->dev, "skip setting power regulators\n");
+		return 0;
 #endif
 	vdda  = regulator_get_voltage(sgtl5000->supplies[VDDA].consumer);
 	vddio = regulator_get_voltage(sgtl5000->supplies[VDDIO].consumer);
