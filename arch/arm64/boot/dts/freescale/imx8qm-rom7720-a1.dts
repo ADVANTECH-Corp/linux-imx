@@ -397,7 +397,7 @@
 			label = "Sleep Button";
 			gpios = <&lsio_gpio1 1 GPIO_ACTIVE_LOW>;
 			linux,input-type = <EV_PWR>;
-			linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_SLEEP 142
+			linux,code = <KEY_SLEEP>; //KEY_SUSPEND 205, KEY_SLEEP 142
 		};
 
 		wake@2 {
