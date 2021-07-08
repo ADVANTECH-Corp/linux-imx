@@ -199,6 +199,13 @@ dtb-$(CONFIG_ARCH_MXC) += imx8qxp-rom5620-a1-lvds0-auo.dtb \
                           imx8qxp-rom5620-a1-auog101uan02.dtb \
                           imx8qxp-rom5620-a1-m2-sdio.dtb \
                           imx8qxp-rom5620-a1.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8qxp-rom3620-a1-lvds0-auo.dtb \
+                          imx8qxp-rom3620-a1-lvds1-auo.dtb \
+                          imx8qxp-rom3620-a1-lvds-chimei.dtb \
+                          imx8qxp-rom3620-a1-lvds-dual.dtb \
+                          imx8qxp-rom3620-a1-hdmi-bridge.dtb \
+                          imx8qxp-rom3620-a1-auog101uan02.dtb \
+                          imx8qxp-rom3620-a1.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8qm-rom7720-a1-lvds0.dtb \
                           imx8qm-rom7720-a1-lvds1.dtb \
                           imx8qm-rom7720-a1-lvds-dual.dtb \

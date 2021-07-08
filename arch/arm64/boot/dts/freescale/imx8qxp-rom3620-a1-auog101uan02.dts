@@ -1,0 +1,75 @@
+/*
+ * Copyright 2018 NXP
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "imx8qxp-rom3620-a1.dts"
+
+&ldb1 {
+	status = "disabled";
+};
+
+&ldb2 {
+	status = "disabled";
+};
+
+&mipi0_dsi_host {
+	status = "okay";
+	fsl,clock-drop-level = <2>;
+
+	panel@0 {
+                compatible = "auo,g101uan02";
+                reg = <0>;
+                #address-cells = <1>;
+                #size-cells = <0>;
+                port@0 {
+                        reg = <0>;
+                        panel1_in: endpoint {
+                                remote-endpoint = <&mipi_dsi1_bridge_out>;
+                        };
+                };
+        };
+        ports {
+                port@1 {
+                        reg = <1>;
+                        mipi_dsi1_bridge_out: endpoint {
+                                remote-endpoint = <&panel1_in>;
+                        };
+                };
+        };
+};
+&mipi1_dsi_host {
+	status = "okay";
+	fsl,clock-drop-level = <2>;
+
+	panel@0 {
+                compatible = "auo,g101uan02";
+                reg = <0>;
+                #address-cells = <1>;
+                #size-cells = <0>;
+                port@0 {
+                        reg = <0>;
+                        panel2_in: endpoint {
+                                remote-endpoint = <&mipi_dsi2_bridge_out>;
+                        };
+                };
+        };
+        ports {
+                port@1 {
+                        reg = <1>;
+			mipi_dsi2_bridge_out: endpoint {
+				remote-endpoint = <&panel2_in>;
+			};
+                };
+        };
+};
+
