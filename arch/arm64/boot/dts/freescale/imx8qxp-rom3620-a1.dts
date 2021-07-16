@@ -690,6 +690,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_lpspi0 &pinctrl_lpspi0_cs_0 &pinctrl_lpspi0_cs_1>;
 	cs-gpios = <&lsio_gpio1 8 GPIO_ACTIVE_LOW>, <&lsio_gpio0 29 GPIO_ACTIVE_LOW>;
+	assigned-clock-rates = <60000000>;
 	status = "okay";
 
 #ifdef ROM_DB3900
