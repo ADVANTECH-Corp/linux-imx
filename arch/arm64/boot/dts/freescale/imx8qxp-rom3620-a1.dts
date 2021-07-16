@@ -1388,3 +1388,7 @@
 &watchdog {
 	status = "disabled";
 };
+
+&display_subsystem {
+        ports = <&dpu_disp1>, <&dpu_disp0>;
+};

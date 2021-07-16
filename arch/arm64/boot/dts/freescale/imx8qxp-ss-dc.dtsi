@@ -44,7 +44,7 @@
 };
 
 / {
-	display-subsystem {
+	display_subsystem: display-subsystem {
 		compatible = "fsl,imx-display-subsystem";
 		ports = <&dpu_disp0>, <&dpu_disp1>;
 	};

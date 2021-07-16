@@ -15,26 +15,10 @@
 #include "imx8qxp-rom3620-a1.dts"
 
 &i2c0_mipi_lvds0 {
-	adv_bridge1: adv7535@3d {
-		compatible = "adi,adv7535", "adi,adv7533";
-		reg = <0x3d>;
-		adi,dsi-lanes = <4>;
-		adi,dsi-channel = <1>;
-		status = "okay";
-
-		port {
-			adv7535_1_in: endpoint {
-				remote-endpoint = <&mipi_dsi_bridge1_out>;
-			};
-		};
-	};
-};
-
-&i2c3 {
-	adv_bridge2: adv7535@3d {
+	adv_bridge0: adv7535@3d {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		
+
 		compatible = "adi,adv7535";
 		reg = <0x3d>;
 		adi,addr-cec = <0x3b>;
@@ -42,9 +26,31 @@
 		adi,dsi-channel = <1>;
 		status = "okay";
 
-		port {
-			adv7535_2_in: endpoint {
-				remote-endpoint = <&mipi_dsi_bridge2_out>;
+		port@0 {
+			reg = <0>;
+			adv7535_0_in: endpoint {
+				remote-endpoint = <&mipi0_adv_out>;
+			};
+		};
+	};
+};
+
+&i2c3 {
+	adv_bridge1: adv7535@3d {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		compatible = "adi,adv7535";
+		reg = <0x3d>;
+		adi,addr-cec = <0x3b>;
+		adi,dsi-lanes = <4>;
+		adi,dsi-channel = <1>;
+		status = "okay";
+
+		port@0 {
+			reg = <0>;
+			adv7535_1_in: endpoint {
+				remote-endpoint = <&mipi1_adv_out>;
 			};
 		};
 	};
@@ -53,7 +59,6 @@
 &ldb1 {
 	status = "disabled";
 };
-
 
 &ldb2 {
 	status = "disabled";
@@ -65,13 +70,12 @@
 	ports {
 		port@1 {
 			reg = <1>;
-			mipi_dsi_bridge2_out: endpoint {
-				remote-endpoint = <&adv7535_2_in>;
+			mipi1_adv_out: endpoint {
+				remote-endpoint = <&adv7535_1_in>;
 			};
 		};
 	};
 };
-
 
 &mipi1_dsi_host {
 	status = "okay";
@@ -79,8 +83,8 @@
 	ports {
 		port@1 {
 			reg = <1>;
-			mipi_dsi_bridge1_out: endpoint {
-				remote-endpoint = <&adv7535_1_in>;
+			mipi0_adv_out: endpoint {
+				remote-endpoint = <&adv7535_0_in>;
 			};
 		};
 	};
