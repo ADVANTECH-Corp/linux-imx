@@ -94,4 +94,7 @@ obj-$(CONFIG_FUEL_GAUGE_SC27XX)	+= sc27xx_fuel_gauge.o
 obj-$(CONFIG_CHARGER_UCS1002)	+= ucs1002_power.o
 obj-$(CONFIG_CHARGER_BD70528)	+= bd70528-charger.o
 obj-$(CONFIG_CHARGER_WILCO)	+= wilco-charger.o
+ifeq ($(CONFIG_ANDROID),y)
+obj-$(CONFIG_BATTERY_DUMMY)	+= dummy_battery.o
+endif
 obj-$(CONFIG_FUEL_GAUGE_BQ40Z50)	+= bq40z50_fg.o
