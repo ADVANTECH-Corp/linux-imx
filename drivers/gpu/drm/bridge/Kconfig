@@ -173,6 +173,14 @@ config DRM_TI_SN65DSI86
 	help
 	  Texas Instruments SN65DSI86 DSI to eDP Bridge driver
 
+config DRM_TI_SN65DSI84
+	tristate "TI SN65DSI84 DSI to LVDS bridge (old)"
+	select REGMAP_I2C
+	select DRM_MIPI_DSI
+	default n
+	---help---
+	  Support for the Texas Intruments SN65DSI84 bridge.
+
 source "drivers/gpu/drm/bridge/analogix/Kconfig"
 
 source "drivers/gpu/drm/bridge/adv7511/Kconfig"
