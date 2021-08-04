@@ -426,7 +426,8 @@ static int panel_simple_unprepare(struct drm_panel *panel)
 	if (!p->prepared)
 		return 0;
 
-	gpiod_set_value_cansleep(p->enable_gpio, 0);
+	if (p->enable_gpio)
+		gpiod_set_value_cansleep(p->enable_gpio, 0);
 
 	regulator_disable(p->supply);
 
@@ -453,7 +454,8 @@ static int panel_simple_prepare(struct drm_panel *panel)
 		return err;
 	}
 
-	gpiod_set_value_cansleep(p->enable_gpio, 1);
+	if (p->enable_gpio)
+		gpiod_set_value_cansleep(p->enable_gpio, 1);
 
 	delay = p->desc->delay.prepare;
 	if (p->no_hpd)
@@ -4088,8 +4090,36 @@ static const struct panel_desc_dsi auo_g215hvn01 = {
     .format = MIPI_DSI_FMT_RGB888,
     .lanes = 4,
 };
-#endif
 
+static const struct drm_display_mode innolux_r190ece_mode = {
+    .clock = 108000,
+    .hdisplay = 1280,
+    .hsync_start = 1280 + 200,
+    .hsync_end = 1280 + 200 + 188,
+    .htotal = 1280 + 200 + 188 + 10,
+    .vdisplay = 1024,
+    .vsync_start = 1024 + 30,
+    .vsync_end = 1024 + 30 + 12,
+    .vtotal = 1024 + 30 + 12 + 10,
+    .vrefresh = 60,
+};
+
+static const struct panel_desc_dsi innolux_r190ece = {
+    .desc = {
+        .modes = &innolux_r190ece_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 376,
+            .height = 301,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
+#endif
 
 static const struct of_device_id dsi_of_match[] = {
 	{
@@ -4110,6 +4140,9 @@ static const struct of_device_id dsi_of_match[] = {
 	}, {
 		.compatible = "auo,g215hvn01",
 		.data = &auo_g215hvn01
+	}, {
+		.compatible = "innolux,r190ece",
+		.data = &innolux_r190ece
 	}, {
 #endif
 		.compatible = "boe,tv080wum-nl0",
