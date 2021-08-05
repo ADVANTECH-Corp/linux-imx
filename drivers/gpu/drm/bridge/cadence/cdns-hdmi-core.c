@@ -27,6 +27,44 @@
 #include <linux/mutex.h>
 #include <linux/of_device.h>
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static struct drm_display_mode adv_default_cea_modes[] = {
+	/* 3 - 720x480@60Hz */
+	{ DRM_MODE("720x480", DRM_MODE_TYPE_DRIVER, 27000, 720, 736,
+		   798, 858, 0, 480, 489, 495, 525, 0,
+		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC),
+	  .vrefresh = 60, .picture_aspect_ratio = HDMI_PICTURE_ASPECT_16_9, },
+	/* 4 - 1280x720@60Hz */
+	{ DRM_MODE("1280x720", DRM_MODE_TYPE_DRIVER, 74250, 1280, 1390,
+		   1430, 1650, 0, 720, 725, 730, 750, 0,
+		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC),
+	  .vrefresh = 60, .picture_aspect_ratio = HDMI_PICTURE_ASPECT_16_9, },
+	/* 16 - 1920x1080@60Hz */
+	{ DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 148500, 1920, 2008,
+		   2052, 2200, 0, 1080, 1084, 1089, 1125, 0,
+		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC),
+	  .vrefresh = 60, .picture_aspect_ratio = HDMI_PICTURE_ASPECT_16_9, },
+};
+
+static int adv_default_video_modes(struct drm_connector *connector)
+{
+	struct drm_display_mode *mode;
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(adv_default_cea_modes); i++) {
+		mode = drm_mode_duplicate(connector->dev, &adv_default_cea_modes[i]);
+		if (!mode) {
+			DRM_ERROR("failed to add mode %ux%u@%u\n",
+				adv_default_cea_modes[i].hdisplay, adv_default_cea_modes[i].vdisplay, adv_default_cea_modes[i].vrefresh);
+			continue;
+		}
+		mode->type |= DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
+		drm_mode_probed_add(connector, mode);
+	}
+	return i;
+}
+#endif
+
 static void hdmi_sink_config(struct cdns_mhdp_device *mhdp)
 {
 	struct drm_scdc *scdc = &mhdp->connector.base.display_info.hdmi.scdc;
@@ -304,8 +342,17 @@ static int cdns_hdmi_connector_get_modes(struct drm_connector *connector)
 		kfree(edid);
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (num_modes == 0) {
+		DRM_ERROR("Invalid edid, use default video mode\n");
+		num_modes = adv_default_video_modes(connector);
+		mhdp->hdmi.hdmi_type = MODE_HDMI_1_4;
+	}
+#endif
+
 	if (num_modes == 0)
 		DRM_ERROR("Invalid edid\n");
+
 	return num_modes;
 }
 
