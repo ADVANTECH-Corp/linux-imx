@@ -887,7 +887,7 @@ config SND_SOC_PCM3168A_SPI
 	select REGMAP_SPI
 
 config SND_SOC_PCM5102A
-	tristate
+	tristate "Texas Instruments 5102A"
 
 config SND_SOC_PCM512x
 	tristate

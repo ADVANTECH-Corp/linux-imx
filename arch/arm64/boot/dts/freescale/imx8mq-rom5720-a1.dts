@@ -21,11 +21,14 @@
 		board-cpu = "IMX8MQ";
 	};
 
-        aliases {
-                rtc0 = &rx8900;
-                rtc1 = &snvs_rtc;
-	
-        };
+	aliases {
+		rtc0 = &rx8900;
+		rtc1 = &snvs_rtc;
+		sai0 = &sai1;
+		sai1 = &sai2;
+		sai2 = &sai3;
+		sai3 = &sai4;
+	};
 
 	chosen {
 		stdout-path = &uart1;

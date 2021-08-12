@@ -6,6 +6,39 @@
 #include "imx8mq-rom5720-a1.dts"
 
 / {
+	sound {
+		status = "disabled";
+	};
+
+	sound-hdmi {
+		status = "disabled";
+	};
+
+	pcm5102a: pcm5102a {
+		compatible = "ti,pcm5102a";
+		#sound-dai-cells = <0>;
+		clocks = <&clk IMX8MQ_CLK_SAI2_ROOT>;
+		clock-names = "mclk";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_sai2_mclk>;
+		status = "okay";
+	};
+
+	sound-pcm5102a {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "pcm5102a-hifi";
+		simple-audio-card,mclk-fs = <256>;
+		status = "okay";
+
+		simple-audio-card,cpu {
+			sound-dai = <&sai2>;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&pcm5102a>;
+		};
+	};
+
 	backlight: backlight {
 		compatible = "pwm-backlight";
 		pinctrl-names = "default";
@@ -36,6 +69,31 @@
 		compatible = "misc-adv-gpio";
 		status = "okay";
 	};
+};
+
+&codec {
+	status = "disabled";
+};
+
+&sai2 {
+	#sound-dai-cells = <0>;
+	clocks = <&clk IMX8MQ_CLK_SAI2_IPG>,
+			<&clk IMX8MQ_CLK_DUMMY>,
+			<&clk IMX8MQ_CLK_SAI2_ROOT>,
+			<&clk IMX8MQ_CLK_DUMMY>,
+			<&clk IMX8MQ_CLK_DUMMY>,
+			<&clk IMX8MQ_AUDIO_PLL1_OUT>,
+			<&clk IMX8MQ_AUDIO_PLL2_OUT>;
+	clock-names = "bus", "mclk0", "mclk1", "mclk2", "mclk3", "pll8k", "pll11k";
+	status = "okay";
+};
+
+&sai3 {
+	status = "disabled";
+};
+
+&sai4 {
+	status = "disabled";
 };
 
 &i2c2 {
