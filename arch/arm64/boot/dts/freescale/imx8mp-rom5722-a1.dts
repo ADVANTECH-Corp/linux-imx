@@ -36,14 +36,12 @@
 		stdout-path = &uart2;
 	};
 
-	reg_usb1_host_vbus: regulator-usb1-vbus {
+	reg_usb_otg_vbus: regulator-usb-vbus {
 		compatible = "regulator-fixed";
-		regulator-name = "usb1_host_vbus";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_usb1_vbus>;
+		regulator-name = "usb_otg_vbus";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
-		gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio1 12 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 		regulator-always-on;
 	};
@@ -129,6 +127,11 @@
 			"Headphone Jack", "HP_OUT";
 	};
 #endif
+
+	extcon_usb_otg: extcon_usb_otg@1 {
+		compatible = "linux,extcon-usb-gpio";
+		id-gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;
+	};
 
 	gpio-keys {
 		compatible = "gpio-keys";
@@ -764,8 +767,11 @@
 };
 
 &usb_dwc3_0 {
-	dr_mode = "host";
-	vbus-supply = <&reg_usb1_host_vbus>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usb_otg>;
+	dr_mode = "otg";
+	extcon = <&extcon_usb_otg>;
+	vbus-supply = <&reg_usb_otg_vbus>;
 	status = "okay";
 };
 
@@ -1106,9 +1112,10 @@
 		>;
 	};
 
-	pinctrl_usb1_vbus: usb1grp {
+	pinctrl_usb_otg: usb_otg_grp {
 		fsl,pins = <
-			MX8MP_IOMUXC_GPIO1_IO13__GPIO1_IO13	0x19
+			MX8MP_IOMUXC_GPIO1_IO13__GPIO1_IO13     0x19
+			MX8MP_IOMUXC_GPIO1_IO12__GPIO1_IO12     0x19
 		>;
 	};
 
