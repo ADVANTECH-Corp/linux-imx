@@ -253,6 +253,9 @@ struct rtl8367_initval {
 	u16 val;
 };
 
+#define RTL8367_MIB_RXB_ID		0	/* IfInOctets */
+#define RTL8367_MIB_TXB_ID		20	/* IfOutOctets */
+
 static struct rtl8366_mib_counter rtl8367_mib_counters[] = {
 	{ 0,  0, 4, "IfInOctets"				},
 	{ 0,  4, 2, "Dot3StatsFCSErrors"			},
@@ -1535,6 +1538,13 @@ static int rtl8367_sw_reset_port_mibs(struct switch_dev *dev,
 				RTL8367_MIB_CTRL_PORT_RESET_MASK(port % 8));
 }
 
+static int rtl8367_sw_get_port_stats(struct switch_dev *dev, int port,
+                                        struct switch_port_stats *stats)
+{
+	return (rtl8366_sw_get_port_stats(dev, port, stats,
+				RTL8367_MIB_TXB_ID, RTL8367_MIB_RXB_ID));
+}
+
 static struct switch_attr rtl8367_globals[] = {
 	{
 		.type = SWITCH_TYPE_INT,
@@ -1622,6 +1632,7 @@ static const struct switch_dev_ops rtl8367_sw_ops = {
 	.set_port_pvid = rtl8366_sw_set_port_pvid,
 	.reset_switch = rtl8366_sw_reset_switch,
 	.get_port_link = rtl8367_sw_get_port_link,
+	.get_port_stats = rtl8367_sw_get_port_stats,
 };
 
 static int rtl8367_switch_init(struct rtl8366_smi *smi)
@@ -1683,7 +1694,7 @@ static int rtl8367_detect(struct rtl8366_smi *smi)
 	u32 rtl_ver = 0;
 	char *chip_name;
 	int ret;
-	printk("%s: tim trace \n",__func__);
+
 	ret = rtl8366_smi_read_reg(smi, RTL8367_RTL_NO_REG, &rtl_no);
 	if (ret) {
 		dev_err(smi->parent, "unable to read chip number\n");
@@ -1739,10 +1750,10 @@ static int rtl8367_probe(struct platform_device *pdev)
 {
 	struct rtl8366_smi *smi;
 	int err;
-	
+
 	smi = rtl8366_smi_probe(pdev);
-	if (!smi)
-		return -ENODEV;
+	if (IS_ERR(smi))
+		return PTR_ERR(smi);
 
 	smi->clk_delay = 1500;
 	smi->cmd_read = 0xb9;
