@@ -469,8 +469,8 @@
 	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl_i2c4>;
 	pinctrl-1 = <&pinctrl_i2c4_gpio>;
-	scl-gpios = <&gpio5 20 GPIO_ACTIVE_HIGH>;
-	sda-gpios = <&gpio5 21 GPIO_ACTIVE_HIGH>;
+	scl-gpios = <&gpio5 12 GPIO_ACTIVE_HIGH>;
+	sda-gpios = <&gpio5 13 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
 	24c02@50 {
@@ -864,8 +864,8 @@
 
 	pinctrl_i2c4_gpio: i2c4_gpio_grp  {
 		fsl,pins = <
-			MX8MP_IOMUXC_I2C4_SCL__GPIO5_IO20		0x19
-			MX8MP_IOMUXC_I2C4_SDA__GPIO5_IO21		0x19
+			MX8MP_IOMUXC_ECSPI2_MISO__GPIO5_IO12		0x19
+			MX8MP_IOMUXC_ECSPI2_SS0__GPIO5_IO13		0x19
 		>;
 	};
 
