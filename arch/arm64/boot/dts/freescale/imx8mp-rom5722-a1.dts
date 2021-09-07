@@ -16,6 +16,12 @@
 	model = "NXP i.MX8MPlus ROM5722A1 SMARC 2.0 Computer-on-Module";
 	compatible = "fsl,imx8mp-evk", "fsl,imx8mp";
 
+	board {
+		compatible = "proc-board";
+		board-type = "ROM-5722 A1";
+		board-cpu = "IMX8MP";
+	};
+
 	aliases {
 		rtc0 = &s35390a;
 		rtc1 = &snvs_rtc;

@@ -12,6 +12,12 @@
 	model = "Advantech i.MX8MPlus RSB3720A1 board";
 	compatible = "fsl,imx8mp-evk", "fsl,imx8mp";
 
+	board {
+		compatible = "proc-board";
+		board-type = "RSB-3720 A1";
+		board-cpu = "IMX8MP";
+	};
+
 	aliases {
 		rtc0 = &s35390a;
 		rtc1 = &snvs_rtc;
