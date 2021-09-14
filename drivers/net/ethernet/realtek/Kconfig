@@ -113,4 +113,10 @@ config R8169
 	  To compile this driver as a module, choose M here: the module
 	  will be called r8169.  This is recommended.
 
+config R8169_PG_TOOL
+        tristate "Realtek 8169 pgtool"
+        depends on R8169
+        help
+         This is the package for pgtool of Realtek.
+
 endif # NET_VENDOR_REALTEK

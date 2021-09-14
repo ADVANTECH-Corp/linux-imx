@@ -273,6 +273,13 @@
 #define conn_to_sec_mipi_dsim(conn)		\
 	container_of(conn, struct sec_mipi_dsim, connector)
 
+#ifdef CONFIG_ARCH_ADVANTECH 
+extern void enable_lcd_vdd_en(void);
+extern void enable_bridge_stdy_en(void);
+extern void enable_ldb_bkl_vcc(void);
+extern void enable_ldb_bkl_pwm(void);
+#endif
+
 /* used for CEA standard modes */
 struct dsim_hblank_par {
 	char *name;		/* drm display mode name */
@@ -1303,7 +1310,10 @@ static void sec_mipi_dsim_bridge_enable(struct drm_bridge *bridge)
 	/* At this moment, the dsim bridge's preceding encoder has
 	 * already been enabled. So the dsim can be configed here
 	 */
-
+#ifdef CONFIG_ARCH_ADVANTECH 
+	enable_bridge_stdy_en();
+	enable_lcd_vdd_en();
+#endif
 	/* config main display mode */
 	sec_mipi_dsim_set_main_mode(dsim);
 
@@ -1316,7 +1326,10 @@ static void sec_mipi_dsim_bridge_enable(struct drm_bridge *bridge)
 		dev_err(dsim->dev, "dsim pll config failed: %d\n", ret);
 		return;
 	}
-
+#ifdef CONFIG_ARCH_ADVANTECH 
+	enable_ldb_bkl_vcc();
+	msleep(200);
+#endif
 	/* config dphy timings */
 	sec_mipi_dsim_config_dphy(dsim);
 
@@ -1334,7 +1347,9 @@ static void sec_mipi_dsim_bridge_enable(struct drm_bridge *bridge)
 
 	/* config esc clock, byte clock and etc */
 	sec_mipi_dsim_config_clkctrl(dsim);
-
+#ifdef CONFIG_ARCH_ADVANTECH
+    enable_ldb_bkl_pwm();
+#endif
 	/* enable panel if exists */
 	if (dsim->panel) {
 		ret = drm_panel_enable(dsim->panel);

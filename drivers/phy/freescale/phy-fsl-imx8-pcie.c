@@ -62,6 +62,9 @@
 #define IMX8MP_PCIE_PHY_TRSV_REG206	0x738
 #define  LN0_TG_RX_SIGVAL_LBF_DELAY	0x4
 
+#ifdef CONFIG_ARCH_ADVANTECH
+int tx_drv_lvl_ctrl_g1 = 0;	//For SI test
+#endif
 static int imx8_pcie_phy_tuned;
 struct imx8_pcie_phy {
 	struct phy *phy;
@@ -137,6 +140,10 @@ static int imx8_pcie_phy_cal(struct phy *phy)
 	 * between two EVK boards in the EP/RC validation system.
 	 */
 	if (imx8_pcie_phy_tuned) {
+#ifdef CONFIG_ARCH_ADVANTECH
+		writel(tx_drv_lvl_ctrl_g1,
+		       imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG001);
+#else
 		writel(LN0_OVRD_TX_DRV_LVL,
 		       imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG001);
 		writel(LN0_OVRD_TX_DRV_PST_LVL_G1,
@@ -165,8 +172,8 @@ static int imx8_pcie_phy_cal(struct phy *phy)
 		       imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG159);
 		writel(LN0_TG_RX_SIGVAL_LBF_DELAY,
 		       imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG206);
+#endif
 	}
-
 	writel(PLL_ANA_LPF_R_SEL_FINE_0_4,
 	       imx8_phy->base + IMX8MP_PCIE_PHY_CMN_REG020);
 	writel(LANE_RESET_MUX_SEL,
@@ -220,6 +227,9 @@ static int imx8_pcie_phy_probe(struct platform_device *pdev)
 	struct device_node *np = dev->of_node;
 	struct imx8_pcie_phy *imx8_phy;
 	struct resource *res;
+#ifdef CONFIG_ARCH_ADVANTECH
+	int ret;
+#endif
 
 	imx8_phy = devm_kzalloc(dev, sizeof(*imx8_phy), GFP_KERNEL);
 	if (!imx8_phy)
@@ -238,6 +248,9 @@ static int imx8_pcie_phy_probe(struct platform_device *pdev)
 		imx8_phy->flags |= IMX8MP_PCIE_PHY_FLAG_EXT_OSC;
 	else
 		dev_info(dev, "invalid clk mode %d.\n", val);
+#ifdef CONFIG_ARCH_ADVANTECH
+	ret = of_property_read_u32(np, "tx_drv_lvl_ctrl_g1", &tx_drv_lvl_ctrl_g1);
+#endif
 
 	imx8_phy->clk = devm_clk_get(dev, "phy");
 	if (IS_ERR(imx8_phy->clk)) {

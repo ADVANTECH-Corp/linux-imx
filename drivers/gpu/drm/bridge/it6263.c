@@ -26,6 +26,9 @@
 #include <linux/of.h>
 #include <linux/of_graph.h>
 #include <linux/regmap.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#endif
 
 #define REG_VENDOR_ID(n)	(0x00 + (n))	/* n: 0/1 */
 #define REG_DEVICE_ID(n)	(0x02 + (n))	/* n: 0/1 */
@@ -875,11 +878,37 @@ static int it6263_probe(struct i2c_client *client,
 #endif
 	struct it6263 *it6263;
 	int ret;
+#ifdef CONFIG_ARCH_ADVANTECH
+	int lvds_vcc_enable_gpio, lvds_bkl_enable_gpio;
+	enum of_gpio_flags lvds_vcc_enable_flag,  lvds_bkl_enable_flag;
+#endif
 
 	it6263 = devm_kzalloc(dev, sizeof(*it6263), GFP_KERNEL);
 	if (!it6263)
 		return -ENOMEM;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	lvds_vcc_enable_gpio = of_get_named_gpio_flags(dev->of_node, "lvds-vcc-enable", 0, &lvds_vcc_enable_flag);
+	if (lvds_vcc_enable_gpio >= 0)
+	{
+		ret = gpio_request(lvds_vcc_enable_gpio, "lvds_vcc_enable_gpio");
+		if (ret < 0)
+			printk("\nRequest lvds_vcc_enable_gpio failed!!\n");
+		else
+			gpio_direction_output(lvds_vcc_enable_gpio, lvds_vcc_enable_flag);
+	}
+
+	lvds_bkl_enable_gpio = of_get_named_gpio_flags(dev->of_node, "lvds-bkl-enable", 0, &lvds_bkl_enable_flag);
+	if (lvds_bkl_enable_gpio >= 0)
+	{
+		ret = gpio_request(lvds_bkl_enable_gpio, "lvds_bkl_enable_gpio");
+
+		if (ret < 0)
+			printk("\nRequest lvds_bkl_enable_gpio failed!!\n");
+		else
+			gpio_direction_output(lvds_bkl_enable_gpio, lvds_bkl_enable_flag);
+	}
+#endif
 	it6263->split_mode = of_property_read_bool(np, "split-mode");
 
 	it6263->hdmi_i2c = client;
