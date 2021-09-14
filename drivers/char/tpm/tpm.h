@@ -37,9 +37,15 @@
 #define TPM_RETRY		50
 
 enum tpm_timeout {
+#ifdef CONFIG_ARCH_ADVANTECH
+	TPM_TIMEOUT = 1,	/* msecs */
+	TPM_TIMEOUT_RETRY = 2, /* msecs */
+	TPM_TIMEOUT_RANGE_US = 20, /* usecs */
+#else
 	TPM_TIMEOUT = 5,	/* msecs */
 	TPM_TIMEOUT_RETRY = 100, /* msecs */
 	TPM_TIMEOUT_RANGE_US = 300,	/* usecs */
+#endif
 	TPM_TIMEOUT_POLL = 1,	/* msecs */
 	TPM_TIMEOUT_USECS_MIN = 100,      /* usecs */
 	TPM_TIMEOUT_USECS_MAX = 500      /* usecs */
@@ -183,11 +189,27 @@ unsigned long tpm_calc_ordinal_duration(struct tpm_chip *chip, u32 ordinal);
 int tpm_pm_suspend(struct device *dev);
 int tpm_pm_resume(struct device *dev);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static inline void tpm_msleep (unsigned  int delay_msec)
+{
+	usleep_range(delay_msec * 1000,(delay_msec * 1000)+TPM_TIMEOUT_RANGE_US);
+};
+
+//static inline void tpm_msleep_opt (unsigned  int delay_msec){
+//usleep_range(delay_msec * 50,(delay_msec * 50)+TPM_TIMEOUT_RANGE_US);};
+//BHO for I2c before PIRQ implementation
+
+static inline void tpm_msleep_opt (unsigned  int delay_msec)
+{
+	usleep_range(delay_msec * 1000,(delay_msec * 1000)+TPM_TIMEOUT_RANGE_US);
+};
+#else
 static inline void tpm_msleep(unsigned int delay_msec)
 {
 	usleep_range((delay_msec * 1000) - TPM_TIMEOUT_RANGE_US,
 		     delay_msec * 1000);
 };
+#endif
 
 int tpm_chip_start(struct tpm_chip *chip);
 void tpm_chip_stop(struct tpm_chip *chip);

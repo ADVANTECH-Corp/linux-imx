@@ -961,12 +961,16 @@ static int nxp_fspi_default_setup(struct nxp_fspi *f)
 	/* Reset the DLL register to default value */
 	fspi_writel(f, FSPI_DLLACR_OVRDEN, base + FSPI_DLLACR);
 	fspi_writel(f, FSPI_DLLBCR_OVRDEN, base + FSPI_DLLBCR);
-
+#ifdef CONFIG_ARCH_ADVANTECH
 	/* enable module */
+	fspi_writel(f, FSPI_MCR0_AHB_TIMEOUT(0xFF) |
+		    FSPI_MCR0_IP_TIMEOUT(0xFF) ,
+		    base + FSPI_MCR0);
+#else
 	fspi_writel(f, FSPI_MCR0_AHB_TIMEOUT(0xFF) |
 		    FSPI_MCR0_IP_TIMEOUT(0xFF) | (u32) FSPI_MCR0_OCTCOMB_EN,
 		    base + FSPI_MCR0);
-
+#endif
 	/*
 	 * Disable same device enable bit and configure all slave devices
 	 * independently.

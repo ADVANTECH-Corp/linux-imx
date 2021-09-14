@@ -1490,9 +1490,19 @@ static int lpuart_config_rs485(struct uart_port *port,
 	struct lpuart_port *sport = container_of(port,
 			struct lpuart_port, port);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	unsigned long modem;
+
+	dev_info(sport->port.dev, "[ADV] lpuart_config_rs485+: UARTMODIR = 0x%x\n", lpuart32_read(&sport->port, UARTMODIR));
+
+	modem = lpuart32_read(&sport->port, UARTMODIR) &
+				~(UARTMODIR_TXRTSPOL | UARTMODIR_TXRTSE | UARTMODIR_RXRTSE);
+	lpuart32_write(&sport->port, modem, UARTMODIR);
+#else
 	u8 modem = readb(sport->port.membase + UARTMODEM) &
 		~(UARTMODEM_TXRTSPOL | UARTMODEM_TXRTSE);
 	writeb(modem, sport->port.membase + UARTMODEM);
+#endif
 
 	/* clear unsupported configurations */
 	rs485->delay_rts_before_send = 0;
@@ -1531,10 +1541,48 @@ static int lpuart_config_rs485(struct uart_port *port,
 	/* Store the new configuration */
 	sport->port.rs485 = *rs485;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	lpuart32_write(&sport->port, modem, UARTMODIR);
+
+	dev_info(sport->port.dev, "[ADV] lpuart_config_rs485-: UARTMODIR = 0x%x\n", lpuart32_read(&sport->port, UARTMODIR));
+#else
 	writeb(modem, sport->port.membase + UARTMODEM);
+#endif
 	return 0;
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+/*
+ * Handle TIOCSRS485 & TIOCGRS485 ioctl for RS-485 support
+ */
+static int lpuart_imx_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
+{
+	struct serial_rs485 rs485conf;
+	struct lpuart_port *sport = container_of(port,
+			struct lpuart_port, port);
+
+	switch (cmd) {
+		case TIOCSRS485:
+			if (copy_from_user(&rs485conf,
+			    (struct serial_rs485 *) arg,
+			    sizeof(rs485conf)))
+				return -EFAULT;
+			lpuart_config_rs485(port, &rs485conf);
+			break;
+
+		case TIOCGRS485:
+			if (copy_to_user((struct serial_rs485 *) arg,
+			    &(sport->port.rs485),
+			    sizeof(rs485conf)))
+				return -EFAULT;
+			break;
+
+		default:
+			return -ENOIOCTLCMD;
+	}
+	return 0;
+}
+#endif
 static int lpuart32_config_rs485(struct uart_port *port,
 			struct serial_rs485 *rs485)
 {
@@ -2441,6 +2489,19 @@ lpuart32_set_termios(struct uart_port *port, struct ktermios *termios,
 		else
 			sport->lpuart_dma_rx_use = false;
 	}
+#ifdef CONFIG_ARCH_ADVANTECH
+	/* set auto RTS mode, when RS-485 is enabled */
+	if (sport->port.rs485.flags & SER_RS485_ENABLED) {
+		modem |= UARTMODEM_TXRTSE;
+
+		if (sport->port.rs485.flags & SER_RS485_RTS_ON_SEND)
+			modem &= ~UARTMODEM_TXRTSPOL;
+		else if (sport->port.rs485.flags & SER_RS485_RTS_AFTER_SEND)
+			modem |= UARTMODEM_TXRTSPOL;
+
+		lpuart32_write(&sport->port, modem, UARTMODIR);
+	}
+#endif
 
 	spin_unlock_irqrestore(&sport->port.lock, flags);
 }
@@ -2529,6 +2590,9 @@ static const struct uart_ops lpuart32_pops = {
 	.config_port	= lpuart_config_port,
 	.verify_port	= lpuart_verify_port,
 	.flush_buffer	= lpuart_flush_buffer,
+#ifdef CONFIG_ARCH_ADVANTECH
+	.ioctl		= lpuart_imx_ioctl,
+#endif
 #if defined(CONFIG_CONSOLE_POLL)
 	.poll_init	= lpuart32_poll_init,
 	.poll_get_char	= lpuart32_poll_get_char,
@@ -3036,6 +3100,10 @@ static int lpuart_probe(struct platform_device *pdev)
 
 	sport->port.rs485_config(&sport->port, &sport->port.rs485);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	sport->port.rs485_config = lpuart_config_rs485;
+	sport->port.rs485.flags |= SER_RS485_RTS_ON_SEND;
+#endif
 	return 0;
 
 failed_get_rs485:

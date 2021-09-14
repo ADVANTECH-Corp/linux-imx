@@ -48,7 +48,11 @@ static const struct reg_default sgtl5000_reg_defaults[] = {
 	{ SGTL5000_CHIP_PAD_STRENGTH,		0x015f },
 	{ SGTL5000_CHIP_ANA_ADC_CTRL,		0x0000 },
 	{ SGTL5000_CHIP_ANA_HP_CTRL,		0x1818 },
+#ifdef CONFIG_ARCH_ADVANTECH
+	{ SGTL5000_CHIP_ANA_CTRL,		0x0011 },
+#else
 	{ SGTL5000_CHIP_ANA_CTRL,		0x0111 },
+#endif
 	{ SGTL5000_CHIP_REF_CTRL,		0x0000 },
 	{ SGTL5000_CHIP_MIC_CTRL,		0x0000 },
 	{ SGTL5000_CHIP_LINE_OUT_CTRL,		0x0000 },
@@ -741,7 +745,9 @@ static const struct snd_kcontrol_new sgtl5000_snd_controls[] = {
 			SGTL5000_LINE_OUT_VOL_RIGHT_SHIFT,
 			0x1f, 1,
 			lineout_volume),
+#ifndef CONFIG_ARCH_ADVANTECH
 	SOC_SINGLE("Lineout Playback Switch", SGTL5000_CHIP_ANA_CTRL, 8, 1, 1),
+#endif
 
 	SOC_SINGLE_TLV("DAP Main channel", SGTL5000_DAP_MAIN_CHAN,
 	0, 0xffff, 0, dap_volume),
@@ -1300,6 +1306,10 @@ static int sgtl5000_set_power_regs(struct snd_soc_component *component)
 	size_t i;
 	struct sgtl5000_priv *sgtl5000 = snd_soc_component_get_drvdata(component);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+		dev_info(component->dev, "skip setting power regulators\n");
+		return 0;
+#endif
 	vdda  = regulator_get_voltage(sgtl5000->supplies[VDDA].consumer);
 	vddio = regulator_get_voltage(sgtl5000->supplies[VDDIO].consumer);
 	vddd  = (sgtl5000->num_supplies > VDDD)

@@ -1492,7 +1492,34 @@ static int fsl_sai_probe(struct platform_device *pdev)
 	}
 
 	pm_runtime_put_sync(&pdev->dev);
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_find_property(np, "fsl,sai-mclk-direction-output", NULL)) {
+		ret = clk_prepare_enable(sai->bus_clk);
+		ret = clk_prepare_enable(sai->mclk_clk[sai->mclk_id[1]]);
+		ret = clk_prepare_enable(sai->mclk_clk[sai->mclk_id[0]]);
+
+		request_bus_freq(BUS_FREQ_AUDIO);
+
+		if (sai->soc_data->flags & SAI_FLAG_PMQOS)
+			cpu_latency_qos_add_request(&sai->pm_qos_req, 0);
+
+		regcache_cache_only(sai->regmap, false);
+		regcache_mark_dirty(sai->regmap);
+
+		regmap_write(sai->regmap, FSL_SAI_TCSR(sai->soc_data->reg_offset), FSL_SAI_CSR_SR);
+		regmap_write(sai->regmap, FSL_SAI_RCSR(sai->soc_data->reg_offset), FSL_SAI_CSR_SR);
+		usleep_range(1000, 2000);
+		regmap_write(sai->regmap, FSL_SAI_TCSR(sai->soc_data->reg_offset), 0);
+		regmap_write(sai->regmap, FSL_SAI_RCSR(sai->soc_data->reg_offset), 0);
+
+		ret = regcache_sync(sai->regmap);
+
+		regmap_update_bits(sai->regmap, FSL_SAI_xCSR(TX, sai->soc_data->reg_offset),
+					   FSL_SAI_CSR_TERE, FSL_SAI_CSR_TERE);
+	}
+#else
 	regcache_cache_only(sai->regmap, true);
+#endif
 
 	ret = devm_snd_soc_register_component(&pdev->dev, &fsl_component,
 					      &sai->cpu_dai_drv, 1);
@@ -1595,6 +1622,10 @@ static int fsl_sai_runtime_suspend(struct device *dev)
 {
 	struct fsl_sai *sai = dev_get_drvdata(dev);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_find_property(dev->of_node, "fsl,sai-mclk-direction-output", NULL))
+		return 0;
+#endif
 	release_bus_freq(BUS_FREQ_AUDIO);
 
 	if (sai->mclk_streams & BIT(SNDRV_PCM_STREAM_CAPTURE))
@@ -1618,6 +1649,10 @@ static int fsl_sai_runtime_resume(struct device *dev)
 	struct fsl_sai *sai = dev_get_drvdata(dev);
 	unsigned int ofs = sai->soc_data->reg_offset;
 	int ret;
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_find_property(dev->of_node, "fsl,sai-mclk-direction-output", NULL))
+		return 0;
+#endif
 
 	ret = clk_prepare_enable(sai->bus_clk);
 	if (ret) {

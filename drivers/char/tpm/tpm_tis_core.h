@@ -76,6 +76,11 @@ enum tis_defaults {
 #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
 #define	TPM_RID(l)			(0x0F04 | ((l) << 12))
 
+#ifdef CONFIG_ARCH_ADVANTECH
+/*+ fix BHO I2C implementation */
+#define	TPM_INTF_CAPABILITY(l)		(0x0030 | ((l) << 12))
+/*- fix BHO I2C implementation */
+#endif
 #define LPC_CNTRL_OFFSET		0x84
 #define LPC_CLKRUN_EN			(1 << 2)
 #define INTEL_LEGACY_BLK_BASE_ADDR	0xFED08000
@@ -87,6 +92,11 @@ enum tpm_tis_flags {
 
 struct tpm_tis_data {
 	u16 manufacturer_id;
+#ifdef CONFIG_ARCH_ADVANTECH
+	/*+ fix BHO I2C implementation */
+	u8 interface_id;
+	/*- fix BHO I2C implementation */
+#endif
 	int locality;
 	int irq;
 	bool irq_tested;
@@ -107,6 +117,11 @@ struct tpm_tis_phy_ops {
 	int (*read16)(struct tpm_tis_data *data, u32 addr, u16 *result);
 	int (*read32)(struct tpm_tis_data *data, u32 addr, u32 *result);
 	int (*write32)(struct tpm_tis_data *data, u32 addr, u32 src);
+#ifdef CONFIG_ARCH_ADVANTECH
+	/*+ fix BHO I2C implementation */
+	bool (*check_data)(struct tpm_tis_data *data, u8 *buf, size_t len);
+	/*- fix BHO I2C implementation */
+#endif
 };
 
 static inline int tpm_tis_read_bytes(struct tpm_tis_data *data, u32 addr,

@@ -236,6 +236,10 @@ static void option_instat_callback(struct urb *urb);
 /* These Quectel products use Qualcomm's vendor ID */
 #define QUECTEL_PRODUCT_UC20			0x9003
 #define QUECTEL_PRODUCT_UC15			0x9090
+#ifdef CONFIG_ARCH_ADVANTECH
+#define QUECTEL_PRODUCT_EC20			0x9215
+#define SIERRA_VENDOR_ID			0x1199
+#endif
 /* These u-blox products use Qualcomm's vendor ID */
 #define UBLOX_PRODUCT_R410M			0x90b2
 /* These Yuga products use Qualcomm's vendor ID */
@@ -1095,6 +1099,10 @@ static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, QUECTEL_PRODUCT_UC15)},
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, QUECTEL_PRODUCT_UC20),
 	  .driver_info = RSVD(4) },
+#ifdef CONFIG_ARCH_ADVANTECH
+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, QUECTEL_PRODUCT_EC20),
+	.driver_info = RSVD(4) },
+#endif
 	/* Yuga products use Qualcomm vendor ID */
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, YUGA_PRODUCT_CLM920_NC5),
 	  .driver_info = RSVD(1) | RSVD(4) },
@@ -1875,6 +1883,22 @@ static const struct usb_device_id option_ids[] = {
 	  .driver_info = RSVD(4) },
 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
+#ifdef CONFIG_ARCH_ADVANTECH
+	{ USB_DEVICE(0x1546, 0x1102) }, //for EWM-C109F601E
+	{ USB_DEVICE(0x1546, 0x1146) }, //for EWM-C117FL06E
+	{ USB_DEVICE(0x2020, 0x2040) }, //for EWM-C145(BM817)
+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9003)}, /* Quectel UC20 */
+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9090)}, /* Quectel UC15 */
+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9215)}, /* Quectel EC20 */
+	{ USB_DEVICE(QUECTEL_VENDOR_ID, 0x0125)}, /* Quectel EC25/EC20 R2.0*/
+	{ USB_DEVICE(QUECTEL_VENDOR_ID, 0x0121)}, /* Quectel EC21 */
+	{ USB_DEVICE_INTERFACE_CLASS(SIERRA_VENDOR_ID, 0x9071, 0xff),
+	  .driver_info = NCTRL(0) | NCTRL(2) | RSVD(8) | RSVD(10) | RSVD(11) }, /* Sierra MC7430 */
+	{ USB_DEVICE_INTERFACE_CLASS(SIERRA_VENDOR_ID, 0x68c0, 0xff),
+          .driver_info = NCTRL(0) | NCTRL(2) | RSVD(8) | RSVD(10) | RSVD(11) }, /* Sierra MC73xx */
+	{ USB_DEVICE_INTERFACE_CLASS(SIERRA_VENDOR_ID, 0x9041, 0xff),
+          .driver_info = NCTRL(0) | NCTRL(2) | RSVD(8) | RSVD(10) | RSVD(11) }, /* Sierra MC7305/MC7355*/
+#endif
 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
 	{ USB_DEVICE_AND_INTERFACE_INFO(HAIER_VENDOR_ID, HAIER_PRODUCT_CE81B, 0xff, 0xff, 0xff) },
 	/* Pirelli  */
