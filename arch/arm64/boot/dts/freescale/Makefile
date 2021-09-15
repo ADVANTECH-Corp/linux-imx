@@ -176,7 +176,8 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mm-rom5721-a1-adv7535.dtb \
 			  imx8mm-rom5721-a1-m2-i2s.dtb \
 			  imx8mm-rom5721-a1-rpmsg.dtb \
 			  imx8mm-rom5721-a1.dtb \
-			  imx8mm-ebcrs08-a1.dtb
+			  imx8mm-ebcrs08-a1.dtb \
+			  imx8mm-ebcrs08-a2.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mp-rsb3720-a1-lvds0-auo.dtb \
 			  imx8mp-rsb3720-a1-lvds1-auo.dtb \
 			  imx8mp-rsb3720-a1-lvds-dual.dtb \
