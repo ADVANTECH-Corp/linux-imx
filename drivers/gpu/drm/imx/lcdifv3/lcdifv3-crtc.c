@@ -30,6 +30,7 @@ struct lcdifv3_crtc {
 
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
 static int first_flip_complete = 1;
+static int lcdifv3_disabled = 0;
 extern void enable_lcd_vdd_en(void);
 extern void enable_ldb_signal(void);
 extern void disable_lcd_vdd_en(void);
@@ -182,6 +183,7 @@ static void lcdifv3_crtc_atomic_enable(struct drm_crtc *crtc,
 		enable_ldb_signal();
 		first_flip_complete = 0;
 	}
+	lcdifv3_disabled = 0;
 #endif
 
 	/* run LCDIFv3 */
@@ -195,7 +197,10 @@ static void lcdifv3_crtc_atomic_disable(struct drm_crtc *crtc,
 	struct lcdifv3_soc *lcdifv3 = dev_get_drvdata(lcdifv3_crtc->dev->parent);
 
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-	disable_lcd_vdd_en();
+	if (lcdifv3_disabled) {
+		disable_lcd_vdd_en();
+	}
+	lcdifv3_disabled = 1;
 #endif
 
 	spin_lock_irq(&crtc->dev->event_lock);
