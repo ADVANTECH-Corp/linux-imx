@@ -145,6 +145,12 @@
 		gpio-sck = <&gpio5 11 GPIO_ACTIVE_HIGH>;
 		realtek,extif0 = <1 0 1 1 1 1 1 1 2>;
 	};
+
+	display-subsystem {
+		ports = <&lcdif3_disp>,
+			<&lcdif2_disp>,
+			<&lcdif1_disp>;
+       };
 };
 
 &aud2htx {
