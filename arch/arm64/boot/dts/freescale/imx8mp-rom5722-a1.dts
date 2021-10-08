@@ -681,7 +681,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie>;
 	//clkreq-gpio = <&gpio5 20 GPIO_ACTIVE_HIGH>;	/* PCIE_CLKREQ#_1V8 */
-	disable-gpio = <&gpio_exp3 0 GPIO_ACTIVE_LOW>; /* W_DISABLE1# */
+	//disable-gpio = <&gpio_exp3 0 GPIO_ACTIVE_LOW>; /* W_DISABLE1# */
 	reset-gpio = <&gpio1 9 GPIO_ACTIVE_LOW>;	/* PCIE_A_RST#_1V8 */
 	ext_osc = <1>;
 	clocks = <&clk IMX8MP_CLK_HSIO_AXI_DIV>,

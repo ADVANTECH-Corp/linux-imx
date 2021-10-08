@@ -868,7 +868,7 @@
 	ext_osc = <1>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcieb>;
-	disable-gpio = <&tca9538 1 GPIO_ACTIVE_LOW>;
+	//disable-gpio = <&tca9538 1 GPIO_ACTIVE_LOW>;
 #if !defined(PCIE_SLOT)
 	reset-gpio = <&lsio_gpio5 0 GPIO_ACTIVE_LOW>;
 #endif
