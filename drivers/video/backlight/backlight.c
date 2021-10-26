@@ -77,7 +77,7 @@ static int fb_notifier_callback(struct notifier_block *self,
 			}
 #endif
 #if defined(CONFIG_ANDROID)
-			if(event == FB_EVENT_FB_REGISTERED)
+			if(event == 0x05)
 				fb_blank = 0;
 			else
 				fb_blank = *(int *)evdata->data;
