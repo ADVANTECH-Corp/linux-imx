@@ -75,6 +75,30 @@
 	status = "disabled";
 };
 
+&csi1_bridge {
+	status = "disabled";
+};
+
+&csi2_bridge {
+	status = "disabled";
+};
+
+&mipi_csi_1 {
+	status = "disabled";
+};
+
+&mipi_csi_2 {
+	status = "disabled";
+};
+
+&ov5640_mipi {
+	status = "disabled";
+};
+
+&ov5640_mipi2 {
+	status = "disabled";
+};
+
 &sai2 {
 	#sound-dai-cells = <0>;
 	clocks = <&clk IMX8MQ_CLK_SAI2_IPG>,

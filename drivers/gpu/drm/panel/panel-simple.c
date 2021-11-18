@@ -4100,12 +4100,12 @@ static const struct drm_display_mode innolux_r190ece_mode = {
     .clock = 108000,
     .hdisplay = 1280,
     .hsync_start = 1280 + 200,
-    .hsync_end = 1280 + 200 + 188,
-    .htotal = 1280 + 200 + 188 + 10,
+    .hsync_end = 1280 + 200 + 10,
+    .htotal = 1280 + 200 + 10 + 188,
     .vdisplay = 1024,
-    .vsync_start = 1024 + 30,
-    .vsync_end = 1024 + 30 + 12,
-    .vtotal = 1024 + 30 + 12 + 10,
+    .vsync_start = 1024 + 20,
+    .vsync_end = 1024 + 20 + 20,
+    .vtotal = 1024 + 20 + 20 + 12,
     .vrefresh = 60,
 };
 
@@ -4117,6 +4117,35 @@ static const struct panel_desc_dsi innolux_r190ece = {
         .size = {
             .width = 376,
             .height = 301,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
+
+static const struct drm_display_mode lg_lp097x02_mode = {
+    .clock = 63500,
+    .hdisplay = 1024,
+    .hsync_start = 1024 + 48,
+    .hsync_end = 1024 + 48 + 104,
+    .htotal = 1024 + 48 + 104 + 152,
+    .vdisplay = 768,
+    .vsync_start = 768 + 23,
+    .vsync_end = 768 + 23 + 4,
+    .vtotal = 768 + 23 + 3 + 4,
+    .vrefresh = 60,
+};
+
+static const struct panel_desc_dsi lg_lp097x02 = {
+    .desc = {
+        .modes = &lg_lp097x02_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 196,
+            .height = 147,
         },
         .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
     },
@@ -4148,6 +4177,9 @@ static const struct of_device_id dsi_of_match[] = {
 	}, {
 		.compatible = "innolux,r190ece",
 		.data = &innolux_r190ece
+	}, {
+		.compatible = "lg,lp097x02",
+		.data = &lg_lp097x02
 	}, {
 #endif
 		.compatible = "boe,tv080wum-nl0",
