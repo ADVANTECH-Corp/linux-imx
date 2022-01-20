@@ -31,6 +31,9 @@ obj-$(CONFIG_BT_HCIUART_NOKIA)	+= hci_nokia.o
 
 obj-$(CONFIG_BT_HCIRSI)		+= btrsi.o
 
+obj-$(CONFIG_BT_PCIE_8997)        += bt8997_src/
+obj-$(CONFIG_BT_PCIE_9098)        += bt9098_src/
+
 btmrvl-y			:= btmrvl_main.o
 btmrvl-$(CONFIG_DEBUG_FS)	+= btmrvl_debugfs.o
 

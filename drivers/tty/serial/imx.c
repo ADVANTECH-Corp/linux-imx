@@ -35,6 +35,12 @@
 #ifdef CONFIG_ARCH_ADVANTECH
 #include <linux/of_gpio.h>
 #endif
+#include <linux/gpio.h>
+#include <linux/spinlock.h>
+#include <linux/skbuff.h>
+#include <linux/of.h>
+#include <linux/of_platform.h>
+#include <linux/of_gpio.h>
 #include <asm/irq.h>
 #include <linux/busfreq-imx.h>
 #include <linux/pm_qos.h>
@@ -234,12 +240,13 @@ struct imx_port {
 	/* RS-485 fields */
 	struct serial_rs485	rs485;
 #endif
+	struct gpio_desc *dir_gpios;
+	struct gpio_desc *rst_gpios;
 	unsigned int            saved_reg[10];
 	bool			context_saved;
 
 	struct pm_qos_request   pm_qos_req;
 };
-
 struct imx_port_ucrs {
 	unsigned int	ucr1;
 	unsigned int	ucr2;
@@ -458,7 +465,14 @@ static void imx_uart_stop_tx(struct uart_port *port)
 	    imx_uart_readl(sport, USR2) & USR2_TXDC) {
 		u32 ucr2 = imx_uart_readl(sport, UCR2), ucr4;
 #ifdef CONFIG_ARCH_ADVANTECH
-		ucr2 &= ~UCR2_CTS;
+		if(sport->port.line == 3) {	
+			gpiod_set_value(sport->dir_gpios, 0);
+		}
+		else if(sport->port.line < 3) {
+			ucr2 &= ~UCR2_CTS;
+		//	printk("imx_uart_stop_tx other   %d",sport->port.line);
+		}
+		//ucr2 &= ~UCR2_CTS;
 #else
 		if (port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
 			imx_uart_rts_active(sport, &ucr2);
@@ -682,7 +696,15 @@ static void imx_uart_start_tx(struct uart_port *port)
 		else
 			imx_uart_rts_inactive(sport, &ucr2);
 #else
-		ucr2 |= UCR2_CTS;
+		if(sport->port.line == 3) {
+			gpiod_set_value(sport->dir_gpios, 1);
+		
+		}
+		else if(sport->port.line < 3) {
+			ucr2 |= UCR2_CTS;
+		//	printk("imx_uart_start_tx other   %d",sport->port.line);
+		}
+	 //  ucr2 |= UCR2_CTS;
 #endif
 		imx_uart_writel(sport, ucr2, UCR2);
 
@@ -1905,8 +1927,12 @@ static int imx_uart_rs485_config(struct uart_port *port,
 	rs485conf->delay_rts_after_send = 0;
 
 	/* RTS is required to control the transmitter */
-	if (!sport->have_rtscts && !sport->have_rtsgpio)
+	if (!sport->have_rtscts && !sport->have_rtsgpio && sport->port.line < 3)
 		rs485conf->flags &= ~SER_RS485_ENABLED;
+		
+	if((!(rs485conf->flags & SER_RS485_ENABLED)) == 1 && sport->port.line == 3) {
+		gpiod_set_value(sport->dir_gpios, 1);
+	}
 
 	if (rs485conf->flags & SER_RS485_ENABLED) {
 		/* Enable receiver if low-active RTS signal is requested */
@@ -1922,9 +1948,13 @@ static int imx_uart_rs485_config(struct uart_port *port,
 		else
 			imx_uart_rts_inactive(sport, &ucr2);
 #else
+		if(sport->port.line == 3) {
+		}
+		else if(sport->port.line < 3) {
 		ucr2 &= ~UCR2_CTSC;
 		ucr2 &= ~UCR2_CTS;
 		ucr2 |= UCR2_IRTS;
+		}
 #endif
 		imx_uart_writel(sport, ucr2, UCR2);
 	}
@@ -1943,6 +1973,7 @@ static int imx_uart_rs485_config(struct uart_port *port,
 /*
  * Handle TIOCSRS485 & TIOCSRS485 ioctl for RS-485 support
  */
+
 static int imx_uart_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
 {
 	struct serial_rs485 rs485conf;
@@ -2493,9 +2524,38 @@ static int imx_uart_probe(struct platform_device *pdev)
 #ifdef CONFIG_ARCH_ADVANTECH
 	struct device *dev = &pdev->dev;
 	enum of_gpio_flags flags;
+	struct device_node *nd;
 
 	int uart_mode_sel_gpio =
 		of_get_named_gpio_flags(dev->of_node, "uart-sel-gpio", 0, &flags);
+	int err;
+	
+	nd = dev->of_node;
+//	uart_port = of_alias_get_id(nd, "serial");
+	
+	if(sport->port.line == 3) {
+		sport->dir_gpios = gpiod_get(dev, "dir", GPIOD_OUT_LOW);
+		if (IS_ERR(sport->dir_gpios) &&
+	            PTR_ERR(sport->dir_gpios) != -ENOENT &&
+	            PTR_ERR(sport->dir_gpios) != -ENOSYS) {
+	                return PTR_ERR(sport->dir_gpios);
+	    }
+		gpiod_direction_output(sport->dir_gpios, 0);
+		gpiod_set_value(sport->dir_gpios, 1);
+
+	}
+	if(sport->port.line == 2) {
+		sport->rst_gpios = gpiod_get(dev, "rst", GPIOD_OUT_LOW);
+		if (IS_ERR(sport->rst_gpios) &&
+	            PTR_ERR(sport->rst_gpios) != -ENOENT &&
+	            PTR_ERR(sport->rst_gpios) != -ENOSYS) {
+	                return PTR_ERR(sport->rst_gpios);
+	    }
+		gpiod_direction_output(sport->rst_gpios, 0);
+		gpiod_set_value(sport->rst_gpios, 1);
+
+
+	}
 
 	if (gpio_is_valid(uart_mode_sel_gpio))
 	{
@@ -2513,7 +2573,7 @@ static int imx_uart_probe(struct platform_device *pdev)
 			uart_mode_sel_gpio, ret);
 			return -EFAULT;
 		}
-
+		
 		//read gpio value; H =>RS232  L =>RS485
 		if(gpio_get_value(uart_mode_sel_gpio) == 0){
 			dev_warn(dev,"RS485 MODE\n");

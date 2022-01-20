@@ -1,0 +1,137 @@
+================================================================================
+		U S E R  M A N U A L  F O R   hci_uart
+
+NAME
+	hci_uart.ko - driver for bluetooth uart device
+
+Building the driver
+-------------------
+	For X86 platform:
+	Modify ".config" to set "CONFIG_X86=y" or make X86
+	For Moorestown platform:
+	Modify ".config" to set "CONFIG_MOORESTOWN=y" or make MOORESTOWN
+	For PXA9XX platfrom:
+	Modify ".config" to set "CONFIG_PXA9XX=y" or make PXA9XX [2.6.25]
+	For PXA955 platfrom:
+	Modify ".config" to set "CONFIG_PXA955=y" or make PXA955
+	For PXA950 platfrom:
+	Modify ".config" to set "CONFIG_PXA950=y" or make PXA950
+	For PXA920 platfrom:
+	Modify ".config" to set "CONFIG_PXA920=y" or make PXA920 [2.6.32]
+
+	For X86/PXA9XX/.. platform AMP build:
+	Modify ".config" to set "CONFIG_AMP=y" or make X86|PXA9XX|.. [2.6.25] AMP
+
+	make clean
+	make build
+	The binary can be found in ../bin_muart directory.
+
+Installing the driver
+---------------------
+	make install
+
+Loading the driver
+---------------------
+	insmod hci_uart.ko [wakeupmode=0|1|2|3] [ps_mode=0|1]
+
+	The module takes two optional parameters -
+	The bit settings of drv_mode are,
+		Bit 0: BT/AMP/BLE
+		Bit 1: FM
+		Bit 2: NFC
+
+	reset:
+	0 -- Don't Send HCI reset command on initialization (default)
+	1 -- Send HCI reset command on initialization
+
+	ps_mode:
+	0 -- disable ps_mode
+	1 -- enable ps_mode
+
+	wakeupmode: Host to card wakeup method
+	0 -- wakeupmode DTR
+	1 -- wakeupmode BREAK
+	2 -- wakeupmode GPIO
+	The default wakeupmode is BREAK.
+
+	h2c_wakeup_gpio_pin: Host to card wakeup gpio pin (default 4)
+
+	c2h_wakeup_mode: Card to wake up method
+	for 89xx chip:
+		0 -- not needed
+		1 -- DTR
+		2 -- BREAK
+		3 -- GPIO, GPIO# is specified by c2h_wakeup_gpio_pin
+	for 88xx chip:
+		0 -- not needed
+		1 -- DTR
+		2 -- BREAK
+		3 -- default GPIO (GPIO17 for 8897, GPIO13 for 8887)
+		4 -- other GPIO, GPIO# is specified by c2h_wakeup_gpio_pin
+
+	c2h_wakeup_gpio_pin: Card to wake up method gpio pin (default 5)
+
+	drvdbg=<bit mask of driver debug message control>
+
+	txcrc:
+	0 -- Don't Transmit every BCSP packet with CRC
+	1 -- Transmit every BCSP packet with CRC (default)
+
+	hciextn:
+	0 -- Don't Convert HCI Extensions into BCSP packets
+	1 -- Convert HCI Extensions into BCSP packets (default)
+
+Get driver ps settings
+----------------------
+    cat /proc/mbt_uart/hciX/config
+    cat /proc/mbt_uart/config
+    This command is used to get the current driver power save settings.
+
+Enable power save mode
+----------------------
+psmode=[n]
+    This command is used to enable/disable auto sleep mode
+
+	where the option is:
+			1 	-- Enable auto sleep mode
+			0 	-- Disable auto sleep mode
+	Usage:
+                echo "psmode=1" > /proc/mbt_uart/hciX/config  	#enable power save mode
+
+                echo "psmode=0" > /proc/mbt_uart/hciX/config    #disable power save mode
+		echo "psmode=1" > /proc/mbt_uart/config		#enable power save mode
+
+		echo "psmode=0" > /proc/mbt_uart/config		#disable power save mode
+
+Configure Inactive Time Interval
+--------------------------------
+interval=[n]
+    This command is used to change the inactive time interval (mili-second)
+
+    Usage:
+	echo "interval=2000" > /proc/mbt_uart/hciX/config  #set inavtive time interval to 2000 mili-second
+        echo "interval=2000" > /proc/mbt_uart/config  #set inavtive time interval to 2000 mili-second
+
+Configure host to card wakeup method
+------------------------------------------
+wakeupmode=[n]
+    This command is used to configure host to card wakeup method. This command is only allowed in full power mode.
+
+    where the option is:
+            0 	-- DTR
+            1 	-- BREAK
+            2   -- GPIO
+
+    Usage:
+        echo "wakeupmode=0" > /proc/mbt_uart/hciX/config  #set wakeup method to DTR
+
+        echo "wakeupmode=1" > /proc/mbt_uart/hciX/config  #set wakeup method to BREAK
+
+        echo "wakeupmode=2" > /proc/mbt_uart/hciX/config  #set wakeup method to GPIO
+        echo "wakeupmode=0" > /proc/mbt_uart/config  #set wakeup method to DTR
+
+        echo "wakeupmode=1" > /proc/mbt_uart/config  #set wakeup method to BREAK
+
+        echo "wakeupmode=2" > /proc/mbt_uart/config  #set wakeup method to GPIO
+
+================================================================================

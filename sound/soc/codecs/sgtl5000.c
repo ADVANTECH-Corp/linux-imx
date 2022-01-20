@@ -25,7 +25,10 @@
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <sound/initval.h>
-
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/gpio/consumer.h>
+#include <linux/of_gpio.h>
+#endif
 #include "sgtl5000.h"
 
 #define SGTL5000_DAP_REG_OFFSET	0x0100
@@ -156,8 +159,10 @@ struct sgtl5000_priv {
 	u8 lrclk_strength;
 	u8 sclk_strength;
 	u16 mute_state[LAST_POWER_EVENT + 1];
+	int 		mute_gpios;
 };
 
+//struct gpio_desc *mute_gpios;
 static inline int hp_sel_input(struct snd_soc_component *component)
 {
 	return (snd_soc_component_read32(component, SGTL5000_CHIP_ANA_CTRL) &
@@ -284,6 +289,8 @@ static int mic_bias_event(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_PRE_PMD:
 		snd_soc_component_update_bits(component, SGTL5000_CHIP_MIC_CTRL,
 				SGTL5000_BIAS_R_MASK, 0);
+//		gpiod_set_value(mute_gpios, 0);				
+//		msleep(600);
 		break;
 	}
 	return 0;
@@ -325,6 +332,8 @@ static int vag_and_mute_control(struct snd_soc_component *component,
 		sgtl5000->mute_state[event_source] =
 			mute_output(component, mute_mask[event_source]);
 		vag_power_off(component, event_source);
+//		gpiod_set_value(mute_gpios, 0);				
+//		msleep(600);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		restore_output(component, mute_mask[event_source],
@@ -784,8 +793,20 @@ static const struct snd_kcontrol_new sgtl5000_snd_controls[] = {
 static int sgtl5000_digital_mute(struct snd_soc_dai *codec_dai, int mute)
 {
 	struct snd_soc_component *component = codec_dai->component;
+	struct sgtl5000_priv *sgtl5000 = snd_soc_component_get_drvdata(component);
+
 	u16 i2s_pwr = SGTL5000_I2S_IN_POWERUP;
 
+	if(mute == 0)//play
+	{
+		if (gpio_is_valid(sgtl5000->mute_gpios))
+			gpio_set_value_cansleep(sgtl5000->mute_gpios, 1);
+	}
+	else //end
+	{
+		if (gpio_is_valid(sgtl5000->mute_gpios))
+			gpio_set_value_cansleep(sgtl5000->mute_gpios, 0);
+	}
 	/*
 	 * During 'digital mute' do not mute DAC
 	 * because LINE_IN would be muted aswell. We want to mute
@@ -1061,6 +1082,7 @@ static int sgtl5000_pcm_hw_params(struct snd_pcm_substream *substream,
 	int stereo;
 	int ret;
 
+//	gpiod_set_value(mute_gpios, 1);				
 	/* sysclk should already set */
 	if (!sgtl5000->sysclk) {
 		dev_err(component->dev, "%s: set sysclk first!\n", __func__);
@@ -1155,7 +1177,9 @@ static int sgtl5000_set_bias_level(struct snd_soc_component *component,
 				    SGTL5000_REFTOP_POWERUP, 0);
 		break;
 	}
-
+//#ifdef CONFIG_ARCH_ADVANTECH
+//	msleep(600);
+//#endif
 	return 0;
 }
 
@@ -1473,6 +1497,7 @@ static int sgtl5000_probe(struct snd_soc_component *component)
 	u16 reg;
 	struct sgtl5000_priv *sgtl5000 = snd_soc_component_get_drvdata(component);
 	unsigned int zcd_mask = SGTL5000_HP_ZCD_EN | SGTL5000_ADC_ZCD_EN;
+	
 
 	/* power up sgtl5000 */
 	ret = sgtl5000_set_power_regs(component);
@@ -1595,7 +1620,25 @@ static int sgtl5000_i2c_probe(struct i2c_client *client,
 	sgtl5000 = devm_kzalloc(&client->dev, sizeof(*sgtl5000), GFP_KERNEL);
 	if (!sgtl5000)
 		return -ENOMEM;
+#ifdef CONFIG_ARCH_ADVANTECH
+	sgtl5000->mute_gpios = of_get_named_gpio(np, "mute-gpios", 0);
+	if (gpio_is_valid(sgtl5000->mute_gpios)) {
+		ret = devm_gpio_request_one( &client->dev, sgtl5000->mute_gpios,
+					    GPIOF_OUT_INIT_LOW, "sgtl5000 mute");
+		if (ret) {
+			dev_err( &client->dev, "unable to get disable gpio\n");
+			return ret;
+		}
+	gpio_set_value_cansleep(sgtl5000->mute_gpios, 0);
+	} else if (sgtl5000->mute_gpios == -EPROBE_DEFER) {
+		return sgtl5000->mute_gpios;
+	}
 
+//	struct device *dev = &client->dev;
+//	mute_gpios = gpiod_get(dev, "mute", GPIOD_OUT_HIGH);
+//	gpiod_direction_output(mute_gpios, 1);			
+//	gpiod_set_value(mute_gpios, 1);
+#endif
 	i2c_set_clientdata(client, sgtl5000);
 
 	ret = sgtl5000_enable_regulators(client);

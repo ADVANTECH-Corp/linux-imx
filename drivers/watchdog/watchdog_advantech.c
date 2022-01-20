@@ -62,6 +62,11 @@
 #define REG_WDT_VERSION 					0x27
 #define REG_WDT_POWER_BTN_MODE 		0x28
 
+#define MCU_MSP430	
+#ifdef MCU_MSP430
+#define WORD_REG_LEN 2
+#endif
+
 static int gpio_wdt_en;
 static int gpio_wdt_ping;
 //static int gpio_wdt_out;
@@ -175,7 +180,17 @@ int adv_wdt_i2c_set_timeout(struct i2c_client *client, unsigned int val)
 {
 	int ret = 0;
 	val = WDOG_SEC_TO_COUNT(val) & 0x0000FFFF;
+	unsigned int sync=0;
+
+#ifdef MCU_MSP430
+
+	ret = adv_wdt_i2c_write_reg(client, REG_WDT_WATCHDOG_TIME_OUT, &val, WORD_REG_LEN);
+		msleep(100);//wait MCU run reg write function
+	adv_wdt_i2c_write_reg(client, REG_WDT_WATCHDOG_TIME_OUT, &sync, WORD_REG_LEN);//Synchronization timeout time
+
+#else	
 	ret = adv_wdt_i2c_write_reg(client, REG_WDT_WATCHDOG_TIME_OUT, &val, sizeof(val));
+#endif
 	msleep(1000);
 	if (ret)
 		return -EIO;
@@ -185,8 +200,11 @@ int adv_wdt_i2c_set_timeout(struct i2c_client *client, unsigned int val)
 int adv_wdt_i2c_read_timeout(struct i2c_client *client, unsigned int *val)
 {
 	int ret = 0;
-
+#ifdef MCU_MSP430
+	ret = adv_wdt_i2c_read_reg(client, REG_WDT_WATCHDOG_TIME_OUT, val, WORD_REG_LEN);
+#else
 	ret = adv_wdt_i2c_read_reg(client, REG_WDT_WATCHDOG_TIME_OUT, val, sizeof(val));
+#endif
 	if (ret)
 		return -EIO;
 	return 0;
@@ -264,6 +282,7 @@ static int adv_wdt_open(struct inode *inode, struct file *file)
 
 static int adv_wdt_close(struct inode *inode, struct file *file)
 {
+
 	if (test_bit(ADV_WDT_EXPECT_CLOSE, &adv_wdt.status) && !nowayout)
 		adv_wdt_stop();
 	else {
@@ -272,6 +291,10 @@ static int adv_wdt_close(struct inode *inode, struct file *file)
 		adv_wdt_ping();
 	}
 
+	adv_wdt_i2c_set_timeout(adv_client, 1);
+	dev_crit(adv_wdt_miscdev.parent,
+			"Device shutdown: Expect reboot!\n");
+	adv_wdt_start(0);
 	clear_bit(ADV_WDT_EXPECT_CLOSE, &adv_wdt.status);
 	clear_bit(ADV_WDT_STATUS_OPEN, &adv_wdt.status);
 	clear_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status);
@@ -474,7 +497,7 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		pr_err("Set watchdog timeout err=%d\n", ret);
 		goto fail;
 	}
-	
+
 	ret = adv_wdt_i2c_read_version(client, &tmp_version);
 	
 	if (ret == 0 )
@@ -564,6 +587,7 @@ static void adv_wdt_i2c_shutdown(struct i2c_client *client)
 
 		dev_crit(adv_wdt_miscdev.parent,
 			"Device shutdown: Expect reboot!\n");
+		adv_wdt_start(0);
 	}
 	clear_bit(ADV_WDT_EXPECT_CLOSE, &adv_wdt.status);
 	clear_bit(ADV_WDT_STATUS_OPEN, &adv_wdt.status);

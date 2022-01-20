@@ -10,3 +10,6 @@ config MXMWIFIEX
 		(indicating Multi-Chip x Multi-Interface support) based on
 		NXP 802.11n/ac chipsets. If you choose to build it as a module,
 		it will be build 2 modules moal.ko and mlan.ko.
+
+config NXP_PCIE_9098
+	tristate "NXP PCIE 9098 WiFi Driver"

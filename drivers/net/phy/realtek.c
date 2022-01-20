@@ -222,7 +222,16 @@ static int rtl8211f_config_init(struct phy_device *phydev)
 	default: /* the rest of the modes imply leaving delay as is. */
 		return 0;
 	}
-
+    ret = phy_modify_paged(phydev, 0xd04, 0x10, 0x6f7b, 0x205b);//0x205b
+    if (ret < 0) {
+            dev_err(&phydev->mdio.dev, "led set failed\n");
+            return ret;
+    }
+	 ret = phy_modify_paged(phydev, 0xd04, 0x11, 0xe, 0x0);
+    if (ret < 0) {
+            dev_err(&phydev->mdio.dev, "led set failed\n");
+            return ret;
+    }
 	ret = phy_modify_paged(phydev, 0xd08, 0x11, RTL8211F_TX_DELAY, txdly);
 	if (ret < 0) {
 		dev_err(&phydev->mdio.dev, "tx delay set failed\n");

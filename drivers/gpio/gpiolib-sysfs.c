@@ -9,7 +9,7 @@
 #include <linux/kdev_t.h>
 #include <linux/slab.h>
 #include <linux/ctype.h>
-
+#include <linux/slab.h>
 #include "gpiolib.h"
 
 #define GPIO_IRQF_TRIGGER_FALLING	BIT(0)
@@ -27,7 +27,29 @@ struct gpiod_data {
 
 	bool direction_can_change;
 };
+#ifdef CONFIG_ARCH_ADVANTECH
+#define MAX_GPIO_NUMBER 600//Modify according to onboard
+short int gpio_pool[MAX_GPIO_NUMBER];
 
+struct gpiod_FixedName {
+	int 	gpio_number;
+	char 	*gpio_name;
+};
+#define FixedNameNumber 10 //Modify according to onboard
+struct gpiod_FixedName gpios_FixedTab[FixedNameNumber]= {
+	{96,"RECOVERY_BUTTON"},
+	{482,"GPIO_L_LED"},
+	{483,"SATA_L_AC"},
+	{498,"UART3_MODE1"},
+	{499,"UART3_MODE0"},
+	{502,"UART4_MODE1"},
+	{503,"UART4_MODE0"},
+	{504,"SFP_LED"},
+	{507,"WIFI_LED"},
+	{508,"PPP_LED"},	
+};
+
+#endif
 /*
  * Lock to serialise gpiod export and unexport, and prevent re-export of
  * gpiod whose chip is being unregistered.
@@ -548,8 +570,34 @@ static struct class gpio_class = {
 };
 
 #ifdef CONFIG_ARCH_ADVANTECH
-/* Rename gpio nodes in /sys/class/gpio */
-static int gpio_count = 1;
+char * get_FixedName(int desc_number)
+{
+	int i;
+	for(i=0;i<FixedNameNumber;i++)
+	{
+		
+		if(gpios_FixedTab[i].gpio_number == desc_number)
+		{
+			return gpios_FixedTab[i].gpio_name;
+		}
+		else if(gpios_FixedTab[i].gpio_number > desc_number)
+			break;
+	}
+	return NULL;
+}
+int Fill_GPIO_pool(int desc_number)
+{
+	int export_gpionum;
+	for(export_gpionum=0;export_gpionum<MAX_GPIO_NUMBER;export_gpionum++)
+		{
+			if(gpio_pool[export_gpionum] == -1)
+			{
+				gpio_pool[export_gpionum]=desc_number;
+				break;
+			}
+		}
+	return export_gpionum;
+}
 #endif
 
 /**
@@ -629,13 +677,20 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
 	offset = gpio_chip_hwgpio(desc);
 	if (chip->names && chip->names[offset])
 		ioname = chip->names[offset];
-
+#ifdef CONFIG_ARCH_ADVANTECH
+	int desc_number = desc_to_gpio(desc);
+	int export_gpionum = 0;
+	ioname=get_FixedName(desc_number);
+	if( ioname == NULL )
+	{
+		export_gpionum=Fill_GPIO_pool(desc_number);
+	}
+#endif
 	dev = device_create_with_groups(&gpio_class, &gdev->dev,
 					MKDEV(0, 0), data, gpio_groups,
 					ioname ? ioname : "gpio%u",
 #ifdef CONFIG_ARCH_ADVANTECH
-					gpio_count);
-					gpio_count++;
+					export_gpionum+1);
 #else
 					desc_to_gpio(desc));
 #endif
@@ -698,6 +753,36 @@ int gpiod_export_link(struct device *dev, const char *name,
 }
 EXPORT_SYMBOL_GPL(gpiod_export_link);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+int check_FixedTab(int desc_number)
+{
+	int i;
+	for(i=0;i<FixedNameNumber;i++)
+	{
+		
+		if( gpios_FixedTab[i].gpio_number == desc_number )
+		{
+			return 1;
+		}
+		else if( gpios_FixedTab[i].gpio_number > desc_number )
+			break;
+	}
+	return 0;
+}
+void remove_from_gpio_pool(int desc_number)
+{
+	int export_gpionum;
+	for(export_gpionum=0;export_gpionum<MAX_GPIO_NUMBER;export_gpionum++)
+	{
+		if( gpio_pool[export_gpionum] == desc_number )
+		{
+			gpio_pool[export_gpionum]=-1;
+			break;
+		}		
+	}
+}
+#endif
+
 /**
  * gpiod_unexport - reverse effect of gpiod_export()
  * @desc: GPIO to make unavailable
@@ -728,7 +813,13 @@ void gpiod_unexport(struct gpio_desc *desc)
 	clear_bit(FLAG_EXPORT, &desc->flags);
 
 #ifdef CONFIG_ARCH_ADVANTECH
-	gpio_count--;
+	int desc_number=desc_to_gpio(desc);
+	int is_FixedTab=0;
+	is_FixedTab=check_FixedTab(desc_number);
+	if(!is_FixedTab)
+	{
+		remove_from_gpio_pool(desc_number);
+	}
 #endif
 
 	device_unregister(dev);
@@ -823,7 +914,9 @@ static int __init gpiolib_sysfs_init(void)
 	status = class_register(&gpio_class);
 	if (status < 0)
 		return status;
-
+#ifdef CONFIG_ARCH_ADVANTECH 	
+	memset(gpio_pool,-1,sizeof(gpio_pool));	
+#endif
 	/* Scan and register the gpio_chips which registered very
 	 * early (e.g. before the class_register above was called).
 	 *
