@@ -1079,7 +1079,7 @@
 };
 
 &mipi_dsi {
-        status = "okay";
+        status = "disabled";
         panel@0 {
                 compatible = "auo,g070vw01v0";
                 reg = <0>;
@@ -1194,7 +1194,7 @@
 	lvds-reset=<&gpio3 23 1>;
 	lvds-stby=<&gpio3 24 1>;
 	lvds-bkl-delay-time = <10>;
-        status = "okay";
+        status = "disabled";
 };
 
 &gpu {
