@@ -27,6 +27,7 @@
 #include <sound/initval.h>
 
 #include "sgtl5000.h"
+#include <linux/of_gpio.h>
 
 #define SGTL5000_DAP_REG_OFFSET	0x0100
 #define SGTL5000_MAX_REG_OFFSET	0x013A
@@ -1588,6 +1589,15 @@ static int sgtl5000_i2c_probe(struct i2c_client *client,
 	struct device_node *np = client->dev.of_node;
 	u32 value;
 	u16 ana_pwr;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct device *dev = &client->dev;
+	struct gpio_desc *mute_gpios;
+
+	mute_gpios = gpiod_get(dev, "mute", GPIOD_OUT_HIGH);
+	gpiod_direction_output(mute_gpios, 1);
+	gpiod_set_value(mute_gpios, 1);
+#endif
 
 	sgtl5000 = devm_kzalloc(&client->dev, sizeof(*sgtl5000), GFP_KERNEL);
 	if (!sgtl5000)
