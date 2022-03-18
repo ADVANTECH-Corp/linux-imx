@@ -31,6 +31,7 @@ obj-$(CONFIG_RTL8366S_PHY)	+= rtl8366s.o
 obj-$(CONFIG_RTL8366RB_PHY)	+= rtl8366rb.o
 obj-$(CONFIG_RTL8367_PHY)	+= rtl8367.o
 obj-$(CONFIG_RTL8367B_PHY)	+= rtl8367b.o
+obj-$(CONFIG_RTL8367SB_PHY)	+= rtl8367sb/
 obj-$(CONFIG_SWCONFIG)          += swconfig.o
 obj-$(CONFIG_MDIO_BITBANG)	+= mdio-bitbang.o
 obj-$(CONFIG_MDIO_BUS_MUX)	+= mdio-mux.o
