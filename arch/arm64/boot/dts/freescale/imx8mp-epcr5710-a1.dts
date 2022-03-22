@@ -32,8 +32,6 @@
 		stdout-path = &uart2;
 	};
 
-	
-
 	reg_usdhc2_vmmc: regulator-usdhc2 {
 		compatible = "regulator-fixed";
 		regulator-name = "VSD_3V3";
@@ -59,7 +57,6 @@
 				<192000>;
 		status = "okay";
 	};
-	
 
 	sound {
 		compatible = "fsl,sgtl5000", "fsl,imx-audio-sgtl5000";
@@ -73,10 +70,21 @@
 			"Line Out Jack", "LINE_OUT";
 		no-audmux;
 	};
+
 	sound-micfil {
 		compatible = "fsl,imx-audio-micfil";
 		model = "imx-audio-micfil";
 		cpu-dai = <&micfil>;
+	};
+
+	rtl8367c:rtl8367c {
+		compatible = "realtek,rtl8367c";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_switch>;
+		gpio-sck = <&gpio4 4 GPIO_ACTIVE_HIGH>;
+		gpio-sda = <&gpio4 5 GPIO_ACTIVE_HIGH>;
+		reset-gpio = <&gpio4 2 GPIO_ACTIVE_HIGH>;
+		status = "okay";
 	};
 };
 
@@ -346,6 +354,7 @@
 		#gpio-cells = <2>;
 	};
 };
+
 &i2c5 {
 	clock-frequency = <400000>;
 	pinctrl-names = "default";
@@ -672,6 +681,13 @@
 		>;
 	};
 
+	pinctrl_switch: switch {
+		fsl,pins = <
+			MX8MP_IOMUXC_SAI1_RXD0__GPIO4_IO02	0x19
+			MX8MP_IOMUXC_SAI1_RXD2__GPIO4_IO04	0x19
+			MX8MP_IOMUXC_SAI1_RXD3__GPIO4_IO05	0x19
+		>;
+	};
 
 	pinctrl_flexcan1: flexcan1grp {
 		fsl,pins = <
