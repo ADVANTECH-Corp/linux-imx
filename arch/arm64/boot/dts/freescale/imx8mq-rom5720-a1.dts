@@ -218,10 +218,13 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		ethphy0: ethernet-phy@4 {
+		ethphy0: ethernet-phy@0 {
+			/* Realtek RTL8211F (0x001cc916) */
 			compatible = "ethernet-phy-ieee802.3-c22";
-			reg = <4>;
-			at803x,eee-disabled;
+			reg = <1>;
+			eee-broken-1000t;
+			interrupt-parent = <&gpio1>;
+			interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
 		};
 	};
 };
@@ -811,6 +814,7 @@
 			MX8MQ_IOMUXC_ENET_RX_CTL_ENET1_RGMII_RX_CTL	0x91
 			MX8MQ_IOMUXC_ENET_TX_CTL_ENET1_RGMII_TX_CTL	0x1f
 			MX8MQ_IOMUXC_GPIO1_IO09_GPIO1_IO9		0x19
+			MX8MQ_IOMUXC_GPIO1_IO11_GPIO1_IO11		0x19
 		>;
 	};
 
