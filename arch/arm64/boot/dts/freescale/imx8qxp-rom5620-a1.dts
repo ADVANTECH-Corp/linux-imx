@@ -518,19 +518,31 @@
 		#size-cells = <0>;
 
 		ethphy0: ethernet-phy@0 {
+			/* Realtek RTL8211F (0x001cc916) */
 			compatible = "ethernet-phy-ieee802.3-c22";
-			reg = <4>;
-			at803x,eee-disabled;
-			at803x,vddio-1p8v;
+			reg = <1>;
+			eee-broken-1000t;
 		};
 
 		ethphy1: ethernet-phy@1 {
+			/* Realtek RTL8211F (0x001cc916) */
 			compatible = "ethernet-phy-ieee802.3-c22";
-			reg = <6>;
-			at803x,eee-disabled;
-			at803x,vddio-1p8v;
+			reg = <3>;
+			eee-broken-1000t;
 		};
 	};
+};
+
+&fec2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_fec2>;
+	phy-mode = "rgmii-txid";
+	phy-handle = <&ethphy1>;
+	fsl,magic-packet;
+	nvmem-cells = <&fec_mac1>;
+	nvmem-cell-names = "mac-address";
+	fsl,rgmii_rxc_dly;
+	status = "okay";
 };
 
 &i2c0_mipi_lvds1 {
@@ -676,18 +688,6 @@
 	assigned-clock-rates = <786432000>, <49152000>, <24000000>, <49152000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sai1>;
-	status = "okay";
-};
-
-&fec2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_fec2>;
-	phy-mode = "rgmii-txid";
-	phy-handle = <&ethphy1>;
-	fsl,magic-packet;
-	nvmem-cells = <&fec_mac1>;
-	nvmem-cell-names = "mac-address";
-	fsl,rgmii_rxc_dly;
 	status = "okay";
 };
 
