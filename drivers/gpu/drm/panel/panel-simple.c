@@ -149,13 +149,8 @@ struct panel_simple {
 
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
 int blank_count = 0;
-static int panel_simple_disabled = 0;
 extern void enable_ldb_bkl_vcc(void);
 extern void enable_ldb_bkl_pwm(void);
-
-extern void disable_ldb_bkl_vcc(void);
-extern void disable_ldb_bkl_pwm(void);
-extern void disable_ldb_signal(void);
 #endif
 
 static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
@@ -403,17 +398,7 @@ static int panel_simple_disable(struct drm_panel *panel)
 	if (p->backlight) {
 		p->backlight->props.power = FB_BLANK_POWERDOWN;
 		p->backlight->props.state |= BL_CORE_FBBLANK;
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-		if(panel_simple_disabled)
-		{
-			disable_ldb_bkl_pwm();
-			backlight_update_status(p->backlight); //PWM
-			disable_ldb_bkl_vcc();
-		}
-		panel_simple_disabled = 1;
-#else
 		backlight_update_status(p->backlight);
-#endif
 	}
 
 	if (p->desc->delay.disable)
