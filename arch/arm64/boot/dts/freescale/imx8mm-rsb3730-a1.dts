@@ -558,9 +558,18 @@
 
         pinctrl_hog: hoggrp {
                 fsl,pins = <
-			MX8MM_IOMUXC_GPIO1_IO05_GPIO1_IO5		0x19	/* WDT_TIME_OUT */
-			MX8MM_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5		0x19	/* GPIO5 */
-			MX8MM_IOMUXC_SAI3_RXFS_GPIO4_IO28		0x19	/* RESET_OUT */
+			MX8MM_IOMUXC_UART1_RXD_GPIO5_IO22		0x116	/* GPIO1 */
+			MX8MM_IOMUXC_UART1_TXD_GPIO5_IO23		0x116	/* GPIO2 */
+			MX8MM_IOMUXC_UART2_RXD_GPIO5_IO24		0x116	/* GPIO3 */
+			MX8MM_IOMUXC_UART2_TXD_GPIO5_IO25		0x116	/* GPIO4 */
+			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21		0x116	/* GPIO5 */
+			MX8MM_IOMUXC_ECSPI2_SS0_GPIO5_IO13		0x116	/* GPIO6 */
+			MX8MM_IOMUXC_ECSPI2_SCLK_GPIO5_IO10		0x1916	/* GPIO7 */
+			MX8MM_IOMUXC_ECSPI2_MISO_GPIO5_IO12		0x116	/* GPIO8 */
+			MX8MM_IOMUXC_ECSPI2_MOSI_GPIO5_IO11		0x116	/* GPIO9 */
+			MX8MM_IOMUXC_SAI3_RXFS_GPIO4_IO28		0x116	/* GPIO10 */
+			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0		0x114	/* GPIO11 */
+			MX8MM_IOMUXC_SAI1_RXC_GPIO4_IO1			0x116	/* GPIO12 */
                 >;
         };
 
@@ -908,25 +917,25 @@
                 >;
         };
 
-	pinctrl_ecspi2: ecspi2grp {
-                fsl,pins = <
-			MX8MM_IOMUXC_ECSPI2_SCLK_ECSPI2_SCLK		0x82	/* ECSPI2_SCLK */
-			MX8MM_IOMUXC_ECSPI2_MOSI_ECSPI2_MOSI		0x82	/* ECSPI2_MOSI */
-			MX8MM_IOMUXC_ECSPI2_MISO_ECSPI2_MISO		0x82	/* ECSPI2_MISO */
-			MX8MM_IOMUXC_ECSPI2_SS0_GPIO5_IO13		0x19	/* ECSPI2_SS0 */
-			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21		0x19	/* ECSPI2_SS1 */
-                >;
-        };
+//	pinctrl_ecspi2: ecspi2grp {
+//                fsl,pins = <
+//			MX8MM_IOMUXC_ECSPI2_SCLK_ECSPI2_SCLK		0x82	/* ECSPI2_SCLK */
+//			MX8MM_IOMUXC_ECSPI2_MOSI_ECSPI2_MOSI		0x82	/* ECSPI2_MOSI */
+//			MX8MM_IOMUXC_ECSPI2_MISO_ECSPI2_MISO		0x82	/* ECSPI2_MISO */
+//			MX8MM_IOMUXC_ECSPI2_SS0_GPIO5_IO13		0x19	/* ECSPI2_SS0 */
+//			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21		0x19	/* ECSPI2_SS1 */
+//                >;
+//        };
 
-	pinctrl_ecspi3: ecspi3grp {
-                fsl,pins = <
-			MX8MM_IOMUXC_UART1_RXD_ECSPI3_SCLK		0x82	/* ECSPI3_SCLK */
-			MX8MM_IOMUXC_UART1_TXD_ECSPI3_MOSI		0x82	/* ECSPI3_MOSI */
-			MX8MM_IOMUXC_UART2_RXD_ECSPI3_MISO		0x82	/* ECSPI3_MISO */
-			MX8MM_IOMUXC_UART2_TXD_GPIO5_IO25		0x19	/* ECSPI3_SS0 */
-			MX8MM_IOMUXC_SAI5_RXD1_GPIO3_IO22		0x19	/* ECSPI3_SS1 */
-                >;
-        };
+//	pinctrl_ecspi3: ecspi3grp {
+//                fsl,pins = <
+//			MX8MM_IOMUXC_UART1_RXD_ECSPI3_SCLK		0x82	/* ECSPI3_SCLK */
+//			MX8MM_IOMUXC_UART1_TXD_ECSPI3_MOSI		0x82	/* ECSPI3_MOSI */
+//			MX8MM_IOMUXC_UART2_RXD_ECSPI3_MISO		0x82	/* ECSPI3_MISO */
+//			MX8MM_IOMUXC_UART2_TXD_GPIO5_IO25		0x19	/* ECSPI3_SS0 */
+//			MX8MM_IOMUXC_SAI5_RXD1_GPIO3_IO22		0x19	/* ECSPI3_SS1 */
+//               >;
+//        };
 
 	pinctrl_battery: battery_grp {
 		fsl,pins = <
@@ -969,11 +978,11 @@
                 >;
         };
 	
-	pinctrl_dsi2dp_irq: dsi2dpgrp {
-		fsl,pins = <
-			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0         0x159	/* DSI2DP IRQ */
-		>;
-	};
+//	pinctrl_dsi2dp_irq: dsi2dpgrp {
+//		fsl,pins = <
+//			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0         0x159	/* DSI2DP IRQ */
+//		>;
+//	};
 
 	pinctrl_pwm2: pwm2grp {
                 fsl,pins = <
@@ -1066,49 +1075,49 @@
 	status = "okay";
 };
 
-&ecspi2 {
-        cs-gpios = <&gpio5 13 0>, <&gpio3 21 0>;
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_ecspi2>;
-        status = "okay";
+//&ecspi2 {
+//        cs-gpios = <&gpio5 13 0>, <&gpio3 21 0>;
+//        pinctrl-names = "default";
+//        pinctrl-0 = <&pinctrl_ecspi2>;
+//        status = "okay";
+//
+//        flash0: m25p80@0 {
+//                #address-cells = <1>;
+//                #size-cells = <0>;
+//                compatible = "micron,n25qba16";
+//                spi-max-frequency = <20000000>;
+//                reg = <0>;
+//        };
+//        flash1: m25p80@1 {
+//                #address-cells = <1>;
+//                #size-cells = <0>;
+//                compatible = "micron,n25qba16";
+//                spi-max-frequency = <20000000>;
+//                reg = <1>;
+//        };
+//};
 
-        flash0: m25p80@0 {
-                #address-cells = <1>;
-                #size-cells = <0>;
-                compatible = "micron,n25qba16";
-                spi-max-frequency = <20000000>;
-                reg = <0>;
-        };
-        flash1: m25p80@1 {
-                #address-cells = <1>;
-                #size-cells = <0>;
-                compatible = "micron,n25qba16";
-                spi-max-frequency = <20000000>;
-                reg = <1>;
-        };
-};
-
-&ecspi3 {
-        cs-gpios = <&gpio5 25 0>, <&gpio3 22 0>;
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_ecspi3>;
-        status = "okay";
-
-        flash2: m25p80@0 {
-                #address-cells = <1>;
-                #size-cells = <0>;
-                compatible = "micron,n25qba16";
-                spi-max-frequency = <20000000>;
-                reg = <0>;
-        };
-        flash3: m25p80@1 {
-                #address-cells = <1>;
-                #size-cells = <0>;
-                compatible = "micron,n25qba16";
-                spi-max-frequency = <20000000>;
-                reg = <1>;
-        };
-};
+//&ecspi3 {
+//        cs-gpios = <&gpio5 25 0>, <&gpio3 22 0>;
+//        pinctrl-names = "default";
+//        pinctrl-0 = <&pinctrl_ecspi3>;
+//        status = "okay";
+//
+//        flash2: m25p80@0 {
+//                #address-cells = <1>;
+//                #size-cells = <0>;
+//                compatible = "micron,n25qba16";
+//                spi-max-frequency = <20000000>;
+//                reg = <0>;
+//        };
+//        flash3: m25p80@1 {
+//                #address-cells = <1>;
+//                #size-cells = <0>;
+//                compatible = "micron,n25qba16";
+//                spi-max-frequency = <20000000>;
+//                reg = <1>;
+//        };
+//};
 
 &pwm2 {
         status = "okay";

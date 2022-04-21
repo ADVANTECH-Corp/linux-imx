@@ -1,7 +1,0 @@
-
-
-obj-$(CONFIG_MWIFI_SDIO_8997)		+= mwifiex_8997/
-
-
-
-
