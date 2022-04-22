@@ -12,6 +12,12 @@
 	model = "Advantech i.MX8MPlus RSB3720A1 board";
 	compatible = "fsl,imx8mp-evk", "fsl,imx8mp";
 
+	board {
+		compatible = "proc-board";
+		board-type = "RSB-3720 A1";
+		board-cpu = "IMX8MP";
+	};
+
 	aliases {
 		rtc0 = &s35390a;
 		rtc1 = &snvs_rtc;
@@ -38,6 +44,7 @@
 		reg = <0x0 0x40000000 0 0xc0000000>,
 		      <0x1 0x00000000 0 0xc0000000>;
 	};
+
 	reg_usdhc1_vmmc: regulator-usdhc1 {
 		compatible = "regulator-fixed";
 		regulator-name = "WLAN_EN";
@@ -51,13 +58,13 @@
 
 	reg_usdhc2_vmmc: regulator-usdhc2 {
 		compatible = "regulator-fixed";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_reg_usdhc2_vmmc>;
 		regulator-name = "VSD_3V3";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		gpio = <&gpio2 19 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
+		startup-delay-us = <100>;
+		off-on-delay-us = <12000>;
 	};
 
 	sound-hdmi {
@@ -133,6 +140,12 @@
 		gpio-sck = <&gpio5 11 GPIO_ACTIVE_HIGH>;
 		realtek,extif0 = <1 0 1 1 1 1 1 1 2>;
 	};
+
+	display-subsystem {
+                ports = <&lcdif3_disp>,
+                        <&lcdif2_disp>,
+                        <&lcdif1_disp>;
+        };
 };
 
 &A53_0 {
@@ -250,7 +263,6 @@
 
 		regulators {
 			buck1: BUCK1 {
-
 				regulator-name = "BUCK1";
 				regulator-min-microvolt = <600000>;
 				regulator-max-microvolt = <2187500>;
@@ -463,8 +475,8 @@
 	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl_i2c4>;
 	pinctrl-1 = <&pinctrl_i2c4_gpio>;
-	scl-gpios = <&gpio5 20 GPIO_ACTIVE_HIGH>;
-	sda-gpios = <&gpio5 21 GPIO_ACTIVE_HIGH>;
+	scl-gpios = <&gpio5 12 GPIO_ACTIVE_HIGH>;
+	sda-gpios = <&gpio5 13 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
 	24c02@50 {
@@ -867,14 +879,8 @@
 
 	pinctrl_i2c4_gpio: i2c4_gpio_grp  {
 		fsl,pins = <
-			MX8MP_IOMUXC_I2C4_SCL__GPIO5_IO20		0x19
-			MX8MP_IOMUXC_I2C4_SDA__GPIO5_IO21		0x19
-		>;
-	};
-
-	pinctrl_reg_usdhc2_vmmc: regusdhc2vmmcgrp {
-		fsl,pins = <
-			MX8MP_IOMUXC_SD2_RESET_B__GPIO2_IO19	0x41
+			MX8MP_IOMUXC_ECSPI2_MISO__GPIO5_IO12		0x19
+			MX8MP_IOMUXC_ECSPI2_SS0__GPIO5_IO13		0x19
 		>;
 	};
 	
@@ -993,6 +999,7 @@
 	pinctrl_usdhc2_gpio: usdhc2grp-gpio {
 		fsl,pins = <
 			MX8MP_IOMUXC_SD2_CD_B__GPIO2_IO12 	0x1c4
+			MX8MP_IOMUXC_SD2_RESET_B__GPIO2_IO19	0x41
 		>;
 	};
 

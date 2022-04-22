@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2019 NXP
+ */
+
+#include "imx8mp-rsb3720-a1.dts"
+
+/ {
+	lvds_panel: lvds_panel {
+		compatible = "auo,t215hvn01";
+		backlight = <&lvds_backlight0>;
+
+		port {
+			panel_lvds_in: endpoint {
+				remote-endpoint = <&lvds_out>;
+			};
+		};
+	};
+};
+
+&ldb {
+	status = "okay";
+	fsl,dual-channel;
+
+	lvds-channel@0 {
+		fsl,data-mapping = "spwg";
+		fsl,data-width = <24>;
+		status = "okay";
+
+		port@1 {
+			reg = <1>;
+			lvds_out: endpoint {
+				remote-endpoint = <&panel_lvds_in>;
+			};
+		};
+	};
+};
+
+&ldb_phy {
+	status = "okay";
+};
+
+&lvds_backlight0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_lvds_vcc &pinctrl_bklt_vcc_0>;
+	lvds-vcc-enable = <&gpio1 13 GPIO_ACTIVE_HIGH>;	/* LCD_VDD_EN */
+	lvds-bkl-enable = <&gpio_exp2 6 GPIO_ACTIVE_LOW>;	/* LCD_BKLT0_EN */
+	bklt-vcc-enable = <&gpio1 0 GPIO_ACTIVE_LOW>;	/* VDD_BKLT0_EN */
+	status = "okay";
+};
