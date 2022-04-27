@@ -1,0 +1,49 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2019 NXP
+ */
+
+#include "imx8mp-rsb3720-a1.dts"
+
+&lvds_backlight1 {
+	status = "okay";
+};
+
+&mipi_dsi {
+	status = "okay";
+
+	panel@0 {
+		compatible = "auo,g101uan02";
+		reg = <0>;
+		pinctrl-0 = <&pinctrl_mipi_dsi_en &pinctrl_mipi_dsi_bklt_vcc_en>;
+		dsi-vcc-enable-gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;      /* LCD_VDD_EN */
+		bklt-vcc-enable-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;      /* VDD_BKLT1_EN */
+		bklt-enable-gpio = <&gpio_exp2 7 GPIO_ACTIVE_LOW>;        /* LCD_BKLT1_EN */
+
+		port {
+			panel1_in: endpoint {
+				remote-endpoint = <&mipi_dsi_bridge_out>;
+			};
+		};
+	};
+
+	port@2 {
+		mipi_dsi_bridge_out: endpoint {
+			remote-endpoint = <&panel1_in>;
+		};
+	};
+};
+
+&iomuxc {
+	pinctrl_mipi_dsi_en: mipi_dsi_en {
+		fsl,pins = <
+		     MX8MP_IOMUXC_GPIO1_IO13__GPIO1_IO13     0x19    /* LCD_VDD_EN */
+		>;
+	};
+
+	pinctrl_mipi_dsi_bklt_vcc_en: mipi_dsi_bklt_vcc_en_grp {
+		fsl,pins = <
+			MX8MP_IOMUXC_GPIO1_IO01__GPIO1_IO01     0x19    /* VDD_BKLT1_EN */
+		>;
+	};
+};
