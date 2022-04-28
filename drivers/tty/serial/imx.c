@@ -456,6 +456,38 @@ static void imx_uart_start_rx(struct uart_port *port)
 	imx_uart_writel(sport, ucr1, UCR1);
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+/* called with port.lock taken and irqs off */
+static void imx_uart_stop_tx(struct uart_port *port)
+{
+	struct imx_port *sport = (struct imx_port *)port;
+	u32 ucr1;
+
+	/*
+	 * We are maybe in the SMP context, so if the DMA TX thread is running
+	 * on other cpu, we have to wait for it to finish.
+	 */
+	if (sport->dma_is_txing)
+		return;
+
+	ucr1 = imx_uart_readl(sport, UCR1);
+	imx_uart_writel(sport, ucr1 & ~UCR1_TRDYEN, UCR1);
+
+	/* in rs485 mode disable transmitter if shifter is empty */
+	if (port->rs485.flags & SER_RS485_ENABLED &&
+	    imx_uart_readl(sport, USR2) & USR2_TXDC) {
+		u32 ucr2 = imx_uart_readl(sport, UCR2), ucr4;
+		ucr2 &= ~UCR2_CTS;
+		imx_uart_writel(sport, ucr2, UCR2);
+
+		imx_uart_start_rx(port);
+
+		ucr4 = imx_uart_readl(sport, UCR4);
+		ucr4 &= ~UCR4_TCEN;
+		imx_uart_writel(sport, ucr4, UCR4);
+	}
+}
+#else
 /* called with port.lock taken and irqs off */
 static void imx_uart_stop_tx(struct uart_port *port)
 {
@@ -515,6 +547,7 @@ static void imx_uart_stop_tx(struct uart_port *port)
 		sport->tx_state = OFF;
 	}
 }
+#endif
 
 /* called with port.lock taken and irqs off */
 static void imx_uart_stop_rx(struct uart_port *port)
@@ -703,7 +736,60 @@ static void imx_uart_dma_tx(struct imx_port *sport)
 	dma_async_issue_pending(chan);
 	return;
 }
+#ifdef CONFIG_ARCH_ADVANTECH
+/* called with port.lock taken and irqs off */
+static void imx_uart_start_tx(struct uart_port *port)
+{
+	struct imx_port *sport = (struct imx_port *)port;
+	u32 ucr1;
 
+	if (!sport->port.x_char && uart_circ_empty(&port->state->xmit))
+		return;
+
+	if (port->rs485.flags & SER_RS485_ENABLED) {
+		u32 ucr2;
+
+		ucr2 = imx_uart_readl(sport, UCR2);
+		ucr2 |= UCR2_CTS;
+		imx_uart_writel(sport, ucr2, UCR2);
+
+		if (!(port->rs485.flags & SER_RS485_RX_DURING_TX))
+			imx_uart_stop_rx(port);
+
+		/*
+		 * Enable transmitter and shifter empty irq only if DMA is off.
+		 * In the DMA case this is done in the tx-callback.
+		 */
+		if (!sport->dma_is_enabled) {
+			u32 ucr4 = imx_uart_readl(sport, UCR4);
+			ucr4 |= UCR4_TCEN;
+			imx_uart_writel(sport, ucr4, UCR4);
+		}
+	}
+
+	if (!sport->dma_is_enabled) {
+		ucr1 = imx_uart_readl(sport, UCR1);
+		imx_uart_writel(sport, ucr1 | UCR1_TRDYEN, UCR1);
+	}
+
+	if (sport->dma_is_enabled) {
+		if (sport->port.x_char) {
+			/* We have X-char to send, so enable TX IRQ and
+			 * disable TX DMA to let TX interrupt to send X-char */
+			ucr1 = imx_uart_readl(sport, UCR1);
+			ucr1 &= ~UCR1_TXDMAEN;
+			ucr1 |= UCR1_TRDYEN;
+			imx_uart_writel(sport, ucr1, UCR1);
+			return;
+		}
+
+		if (!uart_circ_empty(&port->state->xmit) &&
+		    !uart_tx_stopped(port))
+			imx_uart_dma_tx(sport);
+		return;
+	}
+}
+#else
 /* called with port.lock taken and irqs off */
 static void imx_uart_start_tx(struct uart_port *port)
 {
@@ -722,14 +808,11 @@ static void imx_uart_start_tx(struct uart_port *port)
 	if (port->rs485.flags & SER_RS485_ENABLED) {
 		if (sport->tx_state == OFF) {
 			u32 ucr2 = imx_uart_readl(sport, UCR2);
-#ifndef CONFIG_ARCH_ADVANTECH
 			if (port->rs485.flags & SER_RS485_RTS_ON_SEND)
 				imx_uart_rts_active(sport, &ucr2);
 			else
 				imx_uart_rts_inactive(sport, &ucr2);
-#else
-			ucr2 |= UCR2_CTS;
-#endif
+
 			imx_uart_writel(sport, ucr2, UCR2);
 
 			if (!(port->rs485.flags & SER_RS485_RX_DURING_TX))
@@ -785,6 +868,7 @@ static void imx_uart_start_tx(struct uart_port *port)
 		return;
 	}
 }
+#endif
 
 static irqreturn_t __imx_uart_rtsint(int irq, void *dev_id)
 {
