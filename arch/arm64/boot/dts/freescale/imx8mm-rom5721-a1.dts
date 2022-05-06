@@ -94,30 +94,31 @@
 		enable-active-high;
 	};
 
-
         gpio-keys {
                 compatible = "gpio-keys";
                 #address-cells = <1>;
                 #size-cells = <0>;
                 pinctrl-0 = <&pinctrl_lid_key &pinctrl_sleep_key>;
                 pinctrl-names = "default";
+
                 lid@1 {
-                        label = "LID KEY";
-                        gpios = <&gpio1 11 0>; /* GPIO_ACTIVE_LOW:1 */
-                        linux,input-type = <1>; /* EV_KEY */
-                        linux,code = <116>;     /* KEY_POWER */
-                        wakeup-source;
+			label = "LID KEY";
+			gpios = <&gpio1 11 GPIO_ACTIVE_HIGH>; /* GPIO_ACTIVE_LOW:1 */
+			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
+			linux,code = <KEY_SUSPEND>;     //KEY_SUSPEND 205, KEY_SLEEP 142, KEY_POWER 116
+			wakeup-source;
 			debounce-interval = <100>;
                 };
                 sleep@2 {
-                        label = "SLEEP KEY";
-                        gpios = <&gpio1 1 0>; /* GPIO_ACTIVE_LOW:1 */
-                        linux,input-type = <1>; /* EV_KEY */
-                        linux,code = <116>;     /* KEY_POWER */
-                        wakeup-source;
+			label = "SLEEP KEY";
+			gpios = <&gpio1 1 GPIO_ACTIVE_HIGH>; /* GPIO_ACTIVE_LOW:1 */
+			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
+			linux,code = <KEY_SLEEP>;     //KEY_SUSPEND 205, KEY_SLEEP 142, KEY_POWER 116
+			wakeup-source;
 			debounce-interval = <100>;
                 };
         };
+
         sound {
                 compatible = "fsl,sgtl5000",
                              "fsl,imx-audio-sgtl5000";
