@@ -78,6 +78,7 @@
         port@1 {
                 dsim_to_sn65dsi86: endpoint {
                         remote-endpoint = <&sn65dsi86_from_dsim>;
+                        attach-bridge;
                 };
         };
 	
