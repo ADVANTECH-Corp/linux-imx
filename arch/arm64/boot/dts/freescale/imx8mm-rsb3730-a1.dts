@@ -89,7 +89,7 @@
 		regulator-name = "usb_otg1_vbus";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
-		gpio = <&gpio1 12 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio5 7 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 	};
 
@@ -445,10 +445,10 @@
        st33htpi: st33htpi@2e{
                 compatible = "st,st33htpm-i2c";
                 reg= <0x2e>;
-                pinctrl-names = "default";
-                pinctrl-0 = <&pinctrl_tpm>;
-                interrupt-parent = <&gpio5>;
-                interrupts = <7 IRQ_TYPE_LEVEL_HIGH>;
+//                pinctrl-names = "default";
+//                pinctrl-0 = <&pinctrl_tpm>;
+//                interrupt-parent = <&gpio5>;
+//                interrupts = <7 IRQ_TYPE_LEVEL_HIGH>;
         };
 
 	usb2514b@2c {
@@ -899,11 +899,11 @@
 		>;
 	};
 
-        pinctrl_tpm: tpm_grp {
-                fsl,pins = <
-			MX8MM_IOMUXC_ECSPI1_MOSI_GPIO5_IO7		0x159	/* TPM_IRQ */
-                >;
-        };
+//        pinctrl_tpm: tpm_grp {
+//                fsl,pins = <
+//			MX8MM_IOMUXC_ECSPI1_MOSI_GPIO5_IO7		0x159	/* TPM_IRQ */
+//                >;
+//        };
 
         pinctrl_i2c_switch: i2c_switch_grp {
                 fsl,pins = <
@@ -913,7 +913,7 @@
 
         pinctrl_usbotg: usbotggrp {
                 fsl,pins = <
-			MX8MM_IOMUXC_GPIO1_IO12_GPIO1_IO12		0x19	/* USB1_OTG_EN */
+			MX8MM_IOMUXC_ECSPI1_MOSI_GPIO5_IO7              0x19	/* USB1_OTG_EN */
                 >;
         };
 
