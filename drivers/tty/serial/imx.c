@@ -2493,9 +2493,11 @@ static int imx_uart_probe(struct platform_device *pdev)
 #ifdef CONFIG_ARCH_ADVANTECH
 	struct device *dev = &pdev->dev;
 	enum of_gpio_flags flags;
+	int uart_mode_sel_gpio;
+	int uart_enable_gpio;
 
-	int uart_mode_sel_gpio =
-		of_get_named_gpio_flags(dev->of_node, "uart-sel-gpio", 0, &flags);
+	uart_mode_sel_gpio =
+                of_get_named_gpio_flags(dev->of_node, "uart-sel-gpio", 0, &flags);
 
 	if (gpio_is_valid(uart_mode_sel_gpio))
 	{
@@ -2521,6 +2523,29 @@ static int imx_uart_probe(struct platform_device *pdev)
 		}else{
 			dev_warn(dev,"RS232 MODE\n");
 		}
+	}
+
+	uart_enable_gpio =
+		of_get_named_gpio_flags(dev->of_node, "en-gpio", 0, &flags);
+
+	if (gpio_is_valid(uart_enable_gpio)) {
+
+		ret = gpio_request(uart_enable_gpio, "UART Enable Pin");
+		if (ret) {
+			dev_warn(dev, "Could not request GPIO %d : %d\n",
+                        uart_enable_gpio, ret);
+                        return -EFAULT;
+		}
+
+		ret = gpio_direction_output(uart_enable_gpio, 1);
+		if (ret) {
+			dev_warn(dev, "Could not drive GPIO %d :%d\n",
+                        uart_enable_gpio, ret);
+                        return -EFAULT;
+		}
+
+	} else if (uart_enable_gpio == -EPROBE_DEFER) {
+		return uart_enable_gpio;
 	}
 #endif
 
