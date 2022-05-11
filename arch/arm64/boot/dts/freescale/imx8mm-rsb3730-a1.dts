@@ -221,6 +221,7 @@
 &uart4 { /* M4 debug */
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart4>;
+	en-gpio = <&gpio5 6 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
 
@@ -736,7 +737,6 @@
 			MX8MM_IOMUXC_SAI2_RXC_UART1_RX		0x140
 			MX8MM_IOMUXC_SAI2_RXD0_UART1_RTS_B	0x140
 			MX8MM_IOMUXC_SAI2_TXFS_UART1_CTS_B	0x140
-
 		>;
 	};
 
@@ -760,6 +760,7 @@
 		fsl,pins = <
 			MX8MM_IOMUXC_UART4_RXD_UART4_DCE_RX	0x140
 			MX8MM_IOMUXC_UART4_TXD_UART4_DCE_TX	0x140
+			MX8MM_IOMUXC_ECSPI1_SCLK_GPIO5_IO6      0x19
 		>;
 	};
 
