@@ -167,6 +167,7 @@
 	pinctrl-0 = <&pinctrl_pcie0>;
 	//disable-gpio = <&tca9538 0 GPIO_ACTIVE_LOW>; //W_DISABLE1
 	reset-gpio = <&gpio1 13 GPIO_ACTIVE_LOW>;
+	m2-pwr-en = <&gpio4 25 GPIO_ACTIVE_HIGH>;
 	clocks = <&clk IMX8MM_CLK_PCIE1_ROOT>,
 		 <&clk IMX8MM_CLK_PCIE1_AUX>,
 		 <&clk IMX8MM_CLK_PCIE1_PHY>,
@@ -690,6 +691,7 @@
 		fsl,pins = <
 			MX8MM_IOMUXC_SAI5_RXFS_GPIO3_IO19		0x41	/* PCIE_WAKE */
 			MX8MM_IOMUXC_GPIO1_IO13_GPIO1_IO13		0x41	/* PCIE_RST */
+			MX8MM_IOMUXC_SAI2_TXC_GPIO4_IO25                0x41    /* M2_PWR_EN */
 		>;
 	};
 
