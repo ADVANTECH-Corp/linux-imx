@@ -176,6 +176,7 @@
 	//disable-gpio = <&tca9538 0 GPIO_ACTIVE_LOW>; //W_DISABLE1
 	reset-gpio = <&gpio1 13 GPIO_ACTIVE_LOW>;
 	m2-pwr-en = <&gpio4 25 GPIO_ACTIVE_HIGH>;
+	usb-host-pwr-en = <&gpio1 6 GPIO_ACTIVE_HIGH>; /* MINICARD_PWR_EN */
 	clocks = <&clk IMX8MM_CLK_PCIE1_ROOT>,
 		 <&clk IMX8MM_CLK_PCIE1_AUX>,
 		 <&clk IMX8MM_CLK_PCIE1_PHY>,
@@ -617,7 +618,6 @@
 			MX8MM_IOMUXC_ENET_RXC_ENET1_RGMII_RXC		0x91
 			MX8MM_IOMUXC_ENET_RX_CTL_ENET1_RGMII_RX_CTL	0x91
 			MX8MM_IOMUXC_ENET_TX_CTL_ENET1_RGMII_TX_CTL	0x1f
-			MX8MM_IOMUXC_GPIO1_IO06_GPIO1_IO6		0x19	/* RGMII0_INT# */
 			MX8MM_IOMUXC_SPDIF_TX_GPIO5_IO3            	0x159
 		>;
 	};
@@ -701,6 +701,10 @@
 			MX8MM_IOMUXC_SAI5_RXFS_GPIO3_IO19		0x41	/* PCIE_WAKE */
 			MX8MM_IOMUXC_GPIO1_IO13_GPIO1_IO13		0x41	/* PCIE_RST */
 			MX8MM_IOMUXC_SAI2_TXC_GPIO4_IO25                0x41    /* M2_PWR_EN */
+			MX8MM_IOMUXC_GPIO1_IO06_GPIO1_IO6               0x41    /* MINICARD_PWR_EN */
+			MX8MM_IOMUXC_SAI5_RXD3_GPIO3_IO24               0x41    /* MINICARD_RESET# */
+			MX8MM_IOMUXC_SAI5_RXD2_GPIO3_IO23               0x41    /* MINICARD_W_DIS# */
+			MX8MM_IOMUXC_SAI5_RXD1_GPIO3_IO22               0x41    /* MINICARD_DET# */
 		>;
 	};
 
@@ -1008,12 +1012,12 @@
                 >;
         };
 
-	pinctrl_lvds: lvdsgrp {
-                fsl,pins = <
-			MX8MM_IOMUXC_SAI5_RXD2_GPIO3_IO23	0x19	/* LVDS_STBY */
-			MX8MM_IOMUXC_SAI5_RXD3_GPIO3_IO24	0x19	/* LVDS_RESET */
-                >;
-        };
+//	pinctrl_lvds: lvdsgrp {
+//                fsl,pins = <
+//			MX8MM_IOMUXC_SAI5_RXD2_GPIO3_IO23	0x19	/* LVDS_STBY */
+//			MX8MM_IOMUXC_SAI5_RXD3_GPIO3_IO24	0x19	/* LVDS_RESET */
+//                >;
+//        };
 
         pinctrl_lcd0: lcd0_grp {
                 fsl,pins = <
@@ -1145,11 +1149,12 @@
 
 &lvds_backlight0 {
         pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_lcd0>,<&pinctrl_lvds>;
+//	pinctrl-0 = <&pinctrl_lcd0>,<&pinctrl_lvds>;
+	pinctrl-0 = <&pinctrl_lcd0>;
         lvds-vcc-enable = <&gpio4 30 1>;
         lvds-bkl-enable = <&gpio4 29 1>;
-	lvds-reset=<&gpio3 23 1>;
-	lvds-stby=<&gpio3 24 1>;
+//	lvds-reset=<&gpio3 23 1>;
+//	lvds-stby=<&gpio3 24 1>;
 	lvds-bkl-delay-time = <10>;
         status = "okay";
 };
