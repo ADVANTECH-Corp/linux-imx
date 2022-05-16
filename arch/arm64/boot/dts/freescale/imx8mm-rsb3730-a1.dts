@@ -38,6 +38,14 @@
 	chosen {
 		stdout-path = &uart2;
 	};
+	sd1_mod_reset: sd1-mod-reset {
+		compatible = "gpio-reset";
+		reset-gpios = <&gpio1 8 GPIO_ACTIVE_LOW>;
+		reset-delay-us = <2000>;
+		reset-post-delay-ms = <40>;
+		#reset-cells = <0>;
+	};
+
 	lvds_backlight0: lvds_backlight@0 {
                 compatible = "pwm-backlight";
                 pwms = <&pwm4 0 1000000 0>;
@@ -253,6 +261,7 @@
 	pinctrl-2 = <&pinctrl_usdhc1_200mhz>, <&pinctrl_usdhc1_gpio>;
 	bus-width = <4>;
 	vmmc-supply = <&reg_sd1_vmmc>;
+	resets = <&sd1_mod_reset>;
 	pm-ignore-notify;
 	keep-power-in-suspend;
 	non-removable;
