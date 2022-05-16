@@ -38,6 +38,14 @@
 	chosen {
 		stdout-path = &uart2;
 	};
+	uart1_mod_reset: uart1-mod-reset {
+		compatible = "gpio-reset";
+		reset-gpios = <&gpio2 6 GPIO_ACTIVE_LOW>;
+		reset-delay-us = <2000>;
+		reset-post-delay-ms = <40>;
+		#reset-cells = <0>;
+	};
+
 	sd1_mod_reset: sd1-mod-reset {
 		compatible = "gpio-reset";
 		reset-gpios = <&gpio1 8 GPIO_ACTIVE_LOW>;
@@ -211,7 +219,10 @@
 &uart1 { 
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1>;
+	assigned-clocks = <&clk IMX8MM_CLK_UART1>;
+	assigned-clock-parents = <&clk IMX8MM_SYS_PLL1_80M>;
 	fsl,uart-has-rtscts;
+	resets = <&uart1_mod_reset>;
 	status = "okay";
 };
 
