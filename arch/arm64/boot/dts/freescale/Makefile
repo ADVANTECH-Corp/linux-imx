@@ -218,6 +218,7 @@ dtb-$(CONFIG_ARCH_MXC) += imx8qm-rom7720-a1-lvds0.dtb \
                           imx8qm-rom7720-a1-sgtl5000.dtb \
                           imx8qm-rom7720-a1-it6263.dtb \
                           imx8qm-rom7720-a1.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mp-epcr5710-a1.dtb
 
 dtb-$(CONFIG_ARCH_S32) += s32v234-evb.dtb \
 			  s32v234-sbc.dtb
