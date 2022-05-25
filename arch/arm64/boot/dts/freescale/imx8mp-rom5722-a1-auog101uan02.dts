@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2019 NXP
+ */
+
+#include "imx8mp-rom5722-a1.dts"
+
+&lvds_backlight1 {
+	status = "okay";
+};
+
+&mipi_dsi {
+	status = "okay";
+
+	panel@0 {
+		compatible = "auo,g101uan02";
+		reg = <0>;
+		dsi-vcc-enable-gpio = <&gpio1 5 GPIO_ACTIVE_LOW>;	/* LCD1_VDD_EN */
+		bklt-enable-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;	/* LCD1_BKLT_EN */
+
+		port {
+			panel1_in: endpoint {
+				remote-endpoint = <&mipi_dsi_bridge_out>;
+			};
+		};
+	};
+
+	port@2 {
+		mipi_dsi_bridge_out: endpoint {
+			remote-endpoint = <&panel1_in>;
+		};
+	};
+};
