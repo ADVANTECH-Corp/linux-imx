@@ -212,14 +212,14 @@
 	status = "okay";
 
 #ifdef ROM_DB5901
-	spi_nor0: m25p80@0 {
-		compatible = "micron,n25qba16";
+	spi_nor0: w25q64dw@0 {
+		compatible = "winbond,w25q64dw";
 		spi-max-frequency = <10000000>;
 		reg = <0>;
 	};
 
-	spi_nor1: m25p80@1 {
-		compatible = "micron,n25qba16";
+	spi_nor1: w25q64dw@1 {
+		compatible = "winbond,w25q64dw";
 		spi-max-frequency = <10000000>;
 		reg = <1>;
 	};
@@ -236,13 +236,13 @@
 	status = "okay";
 
 #ifdef ROM_DB5901
-	spi_nor2: m25p80@0 {
+	spi_nor2: n25qba16@0 {
 		compatible = "micron,n25qba16";
 		spi-max-frequency = <10000000>;
 		reg = <0>;
 	};
 
-	spi_nor3: m25p80@1 {
+	spi_nor3: n25qba16@1 {
 		compatible = "micron,n25qba16";
 		spi-max-frequency = <10000000>;
 		reg = <1>;
@@ -300,11 +300,11 @@
 	pinctrl-0 = <&pinctrl_flexspi0>;
 	status = "okay";
 
-	flash0: w25q64jwssiq@0 {
+	flash0: w25q64dw@0 {
 		reg = <0>;
 		#address-cells = <1>;
 		#size-cells = <1>;
-		compatible = "jedec,spi-nor", "winbond,w25q64";
+		compatible = "jedec,spi-nor", "winbond,w25q64dw";
 		spi-max-frequency = <29000000>;
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
@@ -515,7 +515,7 @@
 		pinctrl-0 = <&pinctrl_csi0_pwn>, <&pinctrl_csi0_rst>;
 		clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO1>;
 		clock-names = "xclk";
-		assigned-clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO2>;
+		assigned-clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO1>;
 		assigned-clock-parents = <&clk IMX8MP_CLK_24M>;
 		assigned-clock-rates = <24000000>;
 		csi_id = <1>;
