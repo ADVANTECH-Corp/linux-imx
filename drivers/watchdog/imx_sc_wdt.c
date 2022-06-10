@@ -31,6 +31,9 @@
 #define IMX_SIP_TIMER_SET_PRETIME_WDOG	0x07
 
 #define SC_TIMER_WDOG_ACTION_PARTITION	0
+#ifdef CONFIG_ARCH_ADVANTECH
+#define SC_TIMER_WDOG_ACTION_BOARD	3U   /* Reset board */
+#endif
 
 #define SC_IRQ_WDOG			1
 #define SC_IRQ_GROUP_WDOG		1
@@ -64,9 +67,15 @@ static int imx_sc_wdt_start(struct watchdog_device *wdog)
 	if (res.a0)
 		return -EACCES;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+        arm_smccc_smc(IMX_SIP_TIMER, IMX_SIP_TIMER_SET_WDOG_ACT,
+                      SC_TIMER_WDOG_ACTION_BOARD,
+                      0, 0, 0, 0, 0, &res);
+#else
 	arm_smccc_smc(IMX_SIP_TIMER, IMX_SIP_TIMER_SET_WDOG_ACT,
 		      SC_TIMER_WDOG_ACTION_PARTITION,
 		      0, 0, 0, 0, 0, &res);
+#endif
 	return res.a0 ? -EACCES : 0;
 }
 

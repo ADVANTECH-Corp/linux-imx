@@ -1163,6 +1163,10 @@ static int pca953x_suspend(struct device *dev)
 {
 	struct pca953x_chip *chip = dev_get_drvdata(dev);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	return 0;
+#endif
+
 	regcache_cache_only(chip->regmap, true);
 
 	if (atomic_read(&chip->wakeup_path))
@@ -1178,6 +1182,10 @@ static int pca953x_resume(struct device *dev)
 {
 	struct pca953x_chip *chip = dev_get_drvdata(dev);
 	int ret;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	return 0;
+#endif
 
 	regcache_cache_only(chip->regmap, false);
 
