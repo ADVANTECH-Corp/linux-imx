@@ -5,7 +5,7 @@
 
 #include "imx8mp-rom5722-a1.dts"
 
-&i2c1 {
+&i2c4 {
 	adv_bridge: adv7535@3d {
 		compatible = "adi,adv7533";
 		reg = <0x3d>;
