@@ -1052,13 +1052,6 @@ static int nxp_fspi_default_setup(struct nxp_fspi *f)
 	fspi_writel(f, FSPI_DLLACR_OVRDEN, base + FSPI_DLLACR);
 	fspi_writel(f, FSPI_DLLBCR_OVRDEN, base + FSPI_DLLBCR);
 
-	if (f->dll_slvdly) {
-		fspi_writel(f, FSPI_DLLACR_DLLEN | FSPI_DLLACR_SLVDLY(f->dll_slvdly),
-			    base + FSPI_DLLACR);
-		fspi_writel(f, FSPI_DLLBCR_DLLEN | FSPI_DLLBCR_SLVDLY(f->dll_slvdly),
-			    base + FSPI_DLLBCR);
-	}
-
 	/* enable module */
 	fspi_writel(f, FSPI_MCR0_AHB_TIMEOUT(0xFF) |
 		    FSPI_MCR0_IP_TIMEOUT(0xFF) | (u32) FSPI_MCR0_OCTCOMB_EN,
