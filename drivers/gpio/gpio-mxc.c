@@ -693,11 +693,20 @@ static int mxc_gpio_probe(struct platform_device *pdev)
 							 port);
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	err = bgpio_init(&port->gc, &pdev->dev, 4,
+                         port->base + GPIO_DR,
+                         port->base + GPIO_DR, NULL,
+                         port->base + GPIO_GDIR, NULL,
+                         BGPIOF_READ_OUTPUT_REG_SET);
+#else
 	err = bgpio_init(&port->gc, &pdev->dev, 4,
 			 port->base + GPIO_PSR,
 			 port->base + GPIO_DR, NULL,
 			 port->base + GPIO_GDIR, NULL,
 			 BGPIOF_READ_OUTPUT_REG_SET);
+#endif
+
 	if (err)
 		goto out_bgio;
 

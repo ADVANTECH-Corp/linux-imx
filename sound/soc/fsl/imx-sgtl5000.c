@@ -51,7 +51,11 @@ static const struct snd_soc_dapm_widget imx_sgtl5000_dapm_widgets[] = {
 static int imx_sgtl5000_probe(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct device_node *ssi_np=NULL, *codec_np=NULL;
+#else
 	struct device_node *ssi_np, *codec_np;
+#endif
 	struct platform_device *ssi_pdev;
 	struct i2c_client *codec_dev;
 	struct imx_sgtl5000_data *data = NULL;
@@ -59,6 +63,12 @@ static int imx_sgtl5000_probe(struct platform_device *pdev)
 	int int_port, ext_port;
 	int ret;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_find_property(np, "no-audmux", NULL)) {
+		dev_info(&pdev->dev, "no-audmux specified, skipping audmux configuration\n");
+		goto audmux_config_done;
+	}
+#endif
 	ret = of_property_read_u32(np, "mux-int-port", &int_port);
 	if (ret) {
 		dev_err(&pdev->dev, "mux-int-port missing or invalid\n");
@@ -94,7 +104,9 @@ static int imx_sgtl5000_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "audmux external port setup failed\n");
 		return ret;
 	}
-
+#ifdef CONFIG_ARCH_ADVANTECH
+	audmux_config_done:
+#endif
 	ssi_np = of_parse_phandle(pdev->dev.of_node, "ssi-controller", 0);
 	codec_np = of_parse_phandle(pdev->dev.of_node, "audio-codec", 0);
 	if (!ssi_np || !codec_np) {
@@ -173,9 +185,14 @@ static int imx_sgtl5000_probe(struct platform_device *pdev)
 
 	ret = devm_snd_soc_register_card(&pdev->dev, &data->card);
 	if (ret) {
+#ifdef CONFIG_ARCH_ADVANTECH
+		dev_err(&pdev->dev, "snd_soc_register_card failed (%d)\n", ret);
+		if (ret == -EPROBE_DEFER ) ret=-EINVAL;
+#else
 		if (ret != -EPROBE_DEFER)
 			dev_err(&pdev->dev, "snd_soc_register_card failed (%d)\n",
 				ret);
+#endif
 		goto fail;
 	}
 
@@ -187,8 +204,13 @@ static int imx_sgtl5000_probe(struct platform_device *pdev)
 fail:
 	if (data && !IS_ERR(data->codec_clk))
 		clk_put(data->codec_clk);
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (ssi_np) of_node_put(ssi_np);
+	if (codec_np) of_node_put(codec_np);
+#else
 	of_node_put(ssi_np);
 	of_node_put(codec_np);
+#endif
 
 	return ret;
 }

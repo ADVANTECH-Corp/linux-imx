@@ -28,6 +28,13 @@ struct lcdifv3_crtc {
 	u32 pix_fmt;		/* drm fourcc */
 };
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+static int first_flip_complete = 1;
+extern void enable_lcd_vdd_en(void);
+extern void enable_ldb_signal(void);
+extern void disable_lcd_vdd_en(void);
+#endif
+
 #define to_lcdifv3_crtc(crtc) container_of(crtc, struct lcdifv3_crtc, base)
 
 static void lcdifv3_crtc_reset(struct drm_crtc *crtc)
@@ -168,6 +175,14 @@ static void lcdifv3_crtc_atomic_enable(struct drm_crtc *crtc,
 	/* config LCDIF output bus format */
 	lcdifv3_set_bus_fmt(lcdifv3, imx_crtc_state->bus_format);
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	if (first_flip_complete) {
+		enable_lcd_vdd_en();
+		enable_ldb_signal();
+		first_flip_complete = 0;
+	}
+#endif
+
 	/* run LCDIFv3 */
 	lcdifv3_enable_controller(lcdifv3);
 }
@@ -177,6 +192,10 @@ static void lcdifv3_crtc_atomic_disable(struct drm_crtc *crtc,
 {
 	struct lcdifv3_crtc *lcdifv3_crtc = to_lcdifv3_crtc(crtc);
 	struct lcdifv3_soc *lcdifv3 = dev_get_drvdata(lcdifv3_crtc->dev->parent);
+
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	disable_lcd_vdd_en();
+#endif
 
 	spin_lock_irq(&crtc->dev->event_lock);
 	if (crtc->state->event) {
