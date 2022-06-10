@@ -154,10 +154,6 @@ struct panel_simple {
 int blank_count = 0;
 extern void enable_ldb_bkl_vcc(void);
 extern void enable_ldb_bkl_pwm(void);
-
-extern void disable_ldb_bkl_vcc(void);
-extern void disable_ldb_bkl_pwm(void);
-extern void disable_ldb_signal(void);
 #endif
 
 static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
@@ -396,13 +392,6 @@ static int panel_simple_disable(struct drm_panel *panel)
 
 	if (!p->enabled)
 		return 0;
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-		disable_ldb_bkl_pwm();
-		backlight_update_status(p->backlight); //PWM
-		disable_ldb_bkl_vcc();
-#else
-		backlight_update_status(p->backlight);
-#endif
 
 	if (p->desc->delay.disable)
 		msleep(p->desc->delay.disable);
@@ -511,12 +500,13 @@ static int panel_simple_enable(struct drm_panel *panel)
 
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
     int err;
+
 	if (blank_count == 0)
 	{
 		blank_count++;
 	}
-
 #endif
+
 	if (p->enabled)
 		return 0;
 
@@ -528,22 +518,20 @@ static int panel_simple_enable(struct drm_panel *panel)
 		if (err)
 			dev_err(p->dev, "failed to send on cmds\n");
 	}
-   #endif
+#endif
 
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-		switch (blank_count)
-		{
-		case 1:
-			enable_ldb_bkl_vcc();
-			//msleep(260);
-			backlight_update_status(p->backlight); //PWM
-			enable_ldb_bkl_pwm();
-			blank_count++;
-			break;
-		default:
-			backlight_update_status(p->backlight);
-			break;
-		}
+	switch (blank_count)
+	{
+	case 1:
+		enable_ldb_bkl_vcc();
+		//msleep(260);
+		enable_ldb_bkl_pwm();
+		blank_count++;
+		break;
+	default:
+		break;
+	}
 #endif
 	p->enabled = true;
 
