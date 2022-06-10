@@ -131,6 +131,10 @@ static const struct flash_info micron_parts[] = {
 };
 
 static const struct flash_info st_parts[] = {
+#ifdef  CONFIG_ARCH_ADVANTECH
+	{ "n25qba16",    INFO(0x20ba16, 0, 64 * 1024,  64, SECT_4K) },
+	{ "n25qbb16",    INFO(0x20bb16, 0, 64 * 1024,  64, SECT_4K) },
+#endif
 	{ "n25q016a",	 INFO(0x20bb15, 0, 64 * 1024,   32,
 			      SECT_4K | SPI_NOR_QUAD_READ) },
 	{ "n25q032",	 INFO(0x20ba16, 0, 64 * 1024,   64,
