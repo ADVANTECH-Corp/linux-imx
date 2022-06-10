@@ -1051,6 +1051,14 @@ static int nxp_fspi_default_setup(struct nxp_fspi *f)
 	/* Reset the DLL register to default value */
 	fspi_writel(f, FSPI_DLLACR_OVRDEN, base + FSPI_DLLACR);
 	fspi_writel(f, FSPI_DLLBCR_OVRDEN, base + FSPI_DLLBCR);
+
+	if (f->dll_slvdly) {
+		fspi_writel(f, FSPI_DLLACR_DLLEN | FSPI_DLLACR_SLVDLY(f->dll_slvdly),
+			    base + FSPI_DLLACR);
+		fspi_writel(f, FSPI_DLLBCR_DLLEN | FSPI_DLLBCR_SLVDLY(f->dll_slvdly),
+			    base + FSPI_DLLBCR);
+	}
+
 #ifdef CONFIG_ARCH_ADVANTECH
 	/* enable module */
 	fspi_writel(f, FSPI_MCR0_AHB_TIMEOUT(0xFF) |
