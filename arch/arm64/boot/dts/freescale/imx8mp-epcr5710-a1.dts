@@ -550,6 +550,7 @@
 };
 
 &usb3_phy0 {
+	fsl,phy-tx-vboost-tune = <3>;
 	fsl,phy-tx-vref-tune = <6>;
 	fsl,phy-tx-rise-tune = <0>;
 	fsl,phy-tx-preemp-amp-tune = <3>;
