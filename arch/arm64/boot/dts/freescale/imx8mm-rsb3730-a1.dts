@@ -181,8 +181,8 @@
 &pcie0{
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie0>;
-	//disable-gpio = <&tca9538 0 GPIO_ACTIVE_LOW>; //W_DISABLE1
-	reset-gpio = <&gpio1 13 GPIO_ACTIVE_LOW>;
+	disable-gpio = <&gpio1 8 GPIO_ACTIVE_LOW>; //W_DISABLE1
+	reset-gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;
 	m2-pwr-en = <&gpio4 25 GPIO_ACTIVE_HIGH>;
 	usb-host-pwr-en = <&gpio1 6 GPIO_ACTIVE_HIGH>; /* MINICARD_PWR_EN */
 	clocks = <&clk IMX8MM_CLK_PCIE1_ROOT>,
@@ -709,11 +709,13 @@
 		fsl,pins = <
 			MX8MM_IOMUXC_SAI5_RXFS_GPIO3_IO19		0x41	/* PCIE_WAKE */
 			MX8MM_IOMUXC_GPIO1_IO13_GPIO1_IO13		0x41	/* PCIE_RST */
-			MX8MM_IOMUXC_SAI2_TXC_GPIO4_IO25                0x41    /* M2_PWR_EN */
-			MX8MM_IOMUXC_GPIO1_IO06_GPIO1_IO6               0x41    /* MINICARD_PWR_EN */
-			MX8MM_IOMUXC_SAI5_RXD3_GPIO3_IO24               0x41    /* MINICARD_RESET# */
-			MX8MM_IOMUXC_SAI5_RXD2_GPIO3_IO23               0x41    /* MINICARD_W_DIS# */
-			MX8MM_IOMUXC_SAI5_RXD1_GPIO3_IO22               0x41    /* MINICARD_DET# */
+			MX8MM_IOMUXC_SAI2_TXC_GPIO4_IO25		0x41    /* M2_PWR_EN */
+			MX8MM_IOMUXC_GPIO1_IO08_GPIO1_IO8		0x41	/* M.2 W DIS1 */
+
+			MX8MM_IOMUXC_GPIO1_IO06_GPIO1_IO6		0x41    /* MINICARD_PWR_EN */
+			MX8MM_IOMUXC_SAI5_RXD3_GPIO3_IO24		0x41    /* MINICARD_RESET# */
+			MX8MM_IOMUXC_SAI5_RXD2_GPIO3_IO23		0x41    /* MINICARD_W_DIS# */
+			MX8MM_IOMUXC_SAI5_RXD1_GPIO3_IO22		0x41    /* MINICARD_DET# */
 		>;
 	};
 

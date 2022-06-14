@@ -456,8 +456,8 @@ MOALOBJS += mlinux/moal_proc.o
 MOALOBJS += mlinux/moal_debug.o
 endif
 
-obj-$(CONFIG_MXMWIFIEX) := mlan.o
-mlan-objs := $(MLANOBJS)
+obj-$(CONFIG_MXMWIFIEX) := mlan_pcie_8997.o
+mlan_pcie276-objs := $(MLANOBJS)
 
 ifeq ($(CONFIG_MUSB),y)
 MOALOBJS += mlinux/moal_usb.o
@@ -469,8 +469,8 @@ ifeq ($(CONFIG_PCIE),y)
 MOALOBJS += mlinux/moal_pcie.o
 endif
 
-obj-$(CONFIG_MXMWIFIEX) += moal.o
-moal-objs := $(MOALOBJS)
+obj-$(CONFIG_MXMWIFIEX) += moal_pcie_8997.o
+moal_pcie276-objs := $(MOALOBJS)
 
 clean:
 	-find . -name "*.o" -exec rm {} \;
