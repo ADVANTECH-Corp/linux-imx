@@ -519,6 +519,18 @@
 				pinctrl-names = "default";
 				pinctrl-0 = <&pinctrl_battery>;
 			};
+
+			lt9611uxc: lt9611uxc@2b {
+				compatible = "lontium,lt9611uxc";
+				status = "disabled";
+				reg = <0x2b>;
+				#sound-dai-cells = <0>;
+
+				reset-gpios = <&gpio5 5 GPIO_ACTIVE_HIGH>;
+				interrupts-extended = <&gpio3 20 IRQ_TYPE_EDGE_FALLING>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_hdmi_bridge>;
+			};
 		};
 
 		i2c@2 {
@@ -945,6 +957,13 @@
 		>;
 	};
 
+	pinctrl_hdmi_bridge: hdmi_bridge {
+		fsl,pins = <
+			MX8MM_IOMUXC_SAI5_RXC_GPIO3_IO20		0x116	/* INT */
+			MX8MM_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5		0x116	/* RST */
+		>;
+	};
+
 	pinctrl_lid_key: gpio_userkeygrp-1 {
 		fsl,pins = <
 			MX8MM_IOMUXC_GPIO1_IO11_GPIO1_IO11		0x19	/* LID */
@@ -1008,42 +1027,30 @@
 	status = "okay";
 };
 
+&lt9611uxc {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			lt9611uxc_from_dsim: endpoint {
+				remote-endpoint = <&dsim_to_lt9611uxc>;
+			};
+		};
+	};
+};
+
 &mipi_dsi {
 	status = "okay";
 
-	panel@0 {
-		compatible = "auo,g070vw01v0";
-		reg = <0>;
-		backlight=<&lvds_backlight0>;
-		panel-init-sequence = [
-				29 00 06 3C 01 03 00 02 00
-				29 00 06 14 01 02 00 00 00
-				29 00 06 64 01 00 00 00 00
-				29 00 06 68 01 00 00 00 00
-				29 00 06 6C 01 00 00 00 00
-				29 00 06 70 01 00 00 00 00
-				29 00 06 34 01 1F 00 00 00
-				29 00 06 10 02 1F 00 00 00
-				29 00 06 04 01 01 00 00 00
-				29 00 06 04 02 01 00 00 00
-				29 00 06 50 04 20 01 F0 03
-				29 00 06 54 04 06 00 32 00
-				29 00 06 58 04 20 03 C8 00
-				29 00 06 5C 04 04 00 04 00
-				29 00 06 60 04 E0 01 14 00
-				29 00 06 64 04 01 00 00 00
-				29 01 06 A0 04 2D 80 44 00
-				29 00 06 A0 04 2D 80 04 00
-				29 00 06 04 05 04 00 00 00
-				29 00 06 80 04 00 01 02 03
-				29 00 06 84 04 04 07 05 08
-				29 00 06 88 04 09 0A 0E 0F
-				29 00 06 8C 04 0B 0C 0D 10
-				29 00 06 90 04 16 17 11 12
-				29 00 06 94 04 13 14 15 1B
-				29 14 06 98 04 18 19 1A 06
-				29 78 06 9C 04 31 00 00 00
-		];
+	port@1 {
+		dsim_to_lt9611uxc: endpoint {
+			remote-endpoint = <&lt9611uxc_from_dsim>;
+			attach-bridge;
+		};
 	};
 };
 
@@ -1080,7 +1087,7 @@
 	//	lvds-reset=<&gpio3 23 1>;
 	//	lvds-stby=<&gpio3 24 1>;
 	lvds-bkl-delay-time = <10>;
-	status = "okay";
+	status = "disabled";
 };
 
 &gpu {
