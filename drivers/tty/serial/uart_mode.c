@@ -90,8 +90,18 @@ static int uart_mode_probe(struct platform_device *pdev)
 	u32 rs485_mode_table[UART_MODE_GPIO_NUM]={0};
 	u32 rs422_mode_table[UART_MODE_GPIO_NUM]={0};
 	int index = -1;
+	int mode = -1;
 
 	of_property_read_u32(np, "index", &index);
+	if(!of_property_read_u32(np, "default_mode", &mode))
+	{
+		if(RS232_MODE == mode)
+			conf = rs232_mode_table;
+		else if(RS485_MODE == mode)
+			conf = rs485_mode_table;
+		else if(RS422_MODE == mode)
+			conf = rs422_mode_table;
+	}
 
 	for(i = 0; i < UART_MODE_MAXPORT; i++)
 	{
@@ -99,65 +109,68 @@ static int uart_mode_probe(struct platform_device *pdev)
 			&& (g_port_type[i][0] != 0xff) 
 			&& (g_port_type[i][1] < MAX_MODE))
 		{
-			elems = of_property_count_u32_elems(np, "rs232_mode_table");
-			if (elems > 0)
-				of_property_read_u32_array(np, "rs232_mode_table", rs232_mode_table, MIN(UART_MODE_GPIO_NUM,elems)); 
-			elems = of_property_count_u32_elems(np, "rs485_mode_table");
-			if (elems > 0)
-				of_property_read_u32_array(np, "rs485_mode_table", rs485_mode_table, MIN(UART_MODE_GPIO_NUM,elems));
-			elems = of_property_count_u32_elems(np, "rs422_mode_table");
-			if (elems > 0)
-				of_property_read_u32_array(np, "rs422_mode_table", rs422_mode_table, MIN(UART_MODE_GPIO_NUM,elems));
 			if(RS232_MODE == g_port_type[i][1])
 				conf = rs232_mode_table;
 			else if(RS485_MODE == g_port_type[i][1])
 				conf = rs485_mode_table;
 			else if(RS422_MODE == g_port_type[i][1])
 				conf = rs422_mode_table;
-			printk("yanwei %s conf:%d:%d:%d:%d\n",__func__,conf[0],conf[1],conf[2],conf[3]);
-			sel0_gpio = of_get_named_gpio_flags(np, "sel0_gpio", 0, &flags);
-			sel1_gpio = of_get_named_gpio_flags(np, "sel1_gpio", 0, &flags);
-			term_gpio = of_get_named_gpio_flags(np, "term_gpio", 0, &flags);
-			slew_gpio = of_get_named_gpio_flags(np, "slew_gpio", 0, &flags);
-			if(gpio_is_valid(sel0_gpio) && gpio_is_valid(sel1_gpio))
-			{
-				lable = devm_kasprintf(dev, GFP_KERNEL, "port%d sel0", index);
-				if(conf[0] == 0)
-					gpio_request_one(sel0_gpio, GPIOF_OUT_INIT_LOW, lable);
-				else
-					gpio_request_one(sel0_gpio, GPIOF_OUT_INIT_HIGH, lable);
-				devm_kfree(dev,lable);
 
-				lable = devm_kasprintf(dev, GFP_KERNEL, "port%d sel1", index);
-				if(conf[1] == 0)
-					gpio_request_one(sel1_gpio, GPIOF_OUT_INIT_LOW, lable);
-				else
-					gpio_request_one(sel1_gpio, GPIOF_OUT_INIT_HIGH, lable);
-				devm_kfree(dev,lable);
-
-				if(gpio_is_valid(term_gpio))
-				{
-					lable = devm_kasprintf(dev, GFP_KERNEL, "port%d term", index);
-					if(conf[2] == 0)
-						gpio_request_one(term_gpio, GPIOF_OUT_INIT_LOW, lable);
-					else
-						gpio_request_one(term_gpio, GPIOF_OUT_INIT_HIGH, lable);
-					devm_kfree(dev,lable);
-				}
-
-				if(gpio_is_valid(slew_gpio))
-				{
-					lable = devm_kasprintf(dev, GFP_KERNEL, "port%d slew", index);
-					if(conf[3] == 0)
-						gpio_request_one(slew_gpio, GPIOF_OUT_INIT_LOW, lable);
-					else
-						gpio_request_one(slew_gpio, GPIOF_OUT_INIT_HIGH, lable);
-					devm_kfree(dev,lable);
-				}
-			}	 else if (sel0_gpio == -EPROBE_DEFER) {
-				return sel0_gpio;
-			}
+			break;
 		}
+	}
+
+	elems = of_property_count_u32_elems(np, "rs232_mode_table");
+	if (elems > 0)
+		of_property_read_u32_array(np, "rs232_mode_table", rs232_mode_table, MIN(UART_MODE_GPIO_NUM,elems)); 
+	elems = of_property_count_u32_elems(np, "rs485_mode_table");
+	if (elems > 0)
+		of_property_read_u32_array(np, "rs485_mode_table", rs485_mode_table, MIN(UART_MODE_GPIO_NUM,elems));
+	elems = of_property_count_u32_elems(np, "rs422_mode_table");
+	if (elems > 0)
+		of_property_read_u32_array(np, "rs422_mode_table", rs422_mode_table, MIN(UART_MODE_GPIO_NUM,elems));
+
+	sel0_gpio = of_get_named_gpio_flags(np, "sel0_gpio", 0, &flags);
+	sel1_gpio = of_get_named_gpio_flags(np, "sel1_gpio", 0, &flags);
+	term_gpio = of_get_named_gpio_flags(np, "term_gpio", 0, &flags);
+	slew_gpio = of_get_named_gpio_flags(np, "slew_gpio", 0, &flags);
+	if(gpio_is_valid(sel0_gpio) && gpio_is_valid(sel1_gpio))
+	{
+		lable = devm_kasprintf(dev, GFP_KERNEL, "port%d sel0", index);
+		if(conf[0] == 0)
+			gpio_request_one(sel0_gpio, GPIOF_OUT_INIT_LOW, lable);
+		else
+			gpio_request_one(sel0_gpio, GPIOF_OUT_INIT_HIGH, lable);
+		devm_kfree(dev,lable);
+
+		lable = devm_kasprintf(dev, GFP_KERNEL, "port%d sel1", index);
+		if(conf[1] == 0)
+			gpio_request_one(sel1_gpio, GPIOF_OUT_INIT_LOW, lable);
+		else
+			gpio_request_one(sel1_gpio, GPIOF_OUT_INIT_HIGH, lable);
+		devm_kfree(dev,lable);
+
+		if(gpio_is_valid(term_gpio))
+		{
+			lable = devm_kasprintf(dev, GFP_KERNEL, "port%d term", index);
+			if(conf[2] == 0)
+				gpio_request_one(term_gpio, GPIOF_OUT_INIT_LOW, lable);
+			else
+				gpio_request_one(term_gpio, GPIOF_OUT_INIT_HIGH, lable);
+			devm_kfree(dev,lable);
+		}
+
+		if(gpio_is_valid(slew_gpio))
+		{
+			lable = devm_kasprintf(dev, GFP_KERNEL, "port%d slew", index);
+			if(conf[3] == 0)
+				gpio_request_one(slew_gpio, GPIOF_OUT_INIT_LOW, lable);
+			else
+				gpio_request_one(slew_gpio, GPIOF_OUT_INIT_HIGH, lable);
+			devm_kfree(dev,lable);
+		}
+	}	 else if (sel0_gpio == -EPROBE_DEFER) {
+		return sel0_gpio;
 	}
 
 	if (device_create_file(dev, &dev_attr_mode))
