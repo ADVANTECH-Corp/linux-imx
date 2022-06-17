@@ -74,6 +74,18 @@ struct rtl821x_priv {
 	u32 quirks;
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static void rtl8211f_phy_fixup(struct phy_device *dev)
+{
+	msleep(200);
+	phy_write(dev, 0x1f, 0x0d04);
+	/*PHY LED OK*/
+	phy_write(dev, 0x10, 0xa050);
+	phy_write(dev, 0x11, 0x0000);
+	phy_write(dev, 0x1f, 0x0000);
+}
+#endif
+
 static int rtl821x_read_page(struct phy_device *phydev)
 {
 	return __phy_read(phydev, RTL821x_PAGE_SELECT);
@@ -100,6 +112,12 @@ static int rtl821x_probe(struct phy_device *phydev)
 		priv->quirks |= RTL821X_ALDPS_DISABLE;
 
 	phydev->priv = priv;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (phydev && (0x001cc916 == phydev->phy_id)) {
+		rtl8211f_phy_fixup(phydev);
+	}
+#endif
 
 	return 0;
 }
@@ -216,6 +234,10 @@ static int rtl8211f_config_init(struct phy_device *phydev)
 	u16 val_txdly, val_rxdly;
 	int ret;
 	struct rtl821x_priv *priv = phydev->priv;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	rtl8211f_phy_fixup(phydev);
+#endif
 
 	if (!(priv->quirks & RTL821X_ALDPS_DISABLE)) {
 		u16 val;
