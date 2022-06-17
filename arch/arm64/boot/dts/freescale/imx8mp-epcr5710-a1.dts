@@ -86,6 +86,38 @@
 		reset-gpio = <&gpio4 2 GPIO_ACTIVE_HIGH>;
 		status = "okay";
 	};
+
+	uart3_mode:uart3-mode {
+		compatible = "uart-mode";
+		status = "okay";
+
+		index = <2>;
+		default_mode = <0>;//RS232
+		rs232_mode_table = <1 0 1 0>;
+		rs485_mode_table = <0 1 1 0>;
+		rs422_mode_table = <1 1 1 0>;
+
+		sel0_gpio = <&tca9555_exp1 11 GPIO_ACTIVE_HIGH>;
+		sel1_gpio = <&tca9555_exp1 10 GPIO_ACTIVE_HIGH>;
+		term_gpio = <&tca9555_exp1 9 GPIO_ACTIVE_HIGH>;
+		slew_gpio = <&tca9555_exp1 8 GPIO_ACTIVE_HIGH>;
+	};
+
+	uart4_mode:uart4-mode {
+		compatible = "uart-mode";
+		status = "okay";
+
+		index = <3>;
+		default_mode = <0>;//RS232
+		rs232_mode_table = <1 0 1 0>;
+		rs485_mode_table = <0 1 1 0>;
+		rs422_mode_table = <1 1 1 0>;
+
+		sel0_gpio = <&tca9555_exp1 15 GPIO_ACTIVE_HIGH>;
+		sel1_gpio = <&tca9555_exp1 14 GPIO_ACTIVE_HIGH>;
+		term_gpio = <&tca9555_exp1 13 GPIO_ACTIVE_HIGH>;
+		slew_gpio = <&tca9555_exp1 12 GPIO_ACTIVE_HIGH>;
+	};
 };
 
 &aud2htx {
@@ -545,7 +577,7 @@
 &uart4 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart4>;
-	dir-gpios = <&gpio2 9 GPIO_ACTIVE_HIGH>;
+	rs485-dir-gpios = <&gpio2 9 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
 
