@@ -249,7 +249,6 @@
 &uart3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart3>;
-	en-gpio = <&gpio5 6 GPIO_ACTIVE_HIGH>;
 	fsl,uart-has-rtscts;
 	status = "okay";
 };
@@ -257,6 +256,7 @@
 &uart4 { /* M4 debug */
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart4>;
+	en-gpio = <&gpio5 6 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
 
