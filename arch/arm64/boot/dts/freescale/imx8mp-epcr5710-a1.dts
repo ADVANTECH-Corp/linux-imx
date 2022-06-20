@@ -115,7 +115,7 @@
 		status = "okay";
 
 		index = <2>;
-		default_mode = <0>;//RS232
+		default_mode = <0>;//0:RS232,1:RS485,2:RS422
 		rs232_mode_table = <1 0 1 0>;
 		rs485_mode_table = <0 1 1 0>;
 		rs422_mode_table = <1 1 1 0>;
@@ -131,7 +131,7 @@
 		status = "okay";
 
 		index = <3>;
-		default_mode = <0>;//RS232
+		default_mode = <1>;//0:RS232,1:RS485,2:RS422
 		rs232_mode_table = <1 0 1 0>;
 		rs485_mode_table = <0 1 1 0>;
 		rs422_mode_table = <1 1 1 0>;
