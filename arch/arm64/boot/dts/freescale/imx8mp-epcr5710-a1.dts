@@ -87,6 +87,29 @@
 		status = "okay";
 	};
 
+	leds {
+		compatible = "gpio-leds";
+		status = "okay";
+
+		status {
+			label = "status";
+			gpios = <&tca9555_exp2 10 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		cellular {
+			label = "cellular";
+			gpios = <&tca9538_exp1 4 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		wifi {
+			label = "wifi";
+			gpios = <&tca9538_exp1 3 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+
 	uart3_mode:uart3-mode {
 		compatible = "uart-mode";
 		status = "okay";
@@ -371,14 +394,14 @@
 		gpio-controller;
 		#gpio-cells = <2>;
 	};
-	
+
 	tca9555_exp1: tca9555@22 {
 		compatible = "nxp,pca9555";
 		reg = <0x22>;
 		gpio-controller;
 		#gpio-cells = <2>;
-		};
-	
+	};
+
 	tca9555_exp2: tca9555@26 {
 		compatible = "nxp,pca9555";
 		reg = <0x26>;
