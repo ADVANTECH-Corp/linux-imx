@@ -35,6 +35,23 @@ enum uart_mode_type {
 
 static int g_port_type[UART_MODE_MAXPORT][2] = {{0xFF}, {0xFF}, {0xFF}, {0xFF}};
 
+int adv_get_uart_mode(int index)
+{
+	int i;
+	int mode = 0;
+
+	for(i = 0; i < UART_MODE_MAXPORT; i++)
+	{
+		if(index == g_port_type[i][0])
+		{
+			mode = g_port_type[i][1];
+			break;
+		}
+	}
+
+	return mode;
+}
+
 static int __init setup_uart_mode(char *buf)
 {
 	int i=0;
@@ -93,20 +110,30 @@ static int uart_mode_probe(struct platform_device *pdev)
 	int mode = -1;
 
 	of_property_read_u32(np, "index", &index);
-	if(!of_property_read_u32(np, "default_mode", &mode))
+	of_property_read_u32(np, "default_mode", &mode);
+
+	if((index >= 0) && (mode >= 0) && (mode < MAX_MODE))
 	{
-		if(RS232_MODE == mode)
-			conf = rs232_mode_table;
-		else if(RS485_MODE == mode)
-			conf = rs485_mode_table;
-		else if(RS422_MODE == mode)
-			conf = rs422_mode_table;
+		for(i = 0; i < UART_MODE_MAXPORT; i++)
+		{
+			if(g_port_type[i][0] == index)
+				break;
+			else if(g_port_type[i][0] == 0xFF)
+			{
+				g_port_type[i][0] = index;
+				g_port_type[i][1] = mode;
+				break;
+			}
+		}
+	} else {
+		dev_err(dev, "invalid param!\n");
+		return -EINVAL;
 	}
 
 	for(i = 0; i < UART_MODE_MAXPORT; i++)
 	{
-		if((index >= 0) && (index == g_port_type[i][0]) 
-			&& (g_port_type[i][0] != 0xff) 
+		if((index == g_port_type[i][0]) 
+			&& (g_port_type[i][0] != 0xFF) 
 			&& (g_port_type[i][1] < MAX_MODE))
 		{
 			if(RS232_MODE == g_port_type[i][1])
@@ -207,7 +234,7 @@ static void __exit uart_mode_exit(void)
 	platform_driver_unregister(&uart_mode_driver);
 }
 
-module_init(uart_mode_init);
+subsys_initcall(uart_mode_init);
 module_exit(uart_mode_exit);
 
 MODULE_LICENSE("GPL");
