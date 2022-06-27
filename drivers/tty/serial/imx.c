@@ -2411,7 +2411,11 @@ static int imx_uart_probe(struct platform_device *pdev)
 	uart_get_rs485_mode(&pdev->dev, &sport->port.rs485);
 #ifdef CONFIG_ARCH_ADVANTECH
 	if(RS485_MODE == adv_get_uart_mode(sport->port.line))
+	{
 		sport->port.rs485.flags |= SER_RS485_ENABLED;
+		if (of_get_property(pdev->dev.of_node, "rs485-dir-gpios", NULL))
+			sport->have_rtsgpio = 1;
+	}
 #endif
 
 	if (sport->port.rs485.flags & SER_RS485_ENABLED &&
@@ -2572,7 +2576,6 @@ static int imx_uart_probe(struct platform_device *pdev)
 
 	sport->rs485_gpio = gpiod_get(dev, "rs485-dir", GPIOD_OUT_LOW);
 	if (!IS_ERR(sport->rs485_gpio)) {
-		sport->have_rtsgpio = 1;
 		gpiod_direction_output(sport->rs485_gpio, 1);
 		//gpiod_set_value(sport->rs485_gpio, 1);
 	} else if (sport->rs485_gpio == -EPROBE_DEFER) {
