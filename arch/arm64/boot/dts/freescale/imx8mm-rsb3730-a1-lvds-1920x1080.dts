@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2019 NXP
+ */
+
+/dts-v1/;
+
+#include "imx8mm-rsb3730-a1-lt9211.dts"
+
+&lvds_panel {
+	compatible = "lontium,lt9211_1920x1080";	//lt9211_800x480 lt9211_1024x768 lt9211_1280x800 lt9211_1920x1080
+};
+
+

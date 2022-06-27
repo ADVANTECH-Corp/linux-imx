@@ -4186,19 +4186,139 @@ static const struct panel_desc_dsi lg_lp097x02 = {
     .format = MIPI_DSI_FMT_RGB888,
     .lanes = 4,
 };
+
+#if defined(CONFIG_DRM_LONTIUM_LT9211)
+static const struct drm_display_mode lt9211_800x480_mode = {
+    .clock = 33000,
+    .hdisplay = 800,
+    .hsync_start = 824,
+    .hsync_end = 896,
+    .htotal = 1000,
+    .vdisplay = 480,
+    .vsync_start = 483,
+    .vsync_end = 493,
+    .vtotal = 550,
+    .vrefresh = 60,
+};
+
+static const struct panel_desc_dsi lt9211_800x480 = {
+    .desc = {
+        .modes = &lt9211_800x480_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 170,
+            .height = 110,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE | MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_EOT_PACKET,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
+
+static const struct drm_display_mode lt9211_1024x768_mode = {
+    .clock = 66000,
+    .hdisplay = 1024,
+    .hsync_start = 1048,
+    .hsync_end = 1184,
+    .htotal = 1364,
+    .vdisplay = 768,
+    .vsync_start = 771,
+    .vsync_end = 777,
+    .vtotal = 806,
+    .vrefresh = 60,
+};
+
+static const struct panel_desc_dsi lt9211_1024x768 = {
+    .desc = {
+        .modes = &lt9211_1024x768_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 170,
+            .height = 110,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE | MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_EOT_PACKET,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
+
+static const struct drm_display_mode lt9211_1280x800_mode = {
+    .clock = 74250,
+    .hdisplay = 1280,
+    .hsync_start = 1328,
+    .hsync_end = 1360,
+    .htotal = 1440,
+    .vdisplay = 800,
+    .vsync_start = 803,
+    .vsync_end = 809,
+    .vtotal = 859,
+    .vrefresh = 60,
+};
+
+static const struct panel_desc_dsi lt9211_1280x800 = {
+    .desc = {
+        .modes = &lt9211_1280x800_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 170,
+            .height = 110,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE | MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_EOT_PACKET,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
+
+static const struct drm_display_mode lt9211_1920x1080_mode = {
+    .clock = 148500,
+    .hdisplay = 1920,
+    .hsync_start = 2008,
+    .hsync_end = 2052,
+    .htotal = 2200,
+    .vdisplay = 1080,
+    .vsync_start = 1084,
+    .vsync_end = 1089,
+    .vtotal = 1125,
+    .vrefresh = 60,
+};
+
+static const struct panel_desc_dsi lt9211_1920x1080 = {
+    .desc = {
+        .modes = &lt9211_1920x1080_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 170,
+            .height = 110,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE | MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_EOT_PACKET,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
+#endif /*CONFIG_DRM_LONTIUM_LT9211*/
 #endif
 
 static const struct of_device_id dsi_of_match[] = {
 	{
 		.compatible = "auo,b080uan01",
 		.data = &auo_b080uan01
-	}, {
+	},
 #if defined(CONFIG_DRM_PANEL_AUO_G101UAN02)
+	{
 		.compatible = "auo,g101uan02",
 		.data = &auo_g101uan02
-	}, {
+	}, 
 #endif
 #if defined(CONFIG_ARCH_ADVANTECH)
+	{
 		.compatible = "auo,g070vw01v0",
 		.data = &auo_g070vw01v0
 	}, {
@@ -4213,8 +4333,27 @@ static const struct of_device_id dsi_of_match[] = {
 	}, {
 		.compatible = "lg,lp097x02",
 		.data = &lg_lp097x02
-	}, {
+	}, 
+#if defined(CONFIG_DRM_LONTIUM_LT9211)
+	{
+		.compatible = "lontium,lt9211_800x480",
+		.data = &lt9211_800x480
+	}, 
+	{
+		.compatible = "lontium,lt9211_1024x768",
+		.data = &lt9211_1024x768
+	}, 
+	{
+		.compatible = "lontium,lt9211_1280x800",
+		.data = &lt9211_1280x800
+	}, 
+	{
+		.compatible = "lontium,lt9211_1920x1080",
+		.data = &lt9211_1920x1080
+	}, 
+#endif /*CONFIG_DRM_LONTIUM_LT9211*/
 #endif
+	{
 		.compatible = "boe,tv080wum-nl0",
 		.data = &boe_tv080wum_nl0
 	}, {

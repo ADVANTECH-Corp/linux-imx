@@ -33,6 +33,9 @@ struct pwm_bl_data {
 	struct regulator	*power_supply;
 	struct gpio_desc	*enable_gpio;
 	unsigned int		scale;
+#ifdef CONFIG_ARCH_ADVANTECH
+	unsigned int		dft_enable;
+#endif
 	bool			legacy;
 	unsigned int		post_pwm_on_delay;
 	unsigned int		pwm_off_delay;
@@ -695,6 +698,13 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	pb->pwm_off_delay = data->pwm_off_delay;
 	strcpy(pb->fb_id, data->fb_id);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	pb->dft_enable = 1;
+	if (!of_property_read_u32(node, "default-enable", &ret)) {
+		pb->dft_enable = ret;
+	}
+#endif
+
 	pb->enable_gpio = devm_gpiod_get_optional(&pdev->dev, "enable",
 						  GPIOD_ASIS);
 	if (IS_ERR(pb->enable_gpio)) {
@@ -859,8 +869,12 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	printk(KERN_INFO "[LVDS Sequence] 0 Set to power off pwm backlight at first.\n");
 #endif
 
-
+#ifdef CONFIG_ARCH_ADVANTECH
+	if(pb->dft_enable)
+		backlight_update_status(bl);
+#else
 	backlight_update_status(bl);
+#endif
 	platform_set_drvdata(pdev, bl);
 	return 0;
 
