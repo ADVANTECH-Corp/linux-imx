@@ -8,6 +8,7 @@
 #include <dt-bindings/usb/pd.h>
 #include "imx8mm.dtsi"
 #include <dt-bindings/display/drm_mipi_dsi.h>
+#include <dt-bindings/display/dt-media-bus-format.h>
 / {
 	model = "NXP i.MX8MM SMARC 2.0 Computer-on-Module";
 	compatible = "fsl,imx8mm-evk", "fsl,imx8mm";
@@ -69,6 +70,7 @@
 							 90 91 92 93 94 95 96 97 98 99
 							100>;
 		default-brightness-level = <80>;
+		default-enable = <0>;
 	};
 
 	pcie0_refclk: pcie0-refclk {
@@ -105,6 +107,15 @@
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
 		gpio = <&gpio5 7 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	lvds_pwr_vcc: lvds-pwr-vcc {
+		compatible = "regulator-fixed";
+		regulator-name = "lvds_pwr_vcc";
+		pinctrl-names = "default";
+		//pinctrl-0 = <&lvds_vdd_pwr>;
+		gpio = <&gpio4 30 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 	};
 
@@ -461,6 +472,18 @@
 	scl-gpios = <&gpio5 16 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio5 17 GPIO_ACTIVE_HIGH>;
 	status = "okay";
+
+	lt9211:lt9211@2d {
+		compatible = "lontium,lt9211";
+		reg = <0x2d>;
+		status = "disabled";
+		power-supply = <&lvds_pwr_vcc>;
+		backlight = <&lvds_backlight0>;
+		reset_gpio = <&gpio1 14 GPIO_ACTIVE_HIGH>;
+		bus-format = <MEDIA_BUS_FMT_RGB888_1X7X4_SPWG>;	// MEDIA_BUS_FMT_RGB888_1X7X4_JEIDA MEDIA_BUS_FMT_RGB888_1X7X4_SPWG
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_lvds>;
+	};
 
 	wdt@29 {
 		compatible = "fsl,adv-wdt-i2c";
@@ -1002,17 +1025,25 @@
 		>;
 	};
 
+	pinctrl_lvds: lvdsgrp {
+		fsl,pins = <
+			MX8MM_IOMUXC_GPIO1_IO14_GPIO1_IO14	0x19	/* DSI_LVDS_RST */
+		>;
+	};
+
 	pinctrl_lcd0: lcd0_grp {
 		fsl,pins = <
-			MX8MM_IOMUXC_SAI3_RXD_GPIO4_IO30	0x10		/* LCD0_VDD_EN */
-			MX8MM_IOMUXC_SAI3_RXC_GPIO4_IO29	0x19		/* LCD0_BKLT_EN */
+			MX8MM_IOMUXC_SAI3_RXD_GPIO4_IO30	0x116		/* LCD0_VDD_EN */
+
+			MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x19		/* LCD0_BKLT_PWR_EN */
+			MX8MM_IOMUXC_SAI5_MCLK_GPIO3_IO25	0x19		/* LCD0_BKLT_EN */
 		>;
 	};
 	
 	pinctrl_lcd1: lcd1_grp {
 		fsl,pins = <
-			MX8MM_IOMUXC_SAI2_TXD0_GPIO4_IO26	0x19		/* LCD0_VDD_EN */
-			MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x19		/* LCD0_BKLT_EN */
+			MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x19		/* LCD0_VDD_EN */
+			MX8MM_IOMUXC_SAI5_MCLK_GPIO3_IO25	0x19		/* LCD0_BKLT_EN */
 		>;
 	};
 };
@@ -1068,14 +1099,12 @@
 
 &lvds_backlight0 {
 	pinctrl-names = "default";
-	//	pinctrl-0 = <&pinctrl_lcd0>,<&pinctrl_lvds>;
 	pinctrl-0 = <&pinctrl_lcd0>;
-	lvds-vcc-enable = <&gpio4 30 1>;
-	lvds-bkl-enable = <&gpio4 29 1>;
-	//	lvds-reset=<&gpio3 23 1>;
-	//	lvds-stby=<&gpio3 24 1>;
-	lvds-bkl-delay-time = <10>;
-	status = "disabled";
+	lvds-vcc-enable = <&gpio4 27 1>;
+	lvds-bkl-enable = <&gpio3 25 1>;
+
+	LVDS-BKL-DELAY-TIME = <10>;
+	status = "okay";
 };
 
 &gpu {
