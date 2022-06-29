@@ -268,7 +268,7 @@ static void LT9211_MipiRxDigital(struct i2c_client *client)
     LT9211_mipi_write( client,0xff,0xd0);
     LT9211_mipi_write( client,0x43,0x12); //rpta mode enable,ensure da_mlrx_lptx_en=0
 
-    LT9211_mipi_write( client,0x02,0x0a); //mipi rx controller	//settleֵ
+    LT9211_mipi_write( client,0x02,0x02); //mipi rx controller	//settleֵ
 }
 
 static void LT9211_SetVideoTiming(struct i2c_client *client,struct video_timing *video_format)
