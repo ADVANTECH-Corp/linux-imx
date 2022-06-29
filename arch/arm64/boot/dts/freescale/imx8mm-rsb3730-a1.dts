@@ -172,6 +172,14 @@
 		sel1_gpio = <&gpio5 4 GPIO_ACTIVE_HIGH>;
 		term_gpio = <&gpio4 29 GPIO_ACTIVE_HIGH>;
 	};
+
+	rtl8367 {
+		compatible = "realtek,rtl8367b";
+		pinctrl-names = "default";
+		gpio-sda = <&gpio4 1 GPIO_ACTIVE_HIGH>;
+		gpio-sck = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+		realtek,extif0 = <1 0 1 1 1 1 1 1 2>;
+	};
 };
 
 &A53_0 {
@@ -582,7 +590,7 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			tca9538: pca9538@73 {
+			gpio_exp1: pca9538@73 {
 				compatible = "nxp,pca9538";
 				reg = <0x73>;
 				pinctrl-names = "default";
@@ -615,13 +623,6 @@
 		compatible = "fsl,24c32";
 		reg = <0x50>;
 	};
-
-	tca9538_2: pca9538@70 {
-		compatible = "nxp,pca9538";
-		reg = <0x70>;
-		#gpio-cells = <2>;
-		gpio-controller;
-	};
 };
 
 &iomuxc {
@@ -635,11 +636,11 @@
 			MX8MM_IOMUXC_UART2_TXD_GPIO5_IO25		0x116	/* GPIO4 */
 			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21		0x116	/* GPIO5 */
 			MX8MM_IOMUXC_ECSPI2_SS0_GPIO5_IO13		0x116	/* GPIO6 */
-			MX8MM_IOMUXC_ECSPI2_SCLK_GPIO5_IO10		0x1916	/* GPIO7 */
+			MX8MM_IOMUXC_ECSPI2_SCLK_GPIO5_IO10		0x116	/* GPIO7 */
 			MX8MM_IOMUXC_ECSPI2_MISO_GPIO5_IO12		0x116	/* GPIO8 */
 			MX8MM_IOMUXC_ECSPI2_MOSI_GPIO5_IO11		0x116	/* GPIO9 */
 			MX8MM_IOMUXC_SAI3_RXFS_GPIO4_IO28		0x116	/* GPIO10 */
-			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0		0x114	/* GPIO11 */
+			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0		0x116	/* GPIO11 */
 			MX8MM_IOMUXC_SAI1_RXC_GPIO4_IO1			0x116	/* GPIO12 */
 		>;
 	};
@@ -739,7 +740,6 @@
 
 	pinctrl_pcie0: pcie0grp {
 		fsl,pins = <
-			MX8MM_IOMUXC_SAI5_RXFS_GPIO3_IO19		0x41	/* PCIE_WAKE */
 			MX8MM_IOMUXC_GPIO1_IO13_GPIO1_IO13		0x41	/* PCIE_RST */
 			MX8MM_IOMUXC_SAI2_TXC_GPIO4_IO25		0x41    /* M2_PWR_EN */
 			MX8MM_IOMUXC_GPIO1_IO08_GPIO1_IO8		0x41	/* M.2 W DIS1 */
