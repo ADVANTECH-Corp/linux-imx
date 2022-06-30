@@ -178,6 +178,7 @@
 		pinctrl-names = "default";
 		gpio-sda = <&gpio4 1 GPIO_ACTIVE_HIGH>;
 		gpio-sck = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+		gpio-sel = <&gpio3 19 GPIO_ACTIVE_LOW>;
 		realtek,extif0 = <1 0 1 1 1 1 1 1 2>;
 	};
 };
@@ -963,6 +964,7 @@
 	pinctrl_i2c_switch: i2c_switch_grp {
 		fsl,pins = <
 			MX8MM_IOMUXC_GPIO1_IO07_GPIO1_IO7		0x159	/* I2C_INT */
+			MX8MM_IOMUXC_SAI5_RXFS_GPIO3_IO19		0x159	/* GPIO_11_12 Path Select*/
 		>;
 	};
 

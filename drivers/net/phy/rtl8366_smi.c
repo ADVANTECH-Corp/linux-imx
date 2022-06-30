@@ -1056,8 +1056,10 @@ static int rtl8366_smi_mii_init(struct rtl8366_smi *smi)
 
 static void rtl8366_smi_mii_cleanup(struct rtl8366_smi *smi)
 {
+#ifndef CONFIG_ARCH_ADVANTECH
 	mdiobus_unregister(smi->mii_bus);
 	mdiobus_free(smi->mii_bus);
+#endif
 }
 
 int rtl8366_sw_reset_switch(struct switch_dev *dev)

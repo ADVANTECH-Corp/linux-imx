@@ -16,6 +16,11 @@
 #include <linux/platform_device.h>
 #include <linux/reset.h>
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	#include <linux/gpio.h>
+	#include <linux/of_gpio.h>
+#endif
+
 struct rtl8366_smi_ops;
 struct rtl8366_vlan_ops;
 struct mii_bus;
@@ -34,6 +39,11 @@ struct rtl8366_smi {
 	struct device		*parent;
 	unsigned int		gpio_sda;
 	unsigned int		gpio_sck;
+#ifdef CONFIG_ARCH_ADVANTECH
+	int					gpio_sel;
+	unsigned int		gpio_sel_active_value;
+	unsigned int		gpio_sel_default_value;
+#endif
 	void			(*hw_reset)(struct rtl8366_smi *smi, bool active);
 	unsigned int		clk_delay;	/* ns */
 	u8			cmd_read;
