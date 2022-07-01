@@ -39,7 +39,7 @@
    3、It need the SOC's GPIO to reset LT9211(Pin LT9211_RSTN)；it need to toggle it LOW about 100ms and then HIGH 100ms for reset。
 
  *********************************************************/
-#define LT9211_DEBUG
+//#define LT9211_DEBUG
 
 #ifdef LT9211_DEBUG
 #define lt9211_printk(x...) printk( "[lt9211 DEBUG]: " x )
@@ -89,7 +89,7 @@ typedef  struct LT9211{
 struct i2c_client *g_client;
 LT9211_info_t* g_LT9211;
 u32 g_pclk_khz = 0;
-int g_LT9211_probe = 0;
+//int g_LT9211_probe = 0;
 
 static void lt9211_power_on(LT9211_info_t* lt9211);
 
@@ -180,16 +180,21 @@ fail:
     return -1;
 }
 
-static void LT9211_ChipID(struct i2c_client *client)
+static int LT9211_ChipID(struct i2c_client *client)
 {
-    char val=0;
-    LT9211_mipi_write( client, 0xff, 0x81);
-    val=LT9211_read( client,0x00);
-    printk("LT9211 Chip ID:%x,",val);
-    val=LT9211_read( client,0x01);
-    printk("%x,",val);
-    val=LT9211_read( client,0x02);
-    printk("%x,\n",val);
+    char val[3]= {0x0, 0x0, 0x0};
+	int ret = -1;
+
+	do 
+	{
+		ret = _LT9211_mipi_write( client, 0xff, 0x81);
+	} while(0);
+
+    val[0]=LT9211_read( client,0x00);
+    val[1]=LT9211_read( client,0x01);
+    val[2]=LT9211_read( client,0x02);
+	printk("LT9211 Chip ID:0x%02x 0x%02x 0x%02x",val[0], val[1], val[2]);
+	return ret;
 }
 
 static void LT9211_SystemInt(struct i2c_client *client)
@@ -568,6 +573,7 @@ static void LT9211_Txpll(struct i2c_client *client)
     lt9211_printk("system success\n");
 }
 
+#ifdef LT9211_DEBUG
 static void LT9211_ClockCheckDebug(struct i2c_client *client)
 {
     int fm_value;
@@ -646,13 +652,14 @@ static void LT9211_VideoCheckDebug(struct i2c_client *client)
     lt9211_printk("hfp %d hs %d , hbp %d , hact %d, htotal =%d\n",hfp,hs,hbp,hact,htotal);
     lt9211_printk("vfp %d, vs %d, vbp %d, vact %d, vtotal = %d\n",vfp,vs,vbp,vact,vtotal);
 }
+#endif
 
-void lt9211_init(struct i2c_client *client)
+static void lt9211_init(struct i2c_client *client)
 {
     int err = 0;
     //lt9211_power_on(g_LT9211);
 
-    LT9211_ChipID(client);
+    //LT9211_ChipID(client);
     LT9211_SystemInt(client);
     LT9211_MipiRxPhy(client);
     LT9211_MipiRxDigital(client); 
@@ -697,7 +704,7 @@ void lt9211_init(struct i2c_client *client)
     }
 }
 
-void lt9211_shutdown(struct i2c_client *client)
+static void lt9211_shutdown(struct i2c_client *client)
 {
     int err;
     lt9211_printk("LT9211_shutdown enter\n");
@@ -728,10 +735,10 @@ void lt9211_shutdown(struct i2c_client *client)
 
 }
 
-EXPORT_SYMBOL(lt9211_init);
-EXPORT_SYMBOL(lt9211_shutdown);
-EXPORT_SYMBOL(g_client);
-EXPORT_SYMBOL(g_LT9211_probe);
+//EXPORT_SYMBOL(lt9211_init);
+//EXPORT_SYMBOL(lt9211_shutdown);
+//EXPORT_SYMBOL(g_client);
+//EXPORT_SYMBOL(g_LT9211_probe);
 
 static void lt9211_power_on(LT9211_info_t* lt9211)
 {
@@ -786,7 +793,7 @@ static int LT9211_probe(struct i2c_client *client, const struct i2c_device_id *i
     int bus_format;
     g_client=client;
 
-    printk(" mipi to lvds LT9211_probe!!!!!!!!!!!!\n");
+    lt9211_printk(" mipi to lvds LT9211_probe!!!!!!!!!!!!\n");
 
     LT9211 = devm_kzalloc(&client->dev, sizeof(*LT9211), GFP_KERNEL);
     if (!LT9211)
@@ -869,13 +876,16 @@ static int LT9211_probe(struct i2c_client *client, const struct i2c_device_id *i
     }
 
     lt9211_power_on(LT9211);
+	ret = LT9211_ChipID(client);
+	if(ret < 0)
+		return ret;
     lt9211_init(client);
     //if (LT9211->backlight) {
     //LT9211->backlight->props.power = FB_BLANK_UNBLANK;
     //backlight_update_status(LT9211->backlight);
     //}
-    g_LT9211_probe = 1;
-    printk(" mipi to lvds LT9211_probe end !!!!!!!!!!!!\n");
+    //g_LT9211_probe = 1;
+    lt9211_printk(" mipi to lvds LT9211_probe end !!!!!!!!!!!!\n");
 
 //    INIT_WORK(&LT9211->Lt9211_resume_work,LT9211_resume_work);
 //    INIT_WORK(&LT9211->Lt9211_suspend_work,LT9211_suspend_work);

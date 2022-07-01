@@ -27,12 +27,12 @@
 #define EDID_BLOCK_SIZE	128
 #define EDID_NUM_BLOCKS	2
 
-#define LT9611_DEBUG
+//#define LT9611_DEBUG
 
 #ifdef LT9611_DEBUG
 #define lt9611_printk(x...) printk( "[lt9611 DEBUG]: " x )
 #else
-#define lt6211_printk(x...)
+#define lt9611_printk(x...)
 #endif
 
 #define REG_SEQ(_reg, _def, _delay_us) {		\
