@@ -14,6 +14,18 @@
 	/delete-node/ ports;
 };
 
+&lvds_pwr_vcc {
+	status = "okay";
+};
+
+&pwm4 {
+	status = "okay";
+};
+
+&lvds_backlight0 {
+	status = "okay";
+};
+
 &lt9211 {
 	status = "okay";
 

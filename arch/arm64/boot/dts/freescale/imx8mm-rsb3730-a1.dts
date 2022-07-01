@@ -1094,8 +1094,12 @@
 	status = "okay";
 };
 
+&lvds_pwr_vcc {
+	status = "disabled";
+};
+
 &pwm4 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pwm4>;
 };
@@ -1107,7 +1111,7 @@
 	lvds-bkl-enable = <&gpio3 25 1>;
 
 	LVDS-BKL-DELAY-TIME = <10>;
-	status = "okay";
+	status = "disabled";
 };
 
 &gpu {
