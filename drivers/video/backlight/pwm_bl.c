@@ -96,16 +96,16 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 }
 
 #ifdef CONFIG_ARCH_ADVANTECH
-int lvds_vcc_enable;
-int lvds_bkl_enable;
-int bklt_vcc_enable;
-int lvds_stby_enable;
-int lvds_reset_enable;
+int lvds_vcc_enable = -1;
+int lvds_bkl_enable = -1;
+int bklt_vcc_enable = -1;
+int lvds_stby_enable = -1;
+int lvds_reset_enable = -1;
 
-int lvds_vcc_delay_value;
-int lvds_bkl_delay_value;
-int bklt_pwm_delay_value;
-int bklt_en_delay_value;
+int lvds_vcc_delay_value = -1;
+int lvds_bkl_delay_value = -1;
+int bklt_pwm_delay_value = -1;
+int bklt_en_delay_value = -1;
 enum of_gpio_flags lvds_vcc_flag;
 enum of_gpio_flags lvds_bkl_flag;
 enum of_gpio_flags bklt_vcc_flag;
@@ -114,6 +114,8 @@ enum of_gpio_flags lvds_stby_flag;
 
 void enable_lcd_vdd_en(void)
 {
+	if (lvds_vcc_enable < 0)
+		return;
 	/* LVDS Panel power enable */
 	if (lvds_vcc_enable >= 0)
 	{
@@ -151,12 +153,16 @@ void disable_bridge_stdy_en(void)
 }
 
 void enable_ldb_signal(void)
-{		
+{
+	if (lvds_vcc_delay_value < 0)
+		return;
 	mdelay(lvds_vcc_delay_value); // T2 for AUO 7"
 }
 
 void enable_ldb_bkl_vcc(void)
 {
+	if (bklt_vcc_enable < 0)
+		return;
 	mdelay(lvds_bkl_delay_value); // T3 for AUO 7"
 
 	// Backlight On (VCC)
@@ -172,6 +178,8 @@ void enable_ldb_bkl_vcc(void)
 
 void enable_ldb_bkl_pwm(void)
 {
+	if (lvds_bkl_enable < 0)
+		return;
 	mdelay(bklt_en_delay_value); // T9 for AUO 7"
 
 	// Backlight Enable (Display On/Off)
