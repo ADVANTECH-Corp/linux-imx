@@ -3897,7 +3897,8 @@ fec_probe(struct platform_device *pdev)
 
 	//disable MII clock to meet PHY poweron sequence
 #ifdef CONFIG_ARCH_ADVANTECH
-	writel(fep->phy_speed, fep->hwp + FEC_MII_SPEED);
+	if (of_get_property(np, "adv,disable-mii-clk", NULL))
+		writel(fep->phy_speed, fep->hwp + FEC_MII_SPEED);
 #endif
 
 	ret = fec_reset_phy(pdev);
