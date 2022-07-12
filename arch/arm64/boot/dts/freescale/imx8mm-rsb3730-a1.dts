@@ -331,7 +331,7 @@
 };
 
 &i2c1 {
-	clock-frequency = <400000>;
+	clock-frequency = <100000>;
 	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl_i2c1>;
 	pinctrl-1 = <&pinctrl_i2c1_gpio>;
@@ -448,7 +448,7 @@
 };
 
 &i2c2 {
-	clock-frequency = <400000>;
+	clock-frequency = <100000>;
 	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl_i2c2>;
 	pinctrl-1 = <&pinctrl_i2c2_gpio>;
@@ -472,6 +472,7 @@
 		compatible = "fsl,adv-wdt-i2c";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+		fix-first-comm-issue;
 		status = "okay";
 		wdt-en = <&gpio1 9 0>;
 		wdt-ping = <&gpio1 15 0>;
@@ -487,6 +488,7 @@
 	st33htpi: st33htpi@2e{
 		compatible = "st,st33htpm-i2c";
 		reg= <0x2e>;
+		status = "okay";
 	};
 };
 

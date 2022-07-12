@@ -171,6 +171,17 @@ static int adv_wdt_i2c_read_reg(struct i2c_client *client, u8 reg, void *buf, si
 	return -EIO;
 }
 
+int adv_wdt_i2c_fix_first_comm_issue(struct i2c_client *client, unsigned int val)
+{
+	int ret = 0;
+	val = WDOG_SEC_TO_COUNT(val) & 0x0000FFFF;
+	ret = adv_wdt_i2c_write_reg(client, REG_WDT_WATCHDOG_TIME_OUT, &val, 2);
+	msleep(100);
+	val = 0;
+	ret = adv_wdt_i2c_write_reg(client, REG_WDT_WATCHDOG_TIME_OUT, &val, 2);
+	return 0;
+}
+
 int adv_wdt_i2c_set_timeout(struct i2c_client *client, unsigned int val)
 {
 	int ret = 0;
@@ -467,6 +478,9 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	if (adv_wdt.timeout != timeout)
 		dev_warn(&client->dev, "Initial timeout out of range! "
 			"Clamped from %u to %u\n", timeout, adv_wdt.timeout);
+
+	if (of_get_property(np, "fix-first-comm-issue", NULL))
+		adv_wdt_i2c_fix_first_comm_issue(client, adv_wdt.timeout);
 
 	ret = adv_wdt_i2c_set_timeout(client, adv_wdt.timeout);
 	if (ret)
