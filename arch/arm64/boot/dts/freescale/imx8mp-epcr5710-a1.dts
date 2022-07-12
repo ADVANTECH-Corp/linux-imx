@@ -412,7 +412,7 @@
 };
 
 &i2c5 {
-	clock-frequency = <400000>;
+	clock-frequency = <100000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c5>;
 	pinctrl-1 = <&pinctrl_i2c5_gpio>;
@@ -425,6 +425,7 @@
 		reg = <0x29>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+		fix-first-comm-issue;
 		wdt-en = <&gpio4 29 0>;
 		wdt-ping = <&gpio4 20 0>;
 		status = "okay";
