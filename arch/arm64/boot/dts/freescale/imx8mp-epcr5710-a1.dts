@@ -116,7 +116,7 @@
 		status = "okay";
 
 		index = <2>;
-		default_mode = <0>;//0:RS232,1:RS485,2:RS422
+		default_mode = <1>;//0:RS232,1:RS485,2:RS422
 		rs232_mode_table = <1 0 1 0>;
 		rs485_mode_table = <0 1 1 0>;
 		rs422_mode_table = <1 1 1 0>;
@@ -591,7 +591,6 @@
 &uart3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart3>;
-	rst-gpios = <&gpio4 24 GPIO_ACTIVE_HIGH>;
 	assigned-clocks = <&clk IMX8MP_CLK_UART3>;
 	assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_80M>;
 	fsl,uart-has-rtscts;
@@ -604,6 +603,7 @@
 	pinctrl-0 = <&pinctrl_uart4>;
 	rs485-dir-gpios = <&gpio2 9 GPIO_ACTIVE_HIGH>;
 	rs485-rts-active-low;
+	en-gpio = <&gpio4 24 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
 
