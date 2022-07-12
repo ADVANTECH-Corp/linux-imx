@@ -83,6 +83,7 @@
 		pinctrl-0 = <&pinctrl_switch>;
 		gpio-sck = <&gpio4 4 GPIO_ACTIVE_HIGH>;
 		gpio-sda = <&gpio4 5 GPIO_ACTIVE_HIGH>;
+		power-gpio = <&gpio1 10 GPIO_ACTIVE_HIGH>;
 		reset-gpio = <&gpio4 2 GPIO_ACTIVE_HIGH>;
 		status = "okay";
 	};
@@ -744,6 +745,7 @@
 			MX8MP_IOMUXC_SAI1_RXD0__GPIO4_IO02	0x19
 			MX8MP_IOMUXC_SAI1_RXD2__GPIO4_IO04	0x19
 			MX8MP_IOMUXC_SAI1_RXD3__GPIO4_IO05	0x19
+			MX8MP_IOMUXC_GPIO1_IO10__GPIO1_IO10	0x19
 		>;
 	};
 

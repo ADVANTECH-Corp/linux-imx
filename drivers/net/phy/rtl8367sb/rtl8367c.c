@@ -29,12 +29,14 @@ static int rtl8367c_init(struct platform_device *pdev)
 	int sck = of_get_named_gpio(pdev->dev.of_node, "gpio-sck", 0);
 	int sda = of_get_named_gpio(pdev->dev.of_node, "gpio-sda", 0);
 	int reset = of_get_named_gpio(pdev->dev.of_node, "reset-gpio", 0);
+	int power = of_get_named_gpio(pdev->dev.of_node, "power-gpio", 0);
 
-	if (!gpio_is_valid(sck) || !gpio_is_valid(sda) || !gpio_is_valid(reset)) {
+	if (!gpio_is_valid(sck) || !gpio_is_valid(sda) || !gpio_is_valid(reset) || !gpio_is_valid(power)) {
 		dev_err(&pdev->dev, "gpios missing in devictree\n");
 		return -EINVAL;
 	}
 
+	gpio_request_one(power, GPIOF_OUT_INIT_HIGH, "rtl8367c power");
 	gpio_request_one(reset, GPIOF_OUT_INIT_LOW, "rtl8367c reset");
 	msleep(20);
 	gpio_direction_output(reset, 1);
