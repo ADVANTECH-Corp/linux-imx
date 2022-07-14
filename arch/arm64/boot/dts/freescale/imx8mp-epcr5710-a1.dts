@@ -12,6 +12,12 @@
 	model = "Advantech i.MX8MPlus EPC-R5710 board";
 	compatible = "fsl,imx8mp-evk", "fsl,imx8mp";
 
+	board {
+		compatible = "proc-board";
+		board-type = "EPC-R5710 A1";
+		board-cpu = "IMX8MP";
+	};
+
 	aliases {
 		rtc0 = &s35390a;
 		rtc1 = &snvs_rtc;
