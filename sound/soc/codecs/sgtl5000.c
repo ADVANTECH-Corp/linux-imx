@@ -1815,6 +1815,13 @@ static int sgtl5000_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static void sgtl5000_i2c_shutdown(struct i2c_client *client)
+{
+	sgtl5000_fill_defaults(client);
+}
+#endif
+
 static const struct i2c_device_id sgtl5000_id[] = {
 	{"sgtl5000", 0},
 	{},
@@ -1836,6 +1843,9 @@ static struct i2c_driver sgtl5000_i2c_driver = {
 	.probe = sgtl5000_i2c_probe,
 	.remove = sgtl5000_i2c_remove,
 	.id_table = sgtl5000_id,
+#ifdef CONFIG_ARCH_ADVANTECH
+	.shutdown	= sgtl5000_i2c_shutdown,
+#endif
 };
 
 module_i2c_driver(sgtl5000_i2c_driver);
