@@ -79,6 +79,9 @@ typedef  struct LT9211{
     int enable_pin;
     int gpio_flags;
     int m_rst_delay;
+    int blk_pwr_pin;
+    int blk_en_pin;
+    int m_blk_delay;
     struct work_struct Lt9211_resume_work;
     struct work_struct Lt9211_suspend_work;
     struct backlight_device *backlight;
@@ -699,8 +702,23 @@ static void lt9211_init(struct i2c_client *client)
 
     if (g_LT9211->backlight) 
     {
+        if (gpio_is_valid(g_LT9211->blk_pwr_pin))
+        {
+            lt9211_printk("enable blk_pwr_pin\n");
+            gpio_direction_output(g_LT9211->blk_pwr_pin,1);
+        }
+        msleep(10);
+
         g_LT9211->backlight->props.power = FB_BLANK_UNBLANK;
         backlight_update_status(g_LT9211->backlight);
+        lt9211_printk("enable blk pwm\n");
+
+        msleep(10);
+        if (gpio_is_valid(g_LT9211->blk_en_pin))
+        {
+            lt9211_printk("enable blk_en_pin\n");
+            gpio_direction_output(g_LT9211->blk_en_pin,1);
+        }
     }
 }
 
@@ -711,17 +729,33 @@ static void lt9211_shutdown(struct i2c_client *client)
 
     if (g_LT9211->backlight) 
     {
+
+        if (gpio_is_valid(g_LT9211->blk_en_pin))
+        {
+			lt9211_printk("LT9211_shutdown disable blk_en_pin\n");
+            gpio_direction_output(g_LT9211->blk_en_pin,0);
+        }
+        msleep(10);
+
         g_LT9211->backlight->props.brightness = 0;
         backlight_update_status(g_LT9211->backlight);
+		lt9211_printk("LT9211_shutdown disable blk pwm\n");
+
+        msleep(10);
+        if (gpio_is_valid(g_LT9211->blk_pwr_pin))
+        {
+			lt9211_printk("LT9211_shutdown disable blk_pwr_pin\n");
+            gpio_direction_output(g_LT9211->blk_pwr_pin,0);
+        }
+        msleep(300);
     }
-    lt9211_printk("LT9211_shutdown close backlight\n");
 
     lt9211_printk("LT9211_shutdown disable LT9211\n");
     gpio_direction_output(g_LT9211->reset_pin, !g_LT9211->gpio_flags);
 
     if(g_LT9211->enable_pin > 0)
     {
-        if (!gpio_is_valid(g_LT9211->enable_pin))
+        if (gpio_is_valid(g_LT9211->enable_pin))
         {
             gpio_direction_output(g_LT9211->enable_pin,0);
         }
@@ -744,7 +778,7 @@ static void lt9211_power_on(LT9211_info_t* lt9211)
 {
     if(lt9211->enable_pin > 0)
     {
-        if (!gpio_is_valid(lt9211->enable_pin))
+        if (gpio_is_valid(lt9211->enable_pin))
         {
             gpio_direction_output(lt9211->enable_pin,1);
         }
@@ -816,6 +850,9 @@ static int LT9211_probe(struct i2c_client *client, const struct i2c_device_id *i
     LT9211->enable_pin = of_get_named_gpio_flags(client->dev.of_node, "enable_gpio", 0,(enum of_gpio_flags *)&gpio_flags);
     LT9211->gpio_flags = 1-gpio_flags;
 
+    LT9211->blk_pwr_pin = of_get_named_gpio_flags(client->dev.of_node, "bkl_pwr_gpio", 0,(enum of_gpio_flags *)&gpio_flags);
+    LT9211->blk_en_pin = of_get_named_gpio_flags(client->dev.of_node, "bkl_en_gpio", 0,(enum of_gpio_flags *)&gpio_flags);
+
     backlight = of_parse_phandle(dev->of_node, "backlight", 0);
     if (backlight) 
     {
@@ -833,6 +870,8 @@ static int LT9211_probe(struct i2c_client *client, const struct i2c_device_id *i
     lt9211_printk("LT9211->gpio_flags	 :%d\n",LT9211->gpio_flags);
     lt9211_printk("LT9211->reset_pin	 :%d\n",LT9211->reset_pin);
     lt9211_printk("LT9211->enable_pin	 :%d\n",LT9211->enable_pin);
+    lt9211_printk("LT9211->blk_pwr_pin	 :%d\n",LT9211->blk_pwr_pin);
+    lt9211_printk("LT9211->blk_en_pin	 :%d\n",LT9211->blk_en_pin);
     if(LT9211->enable_pin > 0)
     {
         if (!gpio_is_valid(LT9211->enable_pin))
@@ -863,6 +902,40 @@ static int LT9211_probe(struct i2c_client *client, const struct i2c_device_id *i
             ret = gpio_request(LT9211->reset_pin, "LT9211_rst_gpio");
             if (ret < 0) {
                 printk("%s(): LT9211_rst_gpio request failed %d\n",__func__, ret);
+                return ret;
+            }
+        }
+    }
+
+    if(LT9211->blk_pwr_pin > 0)
+    {
+        if (!gpio_is_valid(LT9211->blk_pwr_pin))
+        {
+            printk(" bkl_pwr_gpio err %d %s \n",__LINE__,__func__);
+            ret = -EINVAL;
+        }
+        else
+        {
+            ret = gpio_request(LT9211->blk_pwr_pin, "bkl_pwr_gpio");
+            if (ret < 0) {
+                printk("%s(): bkl_pwr_gpio request failed %d\n",__func__, ret);
+                return ret;
+            }
+        }
+    }
+
+    if(LT9211->blk_en_pin > 0)
+    {
+        if (!gpio_is_valid(LT9211->blk_en_pin))
+        {
+            printk(" blk_en_pin err %d %s \n",__LINE__,__func__);
+            ret = -EINVAL;
+        }
+        else
+        {
+            ret = gpio_request(LT9211->blk_en_pin, "blk_en_pin");
+            if (ret < 0) {
+                printk("%s(): blk_en_pin request failed %d\n",__func__, ret);
                 return ret;
             }
         }

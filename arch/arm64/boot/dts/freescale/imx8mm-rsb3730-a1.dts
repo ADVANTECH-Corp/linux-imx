@@ -462,6 +462,8 @@
 		status = "disabled";
 		power-supply = <&lvds_pwr_vcc>;
 		backlight = <&lvds_backlight0>;
+		bkl_pwr_gpio = <&gpio4 27 GPIO_ACTIVE_HIGH>;
+		bkl_en_gpio = <&gpio3 25 GPIO_ACTIVE_HIGH>;
 		reset_gpio = <&gpio1 14 GPIO_ACTIVE_HIGH>;
 		bus-format = <MEDIA_BUS_FMT_RGB888_1X7X4_SPWG>;	// MEDIA_BUS_FMT_RGB888_1X7X4_JEIDA MEDIA_BUS_FMT_RGB888_1X7X4_SPWG
 		pinctrl-names = "default";
@@ -966,14 +968,9 @@
 
 	pinctrl_lvds: lvdsgrp {
 		fsl,pins = <
-			MX8MM_IOMUXC_GPIO1_IO14_GPIO1_IO14	0x19	/* DSI_LVDS_RST */
-		>;
-	};
+			MX8MM_IOMUXC_GPIO1_IO14_GPIO1_IO14	0x19		/* DSI_LT9211_RST */
 
-	pinctrl_lcd0: lcd0_grp {
-		fsl,pins = <
 			MX8MM_IOMUXC_SAI3_RXD_GPIO4_IO30	0x116		/* LCD0_VDD_EN */
-
 			MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x19		/* LCD0_BKLT_PWR_EN */
 			MX8MM_IOMUXC_SAI5_MCLK_GPIO3_IO25	0x19		/* LCD0_BKLT_EN */
 		>;
@@ -1034,12 +1031,6 @@
 };
 
 &lvds_backlight0 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_lcd0>;
-	lvds-vcc-enable = <&gpio4 27 1>;
-	lvds-bkl-enable = <&gpio3 25 1>;
-
-	LVDS-BKL-DELAY-TIME = <10>;
 	status = "disabled";
 };
 
