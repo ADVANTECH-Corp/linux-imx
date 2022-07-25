@@ -3,3 +3,4 @@
 # Makefile for the Linux Wireless network device drivers.
 #
 obj-$(CONFIG_MXMWIFIEX)		+= mxm_wifiex/
+obj-$(CONFIG_MXM5X17283)	+= mxm5x17283/
