@@ -506,7 +506,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_fec1>;
 	phy-mode = "rgmii-txid";
-	phy-handle = <&ethphy0>;
 	fsl,magic-packet;
 	nvmem-cells = <&fec_mac0>;
 	nvmem-cell-names = "mac-address";
@@ -517,19 +516,32 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		ethphy0: ethernet-phy@0 {
+		ethphy0: ethernet-phy@1 {
 			/* Realtek RTL8211F (0x001cc916) */
 			compatible = "ethernet-phy-ieee802.3-c22";
 			reg = <1>;
-			eee-broken-1000t;
 		};
 
-		ethphy1: ethernet-phy@1 {
+		ethphy1: ethernet-phy@3 {
 			/* Realtek RTL8211F (0x001cc916) */
 			compatible = "ethernet-phy-ieee802.3-c22";
 			reg = <3>;
-			eee-broken-1000t;
 		};
+
+		ethphy2: ethernet-phy@4 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <4>;
+			at803x,eee-disabled;
+			at803x,vddio-1p8v;
+		};
+
+		ethphy3: ethernet-phy@6 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <6>;
+			at803x,eee-disabled;
+			at803x,vddio-1p8v;
+		};
+
 	};
 };
 
@@ -537,7 +549,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_fec2>;
 	phy-mode = "rgmii-txid";
-	phy-handle = <&ethphy1>;
 	fsl,magic-packet;
 	nvmem-cells = <&fec_mac1>;
 	nvmem-cell-names = "mac-address";
