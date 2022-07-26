@@ -12,6 +12,12 @@
 	model = "Advantech i.MX8MPlus EPC-R5710 board";
 	compatible = "fsl,imx8mp-evk", "fsl,imx8mp";
 
+	board {
+		compatible = "proc-board";
+		board-type = "EPC-R5710 A1";
+		board-cpu = "IMX8MP";
+	};
+
 	aliases {
 		rtc0 = &s35390a;
 		rtc1 = &snvs_rtc;
@@ -83,8 +89,64 @@
 		pinctrl-0 = <&pinctrl_switch>;
 		gpio-sck = <&gpio4 4 GPIO_ACTIVE_HIGH>;
 		gpio-sda = <&gpio4 5 GPIO_ACTIVE_HIGH>;
+		power-gpio = <&gpio1 10 GPIO_ACTIVE_HIGH>;
 		reset-gpio = <&gpio4 2 GPIO_ACTIVE_HIGH>;
 		status = "okay";
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		status = "okay";
+
+		status {
+			label = "status";
+			gpios = <&tca9555_exp2 10 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		cellular {
+			label = "cellular";
+			gpios = <&tca9538_exp1 4 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		wifi {
+			label = "wifi";
+			gpios = <&tca9538_exp1 3 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+
+	uart3_mode:uart3-mode {
+		compatible = "uart-mode";
+		status = "okay";
+
+		index = <2>;
+		default_mode = <1>;//0:RS232,1:RS485,2:RS422
+		rs232_mode_table = <1 0 1 0>;
+		rs485_mode_table = <0 1 1 0>;
+		rs422_mode_table = <1 1 1 0>;
+
+		sel0_gpio = <&tca9555_exp1 11 GPIO_ACTIVE_HIGH>;
+		sel1_gpio = <&tca9555_exp1 10 GPIO_ACTIVE_HIGH>;
+		term_gpio = <&tca9555_exp1 9 GPIO_ACTIVE_HIGH>;
+		slew_gpio = <&tca9555_exp1 8 GPIO_ACTIVE_HIGH>;
+	};
+
+	uart4_mode:uart4-mode {
+		compatible = "uart-mode";
+		status = "okay";
+
+		index = <3>;
+		default_mode = <1>;//0:RS232,1:RS485,2:RS422
+		rs232_mode_table = <1 0 1 0>;
+		rs485_mode_table = <0 1 1 0>;
+		rs422_mode_table = <1 1 1 0>;
+
+		sel0_gpio = <&tca9555_exp1 15 GPIO_ACTIVE_HIGH>;
+		sel1_gpio = <&tca9555_exp1 14 GPIO_ACTIVE_HIGH>;
+		term_gpio = <&tca9555_exp1 13 GPIO_ACTIVE_HIGH>;
+		slew_gpio = <&tca9555_exp1 12 GPIO_ACTIVE_HIGH>;
 	};
 };
 
@@ -356,7 +418,7 @@
 };
 
 &i2c5 {
-	clock-frequency = <400000>;
+	clock-frequency = <100000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c5>;
 	pinctrl-1 = <&pinctrl_i2c5_gpio>;
@@ -369,6 +431,7 @@
 		reg = <0x29>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+		fix-first-comm-issue;
 		wdt-en = <&gpio4 29 0>;
 		wdt-ping = <&gpio4 20 0>;
 		status = "okay";
@@ -535,21 +598,24 @@
 &uart3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart3>;
-	rst-gpios = <&gpio4 24 GPIO_ACTIVE_HIGH>;
 	assigned-clocks = <&clk IMX8MP_CLK_UART3>;
 	assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_80M>;
 	fsl,uart-has-rtscts;
+	rs485-rts-active-low;
 	status = "okay";
 };
 
 &uart4 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart4>;
-	dir-gpios = <&gpio2 9 GPIO_ACTIVE_HIGH>;
+	rs485-dir-gpios = <&gpio2 9 GPIO_ACTIVE_HIGH>;
+	rs485-rts-active-low;
+	en-gpio = <&gpio4 24 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
 
 &usb3_phy0 {
+	fsl,phy-tx-vboost-tune = <3>;
 	fsl,phy-tx-vref-tune = <6>;
 	fsl,phy-tx-rise-tune = <0>;
 	fsl,phy-tx-preemp-amp-tune = <3>;
@@ -686,6 +752,7 @@
 			MX8MP_IOMUXC_SAI1_RXD0__GPIO4_IO02	0x19
 			MX8MP_IOMUXC_SAI1_RXD2__GPIO4_IO04	0x19
 			MX8MP_IOMUXC_SAI1_RXD3__GPIO4_IO05	0x19
+			MX8MP_IOMUXC_GPIO1_IO10__GPIO1_IO10	0x19
 		>;
 	};
 
