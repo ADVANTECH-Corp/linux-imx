@@ -392,8 +392,8 @@
 	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl_i2c4>;
 	pinctrl-1 = <&pinctrl_i2c4_gpio>;
-	scl-gpios = <&gpio5 20 GPIO_ACTIVE_HIGH>;
-	sda-gpios = <&gpio5 21 GPIO_ACTIVE_HIGH>;
+	scl-gpios = <&gpio2 4 GPIO_ACTIVE_HIGH>;
+	sda-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 	tca9538_exp1: tca9538@71 {
 		compatible = "nxp,pca9538";
@@ -932,7 +932,6 @@
 			MX8MP_IOMUXC_ECSPI1_MOSI__UART3_DCE_TX		0x140
 			MX8MP_IOMUXC_ECSPI1_SS0__UART3_DCE_RTS		0x140
 			MX8MP_IOMUXC_ECSPI1_MISO__UART3_DCE_CTS		0x140
-			MX8MP_IOMUXC_SAI2_TXFS__GPIO4_IO24		0x19
 		>;
 	};
 
@@ -940,7 +939,8 @@
 		fsl,pins = <
 			MX8MP_IOMUXC_UART4_RXD__UART4_DCE_RX	0x49
 			MX8MP_IOMUXC_UART4_TXD__UART4_DCE_TX	0x49
-			MX8MP_IOMUXC_SD1_DATA7__GPIO2_IO09	0x19
+			MX8MP_IOMUXC_SD1_DATA7__GPIO2_IO09		0x19
+			MX8MP_IOMUXC_SAI2_TXFS__GPIO4_IO24		0x19
 		>;
 	};
 
