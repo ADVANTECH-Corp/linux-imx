@@ -367,9 +367,6 @@
 	codec: sgtl5000@a {
 		compatible = "fsl,sgtl5000";
 		reg = <0x0a>;
-		pinctrl-0 = <&pinctrl_sgtl5000>;
-		//mute-gpios = <&tca9555_exp2 3 GPIO_ACTIVE_HIGH>;//audio 
-		mute-gpios = <&gpio2 8  GPIO_ACTIVE_HIGH>;//audio mute
 		clocks = <&audiomix_clk IMX8MP_CLK_AUDIOMIX_SAI3_MCLK1>;
 		clock-names = "mclk";
 		pinctrl-names = "default";
@@ -556,7 +553,7 @@
 
 &sai3 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_sai3>;
+	pinctrl-0 = <&pinctrl_sai3 &pinctrl_codec_mute>;
 	assigned-clocks = <&clk IMX8MP_CLK_SAI3>;
 	assigned-clock-parents = <&clk IMX8MP_AUDIO_PLL1_OUT>;
 	assigned-clock-rates = <12288000>;
@@ -565,6 +562,7 @@
 		 <&clk IMX8MP_CLK_DUMMY>;
 	clock-names = "bus", "mclk0", "mclk1", "mclk2", "mclk3";
 	fsl,sai-mclk-direction-output;
+	mute-gpios = <&gpio2 8  GPIO_ACTIVE_HIGH>;//audio mute
 	status = "okay";
 };
 &micfil {
@@ -773,7 +771,7 @@
 			MX8MP_IOMUXC_NAND_DATA03__FLEXSPI_A_DATA03	0x82
 		>;
 	};
-	pinctrl_sgtl5000: sgtl5000_grp  {
+	pinctrl_codec_mute: codec_mute  {
 		fsl,pins = <
 			MX8MP_IOMUXC_SD1_DATA6__GPIO2_IO08		0x19
 		>;

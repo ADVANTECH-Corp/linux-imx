@@ -1590,15 +1590,6 @@ static int sgtl5000_i2c_probe(struct i2c_client *client,
 	u32 value;
 	u16 ana_pwr;
 
-#ifdef CONFIG_ARCH_ADVANTECH
-	struct device *dev = &client->dev;
-	struct gpio_desc *mute_gpios;
-
-	mute_gpios = gpiod_get(dev, "mute", GPIOD_OUT_HIGH);
-	gpiod_direction_output(mute_gpios, 1);
-	gpiod_set_value(mute_gpios, 1);
-#endif
-
 	sgtl5000 = devm_kzalloc(&client->dev, sizeof(*sgtl5000), GFP_KERNEL);
 	if (!sgtl5000)
 		return -ENOMEM;
@@ -1844,7 +1835,7 @@ static struct i2c_driver sgtl5000_i2c_driver = {
 	.remove = sgtl5000_i2c_remove,
 	.id_table = sgtl5000_id,
 #ifdef CONFIG_ARCH_ADVANTECH
-	.shutdown	= sgtl5000_i2c_shutdown,
+	//.shutdown	= sgtl5000_i2c_shutdown,
 #endif
 };
 

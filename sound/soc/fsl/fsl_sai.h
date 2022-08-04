@@ -280,6 +280,7 @@ struct fsl_sai {
 	unsigned int bitclk_ratio;
 #ifdef CONFIG_ARCH_ADVANTECH
 	unsigned int index;
+	struct gpio_desc *mute_gpio;
 #endif
 
 	struct snd_dmaengine_dai_dma_data dma_params_rx;
