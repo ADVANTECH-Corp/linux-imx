@@ -11,4 +11,8 @@
 	compatible = "lontium,lt9211_1920x1080";	//lt9211_800x480 lt9211_1024x768 lt9211_1280x800 lt9211_1920x1080
 };
 
+&lvds_backlight0
+{
+	pwms = <&pwm4 0 5000000 0>;
+};
 
