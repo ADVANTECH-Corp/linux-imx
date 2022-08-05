@@ -203,10 +203,11 @@
 
 &sai1 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_sai1>;
+	pinctrl-0 = <&pinctrl_sai1 &pinctrl_codec_mute>;
 	assigned-clocks = <&clk IMX8MM_CLK_SAI1>;
 	assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
 	assigned-clock-rates = <0>, <24576000>;
+	mute-gpios = <&gpio4 0 GPIO_ACTIVE_HIGH>;	//audio mute
 	status = "okay";
 };
 
@@ -735,6 +736,12 @@
 	pinctrl_sai1_mclk: sai1grp_mclk {
 		fsl,pins = <
 			MX8MM_IOMUXC_SAI1_MCLK_SAI1_MCLK	0xd6	/* SAI1_MCLK */
+		>;
+	};
+
+	pinctrl_codec_mute: codec_mute  {
+		fsl,pins = <
+			MX8MM_IOMUXC_SAI1_RXFS_GPIO4_IO0	0x19	/* MUTE */
 		>;
 	};
 	
