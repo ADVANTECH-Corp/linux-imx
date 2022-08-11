@@ -1,0 +1,46 @@
+/*
+ * Copyright 2018 NXP
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "imx8mm-rom5721-a1.dts"
+
+/ {
+	usdhc2_pwrseq: usdhc2_pwrseq {
+                compatible = "mmc-pwrseq-simple";
+                post-power-on-delay-ms = <80>;
+                reset-gpios =   <&tca9538_2 4 GPIO_ACTIVE_LOW>;
+        };
+};
+
+&tca9538_2 {
+	W_DISABLE1 {
+		gpio-hog;
+		gpios = <0 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "W_DISABLE1";
+	};
+	W_DISABLE2 {
+		gpio-hog;
+		gpios = <1 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "W_DISABLE1";
+	};
+};
+
+&usdhc2 {
+	/delete-property/cd-gpios;
+	/delete-property/wp-gpios;
+	/delete-property/ vmmc-supply;
+        mmc-pwrseq = <&usdhc2_pwrseq>;
+};
+
