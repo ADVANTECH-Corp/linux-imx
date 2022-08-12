@@ -4155,6 +4155,47 @@ static const struct panel_desc arm_rtsm = {
 	.bus_format = MEDIA_BUS_FMT_RGB888_1X24,
 };
 
+#ifdef	CONFIG_ARCH_ADVANTECH
+static const struct display_timing std_1080p_timing = {
+        .pixelclock = { 148500000, 148500000, 148500000 },
+        .hactive = { 1920, 1920, 1920 },
+        .hfront_porch = { 88, 88, 88 },
+        .hsync_len = { 44, 44, 44 },
+        .hback_porch = { 148, 148, 148 },
+        .vactive = { 1080, 1080, 1080 },
+        .vfront_porch = { 4, 4, 4 },
+        .vsync_len = { 5, 5, 5 },
+        .vback_porch = { 36, 36, 36 },
+        .flags = DISPLAY_FLAGS_HSYNC_LOW |
+                 DISPLAY_FLAGS_VSYNC_LOW |
+                 DISPLAY_FLAGS_DE_LOW |
+                 DISPLAY_FLAGS_PIXDATA_NEGEDGE,
+};
+
+static const struct panel_desc std_1080p = {
+        .timings = &std_1080p_timing,
+        .num_timings = 1,
+        .bpc = 8,
+        .size = {
+                .width = 160,
+                .height = 90,
+        },
+        .delay = {
+                /*
+                 * The panel spec recommends one second delay
+                 * to the below items.  However, it's a bit too
+                 * long in pratical.  Based on tests, it turns
+                 * out 100 milliseconds is fine.
+                 */
+                .prepare = 100,
+                .enable = 100,
+                .unprepare = 100,
+                .disable = 100,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,//MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
+};
+#endif
+
 static const struct of_device_id platform_of_match[] = {
 	{
 		.compatible = "ampire,am-1280800n3tzqw-t00h",
@@ -4568,6 +4609,11 @@ static const struct of_device_id platform_of_match[] = {
 		.compatible = "panel-dpi",
 		.data = &panel_dpi,
 	}, {
+#ifdef	CONFIG_ARCH_ADVANTECH
+		.compatible = "std,1080p",
+		.data = &std_1080p,
+	}, {
+#endif
 		/* sentinel */
 	}
 };
