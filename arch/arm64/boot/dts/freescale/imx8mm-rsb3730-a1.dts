@@ -181,6 +181,7 @@
 			compatible = "ethernet-phy-ieee802.3-c22";
 			reg = <0>;
 			eee-broken-1000t;
+			ssc-enable;
 		};
 	};
 };
