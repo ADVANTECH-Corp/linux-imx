@@ -11,6 +11,8 @@
 #include <linux/phy.h>
 #include <linux/regmap.h>
 #include <linux/micrel_phy.h>
+/* For rtl8211fs lan */
+#include <linux/motorcomm_phy.h>
 #include <linux/mfd/syscon.h>
 #include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
 #include <asm/mach/arch.h>
@@ -20,6 +22,9 @@
 #include "cpuidle.h"
 #include "hardware.h"
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/proc-board.h>
+#endif
 /* For imx6q sabrelite board: set KSZ9021RN RGMII pad skew */
 static int ksz9021rn_phy_fixup(struct phy_device *phydev)
 {
@@ -126,6 +131,65 @@ static int ar8031_phy_fixup(struct phy_device *dev)
 
 #define PHY_ID_AR8031	0x004dd074
 
+#if defined(CONFIG_ARCH_ADVANTECH) && defined(CONFIG_REALTEK_PHY)
+static int rtl8211f_phy_fixup(struct phy_device *dev)
+{
+	int val;
+
+	phy_write(dev, 0x1f, 0x0d04);
+	/*PHY LED OK*/
+	phy_write(dev, 0x10, 0xa050);
+	phy_write(dev, 0x11, 0x0000);
+	phy_write(dev, 0x1f, 0x0000);
+
+	phy_write(dev, 0x1f, 0x0d08);
+	val = phy_read(dev, 0x11);
+	val |= (0x1 << 8);//enable TX delay
+	phy_write(dev, 0x11, val);
+
+	val = phy_read(dev, 0x15);
+	val |= (0x1 << 3);//enable RX delay
+	phy_write(dev, 0x15, val);
+	phy_write(dev, 0x1f, 0x0000);
+
+	return 0;
+}
+
+static int rtl8211e_phy_fixup(struct phy_device *dev)
+{
+	int len=0;
+	u32 value1,value2;
+	const __be32 *parp;
+	struct device_node *np;
+
+	value1 = 0x0742;
+	value2 = 0x0040;
+	np = of_find_compatible_node(NULL, NULL, "fsl,imx6q-fec");
+	if (np) {
+		parp = of_get_property(np, "phy-led", &len);
+		if (parp && (len / sizeof (int) == 2)) {
+			value1 = be32_to_cpu(parp[0]);
+			value2 = be32_to_cpu(parp[1]);
+		}
+	}
+	/*PHY LED OK*/
+	phy_write(dev, 0x1f, 0x0007);
+	phy_write(dev, 0x1e, 0x002c);
+	phy_write(dev, 0x1c, value1);
+	phy_write(dev, 0x1a, value2);
+	phy_write(dev, 0x1f, 0x0000);
+
+	phy_write(dev, 0x1f, 0x0005);
+	phy_write(dev, 0x05, 0x8b82);
+	phy_write(dev, 0x06, 0x052b);
+	phy_write(dev, 0x1f, 0x0000);
+	return 0;
+}
+
+#define PHY_ID_RTL8211F	0x001cc916
+#define PHY_ID_RTL8211E	0x001cc915
+#define REALTEK_PHY_ID_MASK 0x001fffff
+#endif
 static int ar8035_phy_fixup(struct phy_device *dev)
 {
 	u16 val;
@@ -159,6 +223,163 @@ static int ar8035_phy_fixup(struct phy_device *dev)
 
 #define PHY_ID_AR8035 0x004dd072
 
+static int yt8521_phy_fixup(struct phy_device *dev)
+{
+	int ret;
+	int val;
+
+	/* disable auto sleep */
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa000);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_DATA, 0);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0x27);
+	if (ret < 0)
+		return ret;
+	val = phy_read(dev, REG_DEBUG_DATA);
+	if (val < 0)
+		return val;
+	val &= ~(0x1 << 15);
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0x27);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_DATA, val);
+	if (ret < 0)
+		return ret;
+
+	/* enable RXC clock when no wire plug */
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa000);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_DATA, 0);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xc);
+	if (ret < 0)
+		return ret;
+	val = phy_read(dev, REG_DEBUG_DATA);
+	if (val < 0)
+		return val;
+	val &= ~(1 << 12);
+	ret = phy_write(dev, REG_DEBUG_DATA, val);
+	if (ret < 0)
+		return ret;
+
+	/* enable PHY SyncE clock output */
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa000);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_DATA, 0);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa012);
+	if (ret < 0)
+		return ret;
+	val = phy_read(dev, REG_DEBUG_DATA);
+	if (val < 0)
+		return val;
+	val &= ~(3 << 1);
+	val |= (7 << 3);
+	ret = phy_write(dev, REG_DEBUG_DATA, val);
+	if (ret < 0)
+		return ret;
+
+#if 0
+	/* config PHY Rxc_dly */
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa000);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_DATA, 0);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa001);
+	if (ret < 0)
+		return ret;
+	val = phy_read(dev, REG_DEBUG_DATA);
+	if (val < 0)
+		return val;
+	val &= ~(1 << 8);
+	ret = phy_write(dev, REG_DEBUG_DATA, val);
+	if (ret < 0)
+		return ret;
+
+	/* config PHY Txc_dly */
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa000);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_DATA, 0);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa003);
+	if (ret < 0)
+		return ret;
+	val = phy_read(dev, REG_DEBUG_DATA);
+	if (val < 0)
+		return val;
+	val &= ~0xff;
+	ret = phy_write(dev, REG_DEBUG_DATA, val);
+	if (ret < 0)
+		return ret;
+#endif
+
+	/* config LED0 as 1000M link on */
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa000);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_DATA, 0);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa00c);
+	if (ret < 0)
+		return ret;
+	val = phy_read(dev, REG_DEBUG_DATA);
+	if (val < 0)
+		return val;
+	val = 0xc040;
+	ret = phy_write(dev, REG_DEBUG_DATA, val);
+	if (ret < 0)
+		return ret;
+
+	/* config LED1 as ACT blinking */
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa000);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_DATA, 0);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa00d);
+	if (ret < 0)
+		return ret;
+	val = phy_read(dev, REG_DEBUG_DATA);
+	if (val < 0)
+		return val;
+	val = 0xe600;
+	ret = phy_write(dev, REG_DEBUG_DATA, val);
+	if (ret < 0)
+		return ret;
+
+	/* config LED2 as 100M link on */
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa000);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_DATA, 0);
+	if (ret < 0)
+		return ret;
+	ret = phy_write(dev, REG_DEBUG_ADDR_OFFSET, 0xa00e);
+	if (ret < 0)
+		return ret;
+	val = phy_read(dev, REG_DEBUG_DATA);
+	if (val < 0)
+		return val;
+	val = 0xc020;
+	ret = phy_write(dev, REG_DEBUG_DATA, val);
+	if (ret < 0)
+		return ret;
+
+	return 0;
+}
 static void __init imx6q_enet_phy_init(void)
 {
 	if (IS_BUILTIN(CONFIG_PHYLIB)) {
@@ -170,6 +391,14 @@ static void __init imx6q_enet_phy_init(void)
 				ar8031_phy_fixup);
 		phy_register_fixup_for_uid(PHY_ID_AR8035, 0xffffffef,
 				ar8035_phy_fixup);
+		phy_register_fixup_for_uid(PHY_ID_YT8521, MOTORCOMM_PHY_ID_MASK,
+				yt8521_phy_fixup);
+#if defined(CONFIG_ARCH_ADVANTECH) && defined(CONFIG_REALTEK_PHY)
+		phy_register_fixup_for_uid(PHY_ID_RTL8211E, REALTEK_PHY_ID_MASK,
+				rtl8211e_phy_fixup);
+		phy_register_fixup_for_uid(PHY_ID_RTL8211F, REALTEK_PHY_ID_MASK,
+				rtl8211f_phy_fixup);
+#endif
 	}
 }
 

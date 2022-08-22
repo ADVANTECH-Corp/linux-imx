@@ -110,6 +110,15 @@
 		wdt-ping = <&gpio1 9 0>;
 		reg = <0x29>;
 	};
+
+	st33htph@2e {
+		compatible = "st,st33htpm-i2c";
+		reg= <0x2e>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_tpm>;
+		interrupt-parent = <&gpio7>;
+		interrupts = <11 IRQ_TYPE_LEVEL_HIGH>;
+	};
 };
 
 &i2c2 {
@@ -267,12 +276,29 @@
 			>;
 		};
 	};
+
+	tpm {
+		pinctrl_tpm: tpm_grp {
+			fsl,pins = <
+				MX6QDL_PAD_GPIO_7__GPIO1_IO07		0x80000000	/* TPM_PP */
+				MX6QDL_PAD_GPIO_16__GPIO7_IO11		0x80000000	/* TPM_IRQ# */
+			>;
+		};
+	};
 };
 
 
 //&lcd {
 //	status = "disabled";
 //};
+
+&fec {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_enet1_1 &pinctrl_enet1_rst_1>;
+	//phy-reset-gpios = <&gpio1 25 1>; /* GPIO_ACTIVE_LOW 1 */
+	//phy-reset-duration = <20>;
+	status = "okay";
+};
 
 &mxcfb1 {
 	status = "okay";

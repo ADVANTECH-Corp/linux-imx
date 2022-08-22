@@ -3787,6 +3787,13 @@ fec_probe(struct platform_device *pdev)
 	char irq_name[8];
 	int irq_cnt;
 	struct fec_devinfo *dev_info;
+#ifdef CONFIG_ARCH_ADVANTECH
+ #ifdef CONFIG_ARCH_ADVANTECH_IMX6
+	struct proc_dir_entry *proc_entry = NULL;
+	struct phy_device *phydev;
+	char node_name[32];
+ #endif
+#endif
 
 	fec_enet_get_queue_num(pdev, &num_tx_qs, &num_rx_qs);
 
@@ -3995,6 +4002,19 @@ fec_probe(struct platform_device *pdev)
 	if (ret)
 		goto failed_mii_init;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+ #ifdef	CONFIG_ARCH_ADVANTECH_IMX6
+	phydev = phy_find_first(fep->mii_bus);
+	if (phydev && (0x001cc916 == phydev->phy_id)) {
+		/*Change PHY LED status*/
+		msleep(5);
+		fep->mii_bus->write(fep->mii_bus, phydev->mdio.addr, 0x1f, 0x0d04);
+		fep->mii_bus->write(fep->mii_bus, phydev->mdio.addr, 0x10, 0xa050);
+		fep->mii_bus->write(fep->mii_bus, phydev->mdio.addr, 0x11, 0x0000);
+		fep->mii_bus->write(fep->mii_bus, phydev->mdio.addr, 0x1f, 0x0000);
+	}
+ #endif
+#endif
 	/* Carrier starts down, phylib will bring it up */
 	netif_carrier_off(ndev);
 	fec_enet_clk_enable(ndev, false);
