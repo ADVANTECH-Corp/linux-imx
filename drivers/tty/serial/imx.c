@@ -234,6 +234,7 @@ struct imx_port {
 	/* RS-485 fields */
 	struct serial_rs485	rs485;
 	struct gpio_desc *rs485_gpio;
+	int uart_enable_gpio;
 #endif
 	unsigned int            saved_reg[10];
 	bool			context_saved;
@@ -2520,7 +2521,6 @@ static int imx_uart_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	enum of_gpio_flags flags;
 	int uart_mode_sel_gpio;
-	int uart_enable_gpio;
 
 	uart_mode_sel_gpio =
                 of_get_named_gpio_flags(dev->of_node, "uart-sel-gpio", 0, &flags);
@@ -2551,35 +2551,34 @@ static int imx_uart_probe(struct platform_device *pdev)
 		}
 	}
 
-	uart_enable_gpio =
-		of_get_named_gpio_flags(dev->of_node, "en-gpio", 0, &flags);
-
-	if (gpio_is_valid(uart_enable_gpio)) {
-
-		ret = gpio_request(uart_enable_gpio, "UART Enable Pin");
-		if (ret) {
-			dev_warn(dev, "Could not request GPIO %d : %d\n",
-                        uart_enable_gpio, ret);
-                        return -EFAULT;
-		}
-
-		ret = gpio_direction_output(uart_enable_gpio, 1);
-		if (ret) {
-			dev_warn(dev, "Could not drive GPIO %d :%d\n",
-                        uart_enable_gpio, ret);
-                        return -EFAULT;
-		}
-
-	} else if (uart_enable_gpio == -EPROBE_DEFER) {
-		return uart_enable_gpio;
-	}
-
 	sport->rs485_gpio = gpiod_get(dev, "rs485-dir", GPIOD_OUT_LOW);
 	if (!IS_ERR(sport->rs485_gpio)) {
 		gpiod_direction_output(sport->rs485_gpio, 1);
 		//gpiod_set_value(sport->rs485_gpio, 1);
 	} else if (sport->rs485_gpio == -EPROBE_DEFER) {
 		return sport->rs485_gpio;
+	}
+
+	sport->uart_enable_gpio =
+		of_get_named_gpio_flags(dev->of_node, "en-gpio", 0, &flags);
+
+	if (gpio_is_valid(sport->uart_enable_gpio)) {
+		ret = gpio_request(sport->uart_enable_gpio, "UART Enable Pin");
+		if (ret) {
+			dev_warn(dev, "Could not request GPIO %d : %d\n",
+                        sport->uart_enable_gpio, ret);
+			return -EFAULT;
+		}
+
+		ret = gpio_direction_output(sport->uart_enable_gpio, 1);
+		if (ret) {
+			dev_warn(dev, "Could not drive GPIO %d :%d\n",
+                        sport->uart_enable_gpio, ret);
+			return -EFAULT;
+		}
+
+	} else if (sport->uart_enable_gpio == -EPROBE_DEFER) {
+		return sport->uart_enable_gpio;
 	}
 #endif
 
@@ -2592,6 +2591,16 @@ static int imx_uart_remove(struct platform_device *pdev)
 
 	return uart_remove_one_port(&imx_uart_uart_driver, &sport->port);
 }
+
+#ifdef CONFIG_ARCH_ADVANTECH
+static void imx_uart_plat_shutdown(struct platform_device *pdev)
+{
+	struct imx_port *sport = platform_get_drvdata(pdev);
+
+	if (gpio_is_valid(sport->uart_enable_gpio))
+		gpio_direction_output(sport->uart_enable_gpio, 0);
+}
+#endif
 
 static void imx_uart_restore_context(struct imx_port *sport)
 {
@@ -2766,6 +2775,9 @@ static struct platform_driver imx_uart_platform_driver = {
 		.of_match_table = imx_uart_dt_ids,
 		.pm = &imx_uart_pm_ops,
 	},
+#ifdef CONFIG_ARCH_ADVANTECH
+	.shutdown = imx_uart_plat_shutdown,
+#endif
 };
 
 static int __init imx_uart_init(void)
