@@ -95,8 +95,8 @@ static DEVICE_ATTR(mode, S_IRUGO|S_IRUSR,uart_mode_mode_show, NULL);
 static int uart_mode_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
-    struct device_node *np = dev->of_node;
-    enum of_gpio_flags flags;
+	struct device_node *np = dev->of_node;
+	enum of_gpio_flags flags;
 	int i = 0;
 	int elems;
 	u32 *conf;
@@ -196,14 +196,14 @@ static int uart_mode_probe(struct platform_device *pdev)
 				gpio_request_one(slew_gpio, GPIOF_OUT_INIT_HIGH, lable);
 			devm_kfree(dev,lable);
 		}
-	}	 else if (sel0_gpio == -EPROBE_DEFER) {
+	} else if (sel0_gpio == -EPROBE_DEFER) {
 		return sel0_gpio;
 	}
 
 	if (device_create_file(dev, &dev_attr_mode))
 	{
-        dev_err(dev, "sys file creation failed\n");
-        return -ENODEV;
+        	dev_err(dev, "sys file creation failed\n");
+        	return -ENODEV;
 	}
 
 	return 0;
