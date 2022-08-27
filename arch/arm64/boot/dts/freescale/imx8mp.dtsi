@@ -684,6 +684,7 @@
 					clock-names = "snvs";
 					linux,keycode = <KEY_POWER>;
 					wakeup-source;
+					status = "disabled";
 				};
 			};
 
