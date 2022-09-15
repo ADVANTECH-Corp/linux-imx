@@ -184,6 +184,7 @@ static struct imx_usbmisc_data *usbmisc_get_init_data(struct device *dev)
 			gpio_request_one(gpio_num, GPIOF_OUT_INIT_LOW, "usb-power-en-gpio");
 		else
 			gpio_request_one(gpio_num, GPIOF_OUT_INIT_HIGH, "usb-power-en-gpio");
+		gpio_free(gpio_num);
 	}
 #endif
 	return data;
