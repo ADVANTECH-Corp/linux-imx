@@ -499,7 +499,7 @@ static int nwl_dsi_host_attach(struct mipi_dsi_host *dsi_host,
 	dsi->format = device->format;
 	dsi->dsi_mode_flags = device->mode_flags;
 
-#ifdef CONFIG_DRM_PANEL_AUO_G101UAN02
+#if (defined(CONFIG_ARCH_ADVANTECH) && defined(CONFIG_DRM_PANEL_AUO_G101UAN02))
 	enable_lcd_vdd_en();
 	msleep(950);
 	enable_ldb_bkl_pwm();

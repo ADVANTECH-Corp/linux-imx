@@ -5042,6 +5042,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	//--------------------------------------------------------------
 	//Warren
 
+#if defined(CONFIG_ARCH_ADVANTECH)
 	panel = dev_get_drvdata(&dsi->dev);
 	panel->dsi = dsi;
 
@@ -5076,7 +5077,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 			return err;
 		}
 	}
-
+#endif
 
 
 	//--------------------------------------------------------------

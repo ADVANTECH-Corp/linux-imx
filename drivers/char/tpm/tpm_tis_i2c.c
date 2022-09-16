@@ -104,9 +104,11 @@ static int tpm_tis_i2c_ptp_register_mapper(u32 addr, u8 *i2c_reg)
 	case TPM_RID(0):
 		*i2c_reg = TPM_I2C_RID;
 		break;
+#ifdef CONFIG_ARCH_ADVANTECH
 	case TPM_INTF_CAPABILITY(0):
 		*i2c_reg = TPM_I2C_INTERFACE_CAPABILITY;
 		break;
+#endif
 	case TPM_INT_VECTOR(0):
 		return -1;
 	}
