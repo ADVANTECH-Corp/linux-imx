@@ -1,0 +1,208 @@
+Release Notes
+
+[QLog_Linux_Android_V1.5.13]
+Date:   05/16/2022
+enhancement:
+  1. Added support for Sony BG770A-GL to capture com log
+  2. Added support for unisoc EXX00U to capture blue screen dump
+  3. Added support for unisoc EXX00U to capture UART AP log
+  4. Added support for unisoc EC800G-CN to capture log
+  5. Added support for unisoc EC200D-CN to capture log
+  6. Added support for unisoc RG200U and EC200A(both State Grid) to capture log
+  7. Added support for unisoc EC200D-CN to capture ap dump
+fix:
+
+[QLog_Linux_Android_V1.5.12]
+Date:   01/17/2022
+enhancement:
+  1. Added support for capturing logs in RM500K-CN
+  2. The -c parameter is added to select whether to end QLog after capturing dump, which ends by default
+  3. Adjust the code framework, add -i parameter, cp log port as dm port, AP log capture optional, default capture
+  4. Added unisoc EC200U ap log file size within 10M
+fix:
+
+[QLog_Linux_Android_V1.5.11]
+Date:   11/12/2021
+enhancement:
+  1. Code adjustment
+fix:
+
+[QLog_Linux_Android_V1.5.10]
+Date:   11/12/2021
+enhancement:
+  1. Modify the code framework, optimize the code
+fix:
+
+[QLog_Linux_Android_V1.5.9]
+Date:   11/4/2021
+enhancement:
+  1. Added support for capturing USB AP and CP log using unisoc EC200U
+  2. Modify RG500U to send AT code, add multi AT send routine
+  3. Add modem version to each logel file when capturing the unisoc module Log
+fix:
+
+[QLog_Linux_Android_V1.5.8]
+Date:   9/27/2021
+enhancement:
+  1. Support SDX62 qmdlv2/qdss/dump
+  2. Fix crash when sdx62 dump
+  3. Modify the FTP code framework to optimize the FTP code
+fix:
+
+[QLog_Linux_Android_V1.5.6]
+Date:   9/22/2021
+enhancement:
+  1. When a file write error occurs due to disk full conditions, QLog runs clean_filter before ending
+  2. Optimizing FTP code
+  3. Modify QLog capture dump end
+  4. Added support for State Grid 5G unisoc module RM500U-CN capture Log, AP dump and CP dump
+fix:
+
+[QLog_Linux_Android_V1.5.5]
+Date:   9/1/2021
+enhancement:
+  1. after Ctrl-c, delay exit for 1 second to resolve the problem that the QDSS Disable request sent before exit has not been processed by the module
+  2. added FTP protocol and usage mode(./QLog -s ftp:10.66.90.68-user:aaron1-pass:123456)
+fix:
+
+[QLog_Linux_Android_V1.5.4]
+Date:   8/16/2021
+enhancement:
+  1. EM05 is supported, interface 0 is MBIM
+  2. the Qualcomm module dump state is lost, QLog directly ends the program
+  3. added a 5 second delay for QLog to capture data after ASR module dump
+  4. QLog supports ag551Q-CN to generate hash files when catching logs
+  4. unisoc supports TFTP in AP dump
+fix:
+
+[QLog_Linux_Android_V1.5.3]
+Date:   7/6/2021
+enhancement:
+  1. support qdss for sdx12
+  2. supports ttyACM and ttyUSB port specification
+  3. support for bus representation specification(eg: -p /sys/bus/usb/devices/1-2)
+  4. added TFTP function under asr dump
+fix:
+
+[QLog_Linux_Android_V1.5.2]
+Date:   6/18/2021
+enhancement:
+  1. Optimizing the transmission speed of TFTP
+fix:
+  2. ASR: fix catch log error
+
+[Quectel_QLog_Linux&Android_V1.5.1]
+Date:   6/11/2021
+enhancement:
+  1. RG500U: Do not exit when USB disconnect
+  2. RG500U: support CP dump first, then execute QLog to catch CP DUMP
+             pay attention: must execute next command before CP DUMP
+             								stty -F /dev/ttyUSB0 raw -echo
+             								stty -F /dev/ttyUSB1 raw -echo
+	3. support '-s IP:9000', QLog will run in TCP Client Mode, and send log to TCP Server, like 'nc -l 9000 > log.bin'
+	4. 增加对EC20冀北，EC200T冀北和能源控制器项目
+fix:
+
+[Quectel_QLog_Linux&Android_V1.4.18]
+Date:   5/12/2021
+enhancement:
+  1. RG500U: support CP DUMP and AP DUMP 
+fix:
+
+[Quectel_QLog_Linux&Android_V1.4.17]
+Date:   4/8/2021
+enhancement:
+  1. Code refactor: mdm and unisoc both use hdlc packet, share it
+  2. remove qlog_has_find_dev and do not auto create dir when tty2cp & tftp mode
+  3. RG500U: save dump to .logel file, not save to separate mem dump bin file.
+  4. RG500U: merg 2 times write to only one
+  5. Code refactor: ASR's parse db version  
+  6. fix yocto 'QA Issue: No GNU_HASH in the ELF binary'  
+fix:
+
+[Quectel_QLog_Linux&Android_V1.4.16]
+Date:   3/11/2021
+enhancement:
+  1. EG06V: support read DBVersion
+fix:
+	1. modify Makefile to generate more compile errors and fix them
+	
+[Quectel_QLog_Linux&Android_V1.4.15]
+Date:   2/10/2021
+enhancement:
+  1. EG06V: support read DBVersion
+fix:
+	1. ASR: retry send APReady when few data from modem
+	
+[Quectel_QLog_Linux&Android_V1.4.14]
+Date:   2/8/2021
+enhancement:
+  1.  '-s 9000': use cache buf for data exchange between usb and tcp socket.
+      if ethernet/wifi network speed is not stable, Qlog will quit for write fail. 
+fix:
+
+[Quectel_QLog_Linux&Android_V1.4.12]
+Date:   9/29/2020
+enhancement:
+  1. usbfs: auto detect usb endpoint address (from fixed code)
+fix:
+
+[Quectel_QLog_Linux&Android_V1.4.11]
+Date:   9/21/2020
+enhancement:
+  1. add 2 x55 filter cfg
+fix:
+
+[Quectel_QLog_Linux&Android_V1.4.10]
+Date:   8/26/2020
+enhancement:
+  1. support unisoc RG500U
+fix:
+
+[Quectel_QLog_Linux&Android_V1.4.9]
+Date:   6/29/2020
+enhancement:
+  1.  support ASR EG060
+fix:
+
+[Quectel_QLog_Linux&Android_V1.4.8]
+Date:   6/11/2020
+enhancement:
+  1.  X55: support read hash file from modem, and save as qdb. save qxdm log as .qmdl2 file.
+fix:
+	
+[Quectel_QLog_Linux&Android_V1.4.2]
+Date:   5/5/2020
+enhancement:
+  1.  support QLog do not quit when usb disconnect, will wait for usb re-connect, and continue to catch log
+fix:
+
+[Quectel_QLog_Linux&Android_V1.4]
+Date:   4/26/2020
+enhancement:
+  1.  support catching DUMP info for ASR chipset
+fix:
+
+[Quectel_QLog_Linux&Android_V1.3.5]
+Date:   4/6/2020
+enhancement:
+  1. support catch qxdm log via usbfs (no /dev/ttyUSB0)
+fix:
+
+[Quectel_QLog_Linux&Android_V1.3.4]
+Date:   3/9/2020
+enhancement:
+  1. add remote catch dump, save dump to tftp server, usage see example_catch_dump_by_tftp.readme.txt
+fix:
+
+[Quectel_QLog_Linux&Android_V1.3.3]
+Date:   12/17/2019
+enhancement:
+  1. Add copyright
+fix:
+	1. fix From 'France Sagemcom Randomly QLog 1.3.1 does not exit on kill signal'
+	
+[Quectel_QLog_Linux&Android_V1.3.1]
+Date:   10/12/2019
+enhancement:
+fix:
