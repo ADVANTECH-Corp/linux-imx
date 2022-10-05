@@ -25,9 +25,8 @@
 		board-cpu = "DualQuad";
 	};
 
-	regulators {
 
-		reg_usb_otg_vbus: usb_otg_vbus {
+	reg_usb_otg_vbus: usb_otg_vbus {
 			compatible = "regulator-fixed";
 			regulator-name = "usb_otg_vbus";
 			regulator-min-microvolt = <5000000>;
@@ -35,7 +34,7 @@
 			gpio = <&gpio4 15  GPIO_ACTIVE_HIGH>;
 			enable-active-high;
 		};
-	};
+
 
 	usdhc3_pwrseq: usdhc3_pwrseq {
                 compatible = "mmc-pwrseq-simple";
@@ -57,6 +56,14 @@
 		pinctrl-names = "default";
 		compatible = "gpio-set-direction";
 		usb-host-pwr-en = <&gpio1 19 1>; /* MINICARD_PWR_EN */
+	};
+
+	rtl8367 {
+		compatible = "realtek,rtl8367b";
+		pinctrl-names = "default";
+		gpio-sda = <&gpio5 5  GPIO_ACTIVE_HIGH>;
+		gpio-sck = <&gpio4 31 GPIO_ACTIVE_HIGH>;
+		realtek,extif0 = <1 0 1 1 1 1 1 1 2>;
 	};
 };
 
@@ -263,13 +270,13 @@
 		};
 	};
 
-//	usbotg {
-//		pinctrl_usbotg_pwr_1: usbotg_pwr_grp-1 {
-//			fsl,pins = <
-//				MX6QDL_PAD_KEY_ROW4__GPIO4_IO15		0x80000000	/* USB_OTG_PWR_EN */
-//			>;
-//		};
-//	};
+	usbotg {
+		pinctrl_usbotg_pwr_1: usbotg_pwr_grp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_KEY_ROW4__GPIO4_IO15		0x80000000	/* USB_OTG_PWR_EN */
+			>;
+		};
+	};
 
 
 	wdt{
@@ -387,11 +394,10 @@
 
 &usbotg {
 	pinctrl-names = "default";
-//	pinctrl-0 = <&pinctrl_usbotg_2 &pinctrl_usbotg_pwr_1>;
-        pinctrl-0 = <&pinctrl_usbotg_2>;
-        vbus-supply = <&reg_usb_otg_vbus>;
-        disable-over-current;
-        status = "okay";
+	pinctrl-0 = <&pinctrl_usbotg_2 &pinctrl_usbotg_pwr_1>;
+	vbus-supply = <&reg_usb_otg_vbus>;
+	disable-over-current;
+	status = "okay";
 };
 
 &usdhc2 {
