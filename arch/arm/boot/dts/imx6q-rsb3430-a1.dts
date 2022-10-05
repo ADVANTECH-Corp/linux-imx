@@ -128,6 +128,15 @@
 	};
 };
 
+&i2c3 {
+	pinctrl-0 = <&pinctrl_i2c3_2>;
+	24c02@50 {
+		compatible = "fsl,24c02";
+		reg = <0x50>;
+	};
+
+};
+
 &iomuxc {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_hog_1 &pinctrl_hog_2>;
@@ -285,8 +294,16 @@
 			>;
 		};
 	};
-};
 
+	i2c3 {
+        pinctrl_i2c3_2: i2c3grp-2 {
+            fsl,pins = <
+                MX6QDL_PAD_GPIO_5__I2C3_SCL 0x4001b8b1
+                MX6QDL_PAD_GPIO_6__I2C3_SDA 0x4001b8b1
+            >;
+        };
+    };
+};
 
 //&lcd {
 //	status = "disabled";
