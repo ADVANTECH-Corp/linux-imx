@@ -186,6 +186,16 @@ static struct imx_usbmisc_data *usbmisc_get_init_data(struct device *dev)
 			gpio_request_one(gpio_num, GPIOF_OUT_INIT_HIGH, "usb-power-en-gpio");
 		gpio_free(gpio_num);
 	}
+	gpio_num = of_get_named_gpio_flags(np, "power-reset-gpio", 0, &flag);
+	if(gpio_is_valid(gpio_num))
+	{
+		msleep(300);
+		if(flag)
+			gpio_request_one(gpio_num, GPIOF_OUT_INIT_LOW, "usb-reset-gpio");
+		else
+			gpio_request_one(gpio_num, GPIOF_OUT_INIT_HIGH, "usb-reset-gpio");
+		gpio_free(gpio_num);
+	}
 #endif
 	return data;
 }
