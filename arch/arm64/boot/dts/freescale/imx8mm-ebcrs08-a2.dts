@@ -71,6 +71,7 @@
 		off-on-delay-us = <20000>;
 		startup-delay-us = <100>;
 		enable-active-high;
+		status = "disabled";
 	};
 
 	reg_usdhc2_vmmc: regulator-usdhc2 {
@@ -100,13 +101,14 @@
                 #size-cells = <0>;
                 pinctrl-0 = <&pinctrl_lid_key>;
                 pinctrl-names = "default";
+                status = "disabled";
                 lid@1 {
                         label = "LID KEY";
                         gpios = <&gpio1 11 0>; /* GPIO_ACTIVE_LOW:1 */
                         linux,input-type = <1>; /* EV_KEY */
                         linux,code = <116>;     /* KEY_POWER */
                         wakeup-source;
-			debounce-interval = <100>;
+                        debounce-interval = <100>;
                 };
         };
 /*
