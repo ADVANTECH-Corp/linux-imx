@@ -1087,7 +1087,8 @@
         panel@0 {
                 compatible = "auo,g070vw01v0";
                 reg = <0>;
-		backlight=<&lvds_backlight0>;
+                backlight=<&lvds_backlight0>;
+                no-wakeup-init;
                 panel-init-sequence = [
                         29 00 06 3C 01 03 00 02 00
                         29 00 06 14 01 02 00 00 00
@@ -1116,6 +1117,14 @@
                         29 00 06 94 04 13 14 15 1B
                         29 14 06 98 04 18 19 1A 06
                         29 78 06 9C 04 31 00 00 00
+                ];
+                panel-on-sequence = [
+                        05 78 01 11
+                        05 78 01 29
+                ];
+                panel-off-sequence = [
+                        05 05 01 28
+                        05 78 01 10
                 ];
 	};
 

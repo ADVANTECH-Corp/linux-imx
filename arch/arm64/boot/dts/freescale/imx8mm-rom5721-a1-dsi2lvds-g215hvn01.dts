@@ -21,7 +21,8 @@
                 compatible = "auo,g215hvn01";
                 reg = <0>;
                 backlight=<&lvds_backlight0>;
-		panel-init-sequence = [
+                no-wakeup-init;
+                panel-init-sequence = [
                                 29 00 06 3C 01 0C 00 0A 00
                                 29 00 06 14 01 08 00 00 00
                                 29 00 06 64 01 0B 00 00 00
@@ -49,6 +50,14 @@
                                 29 00 06 94 04 13 14 15 1B
                                 29 14 06 98 04 18 19 1A 06
                                 29 78 06 9C 04 63 02 00 00
-		];
+                ];
+                panel-on-sequence = [
+                        05 78 01 11
+                        05 78 01 29
+                ];
+                panel-off-sequence = [
+                        05 05 01 28
+                        05 78 01 10
+                ];
 	};
 };
