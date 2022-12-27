@@ -1865,6 +1865,8 @@ static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE(0x1546, 0x1102) }, //for EWM-C109F601E
 	{ USB_DEVICE(0x1546, 0x1146) }, //for EWM-C117FL06E
 	{ USB_DEVICE(0x2020, 0x2040) }, //for EWM-C145(BM817)
+	{ USB_DEVICE(0x2949, 0x7401) }, //for N58 RNDIS
+	{ USB_DEVICE(0x2949, 0x7402) }, //for N58 ECM
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9003)}, /* Quectel UC20 */
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9090)}, /* Quectel UC15 */
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9215)}, /* Quectel EC20 */
@@ -2118,7 +2120,8 @@ static int option_probe(struct usb_serial *serial,
 				&serial->interface->cur_altsetting->desc;
 	unsigned long device_flags = id->driver_info;
 
-#if 1 //Added by Quectel
+#ifdef CONFIG_ARCH_ADVANTECH
+	//Added by Quectel
 	//Quectel UC20's interface 4 can be used as USB Network device
 	if (serial->dev->descriptor.idVendor == cpu_to_le16(0x05C6) && serial->dev->descriptor.idProduct == cpu_to_le16(0x9003)
 		&& serial->interface->cur_altsetting->desc.bInterfaceNumber >= 4)
@@ -2145,6 +2148,17 @@ static int option_probe(struct usb_serial *serial,
 				return -ENODEV;
 		}
 	}
+	
+	//support Neoway modules
+	if (serial->dev->descriptor.idVendor == 0x2949 &&
+		serial->dev->descriptor.idProduct == 0x7401 &&
+		serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
+		return -ENODEV;
+
+	if (serial->dev->descriptor.idVendor == 0x2949 &&
+		serial->dev->descriptor.idProduct == 0x7402 &&
+		serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
+		return -ENODEV;
 #endif
 
 	/* Never bind to the CD-Rom emulation interface	*/
