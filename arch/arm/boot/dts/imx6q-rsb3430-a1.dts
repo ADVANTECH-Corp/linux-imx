@@ -76,7 +76,8 @@
 	lvds-bkl-enable = <&gpio1 20 GPIO_ACTIVE_LOW>;
 	lvds-vcc-enable = <&gpio4 7 GPIO_ACTIVE_HIGH>;
 	bklt-vcc-enable = <&gpio4 6 GPIO_ACTIVE_HIGH>;
-	pwms = <&pwm4 0 5000000>;
+	pwms = <&pwm4 0 5000000 0>;
+	pwm-names = "LCD_BKLT_PWM";
 	status = "okay";
 };
 
