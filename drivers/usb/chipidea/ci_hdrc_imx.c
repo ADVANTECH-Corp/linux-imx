@@ -15,6 +15,9 @@
 #include <linux/pinctrl/consumer.h>
 #include <linux/pm_qos.h>
 #include <linux/busfreq-imx.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#endif
 
 #include "ci.h"
 #include "ci_hdrc_imx.h"
@@ -116,6 +119,10 @@ static struct imx_usbmisc_data *usbmisc_get_init_data(struct device *dev)
 	struct of_phandle_args args;
 	struct imx_usbmisc_data *data;
 	int ret;
+#ifdef CONFIG_ARCH_ADVANTECH
+        int gpio_num;
+        enum of_gpio_flags flag;
+#endif
 
 	/*
 	 * In case the fsl,usbmisc property is not present this device doesn't
@@ -177,6 +184,27 @@ static struct imx_usbmisc_data *usbmisc_get_init_data(struct device *dev)
 	of_property_read_u32(np, "samsung,picophy-dc-vol-level-adjust",
 			&data->dc_vol_level_adjust);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+        gpio_num = of_get_named_gpio_flags(np, "power-en-gpio", 0, &flag);
+        if(gpio_is_valid(gpio_num))
+        {
+                if(flag)
+                        gpio_request_one(gpio_num, GPIOF_OUT_INIT_LOW, "usb-power-en-gpio");
+                else
+                        gpio_request_one(gpio_num, GPIOF_OUT_INIT_HIGH, "usb-power-en-gpio");
+                gpio_free(gpio_num);
+        }
+        gpio_num = of_get_named_gpio_flags(np, "power-reset-gpio", 0, &flag);
+        if(gpio_is_valid(gpio_num))
+        {
+                msleep(300);
+                if(flag)
+                        gpio_request_one(gpio_num, GPIOF_OUT_INIT_LOW, "usb-reset-gpio");
+                else
+                        gpio_request_one(gpio_num, GPIOF_OUT_INIT_HIGH, "usb-reset-gpio");
+                gpio_free(gpio_num);
+        }
+#endif
 	return data;
 }
 
