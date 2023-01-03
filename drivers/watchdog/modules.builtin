@@ -1,0 +1,8 @@
+drivers/watchdog/watchdog.ko
+drivers/watchdog/sp805_wdt.ko
+drivers/watchdog/sbsa_gwdt.ko
+drivers/watchdog/dw_wdt.ko
+drivers/watchdog/watchdog_advantech.ko
+drivers/watchdog/imx2_wdt.ko
+drivers/watchdog/imx_sc_wdt.ko
+drivers/watchdog/xen_wdt.ko
