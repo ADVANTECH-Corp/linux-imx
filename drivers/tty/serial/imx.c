@@ -235,6 +235,10 @@ struct imx_port {
 	dma_cookie_t		rx_cookie;
 	unsigned int		tx_bytes;
 	unsigned int		dma_tx_nents;
+#ifdef CONFIG_ARCH_ADVANTECH
+    /* RS-485 fields */
+    struct serial_rs485     rs485;
+#endif
 	unsigned int            saved_reg[10];
 	bool			context_saved;
 
@@ -1958,6 +1962,39 @@ static int imx_uart_rs485_config(struct uart_port *port,
 	return 0;
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+/*
+ * Handle TIOCSRS485 & TIOCSRS485 ioctl for RS-485 support
+ */
+static int imx_uart_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
+{
+       struct serial_rs485 rs485conf;
+       struct imx_port *sport = (struct imx_port *)port;
+
+       switch (cmd) {
+               case TIOCSRS485:
+                       if (copy_from_user(&rs485conf,
+                           (struct serial_rs485 *) arg,
+                           sizeof(rs485conf)))
+                               return -EFAULT;
+                       imx_uart_rs485_config(port, &rs485conf);
+                       break;
+
+               case TIOCGRS485:
+                       if (copy_to_user((struct serial_rs485 *) arg,
+                           &(sport->rs485),
+                           sizeof(rs485conf)))
+                               return -EFAULT;
+                       break;
+
+               default:
+                       return -ENOIOCTLCMD;
+       }
+
+       return 0;
+}
+#endif
+
 static const struct uart_ops imx_uart_pops = {
 	.tx_empty	= imx_uart_tx_empty,
 	.set_mctrl	= imx_uart_set_mctrl,
@@ -1974,6 +2011,10 @@ static const struct uart_ops imx_uart_pops = {
 	.type		= imx_uart_type,
 	.config_port	= imx_uart_config_port,
 	.verify_port	= imx_uart_verify_port,
+#ifdef CONFIG_ARCH_ADVANTECH
+	.ioctl          = imx_uart_ioctl,
+#endif
+
 #if defined(CONFIG_CONSOLE_POLL)
 	.poll_init      = imx_uart_poll_init,
 	.poll_get_char  = imx_uart_poll_get_char,
