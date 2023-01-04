@@ -593,6 +593,14 @@ static void option_instat_callback(struct urb *urb);
 
 
 static const struct usb_device_id option_ids[] = {
+#ifdef CONFIG_ARCH_ADVANTECH //Added by Quectel
+	{ USB_DEVICE(0x05C6, 0x9090) }, /* Quectel UC15 */
+	{ USB_DEVICE(0x05C6, 0x9003) }, /* Quectel UC20 */
+	{ USB_DEVICE(0x05C6, 0x9215) }, /* Quectel EC20(MDM9215) */
+	{ USB_DEVICE(0x2C7C, 0x0125) }, /* Quectel EC20(MDM9x07)/EC25/EG25 */
+	{ USB_DEVICE(0x2C7C, 0x0121) }, /* Quectel EC21 */
+	{ .match_flags = USB_DEVICE_ID_MATCH_VENDOR, .idVendor = 0x2C7C }, /* Match All Quectel Modules */
+#endif
 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA_LIGHT) },
@@ -2188,6 +2196,9 @@ static struct usb_serial_driver option_1port_device = {
 #ifdef CONFIG_PM
 	.suspend           = usb_wwan_suspend,
 	.resume            = usb_wwan_resume,
+#ifdef CONFIG_ARCH_ADVANTECH //Added by Quectel
+	.reset_resume = usb_wwan_resume,
+#endif
 #endif
 };
 
@@ -2211,6 +2222,47 @@ static int option_probe(struct usb_serial *serial,
 	struct usb_interface_descriptor *iface_desc =
 				&serial->interface->cur_altsetting->desc;
 	unsigned long device_flags = id->driver_info;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	//Added by Quectel
+	//Quectel UC20's interface 4 can be used as USB Network device
+	if (serial->dev->descriptor.idVendor == cpu_to_le16(0x05C6) && serial->dev->descriptor.idProduct == cpu_to_le16(0x9003)
+		&& serial->interface->cur_altsetting->desc.bInterfaceNumber >= 4)
+		return -ENODEV;
+
+	//Quectel EC20(MDM9215)'s interface 4 can be used as USB Network device
+	if (serial->dev->descriptor.idVendor == cpu_to_le16(0x05C6) && serial->dev->descriptor.idProduct == cpu_to_le16(0x9215)
+		&& serial->interface->cur_altsetting->desc.bInterfaceNumber >= 4)
+		return -ENODEV;
+
+	if (serial->dev->descriptor.idVendor == cpu_to_le16(0x2C7C)) {
+		__u16 idProduct = le16_to_cpu(serial->dev->descriptor.idProduct);
+		struct usb_interface_descriptor *intf = &serial->interface->cur_altsetting->desc;
+
+		if (intf->bInterfaceClass != 0xFF || intf->bInterfaceSubClass == 0x42) {
+			//ECM, RNDIS, NCM, MBIM, ACM, UAC, ADB
+			return -ENODEV;
+		}
+
+		if ((idProduct&0xF000) == 0x0000) {
+			//MDM interface 4 is QMI
+			if (intf->bInterfaceNumber == 4 && intf->bNumEndpoints == 3
+				&& intf->bInterfaceSubClass == 0xFF && intf->bInterfaceProtocol == 0xFF)
+				return -ENODEV;
+		}
+	}
+	
+	//support Neoway modules
+	if (serial->dev->descriptor.idVendor == 0x2949 &&
+		serial->dev->descriptor.idProduct == 0x7401 &&
+		serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
+		return -ENODEV;
+
+	if (serial->dev->descriptor.idVendor == 0x2949 &&
+		serial->dev->descriptor.idProduct == 0x7402 &&
+		serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
+		return -ENODEV;
+#endif
 
 	/* Never bind to the CD-Rom emulation interface	*/
 	if (iface_desc->bInterfaceClass == USB_CLASS_MASS_STORAGE)
