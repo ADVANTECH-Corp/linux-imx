@@ -21,6 +21,7 @@
 	aliases {
 		spi0 = &flexspi;
 		rtc0 = &s35390a;
+		rtc1 = &snvs_rtc;
 	};
 
 	reg_sd1_vmmc: sd1_regulator {

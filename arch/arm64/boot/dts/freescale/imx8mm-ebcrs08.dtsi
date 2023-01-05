@@ -330,6 +330,10 @@
 	status = "disabled";
 };
 
+&snvs_rtc {
+	status = "disabled";
+};
+
 &snvs_pwrkey {
 	status = "disabled";
 };
