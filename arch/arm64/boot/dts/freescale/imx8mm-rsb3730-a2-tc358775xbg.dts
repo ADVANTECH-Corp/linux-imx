@@ -1,0 +1,63 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2019 NXP
+ */
+
+/dts-v1/;
+
+#include "imx8mm-rsb3730-a2.dts"
+/ {
+};
+
+&lt9611uxc {
+	status = "disabled";
+	/delete-node/ ports;
+};
+
+&lvds_pwr_vcc {
+	status = "okay";
+};
+
+&pwm4 {
+	status = "okay";
+};
+
+&lvds_backlight0 {
+	status = "okay";
+};
+
+&lt9211 {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+
+			lt9211_from_dsim: endpoint {
+				remote-endpoint = <&dsim_to_lt9211>;
+			};
+		};
+	};
+};
+
+&mipi_dsi {
+	status = "okay";
+	/delete-node/ port@1;
+
+	lvds_panel: panel@0 {
+		compatible = "lontium,lt9211_1280x800";	//lt9211_800x480 lt9211_1024x768 lt9211_1280x800 lt9211_1920x1080
+		reg = <0>;
+	};
+
+	port@1 {
+		dsim_to_lt9211: endpoint {
+			remote-endpoint = <&lt9211_from_dsim>;
+			attach-bridge;
+		};
+	};
+};
+
+
