@@ -55,7 +55,7 @@
 		#reset-cells = <0>;
 	};
 
-	lvds_backlight0: lvds_backlight@0 {
+	backlight0: backlight@0 {
 		compatible = "pwm-backlight";
 		pwms = <&pwm4 0 1000000 0>;
 		brightness-levels = < 0  1  2  3  4  5  6  7  8  9
@@ -107,15 +107,6 @@
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
 		gpio = <&gpio5 7 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-	};
-
-	lvds_pwr_vcc: lvds-pwr-vcc {
-		compatible = "regulator-fixed";
-		regulator-name = "lvds_pwr_vcc";
-		pinctrl-names = "default";
-		//pinctrl-0 = <&lvds_vdd_pwr>;
-		gpio = <&gpio4 30 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 	};
 
@@ -209,15 +200,6 @@
 	assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
 	assigned-clock-rates = <0>, <24576000>;
 	mute-gpios = <&gpio4 0 GPIO_ACTIVE_HIGH>;	//audio mute
-	status = "okay";
-};
-
-&sai6 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_sai6>;
-	assigned-clocks = <&clk IMX8MM_CLK_SAI6>;
-	assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
-	assigned-clock-rates = <0>, <24576000>;
 	status = "okay";
 };
 
@@ -457,20 +439,6 @@
 	scl-gpios = <&gpio5 16 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio5 17 GPIO_ACTIVE_HIGH>;
 	status = "okay";
-
-	lt9211:lt9211@2d {
-		compatible = "lontium,lt9211";
-		reg = <0x2d>;
-		status = "disabled";
-		power-supply = <&lvds_pwr_vcc>;
-		backlight = <&lvds_backlight0>;
-		bkl_pwr_gpio = <&gpio4 27 GPIO_ACTIVE_HIGH>;
-		bkl_en_gpio = <&gpio3 25 GPIO_ACTIVE_HIGH>;
-		reset_gpio = <&gpio1 14 GPIO_ACTIVE_HIGH>;
-		bus-format = <MEDIA_BUS_FMT_RGB888_1X7X4_SPWG>;	// MEDIA_BUS_FMT_RGB888_1X7X4_JEIDA MEDIA_BUS_FMT_RGB888_1X7X4_SPWG
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_lvds>;
-	};
 
 	wdt@29 {
 		compatible = "fsl,adv-wdt-i2c";
@@ -745,15 +713,6 @@
 			MX8MM_IOMUXC_SAI1_RXFS_GPIO4_IO0	0x19	/* MUTE */
 		>;
 	};
-	
-	pinctrl_sai6: sai6grp {
-		fsl,pins = <
-			MX8MM_IOMUXC_SAI1_RXD6_SAI6_TX_SYNC	0xd6	/* SAI6_LRCK */
-			MX8MM_IOMUXC_SAI1_RXD4_SAI6_TX_BCLK	0xd6	/* SAI6_CK */
-			MX8MM_IOMUXC_SAI1_TXD5_SAI6_TX_DATA0	0xd6	/* SAI6_SDOUT */
-			MX8MM_IOMUXC_SAI1_RXD5_SAI6_RX_DATA0	0xd6	/* SAI6_SDIN */
-		>;
-	};
 
 	pinctrl_uart1: uart1grp {
 		fsl,pins = <
@@ -974,11 +933,8 @@
 		>;
 	};
 
-	pinctrl_lvds: lvdsgrp {
+	pinctrl_bkl: bklgrp {
 		fsl,pins = <
-			MX8MM_IOMUXC_GPIO1_IO14_GPIO1_IO14	0x19		/* DSI_LT9211_RST */
-
-			MX8MM_IOMUXC_SAI3_RXD_GPIO4_IO30	0x116		/* LCD0_VDD_EN */
 			MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x19		/* LCD0_BKLT_PWR_EN */
 			MX8MM_IOMUXC_SAI5_MCLK_GPIO3_IO25	0x19		/* LCD0_BKLT_EN */
 		>;
@@ -1028,21 +984,20 @@
 	status = "okay";
 };
 
-&lvds_pwr_vcc {
-	status = "disabled";
-};
-
 &pwm4 {
 	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pwm4>;
 };
 
-&lvds_backlight0 {
+&backlight0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_bkl>;
+	bklt-vcc-enable = <&gpio4 27 1>;
+	lvds-bkl-enable = <&gpio3 25 1>;
 	status = "disabled";
 };
 
 &gpu {
 	status = "okay";
 };
-
