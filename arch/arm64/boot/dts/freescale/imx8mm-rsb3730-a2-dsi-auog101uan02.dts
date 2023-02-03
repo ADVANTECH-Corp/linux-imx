@@ -1,0 +1,44 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2019 NXP
+ */
+
+/dts-v1/;
+
+#include "imx8mm-rsb3730-a2.dts"
+
+/ {
+};
+
+&lt9611uxc {
+	status = "disabled";
+	/delete-node/ ports;
+};
+
+&mipi_dsi {
+	/delete-node/ port@1;
+
+	panel@0 {
+		compatible = "auo,g101uan02";
+		reg = <0>;
+		port {
+			panel1_in: endpoint {
+				remote-endpoint = <&dsim_to_tc35877>;
+			};
+		};
+	};
+
+	port@1 {
+		dsim_to_tc35877: endpoint {
+			remote-endpoint = <&panel1_in>;
+		};
+	};
+};
+
+&pwm4 {
+	status = "okay";
+};
+
+&backlight0 {
+	status = "okay";
+};
