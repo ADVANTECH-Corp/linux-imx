@@ -1,0 +1,93 @@
+/*
+ * Copyright 2018 NXP
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "imx8mm-rsb3730-a2.dts"
+
+/ {
+};
+
+&lt9611uxc {
+	status = "disabled";
+	/delete-node/ ports;
+};
+
+&mipi_dsi {
+	/delete-node/ port@1;
+
+	panel@0 {
+		compatible = "auo,g215hvn01";
+		reg = <0>;
+		backlight=<&backlight0>;
+		no-wakeup-init;
+		panel-init-sequence = [
+			29 00 06 3C 01 0C 00 0A 00
+			29 00 06 14 01 08 00 00 00
+			29 00 06 64 01 0B 00 00 00
+			29 00 06 68 01 0B 00 00 00
+			29 00 06 6C 01 0B 00 00 00
+			29 00 06 70 01 0B 00 00 00
+			29 00 06 34 01 1F 00 00 00
+			29 00 06 10 02 1F 00 00 00
+			29 00 06 04 01 01 00 00 00
+			29 00 06 04 02 01 00 00 00
+			29 00 06 50 04 20 01 F0 03
+			29 00 06 54 04 0A 00 14 00
+			29 00 06 58 04 80 07 96 00
+			29 00 06 5C 04 0A 00 14 00
+			29 00 06 60 04 38 04 14 00
+			29 00 06 64 04 01 00 00 00
+			29 01 06 A0 04 06 80 44 00
+			29 00 06 A0 04 06 80 04 00
+			29 00 06 04 05 04 00 00 00
+			29 00 06 80 04 00 01 02 03
+			29 00 06 84 04 04 07 05 08
+			29 00 06 88 04 09 0A 0E 0F
+			29 00 06 8C 04 0B 0C 0D 10
+			29 00 06 90 04 16 17 11 12
+			29 00 06 94 04 13 14 15 1B
+			29 14 06 98 04 18 19 1A 06
+			29 78 06 9C 04 63 02 00 00
+		];
+		panel-on-sequence = [
+			05 78 01 11
+			05 78 01 29
+		];
+		panel-off-sequence = [
+			05 05 01 28
+			05 78 01 10
+		];
+
+		port {
+			panel1_in: endpoint {
+				remote-endpoint = <&dsim_to_tc35877>;
+			};
+		};
+	};
+
+	port@1 {
+		dsim_to_tc35877: endpoint {
+			remote-endpoint = <&panel1_in>;
+		};
+	};
+};
+
+&pwm4 {
+	status = "okay";
+};
+
+&backlight0 {
+	status = "okay";
+	lvds-bkl-delay-time = <10>;
+	pwms = <&pwm4 0 5000000 0>;
+};
