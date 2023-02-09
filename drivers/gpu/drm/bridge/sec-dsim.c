@@ -278,8 +278,8 @@
 
 extern void enable_lcd_vdd_en(void);
 extern void enable_bridge_stdy_en(void);
-extern void enable_ldb_bkl_vcc(void);
-extern void enable_ldb_bkl_pwm(void);
+//extern void enable_ldb_bkl_vcc(void);
+//extern void enable_ldb_bkl_pwm(void);
 
 /* used for CEA standard modes */
 struct dsim_hblank_par {
@@ -1369,8 +1369,8 @@ static void sec_mipi_dsim_bridge_enable(struct drm_bridge *bridge)
 		return;
 	}
  
-        enable_ldb_bkl_vcc();
-	msleep(200);
+    //    enable_ldb_bkl_vcc();
+	//msleep(200);
 	/* config dphy timings */
 	sec_mipi_dsim_config_dphy(dsim);
 
@@ -1392,7 +1392,7 @@ static void sec_mipi_dsim_bridge_enable(struct drm_bridge *bridge)
 	
 
 
-    enable_ldb_bkl_pwm();
+    //enable_ldb_bkl_pwm();
 
 	/* enable panel if exists */
 	if (dsim->panel) {
