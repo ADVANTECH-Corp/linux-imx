@@ -935,6 +935,7 @@
 
 	pinctrl_bkl: bklgrp {
 		fsl,pins = <
+			MX8MM_IOMUXC_SAI3_RXD_GPIO4_IO30	0x10		/* LCD0_VDD_EN */
 			MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x19		/* LCD0_BKLT_PWR_EN */
 			MX8MM_IOMUXC_SAI5_MCLK_GPIO3_IO25	0x19		/* LCD0_BKLT_EN */
 		>;
@@ -993,6 +994,7 @@
 &backlight0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_bkl>;
+	lvds-vcc-enable = <&gpio4 30 1>;
 	bklt-vcc-enable = <&gpio4 27 1>;
 	lvds-bkl-enable = <&gpio3 25 1>;
 	status = "disabled";
