@@ -20,6 +20,7 @@
 
 	panel@0 {
 		compatible = "auo,g101uan02";
+		backlight=<&backlight0>;
 		reg = <0>;
 		port {
 			panel1_in: endpoint {
