@@ -938,6 +938,8 @@
 			MX8MM_IOMUXC_SAI3_RXD_GPIO4_IO30	0x10		/* LCD0_VDD_EN */
 			MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x19		/* LCD0_BKLT_PWR_EN */
 			MX8MM_IOMUXC_SAI5_MCLK_GPIO3_IO25	0x19		/* LCD0_BKLT_EN */
+			MX8MM_IOMUXC_GPIO1_IO12_GPIO1_IO12	0x19		/* LVDS_STBY */
+			MX8MM_IOMUXC_GPIO1_IO14_GPIO1_IO14	0x19		/* LVDS_RESET */
 		>;
 	};
 };
@@ -994,6 +996,8 @@
 &backlight0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_bkl>;
+	lvds-reset=<&gpio1 14 1>;
+	lvds-stby=<&gpio1 12 1>;
 	lvds-vcc-enable = <&gpio4 30 1>;
 	bklt-vcc-enable = <&gpio4 27 1>;
 	lvds-bkl-enable = <&gpio3 25 1>;
