@@ -88,5 +88,5 @@
 
 &backlight0 {
 	status = "okay";
-	lvds-bkl-delay-time = <100>;
+	lvds-bkl-delay-time = <150>;
 };

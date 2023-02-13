@@ -48,53 +48,6 @@ struct pwm_bl_data {
 	char			fb_id[16];
 };
 
-static void pwm_backlight_power_on(struct pwm_bl_data *pb)
-{
-	struct pwm_state state;
-	int err;
-
-	pwm_get_state(pb->pwm, &state);
-	if (pb->enabled)
-		return;
-
-	err = regulator_enable(pb->power_supply);
-	if (err < 0)
-		dev_err(pb->dev, "failed to enable power supply\n");
-
-	state.enabled = true;
-	pwm_apply_state(pb->pwm, &state);
-
-	if (pb->post_pwm_on_delay)
-		msleep(pb->post_pwm_on_delay);
-
-	if (pb->enable_gpio)
-		gpiod_set_value_cansleep(pb->enable_gpio, 1);
-
-	pb->enabled = true;
-}
-
-static void pwm_backlight_power_off(struct pwm_bl_data *pb)
-{
-	struct pwm_state state;
-
-	pwm_get_state(pb->pwm, &state);
-	if (!pb->enabled)
-		return;
-
-	if (pb->enable_gpio)
-		gpiod_set_value_cansleep(pb->enable_gpio, 0);
-
-	if (pb->pwm_off_delay)
-		msleep(pb->pwm_off_delay);
-
-	state.enabled = false;
-	state.duty_cycle = 0;
-	pwm_apply_state(pb->pwm, &state);
-
-	regulator_disable(pb->power_supply);
-	pb->enabled = false;
-}
-
 #ifdef CONFIG_ARCH_ADVANTECH
 int lvds_vcc_enable = -1;
 int lvds_bkl_enable = -1;
@@ -124,6 +77,16 @@ void enable_lcd_vdd_en(void)
 	}
 
 	printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
+}
+
+void disable_lcd_vdd_en(void)
+{
+	if (lvds_vcc_enable < 0)
+		return;
+	msleep(lvds_vcc_delay_value);
+	/* LVDS Panel power enable */
+	if (lvds_vcc_enable >= 0)
+		gpio_set_value_cansleep(lvds_vcc_enable, !lvds_vcc_flag);
 }
 
 void enable_bridge_stdy_en(void)
@@ -176,6 +139,19 @@ void enable_ldb_bkl_vcc(void)
 	printk(KERN_INFO "[LVDS Sequence] 4 Start to enable backlight PWM.\n");
 }
 
+void disable_ldb_bkl_vcc(void)
+{
+	if (bklt_vcc_enable < 0)
+		return;
+	mdelay(bklt_pwm_delay_value); // T8 for AUO 7"
+
+	// Backlight Off (VCC)
+	if (bklt_vcc_enable >= 0)
+		gpio_set_value_cansleep(bklt_vcc_enable, !bklt_vcc_flag);
+
+	mdelay(lvds_bkl_delay_value); // T4 for AUO 7"
+}
+
 void enable_ldb_bkl_pwm(void)
 {
 	if (lvds_bkl_enable < 0)
@@ -190,7 +166,74 @@ void enable_ldb_bkl_pwm(void)
 	}
 }
 
+void disable_ldb_bkl_pwm(void)
+{
+	if (lvds_bkl_enable < 0)
+		return;
+
+	// Backlight off (Display On/Off)
+	if (lvds_bkl_enable >= 0)
+		gpio_set_value_cansleep(lvds_bkl_enable, !lvds_bkl_flag);
+
+	mdelay(bklt_en_delay_value); // T9 for AUO 7"
+}
+
 #endif
+
+static void pwm_backlight_power_on(struct pwm_bl_data *pb)
+{
+	struct pwm_state state;
+	int err;
+
+	pwm_get_state(pb->pwm, &state);
+	if (pb->enabled)
+		return;
+
+	err = regulator_enable(pb->power_supply);
+	if (err < 0)
+		dev_err(pb->dev, "failed to enable power supply\n");
+
+	state.enabled = true;
+	pwm_apply_state(pb->pwm, &state);
+
+	if (pb->post_pwm_on_delay)
+		msleep(pb->post_pwm_on_delay);
+
+	if (pb->enable_gpio)
+		gpiod_set_value_cansleep(pb->enable_gpio, 1);
+
+	pb->enabled = true;
+}
+
+static void pwm_backlight_power_off(struct pwm_bl_data *pb)
+{
+	struct pwm_state state;
+
+	pwm_get_state(pb->pwm, &state);
+	if (!pb->enabled)
+		return;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	disable_ldb_bkl_pwm();
+#endif
+
+	if (pb->enable_gpio)
+		gpiod_set_value_cansleep(pb->enable_gpio, 0);
+
+	if (pb->pwm_off_delay)
+		msleep(pb->pwm_off_delay);
+
+	state.enabled = false;
+	state.duty_cycle = 0;
+	pwm_apply_state(pb->pwm, &state);
+
+	regulator_disable(pb->power_supply);
+	pb->enabled = false;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	disable_ldb_bkl_vcc();
+#endif
+}
 
 static int compute_duty_cycle(struct pwm_bl_data *pb, int brightness)
 {
@@ -220,16 +263,15 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
 	struct pwm_state state;
 
 
-#ifndef CONFIG_ARCH_ADVANTECH
+//#ifndef CONFIG_ARCH_ADVANTECH
 	if (bl->props.power != FB_BLANK_UNBLANK ||
 	    bl->props.fb_blank != FB_BLANK_UNBLANK ||
 	    bl->props.state & BL_CORE_FBBLANK)
 		brightness = 0;
-#endif
+//#endif
 
 	if (pb->notify)
 		brightness = pb->notify(pb->dev, brightness);
-
 
 	if (brightness > 0) {
 		pwm_get_state(pb->pwm, &state);
@@ -868,6 +910,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	bl->props.brightness = data->dft_brightness;
 	bl->props.power = pwm_backlight_initial_power_state(pb);
 
+#if 0
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH) //&& !defined(CONFIG_FB_MXC_DISP_FRAMEWORK)
 	/* Inorder to power off pwm backlight for SI test */
 	if (!of_machine_is_compatible("fsl,imx8mp")) {
@@ -875,6 +918,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	}
 
 	printk(KERN_INFO "[LVDS Sequence] 0 Set to power off pwm backlight at first.\n");
+#endif
 #endif
 
 #ifdef CONFIG_ARCH_ADVANTECH

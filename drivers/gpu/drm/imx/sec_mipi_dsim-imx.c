@@ -403,6 +403,16 @@ static int imx_sec_dsim_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+extern void disable_bridge_stdy_en(void);
+extern void disable_lcd_vdd_en(void);
+static void imx_sec_dsim_shutdown(struct platform_device *pdev)
+{
+	disable_bridge_stdy_en();
+	disable_lcd_vdd_en();
+}
+#endif
+
 #ifdef CONFIG_PM_SLEEP
 static int imx_sec_dsim_suspend(struct device *dev)
 {
@@ -493,6 +503,9 @@ static const struct dev_pm_ops imx_sec_dsim_pm_ops = {
 struct platform_driver imx_sec_dsim_driver = {
 	.probe    = imx_sec_dsim_probe,
 	.remove   = imx_sec_dsim_remove,
+#ifdef CONFIG_ARCH_ADVANTECH
+	.shutdown = imx_sec_dsim_shutdown,
+#endif
 	.driver   = {
 		.name = DRIVER_NAME,
 		.of_match_table = imx_sec_dsim_dt_ids,
