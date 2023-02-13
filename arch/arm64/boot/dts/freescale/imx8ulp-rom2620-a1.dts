@@ -404,6 +404,16 @@
 	status = "okay";
 };
 
+&lpi2c6 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&pinctrl_lpi2c6>;
+	pinctrl-1 = <&pinctrl_lpi2c6>;
+	status = "okay";
+};
+
 &lpi2c7 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -632,8 +642,10 @@
 		fsl,pins = <
 			MX8ULP_PAD_PTE10__LPUART6_TX	0x3
 			MX8ULP_PAD_PTE11__LPUART6_RX	0x3
+			/*
 			MX8ULP_PAD_PTE9__LPUART6_RTS_B	0x3
 			MX8ULP_PAD_PTE8__LPUART6_CTS_B	0x3
+			*/
 		>;
 	};
 
@@ -641,6 +653,13 @@
 		fsl,pins = <
 			MX8ULP_PAD_PTF22__LPUART7_TX	0x3
 			MX8ULP_PAD_PTF23__LPUART7_RX	0x3
+		>;
+	};
+
+	pinctrl_lpi2c6: lpi2c6grp {
+		fsl,pins = <
+			MX8ULP_PAD_PTE8__LPI2C6_SCL    0x20
+			MX8ULP_PAD_PTE9__LPI2C6_SDA    0x20
 		>;
 	};
 
