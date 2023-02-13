@@ -692,7 +692,10 @@
 
 	pinctrl_otgid2: usb2grp {
 		fsl,pins = <
+			MX8ULP_PAD_PTF0__USB1_ID	0x10003
+			/*
 			MX8ULP_PAD_PTD23__USB1_ID	0x10003
+			*/
 			MX8ULP_PAD_PTF6__USB1_OC	0x10003
 		>;
 	};
