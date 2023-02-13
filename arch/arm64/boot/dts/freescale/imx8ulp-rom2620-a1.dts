@@ -412,6 +412,11 @@
 	pinctrl-0 = <&pinctrl_lpi2c6>;
 	pinctrl-1 = <&pinctrl_lpi2c6>;
 	status = "okay";
+
+	eeprom0: 24c32@50 {
+		compatible = "st,24c32";
+		reg = <0x50>;
+	};
 };
 
 &lpi2c7 {
@@ -440,6 +445,11 @@
 		reg = <0x21>;
 		gpio-controller;
 		#gpio-cells = <2>;
+	};
+
+	eeprom1: 24c32@50 {
+		compatible = "st,24c32";
+		reg = <0x50>;
 	};
 };
 
