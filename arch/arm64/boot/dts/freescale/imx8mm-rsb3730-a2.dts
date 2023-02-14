@@ -919,14 +919,6 @@
 		>;
 	};
 
-	pinctrl_wlan: wlangrp {
-		fsl,pins = <
-			MX8MM_IOMUXC_SD1_DATA7_GPIO2_IO9                0x111	/* WL_WAKE_HOST */
-			MX8MM_IOMUXC_SD1_DATA6_GPIO2_IO8		0x111	/* BT_WAKE_HOST */
-			MX8MM_IOMUXC_SAI5_RXC_GPIO3_IO20		0x19	/* WL_PRESENT */
-		>;
-	};
-
 	pinctrl_pwm4: pwm4grp {
 		fsl,pins = <
 			MX8MM_IOMUXC_SAI3_MCLK_PWM4_OUT         0x06	/* LCD0_BKLT_PWM */
