@@ -111,6 +111,15 @@
                         debounce-interval = <100>;
                 };
         };
+        
+	misc-adv-gpio {
+		compatible = "misc-adv-gpio";
+		status = "okay";
+		minipcie-pwr-gpio = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+		minipcie-reset-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;
+		timing-interval = <300>;
+	};
+
 /*
         sound {
                 compatible = "fsl,sgtl5000",
@@ -253,8 +262,8 @@
 
 &usbotg2 {
 	dr_mode = "host";
-	power-en-gpio = <&gpio1 0 GPIO_ACTIVE_HIGH>;
-	power-reset-gpio = <&gpio1 1 GPIO_ACTIVE_HIGH>;
+	//power-en-gpio = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+	//power-reset-gpio = <&gpio1 1 GPIO_ACTIVE_HIGH>;
 
 	status = "okay";
 };
