@@ -392,8 +392,8 @@
 
 &usbotg2 {
 	dr_mode = "host";
-	power-en-gpio = <&gpio1 0 GPIO_ACTIVE_HIGH>;
-	power-reset-gpio = <&gpio1 1 GPIO_ACTIVE_HIGH>;
+	// power-en-gpio = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+	// power-reset-gpio = <&gpio1 1 GPIO_ACTIVE_HIGH>;
 
 	status = "okay";
 };

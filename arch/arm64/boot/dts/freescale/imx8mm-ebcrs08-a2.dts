@@ -34,6 +34,14 @@
 		enable-active-high;
 		status = "disabled";
 	};
+
+	misc-adv-gpio {
+		compatible = "misc-adv-gpio";
+		status = "okay";
+		minipcie-pwr-gpio = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+		minipcie-reset-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;
+		timing-interval = <300>;
+	};
 };
 
 &ddrc {
