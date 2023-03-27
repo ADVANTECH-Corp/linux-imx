@@ -330,8 +330,11 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
 	 * cycle.
 	 */
 	regmap_write(wdev->regmap, IMX2_WDT_WMCR, 0);
-
+#ifndef CONFIG_ARCH_ADVANTECH
 	return devm_watchdog_register_device(dev, wdog);
+#else
+	return 0;
+#endif
 }
 
 static void imx2_wdt_shutdown(struct platform_device *pdev)

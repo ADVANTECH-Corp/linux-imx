@@ -64,7 +64,6 @@ struct adv_wdt_device{
 };
 
 static bool nowayout = WATCHDOG_NOWAYOUT;
-static void *original_pm_power_off;
 
 module_param(nowayout, bool, 0);
 
@@ -373,9 +372,6 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	watchdog_init_timeout(&wdev->wdog, wdev->wdog.timeout, &client->dev);
 	watchdog_stop_ping_on_suspend(&wdev->wdog);
 
-	original_pm_power_off = pm_power_off;
-	pm_power_off=NULL;
-
 	dev_info(&client->dev,
 						"Advantech Watchdog Timer enabled. timeout=%ds (nowayout=%d), Ver.%d\n",
 						wdev->wdog.timeout, nowayout, tmp_version);
@@ -387,7 +383,6 @@ static int adv_wdt_remove(struct i2c_client *client)
 	struct adv_wdt_device *wdev = i2c_get_clientdata(client);
 
 	watchdog_unregister_device(&wdev->wdog);
-	pm_power_off = original_pm_power_off;
 
 	return 0;
 }
