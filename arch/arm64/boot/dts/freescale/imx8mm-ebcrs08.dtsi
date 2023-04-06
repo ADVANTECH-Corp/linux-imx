@@ -358,7 +358,8 @@
 &uart1 { /* BT */
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1>;
-	fsl,uart-has-rtscts;
+	/*fsl,uart-has-rtscts;*/
+	rts-gpios = <&gpio4 24 GPIO_ACTIVE_HIGH>;
 	linux,rs485-enabled-at-boot-time;
 	status = "okay";
 };
@@ -651,8 +652,9 @@
 		fsl,pins = <
 			MX8MM_IOMUXC_SAI2_RXC_UART1_DCE_RX     0x140
 			MX8MM_IOMUXC_SAI2_RXFS_UART1_DCE_TX     0x140
-			MX8MM_IOMUXC_SAI2_TXFS_UART1_DCE_CTS_B  0x140
+			/*MX8MM_IOMUXC_SAI2_TXFS_UART1_DCE_CTS_B  0x140*/
 			MX8MM_IOMUXC_SAI2_RXD0_UART1_DCE_RTS_B  0x140
+			MX8MM_IOMUXC_SAI2_TXFS_GPIO4_IO24		0x146
 		>;
 	};
 
