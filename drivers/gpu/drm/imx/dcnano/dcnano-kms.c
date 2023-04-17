@@ -174,8 +174,13 @@ int dcnano_kms_prepare(struct dcnano_dev *dcnano)
 
 	drm->mode_config.min_width	= 32;
 	drm->mode_config.min_height	= 32;
+#ifndef CONFIG_ARCH_ADVANTECH
 	drm->mode_config.max_width	= 1280;
 	drm->mode_config.max_height	= 1280;
+#else
+	drm->mode_config.max_width      = 1920; /* long term test */
+	drm->mode_config.max_height     = 1920; /* long term test */
+#endif
 	drm->mode_config.funcs		= &dcnano_mode_config_funcs;
 	drm->mode_config.helper_private	= &dcnano_mode_config_helpers;
 	drm->max_vblank_count		= DEBUGCOUNTERVALUE_MAX;

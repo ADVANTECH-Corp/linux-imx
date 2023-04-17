@@ -76,6 +76,87 @@ static const struct drm_display_mode default_mode = {
 	.height_mm = 122,
 };
 
+static const struct drm_display_mode lt9211_modes_800x480 = {
+	.clock = 33000,
+	.hdisplay = 800,
+	.hsync_start = 824,
+	.hsync_end = 896,
+	.htotal = 1000,
+	.vdisplay = 480,
+	.vsync_start = 483,
+	.vsync_end = 493,
+	.vtotal = 550,
+	.flags = 0,
+	.width_mm = 170,
+	.height_mm = 110,
+};
+
+static const struct drm_display_mode lt9211_modes_1920x1080 = {
+	.clock = 148500,
+	.hdisplay = 1920,
+	.hsync_start = 1920 + 58,
+	.hsync_end = 1920 + 58 + 34,
+	.htotal = 1920 + 58 + 34 + 88,
+	.vdisplay = 1080,
+	.vsync_start = 1080 + 4,
+	.vsync_end = 1080 + 4 + 5,
+	.vtotal = 1080 + 4 + 5 + 36,
+	.flags = 0,
+	.width_mm = 478,
+	.height_mm = 268,
+};
+
+/********************************/
+/********************************/
+/**  Advantech Panel Support   **/
+/********************************/
+/********************************/
+
+struct hx8394f_adv_panel {
+	char id[64];
+	struct drm_display_mode *mode;
+	unsigned long flags;
+};
+
+struct hx8394f_adv_panel *adv_panel_sel = NULL;
+
+struct hx8394f_adv_panel adv_panel_list[] = {
+	{
+		.id = "lontium,lt9211_1920x1080", /* auo,g215hvn01 */
+		.mode = &lt9211_modes_1920x1080,
+		.flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE |
+			 MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_NO_EOT_PACKET
+	}, {
+		.id = "lontium,lt9211_800x480",
+		.mode = &lt9211_modes_800x480,
+		.flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE |
+			 MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_NO_EOT_PACKET
+	}, {
+		/* sentinel */
+	}
+};
+
+static struct hx8394f_adv_panel* hx8394f_match_adv_panel(const char *target_id)
+{
+	struct hx8394f_adv_panel *match_panel = NULL;
+	int ilp = 0;
+
+	match_panel = &adv_panel_list[ilp];
+
+	while (match_panel)
+	{
+		if (!strcmp(target_id, match_panel->id)) {
+			printk("[ADV] %s@%d - find out match panel : %s\n", __func__, __LINE__, match_panel->id);
+			break;
+		}
+		ilp++;
+		match_panel = &adv_panel_list[ilp];
+	}
+
+	return match_panel;
+}
+//--------- Advantech Panel Support (End line)---------------//
+
 static inline struct hx8394f *panel_to_hx8394f(struct drm_panel *panel)
 {
 	return container_of(panel, struct hx8394f, panel);
@@ -250,7 +331,11 @@ static int hx8394f_enable(struct drm_panel *panel)
 	if (ctx->enabled)
 		return 0;
 
-	hx8394f_init_sequence(ctx);
+	if (!adv_panel_sel) {
+		/* do sequence initial for rockteck hx8394f */
+		dev_dbg(panel->dev, "Do sequence initial for rockteck hx8394f\n");
+		hx8394f_init_sequence(ctx);
+	}
 
 	/* Set tear ON */
 	ret = mipi_dsi_dcs_set_tear_on(dsi, MIPI_DSI_DCS_TEAR_MODE_VBLANK);
@@ -280,12 +365,21 @@ static int hx8394f_get_modes(struct drm_panel *panel,
 			     struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
+	struct drm_display_mode *mode_sel;
 
-	mode = drm_mode_duplicate(connector->dev, &default_mode);
+	if (!adv_panel_sel) {
+		dev_dbg(panel->dev, "Use default modes\n");
+		mode_sel = &default_mode;
+	} else {
+		dev_dbg(panel->dev, "Use advantech modes\n");
+		mode_sel = adv_panel_sel->mode;
+	}
+
+	mode = drm_mode_duplicate(connector->dev, mode_sel);
 	if (!mode) {
 		dev_err(panel->dev, "failed to add mode %ux%u@%u\n",
-			default_mode.hdisplay, default_mode.vdisplay,
-			drm_mode_vrefresh(&default_mode));
+			mode_sel->hdisplay, mode_sel->vdisplay,
+			drm_mode_vrefresh(mode_sel));
 		return -ENOMEM;
 	}
 
@@ -312,21 +406,26 @@ static int hx8394f_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
 	struct hx8394f *ctx;
+	const char *adv_panel_id;
 	int ret;
 
 	ctx = devm_kzalloc(dev, sizeof(*ctx), GFP_KERNEL);
 	if (!ctx)
 		return -ENOMEM;
 
+	if (!of_property_read_string(dev->of_node, "adv-panel", &adv_panel_id)) {
+		adv_panel_sel = hx8394f_match_adv_panel(adv_panel_id);
+	}
+
 	ctx->enable_gpio = devm_gpiod_get_optional(dev, "enable", GPIOD_OUT_LOW);
-	if (IS_ERR(ctx->enable_gpio)) {
+	if (IS_ERR(ctx->enable_gpio) && (adv_panel_sel == NULL)) {
 		ret = PTR_ERR(ctx->enable_gpio);
 		dev_err(dev, "failed to get enable GPIO: %d\n", ret);
 		return ret;
 	}
 
 	ctx->reset_gpio = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_LOW);
-	if (IS_ERR(ctx->reset_gpio)) {
+	if (IS_ERR(ctx->reset_gpio) && (adv_panel_sel == NULL)) {
 		ret = PTR_ERR(ctx->reset_gpio);
 		dev_err(dev, "failed to get reset GPIO: %d\n", ret);
 		return ret;
@@ -351,8 +450,14 @@ static int hx8394f_probe(struct mipi_dsi_device *dsi)
 	}
 
 	dsi->format = MIPI_DSI_FMT_RGB888;
-	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE |
-			  MIPI_DSI_MODE_LPM;
+
+	if (!adv_panel_sel) {
+		/* default rockteck hx8394f */
+		dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE |
+				  MIPI_DSI_MODE_LPM;
+	} else {
+		dsi->mode_flags = adv_panel_sel->flags;
+	}
 
 	drm_panel_init(&ctx->panel, dev, &hx8394f_drm_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
