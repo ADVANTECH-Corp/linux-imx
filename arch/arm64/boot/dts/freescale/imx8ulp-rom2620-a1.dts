@@ -658,6 +658,20 @@
 		>;
 	};
 
+	pinctrl_lvds: lvdsgrp {
+		fsl,pins = <
+			MX8ULP_PAD_PTD20__PTD20         0x2 /* DISP_VDD_EN */
+			MX8ULP_PAD_PTD21__PTD21         0x2 /* DISP_BL_EN */
+			MX8ULP_PAD_PTF7__PTF7           0x2 /* LVDS_RST */
+		>;
+	};
+
+	pinctrl_pwm: pwmgrp {
+		fsl,pins = <
+			MX8ULP_PAD_PTD19__PTD19         0x2 /* DISP_BL_PWM */
+		>;
+	};
+
 	pinctrl_cam: camgrp {
 		fsl,pins = <
 			MX8ULP_PAD_PTD22__PTD22		0x3 /* CAM_PWR */

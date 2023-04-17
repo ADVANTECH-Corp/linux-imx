@@ -414,10 +414,15 @@ static int nwl_dsi_config_dpi(struct nwl_dsi *dsi)
 			      dsi->mode.hdisplay);
 	}
 
+#ifndef CONFIG_ARCH_ADVANTECH
 	if (of_device_is_compatible(dsi->panel_bridge->of_node,
 				    "raydium,rm68200") ||
 	    of_device_is_compatible(dsi->panel_bridge->of_node,
 				    "rocktech,hx8394f")) {
+#else
+	if (of_device_is_compatible(dsi->panel_bridge->of_node,
+				    "raydium,rm68200")) {
+#endif
 		int bytes = mipi_dsi_pixel_format_to_bpp(dsi->format) >> 3;
 
 		/*

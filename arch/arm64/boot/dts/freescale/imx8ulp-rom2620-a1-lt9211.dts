@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright 2021,2022 NXP
+ */
+
+/*
+#include "imx8ulp-evk.dts"
+*/
+#include "imx8ulp-rom2620-a1.dts"
+#include "imx8ulp-rom2620-a1-lt9211.dtsi"

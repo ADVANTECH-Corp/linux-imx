@@ -1,0 +1,89 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright 2022 NXP
+ */
+
+#include <dt-bindings/display/dt-media-bus-format.h>
+
+/ {
+	pwm_backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&tpm_rpchip_0 2 50000 0>;
+		//pwms = <&tpm_rpchip_0 0 1000000 0>;
+		brightness-levels = < 0  1  2  3  4  5  6  7  8  9
+				     10 11 12 13 14 15 16 17 18 19
+				     20 21 22 23 24 25 26 27 28 29
+				     30 31 32 33 34 35 36 37 38 39
+				     40 41 42 43 44 45 46 47 48 49
+				     50 51 52 53 54 55 56 57 58 59
+				     60 61 62 63 64 65 66 67 68 69
+				     70 71 72 73 74 75 76 77 78 79
+				     80 81 82 83 84 85 86 87 88 89
+				     90 91 92 93 94 95 96 97 98 99
+				    100>;
+		default-brightness-level = <80>;
+		default-enable = <0>;
+	};
+
+	lvds_pwr_vcc: lvds-pwr-vcc {
+		compatible = "regulator-fixed";
+		regulator-name = "lvds_pwr_vcc";
+		pinctrl-names = "default";
+		gpio = <&gpiod 20 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+};
+
+/delete-node/ &ite_bridge;
+
+&lpi2c6 {
+	lt9211:lt9211@2d {
+		compatible = "lontium,lt9211";
+		reg = <0x2d>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_lvds>,<&pinctrl_pwm>;
+		power-supply = <&lvds_pwr_vcc>;
+		backlight = <&pwm_backlight>;
+		//bkl_pwr_gpio = <&gpiod 20 GPIO_ACTIVE_HIGH>;
+		bkl_en_gpio = <&gpiod 21 GPIO_ACTIVE_HIGH>;
+		reset_gpio = <&gpiof 7 GPIO_ACTIVE_HIGH>;
+		pwm_gpio = <&gpiod 19 GPIO_ACTIVE_HIGH>;
+		bus-format = <MEDIA_BUS_FMT_RGB888_1X7X4_SPWG>; // MEDIA_BUS_FMT_RGB888_1X7X4_JEIDA MEDIA_BUS_FMT_RGB888_1X7X4_SPWG
+		status = "okay";
+	};
+};
+
+&pwm_backlight {
+	status = "okay";
+};
+
+&lt9211 {
+	status = "okay";
+};
+
+&dsi {
+        panel@0 {
+                compatible = "rocktech,hx8394f";
+                reg = <0>;
+		adv-panel = "lontium,lt9211_1920x1080";
+		//adv-panel = "lontium,lt9211_800x480";
+		himax,dsi-lanes = <4>;
+
+                port {
+                        panel_in: endpoint {
+                                remote-endpoint = <&mipi_dsi_out>;
+                        };
+                };
+        };
+
+        ports {
+                port@1 {
+                        reg = <1>;
+
+                        mipi_dsi_out: endpoint {
+                                remote-endpoint = <&panel_in>;
+                        };
+                };
+        };
+};
+
