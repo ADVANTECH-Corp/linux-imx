@@ -1052,11 +1052,14 @@ static const struct of_device_id LT9211_dt_ids[] = {
     {.compatible = "lontium,lt9211",},
     {}
 };
+MODULE_DEVICE_TABLE(of, LT9211_dt_ids);
 
 static const struct i2c_device_id LT9211_id[] = {
     {"LT9211", 0 },
     { }
 };
+MODULE_DEVICE_TABLE(i2c, LT9211_id);
+
 struct i2c_driver LT9211_driver  = {
     .driver = {
         .owner	= THIS_MODULE,
@@ -1070,20 +1073,9 @@ struct i2c_driver LT9211_driver  = {
     .shutdown	= lt9211_shutdown,
 };
 
-static int __init LT9211_init(void)
-{
-    //printk("%s,%d\n",__func__,__LINE__);
-    return i2c_add_driver(&LT9211_driver);
-}
-
-static void __exit LT9211_exit(void)
-{
-    i2c_del_driver(&LT9211_driver);
-}
+module_i2c_driver(LT9211_driver);
 
 MODULE_AUTHOR("jxye@lontium.com");
-module_init(LT9211_init);
-module_exit(LT9211_exit);
 MODULE_LICENSE("GPL");
 
 
