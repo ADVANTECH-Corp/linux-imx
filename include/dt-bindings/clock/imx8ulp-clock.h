@@ -69,6 +69,48 @@
 
 #define IMX8ULP_CLK_CGC1_END			58
 
+/* CGC0 */
+#define IMX8ULP_CLK_CM33_SEL                1
+#define IMX8ULP_CLK_PLL0_PRE_SEL            2
+#define IMX8ULP_CLK_PLL0                    3
+#define IMX8ULP_CLK_PLL0_VCODIV             4
+#define IMX8ULP_CLK_PLL0_PFD0               5
+#define IMX8ULP_CLK_PLL0_PFD1               6
+#define IMX8ULP_CLK_PLL0_PFD2               7
+#define IMX8ULP_CLK_PLL0_PFD3               8
+#define IMX8ULP_CLK_PLL1_PRE_SEL            9
+#define IMX8ULP_CLK_PLL1                    10
+#define IMX8ULP_CLK_PLL1_PFD0               11
+#define IMX8ULP_CLK_PLL1_PFD1               12
+#define IMX8ULP_CLK_PLL1_PFD2               13
+#define IMX8ULP_CLK_PLL1_PFD3               14
+#define IMX8ULP_CLK_CGC0_SOSC_DIV1          15
+#define IMX8ULP_CLK_CGC0_SOSC_DIV1_GATE     16
+#define IMX8ULP_CLK_CGC0_SOSC_DIV2          17
+#define IMX8ULP_CLK_CGC0_SOSC_DIV2_GATE     18
+#define IMX8ULP_CLK_CGC0_SOSC_DIV3          19
+#define IMX8ULP_CLK_CGC0_SOSC_DIV3_GATE     20
+#define IMX8ULP_CLK_CGC0_FROSC_DIV1         21
+#define IMX8ULP_CLK_CGC0_FROSC_DIV1_GATE    22
+#define IMX8ULP_CLK_CGC0_FROSC_DIV2         23
+#define IMX8ULP_CLK_CGC0_FROSC_DIV2_GATE    24
+#define IMX8ULP_CLK_CGC0_FROSC_DIV3         25
+#define IMX8ULP_CLK_CGC0_FROSC_DIV3_GATE    26
+#define IMX8ULP_CLK_CGC0_DSP_SEL            27
+#define IMX8ULP_CLK_CGC0_DSP_CORE_DIV       28
+#define IMX8ULP_CLK_CGC0_DSP_BUS            29
+#define IMX8ULP_CLK_PLL1_VCODIV             30
+#define IMX8ULP_CLK_PLL0_PFD1_DIV           31
+#define IMX8ULP_CLK_PLL0_PFD1_DIV_GATE      32
+#define IMX8ULP_CLK_PLL0_PFD2_DIV           33
+#define IMX8ULP_CLK_PLL0_PFD2_DIV_GATE      34
+#define IMX8ULP_CLK_PLL1_PFD1_DIV           35
+#define IMX8ULP_CLK_PLL1_PFD1_DIV_GATE      36
+#define IMX8ULP_CLK_CM33_CORE_DIV           37
+#define IMX8ULP_CLK_CM33_BUSCLK             38
+
+#define IMX8ULP_CLK_CGC0_END			    39
+
 /* CGC2 */
 #define IMX8ULP_CLK_PLL4_PRE_SEL	0
 #define IMX8ULP_CLK_PLL4		1
@@ -121,6 +163,20 @@
 #define IMX8ULP_CLK_DSI_PHY_REF		48
 
 #define IMX8ULP_CLK_CGC2_END		49
+
+/* PCC0 */
+#define IMX8ULP_CLK_PCC0_END		0
+
+/* PCC1 */
+#define IMX8ULP_CLK_RGPIOA          0
+#define IMX8ULP_CLK_RGPIOB          1
+#define IMX8ULP_CLK_RGPIOC          2
+#define IMX8ULP_CLK_PCTLA           3
+#define IMX8ULP_CLK_PCTLB           4
+#define IMX8ULP_CLK_PCC1_END		5
+
+/* PCC2 */
+#define IMX8ULP_CLK_PCC2_END		0
 
 /* PCC3 */
 #define IMX8ULP_CLK_WDOG3		0
