@@ -13,6 +13,7 @@
 #include <linux/io.h>
 #include <linux/iopoll.h>
 #include <linux/slab.h>
+#include <linux/string.h>
 
 #include "clk.h"
 
@@ -48,6 +49,7 @@ struct clk_pllv4 {
 
 /* Valid PLL MULT Table */
 static const int pllv4_mult_table[] = {40, 33, 27, 22, 20, 17, 16};
+static const int pllv4_mult_table_pll0[] = {30, 25, 22, 20, 16, 15};
 
 #define to_clk_pllv4(__hw) container_of(__hw, struct clk_pllv4, hw)
 
@@ -82,6 +84,11 @@ static unsigned long clk_pllv4_recalc_rate(struct clk_hw *hw,
 	mult &= BM_PLL_MULT;
 	mult >>= BP_PLL_MULT;
 
+	if (!strncmp("pll0", clk_hw_get_name(hw), 4)) {
+		//printk("%s: name '%s' return rate %ld\n", __func__, clk_hw_get_name(hw), (parent_rate * mult));
+		return (parent_rate * mult);
+	}
+
 	mfn = readl_relaxed(pll->base + pll->num_offset);
 	mfd = readl_relaxed(pll->base + pll->denom_offset);
 	temp64 = parent_rate;
@@ -100,11 +107,21 @@ static long clk_pllv4_round_rate(struct clk_hw *hw, unsigned long rate,
 	bool found = false;
 	u64 temp64;
 
-	for (i = 0; i < ARRAY_SIZE(pllv4_mult_table); i++) {
-		round_rate = parent_rate * pllv4_mult_table[i];
-		if (rate >= round_rate) {
-			found = true;
-			break;
+	if (!strncmp("pll0", clk_hw_get_name(hw), 4)) {
+		for (i = 0; i < ARRAY_SIZE(pllv4_mult_table_pll0); i++) {
+			round_rate = parent_rate * pllv4_mult_table_pll0[i];
+			if (rate >= round_rate) {
+				found = true;
+				break;
+			}
+		}
+	} else {
+		for (i = 0; i < ARRAY_SIZE(pllv4_mult_table); i++) {
+			round_rate = parent_rate * pllv4_mult_table[i];
+			if (rate >= round_rate) {
+				found = true;
+				break;
+			}
 		}
 	}
 
@@ -138,14 +155,21 @@ static long clk_pllv4_round_rate(struct clk_hw *hw, unsigned long rate,
 	return round_rate + (u32)temp64;
 }
 
-static bool clk_pllv4_is_valid_mult(unsigned int mult)
+static bool clk_pllv4_is_valid_mult(struct clk_hw *hw, unsigned int mult)
 {
 	int i;
 
 	/* check if mult is in valid MULT table */
-	for (i = 0; i < ARRAY_SIZE(pllv4_mult_table); i++) {
-		if (pllv4_mult_table[i] == mult)
+	if (!strncmp("pll0", clk_hw_get_name(hw), 4)) {
+		for (i = 0; i < ARRAY_SIZE(pllv4_mult_table_pll0); i++) {
+			if (pllv4_mult_table_pll0[i] == mult)
 			return true;
+		}
+	} else {
+		for (i = 0; i < ARRAY_SIZE(pllv4_mult_table); i++) {
+			if (pllv4_mult_table[i] == mult)
+			return true;
+		}
 	}
 
 	return false;
@@ -160,7 +184,7 @@ static int clk_pllv4_set_rate(struct clk_hw *hw, unsigned long rate,
 
 	mult = rate / parent_rate;
 
-	if (!clk_pllv4_is_valid_mult(mult))
+	if (!clk_pllv4_is_valid_mult(hw, mult))
 		return -EINVAL;
 
 	if (parent_rate <= MAX_MFD)
@@ -176,6 +200,9 @@ static int clk_pllv4_set_rate(struct clk_hw *hw, unsigned long rate,
 	val |= mult << BP_PLL_MULT;
 	writel_relaxed(val, pll->base + pll->cfg_offset);
 
+	if (!strncmp("pll0", clk_hw_get_name(hw), 4))
+		return 0;
+
 	writel_relaxed(mfn, pll->base + pll->num_offset);
 	writel_relaxed(mfd, pll->base + pll->denom_offset);
 
@@ -186,6 +213,10 @@ static int clk_pllv4_prepare(struct clk_hw *hw)
 {
 	u32 val;
 	struct clk_pllv4 *pll = to_clk_pllv4(hw);
+
+	/* Don't toggle pll0 in Cortex-A35. It's used in CM33 */
+	if (!strncmp("pll0", clk_hw_get_name(hw), 4))
+		return 0;
 
 	val = readl_relaxed(pll->base);
 	val |= PLL_EN;
@@ -198,6 +229,10 @@ static void clk_pllv4_unprepare(struct clk_hw *hw)
 {
 	u32 val;
 	struct clk_pllv4 *pll = to_clk_pllv4(hw);
+
+	/* Don't toggle pll0 in Cortex-A35. It's used in CM33 */
+	if (!strncmp("pll0", clk_hw_get_name(hw), 4))
+		return;
 
 	val = readl_relaxed(pll->base);
 	val &= ~PLL_EN;
