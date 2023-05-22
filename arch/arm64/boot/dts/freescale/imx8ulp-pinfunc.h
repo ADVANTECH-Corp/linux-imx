@@ -10,6 +10,53 @@
  * The pin function ID is a tuple of
  * <mux_reg input_reg mux_mode input_val>
  */
+
+/* IOMUXC0 8ULP_IO_Definition_and_Package_Ballmap_RM.xlsx attached in Reference Manual*/
+#define MX8ULP_PAD_PTC0__FLEXSPI0_A_DQS                              0x0100 0x0000 0x8 0x0
+#define MX8ULP_PAD_PTC0__PTC0_GPIOC                                  0x0100 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC1__FLEXSPI0_A_DATA7                            0x0104 0x0000 0x8 0x0
+#define MX8ULP_PAD_PTC1__PTC1_GPIOC                                  0x0104 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC2__FLEXSPI0_A_DATA6                            0x0108 0x0000 0x8 0x0
+#define MX8ULP_PAD_PTC2__PTC2_GPIOC                                  0x0108 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC3__FLEXSPI0_A_DATA5                            0x010c 0x0000 0x8 0x0
+#define MX8ULP_PAD_PTC3__PTC3_GPIOC                                  0x010c 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC4__FLEXSPI0_A_DATA4                            0x0110 0x0000 0x8 0x0
+#define MX8ULP_PAD_PTC4__PTC4_GPIOC                                  0x0110 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC5__FLEXSPI0_A_SS0_B                            0x0114 0x0000 0x8 0x0
+#define MX8ULP_PAD_PTC5__PTC5_GPIOC                                  0x0114 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC6__FLEXSPI0_A_SCLK                             0x0118 0x0000 0x8 0x0
+#define MX8ULP_PAD_PTC6__PTC6_GPIOC                                  0x0118 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC7__FLEXSPI0_A_DATA3                            0x011c 0x0000 0x8 0x0
+#define MX8ULP_PAD_PTC7__PTC7_GPIOC                                  0x011c 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC8__FLEXSPI0_A_DATA2                            0x0120 0x0000 0x8 0x0
+#define MX8ULP_PAD_PTC8__PTC8_GPIOC                                  0x0120 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC9__FLEXSPI0_A_DATA1                            0x0124 0x0000 0x8 0x0
+#define MX8ULP_PAD_PTC9__PTC9_GPIOC                                  0x0124 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC10__FLEXSPI0_A_DATA0                           0x0128 0x0000 0x8 0x0
+#define MX8ULP_PAD_PTC10__PTC10_GPIOC                                0x0128 0x0000 0x1 0x0
+
+#define MX8ULP_PAD_PTC12__PTC12_GPIOC                                0x0130 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC18__PTC18_GPIOC                                0x0148 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC19__PTC19_GPIOC                                0x014c 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC20__PTC20_GPIOC                                0x0150 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC21__PTC21_GPIOC                                0x0154 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC22__PTC22_GPIOC                                0x0158 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC23__PTC23_GPIOC                                0x015c 0x0000 0x1 0x0
+
+#define MX8ULP_PAD_PTB0__PTB0_GPIOB                                  0x0080 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTB1__PTB1_GPIOB                                  0x0084 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTB5__PTB5_GPIOB                                  0x0094 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTB6__PTB6_GPIOB                                  0x0098 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTB12__PTB12_GPIOB                                0x00b0 0x0000 0x1 0x0
+
+#define MX8ULP_PAD_PTA5__PTA5_GPIOA                                  0x0014 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA6__PTA6_GPIOA                                  0x0018 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA12__PTA12_GPIOA                                0x0030 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA15__PTA15_GPIOA                                0x003c 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA16__PTA16_GPIOA                                0x0040 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA20__PTA20_GPIOA                                0x0050 0x0000 0x1 0x0
+/* end of IOMUX0 */
+
 #define MX8ULP_PAD_PTD0__PTD0                                        0x0000 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTD0__I2S6_RX_BCLK                                0x0000 0x0B44 0x7 0x1
 #define MX8ULP_PAD_PTD0__SDHC0_RESET_B                               0x0000 0x0000 0x8 0x0

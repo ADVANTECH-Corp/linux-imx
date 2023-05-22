@@ -273,6 +273,64 @@
 			status = "disabled";
 		};
 
+		per_bridge0: bus@28000000 {
+                        compatible = "simple-bus";
+                        reg = <0x28000000 0x800000>;
+                        #address-cells = <1>;
+                        #size-cells = <1>;
+                        ranges;
+
+                        cgc0: clock-controller@2802f000 {
+                                compatible = "fsl,imx8ulp-cgc0";
+                                reg = <0x2802f000 0x1000>;
+                                clocks = <&sosc>, <&frosc>;
+                                clock-names = "sosc", "frosc";
+                                #clock-cells = <1>;
+                        };
+
+                        pcc0: clock-controller@28030000 {
+                                compatible = "fsl,imx8ulp-pcc0";
+                                reg = <0x28030000 0x1000>;
+                                #clock-cells = <1>;
+                                #reset-cells = <1>;
+                        };
+                };
+
+		per_bridge1: bus@28080000 {
+			compatible = "simple-bus";
+			reg = <0x28080000 0x800000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges;
+
+			iomuxc0: pinctrl@280a1000 {
+				compatible = "fsl,imx8ulp-iomuxc0";
+				reg = <0x280a1000 0x10000>;
+			};
+
+			pcc1: clock-controller@28091000 {
+				compatible = "fsl,imx8ulp-pcc1";
+				reg = <0x28091000 0x10000>;
+				#clock-cells = <1>;
+				#reset-cells = <1>;
+			};
+		};
+
+		per_bridge2: bus@28100000 {
+                        compatible = "simple-bus";
+                        reg = <0x28100000 0x800000>;
+                        #address-cells = <1>;
+                        #size-cells = <1>;
+                        ranges;
+
+                        pcc2: clock-controller@28102000 {
+                                compatible = "fsl,imx8ulp-pcc2";
+                                reg = <0x28102000 0x10000>;
+                                #clock-cells = <1>;
+                                #reset-cells = <1>;
+                        };
+                };
+
 		per_bridge3: bus@29000000 {
 			compatible = "simple-bus";
 			reg = <0x29000000 0x800000>;
@@ -842,6 +900,50 @@
 				fsl,num-rx-queues = <1>;
 				status = "disabled";
 			};
+		};
+
+		gpioa: gpio@28800000 {
+				compatible = "fsl,imx8ulp-gpio", "fsl,imx7ulp-gpio";
+				reg = <0x28800080 0x1000>, <0x28800040 0x40>;
+				gpio-controller;
+				#gpio-cells = <2>;
+				interrupts = <GIC_SPI 121 IRQ_TYPE_LEVEL_HIGH>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				clocks = <&pcc1 IMX8ULP_CLK_RGPIOA>,
+					 <&pcc1 IMX8ULP_CLK_PCTLA>;
+				clock-names = "gpio", "port";
+
+				/* RM 8ULP_IO_Definition_and_Package_Ballmap_RM.xlsx */
+				gpio-ranges = <&iomuxc0 0 0 25>;
+		};
+
+		gpiob: gpio@28810000 {
+				compatible = "fsl,imx8ulp-gpio", "fsl,imx7ulp-gpio";
+				reg = <0x28810080 0x1000>, <0x28810040 0x40>;
+				gpio-controller;
+				#gpio-cells = <2>;
+				interrupts = <GIC_SPI 123 IRQ_TYPE_LEVEL_HIGH>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				clocks = <&pcc1 IMX8ULP_CLK_RGPIOB>,
+					 <&pcc1 IMX8ULP_CLK_PCTLB>;
+				clock-names = "gpio", "port";
+				gpio-ranges = <&iomuxc0 0 32 15>;
+		};
+
+		gpioc: gpio@28820000 {
+				compatible = "fsl,imx8ulp-gpio", "fsl,imx7ulp-gpio";
+				reg = <0x28820080 0x1000>, <0x28820040 0x40>;
+				gpio-controller;
+				#gpio-cells = <2>;
+				interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				clocks = <&pcc1 IMX8ULP_CLK_RGPIOC>,
+					 <&pcc1 IMX8ULP_CLK_RGPIOC>;
+				clock-names = "gpio", "port";
+				gpio-ranges = <&iomuxc0 0 64 24>;
 		};
 
 		gpioe: gpio@2d000080 {

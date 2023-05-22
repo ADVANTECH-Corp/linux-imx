@@ -17,6 +17,20 @@
 static const char * const pll_pre_sels[] = { "sosc", "frosc", };
 static const char * const a35_sels[] = { "frosc", "spll2", "sosc", "lvds", };
 static const char * const nic_sels[] = { "frosc", "spll3_pfd0", "sosc", "lvds", };
+static const char * const dsp_sels[] = { "frosc", "pll0_pfd0", "pll0_pfd1", "sosc", "dummy", "dummy", "pll0", "dummy", };
+static const char * const cm33_sels[] = { "frosc", "pll0_pfd0", "pll1_pfd0", "sosc", "dummy", "dummy", "pll0", "dummy", };
+
+/* Add PCC0/PCC2 from RM Table 35. Clock sources mapped to different PCC0/1/2 clock selects PCS */
+static const char * const pcc0_periph_bus_sels[] = { "dummy", "lposc", "cgc0_sosc_div2",
+						     "cgc0_frosc_div2", "cm33_busclk", "pll1_pfd1_div",
+						     "pll0_pfd2_div", "pll0_pfd1_div", };
+static const char * const pcc0_periph_plat_sels[] = { "dummy", "dummy", "dummy",
+						     "cgc0_sosc_div1", "cgc0_frosc_div1", "cm33_plat",
+						     "frosc", "pll0_pfd3", };
+static const char * const pcc2_periph_bus_sels[] = { "dummy", "lposc", "cgc0_sosc_div3",
+						     "cgc0_frosc_div3", "cgc0_dsp_bus_clk", "pll1_vcodiv",
+						     "pll0_pfd2_div", "pll0_pfd1_div", };
+
 static const char * const pcc3_periph_bus_sels[] = { "dummy", "lposc", "sosc_div2",
 						     "frosc_div2", "xbar_divbus", "spll3_pfd1_div1",
 						     "spll3_pfd0_div2", "spll3_pfd0_div1", };
@@ -60,6 +74,15 @@ struct pcc_reset_dev {
 
 #define PCC_SW_RST	BIT(28)
 #define to_pcc_reset_dev(_rcdev)	container_of(_rcdev, struct pcc_reset_dev, rcdev)
+
+static const u32 pcc0_resets[] = {
+};
+
+static const u32 pcc1_resets[] = {
+};
+
+static const u32 pcc2_resets[] = {
+};
 
 static const u32 pcc3_resets[] = {
 	0xa8, 0xac, 0xc8, 0xcc, 0xd0,
@@ -141,6 +164,81 @@ static int imx8ulp_pcc_reset_init(struct platform_device *pdev, void __iomem *ba
 	pcc_reset->rcdev.of_node = np;
 
 	return devm_reset_controller_register(dev, &pcc_reset->rcdev);
+}
+
+static int imx8ulp_clk_cgc0_init(struct platform_device *pdev)
+{
+	struct device *dev = &pdev->dev;
+	struct clk_hw_onecell_data *clk_data;
+	struct clk_hw **clks;
+	void __iomem *base;
+
+	clk_data = devm_kzalloc(dev, struct_size(clk_data, hws, IMX8ULP_CLK_CGC0_END),
+			   GFP_KERNEL);
+	if (!clk_data)
+		return -ENOMEM;
+
+	clk_data->num = IMX8ULP_CLK_CGC0_END;
+	clks = clk_data->hws;
+
+	/* CGC0 */
+	base = devm_platform_ioremap_resource(pdev, 0);
+	if (WARN_ON(IS_ERR(base)))
+		return PTR_ERR(base);
+
+	clks[IMX8ULP_CLK_PLL1_PRE_SEL]	= imx_clk_hw_mux_flags("pll1_pre_sel", base + 0x610, 0, 1, pll_pre_sels, ARRAY_SIZE(pll_pre_sels), CLK_SET_PARENT_GATE);
+	clks[IMX8ULP_CLK_PLL0_PRE_SEL]	= imx_clk_hw_mux_flags("pll0_pre_sel", base + 0x510, 0, 1, pll_pre_sels, ARRAY_SIZE(pll_pre_sels), CLK_SET_PARENT_GATE);
+	clks[IMX8ULP_CLK_CGC0_DSP_SEL] = imx_clk_hw_mux_flags("cgc0_dsp_sel", base + 0x1c, 28, 3, dsp_sels, ARRAY_SIZE(dsp_sels), CLK_SET_PARENT_GATE);
+
+	clks[IMX8ULP_CLK_CM33_SEL] = imx_clk_hw_mux_flags("cm33_sel", base + 0x10, 28, 3, cm33_sels, ARRAY_SIZE(cm33_sels), CLK_SET_PARENT_GATE);
+
+	clks[IMX8ULP_CLK_PLL1] = imx_clk_hw_pllv4(IMX_PLLV4_IMX8ULP, "pll1", "pll1_pre_sel", base + 0x600);
+	clks[IMX8ULP_CLK_PLL0] = imx_clk_hw_pllv4(IMX_PLLV4_IMX8ULP, "pll0", "pll0_pre_sel", base + 0x500);
+
+	clks[IMX8ULP_CLK_PLL0_VCODIV] = imx_clk_hw_divider("pll0_vcodiv", "pll0", base + 0x504, 0, 6);
+	clks[IMX8ULP_CLK_PLL1_VCODIV] = imx_clk_hw_divider("pll1_vcodiv", "pll1", base + 0x604, 0, 6);
+
+	clks[IMX8ULP_CLK_PLL0_PFD0] = imx_clk_hw_pfdv2(IMX_PFDV2_IMX8ULP, "pll0_pfd0", "pll0_vcodiv", base + 0x514, 0);
+	clks[IMX8ULP_CLK_PLL0_PFD1] = imx_clk_hw_pfdv2(IMX_PFDV2_IMX8ULP, "pll0_pfd1", "pll0_vcodiv", base + 0x514, 1);
+	clks[IMX8ULP_CLK_PLL0_PFD2] = imx_clk_hw_pfdv2(IMX_PFDV2_IMX8ULP, "pll0_pfd2", "pll0_vcodiv", base + 0x514, 2);
+	clks[IMX8ULP_CLK_PLL0_PFD3] = imx_clk_hw_pfdv2(IMX_PFDV2_IMX8ULP, "pll0_pfd3", "pll0_vcodiv", base + 0x514, 3);
+
+	clks[IMX8ULP_CLK_PLL1_PFD1] = imx_clk_hw_pfdv2(IMX_PFDV2_IMX8ULP, "pll1_pfd1", "pll1_vcodiv", base + 0x614, 1);
+
+	clks[IMX8ULP_CLK_CGC0_SOSC_DIV1_GATE] = imx_clk_hw_gate_dis("cgc0_sosc_div1_gate", "sosc", base + 0x108, 7);
+	clks[IMX8ULP_CLK_CGC0_SOSC_DIV1] = imx_clk_hw_divider("cgc0_sosc_div1", "cgc0_sosc_div1_gate", base + 0x108, 0, 6);
+	clks[IMX8ULP_CLK_CGC0_SOSC_DIV2_GATE] = imx_clk_hw_gate_dis("cgc0_sosc_div2_gate", "sosc", base + 0x108, 15);
+	clks[IMX8ULP_CLK_CGC0_SOSC_DIV2] = imx_clk_hw_divider("cgc0_sosc_div2", "cgc0_sosc_div2_gate", base + 0x108, 8, 6);
+	clks[IMX8ULP_CLK_CGC0_SOSC_DIV3_GATE] = imx_clk_hw_gate_dis("cgc0_sosc_div3_gate", "sosc", base + 0x108, 23);
+	clks[IMX8ULP_CLK_CGC0_SOSC_DIV3] = imx_clk_hw_divider("cgc0_sosc_div3", "cgc0_sosc_div3_gate", base + 0x108, 16, 6);
+
+	clks[IMX8ULP_CLK_CGC0_FROSC_DIV1_GATE] = imx_clk_hw_gate_dis("cgc0_frosc_div1_gate", "frosc", base + 0x220, 7);
+	clks[IMX8ULP_CLK_CGC0_FROSC_DIV1] = imx_clk_hw_divider("cgc0_frosc_div1", "cgc0_frosc_div1_gate", base + 0x220, 0, 6);
+	clks[IMX8ULP_CLK_CGC0_FROSC_DIV2_GATE] = imx_clk_hw_gate_dis("cgc0_frosc_div2_gate", "frosc", base + 0x220, 15);
+	clks[IMX8ULP_CLK_CGC0_FROSC_DIV2] = imx_clk_hw_divider("cgc0_frosc_div2", "cgc0_frosc_div2_gate", base + 0x220, 8, 6);
+	clks[IMX8ULP_CLK_CGC0_FROSC_DIV3_GATE] = imx_clk_hw_gate_dis("cgc0_frosc_div3_gate", "frosc", base + 0x220, 23);
+	clks[IMX8ULP_CLK_CGC0_FROSC_DIV3] = imx_clk_hw_divider("cgc0_frosc_div3", "cgc0_frosc_div3_gate", base + 0x220, 16, 6);
+
+	clks[IMX8ULP_CLK_CGC0_DSP_CORE_DIV] = imx_clk_hw_divider("cgc0_dsp_core_div", "cgc0_dsp_sel", base + 0x1c, 21, 6);
+	clks[IMX8ULP_CLK_CGC0_DSP_BUS] = imx_clk_hw_divider("cgc0_dsp_bus_clk", "cgc0_dsp_core_div", base + 0x1c, 7, 6);
+
+	clks[IMX8ULP_CLK_PLL0_PFD1_DIV_GATE] = imx_clk_hw_gate_dis("pll0_pfd1_div_gate", "pll0_pfd1", base + 0x508, 7);
+	clks[IMX8ULP_CLK_PLL0_PFD1_DIV] = imx_clk_hw_divider("pll0_pfd1_div", "pll0_pfd1_div_gate", base + 0x508, 0, 6);
+
+	clks[IMX8ULP_CLK_PLL0_PFD2_DIV_GATE] = imx_clk_hw_gate_dis("pll0_pfd2_div_gate", "pll0_pfd2", base + 0x508, 15);
+	clks[IMX8ULP_CLK_PLL0_PFD2_DIV] = imx_clk_hw_divider("pll0_pfd2_div", "pll0_pfd2_div_gate", base + 0x508, 8, 6);
+
+	clks[IMX8ULP_CLK_PLL1_PFD1_DIV_GATE] = imx_clk_hw_gate_dis("pll1_pfd1_div_gate", "pll1_pfd1", base + 0x608, 7);
+	clks[IMX8ULP_CLK_PLL1_PFD1_DIV] = imx_clk_hw_divider("pll1_pfd1_div", "pll1_pfd1_div_gate", base + 0x608, 0, 6);
+
+	clks[IMX8ULP_CLK_CM33_CORE_DIV] = imx_clk_hw_divider("cm33_core_div", "cm33_sel", base + 0x1c, 21, 6);
+	clks[IMX8ULP_CLK_CM33_BUSCLK] = imx_clk_hw_divider("cm33_busclk", "cm33_core_div", base + 0x10, 7, 6);
+
+	imx_check_clk_hws(clks, clk_data->num);
+
+	printk("CGC0 init exit\n");
+
+	return devm_of_clk_add_hw_provider(dev, of_clk_hw_onecell_get, clk_data);
 }
 
 static int imx8ulp_clk_cgc1_init(struct platform_device *pdev)
@@ -309,6 +407,117 @@ static int imx8ulp_clk_cgc2_init(struct platform_device *pdev)
 	imx_check_clk_hws(clks, clk_data->num);
 
 	return devm_of_clk_add_hw_provider(dev, of_clk_hw_onecell_get, clk_data);
+}
+
+static int imx8ulp_clk_pcc0_init(struct platform_device *pdev)
+{
+	struct device *dev = &pdev->dev;
+	struct clk_hw_onecell_data *clk_data;
+	struct clk_hw **clks;
+	void __iomem *base;
+	int ret;
+
+	clk_data = devm_kzalloc(dev, struct_size(clk_data, hws, IMX8ULP_CLK_PCC0_END),
+			   GFP_KERNEL);
+	if (!clk_data)
+		return -ENOMEM;
+
+	clk_data->num = IMX8ULP_CLK_PCC0_END;
+	clks = clk_data->hws;
+
+	/* PCC0 */
+	base = devm_platform_ioremap_resource(pdev, 0);
+	if (WARN_ON(IS_ERR(base)))
+		return PTR_ERR(base);
+
+	// Table 31. Synchronous Clocks used by each Platform and Peripherals: Real Time Domain
+	// Do-Nothing
+
+	imx_check_clk_hws(clks, clk_data->num);
+
+	ret = devm_of_clk_add_hw_provider(dev, of_clk_hw_onecell_get, clk_data);
+	if (ret)
+		return ret;
+
+	printk("PCC0 init exit\n");
+	/* register the pcc0 reset controller */
+	return imx8ulp_pcc_reset_init(pdev, base, pcc0_resets, ARRAY_SIZE(pcc0_resets));
+}
+
+static int imx8ulp_clk_pcc1_init(struct platform_device *pdev)
+{
+	struct device *dev = &pdev->dev;
+	struct clk_hw_onecell_data *clk_data;
+	struct clk_hw **clks;
+	void __iomem *base;
+	int ret;
+
+	clk_data = devm_kzalloc(dev, struct_size(clk_data, hws, IMX8ULP_CLK_PCC1_END),
+			   GFP_KERNEL);
+	if (!clk_data)
+		return -ENOMEM;
+
+	clk_data->num = IMX8ULP_CLK_PCC1_END;
+	clks = clk_data->hws;
+
+	/* PCC1 */
+	base = devm_platform_ioremap_resource(pdev, 0);
+	if (WARN_ON(IS_ERR(base)))
+		return PTR_ERR(base);
+
+	/* Figure 26. RGPIO clocking */
+	clks[IMX8ULP_CLK_RGPIOA] = imx_clk_hw_gate("rgpioa", "cm33_core_div", base + 0xb4, 30);
+	clks[IMX8ULP_CLK_RGPIOB] = imx_clk_hw_gate("rgpiob", "cm33_core_div", base + 0xb8, 30);
+	clks[IMX8ULP_CLK_RGPIOC] = imx_clk_hw_gate("rgpioc", "cm33_core_div", base + 0xbc, 30);
+
+	/* Figure 36. Digital filter clocking */
+	clks[IMX8ULP_CLK_PCTLA] = imx_clk_hw_gate("pctla", "cm33_core_div", base + 0x78, 30);
+	clks[IMX8ULP_CLK_PCTLB] = imx_clk_hw_gate("pctlb", "cm33_core_div", base + 0x7c, 30);
+
+	imx_check_clk_hws(clks, clk_data->num);
+
+	ret = devm_of_clk_add_hw_provider(dev, of_clk_hw_onecell_get, clk_data);
+	if (ret)
+		return ret;
+
+	printk("PCC1 init exit\n");
+	/* register the pcc1 reset controller */
+	return imx8ulp_pcc_reset_init(pdev, base, pcc1_resets, ARRAY_SIZE(pcc1_resets));
+}
+
+static int imx8ulp_clk_pcc2_init(struct platform_device *pdev)
+{
+	struct device *dev = &pdev->dev;
+	struct clk_hw_onecell_data *clk_data;
+	struct clk_hw **clks;
+	void __iomem *base;
+	int ret;
+
+	clk_data = devm_kzalloc(dev, struct_size(clk_data, hws, IMX8ULP_CLK_PCC2_END),
+			   GFP_KERNEL);
+	if (!clk_data)
+		return -ENOMEM;
+
+	clk_data->num = IMX8ULP_CLK_PCC2_END;
+	clks = clk_data->hws;
+
+	/* PCC2 */
+	base = devm_platform_ioremap_resource(pdev, 0);
+	if (WARN_ON(IS_ERR(base)))
+		return PTR_ERR(base);
+
+	// Synchronous Clocks used by each Platform and Peripherals: Real Time Domain
+	// Do-Nothing
+
+	imx_check_clk_hws(clks, clk_data->num);
+
+	ret = devm_of_clk_add_hw_provider(dev, of_clk_hw_onecell_get, clk_data);
+	if (ret)
+		return ret;
+
+	printk("PCC2 init exit\n");
+	/* register the pcc2 reset controller */
+	return imx8ulp_pcc_reset_init(pdev, base, pcc2_resets, ARRAY_SIZE(pcc2_resets));
 }
 
 static int imx8ulp_clk_pcc3_init(struct platform_device *pdev)
@@ -549,9 +758,13 @@ static int imx8ulp_clk_probe(struct platform_device *pdev)
 }
 
 static const struct of_device_id imx8ulp_clk_dt_ids[] = {
+	{ .compatible = "fsl,imx8ulp-pcc0", .data = imx8ulp_clk_pcc0_init },
+	{ .compatible = "fsl,imx8ulp-pcc1", .data = imx8ulp_clk_pcc1_init },
+	{ .compatible = "fsl,imx8ulp-pcc2", .data = imx8ulp_clk_pcc2_init },
 	{ .compatible = "fsl,imx8ulp-pcc3", .data = imx8ulp_clk_pcc3_init },
 	{ .compatible = "fsl,imx8ulp-pcc4", .data = imx8ulp_clk_pcc4_init },
 	{ .compatible = "fsl,imx8ulp-pcc5", .data = imx8ulp_clk_pcc5_init },
+	{ .compatible = "fsl,imx8ulp-cgc0", .data = imx8ulp_clk_cgc0_init },
 	{ .compatible = "fsl,imx8ulp-cgc2", .data = imx8ulp_clk_cgc2_init },
 	{ .compatible = "fsl,imx8ulp-cgc1", .data = imx8ulp_clk_cgc1_init },
 	{ /* sentinel */ },
