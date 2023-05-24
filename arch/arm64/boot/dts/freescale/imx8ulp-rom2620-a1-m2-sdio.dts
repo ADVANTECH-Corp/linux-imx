@@ -1,0 +1,52 @@
+#include "imx8ulp-rom2620-a1.dts"
+
+/ {
+	reg_sdhc2_vmmc: sdhc2_regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "WLAN_EN";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpioc 21 GPIO_ACTIVE_HIGH>;
+		off-on-delay-us = <20000>;
+		startup-delay-us = <100>;
+		enable-active-high;
+        };
+
+	lpuart4_mod_reset: lpuart4-mod-reset {
+                compatible = "gpio-reset";
+                reset-gpios = <&gpioc 22 GPIO_ACTIVE_LOW>;
+                reset-delay-us = <2000>;
+                reset-post-delay-ms = <40>;
+                #reset-cells = <0>;
+        };
+};
+
+&usdhc2_pwrseq {
+	reset-gpios = <&gpioc 23 GPIO_ACTIVE_LOW>; /* SDIO card */
+	power-off-delay-us = <2000>;
+	post-power-on-delay-ms = <40>;
+};
+
+&usdhc2 {
+	/delete-property/cd-gpios;
+	/delete-property/wp-gpios;
+	/delete-property/max-frequency;
+
+	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-0 = <&pinctrl_usdhc2_pte>, <&pinctrl_usdhc2_gpio>;
+	pinctrl-1 = <&pinctrl_usdhc2_pte>, <&pinctrl_usdhc2_gpio>;
+	pinctrl-2 = <&pinctrl_usdhc2_pte>, <&pinctrl_usdhc2_gpio>;
+	mmc-pwrseq = <&usdhc2_pwrseq>;
+	vmmc-supply = <&reg_sdhc2_vmmc>;
+};
+
+&lpuart4 {
+	/delete-property/pinctrl-1;
+
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_lpuart4>, <&pinctrl_lpuart4_gpio>;
+        fsl,uart-has-rtscts;
+        resets = <&lpuart4_mod_reset>;
+};
+
+

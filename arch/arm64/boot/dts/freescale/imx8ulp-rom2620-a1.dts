@@ -135,11 +135,42 @@
 		compatible = "mmc-pwrseq-simple";
 		reset-gpios = <&gpiof 26 GPIO_ACTIVE_LOW>;
 	};
+/*
+	usdhc2_pwrseq: usdhc2_pwrseq {
+                compatible = "mmc-pwrseq-simple";
+		reset-gpios = <&gpioc 23 GPIO_ACTIVE_LOW>;  //SDIO card
+		power-off-delay-us = <2000>;
+		post-power-on-delay-ms = <40>;
+        };
+*/
+
+/*
+	lpuart4_mod_reset: lpuart4-mod-reset {
+		compatible = "gpio-reset";
+		reset-gpios = <&gpioc 22 GPIO_ACTIVE_LOW>;
+		reset-delay-us = <2000>;
+		reset-post-delay-ms = <40>;
+		#reset-cells = <0>;
+	};
+*/
 
 	bt_sco_codec: bt_sco_codec {
 		#sound-dai-cells = <1>;
 		compatible = "linux,bt-sco";
 	};
+
+/*
+	reg_sd1_vmmc: sd1_regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "WLAN_EN";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpioc 21 GPIO_ACTIVE_HIGH>;
+		off-on-delay-us = <20000>;
+		startup-delay-us = <100>;
+		enable-active-high;
+	};
+*/
 
 	sound {
 		compatible = "fsl,sgtl5000",
@@ -338,6 +369,16 @@
 	status = "okay";
 };
 
+/*
+&lpuart4 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_lpuart4>, <&pinctrl_lpuart4_gpio>;
+	fsl,uart-has-rtscts;
+	resets = <&lpuart4_mod_reset>;
+        status = "okay";
+};
+*/
+
 &lpuart5 {
 	/* console */
 	pinctrl-names = "default", "sleep";
@@ -500,6 +541,22 @@
 	status = "okay";
 };
 
+/*
+&usdhc2 {
+	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-0 = <&pinctrl_usdhc2_pte>, <&pinctrl_usdhc2_gpio>;
+	pinctrl-1 = <&pinctrl_usdhc2_pte>, <&pinctrl_usdhc2_gpio>;
+	pinctrl-2 = <&pinctrl_usdhc2_pte>, <&pinctrl_usdhc2_gpio>;
+	bus-width = <4>;
+	mmc-pwrseq = <&usdhc2_pwrseq>;
+	vmmc-supply = <&reg_sd1_vmmc>;
+	keep-power-in-suspend;
+	fsl,sdio-async-interrupt-enabled;
+	no-1-8-v;
+	status = "okay";
+};
+*/
+
 &tpm7 {
 	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&pinctrl_tpm7>;
@@ -526,9 +583,23 @@
                         MX8ULP_PAD_PTC18__PTC18_GPIOC   0x3
                         MX8ULP_PAD_PTC19__PTC19_GPIOC   0x3
                         MX8ULP_PAD_PTC20__PTC20_GPIOC   0x3
-                        MX8ULP_PAD_PTC21__PTC21_GPIOC   0x3
-                        MX8ULP_PAD_PTC22__PTC22_GPIOC   0x3
-                        MX8ULP_PAD_PTC23__PTC23_GPIOC   0x3
+                        /* MX8ULP_PAD_PTC21__PTC21_GPIOC   0x3 */
+                        /* MX8ULP_PAD_PTC22__PTC22_GPIOC   0x3 */
+                        /* MX8ULP_PAD_PTC23__PTC23_GPIOC   0x3 */
+
+                >;
+        };
+
+	pinctrl_usdhc2_gpio: usdhc2grpgpio {
+		fsl,pins = <
+			MX8ULP_PAD_PTC21__PTC21_GPIOC   0x3  /* M2_SDIO_RST */
+			MX8ULP_PAD_PTC23__PTC23_GPIOC   0x3  /* W_DISABLE1 */
+		>;
+	};
+
+	pinctrl_lpuart4_gpio: lpuart4grpgpio {
+                fsl,pins = <
+                        MX8ULP_PAD_PTC22__PTC22_GPIOC   0x2  /* W_DISABLE2 */
                 >;
         };
 };
@@ -541,7 +612,7 @@
                 fsl,pins = <
                         MX8ULP_PAD_PTD12__PTD12         0x3
                         MX8ULP_PAD_PTD13__PTD13         0x3
-                        //MX8ULP_PAD_PTD19__PTD19         0x3
+                        /* MX8ULP_PAD_PTD19__PTD19         0x3 */
                         MX8ULP_PAD_PTF1__PTF1           0x3
                 >;
         };
