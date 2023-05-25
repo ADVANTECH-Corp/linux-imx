@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2019 NXP
+ */
+
+#define LVDS_PANEL
+#define LVDS_SINGLE_0
+#define LVDS_AUO_7
+#include "imx8mp-rsb3720-a1.dts"
