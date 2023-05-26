@@ -1034,6 +1034,15 @@ static int pca9450_i2c_probe(struct i2c_client *i2c,
 		return ret;
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	ret = regmap_write(pca9450->regmap, PCA9450_REG_CONFIG2, 0x03);
+	if (ret) {
+		dev_err(&i2c->dev, "%s(): Write PCA9450_CONFIG2 failed!\n",
+					__func__);
+		return ret;
+	}
+#endif
+
 	/*
 	 * The driver uses the LDO5CTRL_H register to control the LDO5 regulator.
 	 * This is only valid if the SD_VSEL input of the PMIC is high. Let's
