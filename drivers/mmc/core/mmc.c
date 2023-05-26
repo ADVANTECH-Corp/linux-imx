@@ -1884,6 +1884,22 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	 * be used with Command Queue.
 	 */
 	card->ext_csd.cmdq_en = false;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (card->ext_csd.cmdq_support && host->caps2 & MMC_CAP2_CQE &&
+		!device_property_read_bool(host->parent, "cqe-disabled")) {
+		err = mmc_cmdq_enable(card);
+		if (err && err != -EBADMSG)
+			goto free_card;
+		if (err) {
+			pr_warn("%s: Enabling CMDQ failed\n",
+				mmc_hostname(card->host));
+			card->ext_csd.cmdq_support = false;
+			card->ext_csd.cmdq_depth = 0;
+			err = 0;
+		}
+	}
+#else
 	if (card->ext_csd.cmdq_support && host->caps2 & MMC_CAP2_CQE) {
 		err = mmc_cmdq_enable(card);
 		if (err && err != -EBADMSG)
@@ -1895,6 +1911,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			card->ext_csd.cmdq_depth = 0;
 		}
 	}
+#endif
 	/*
 	 * In some cases (e.g. RPMB or mmc_test), the Command Queue must be
 	 * disabled for a time, so a flag is needed to indicate to re-enable the
