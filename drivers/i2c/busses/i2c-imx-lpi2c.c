@@ -118,7 +118,6 @@ struct lpi2c_imx_struct {
 	unsigned int		txfifosize;
 	unsigned int		rxfifosize;
 	enum lpi2c_imx_mode	mode;
-
 	struct i2c_bus_recovery_info rinfo;
 	struct pinctrl *pinctrl;
 	struct pinctrl_state *pinctrl_pins_default;
@@ -135,6 +134,7 @@ struct lpi2c_imx_struct {
 	enum dma_data_direction dma_direction;
 	u8			*dma_buf;
 	unsigned int		dma_len;
+	int			pec_requested;
 };
 
 static void lpi2c_imx_intctrl(struct lpi2c_imx_struct *lpi2c_imx,
@@ -462,11 +462,11 @@ static void lpi2c_imx_read_rxfifo(struct lpi2c_imx_struct *lpi2c_imx)
 	/* multiple receive commands */
 	if (lpi2c_imx->block_data) {
 		lpi2c_imx->block_data = 0;
-		temp = remaining;
-		temp |= (RECV_DATA << 8);
-		writel(temp, lpi2c_imx->base + LPI2C_MTDR);
-	} else if (!(lpi2c_imx->delivered & 0xff)) {
-		temp = (remaining > CHUNK_DATA ? CHUNK_DATA : remaining) - 1;
+		// using blocklen instead of remaining, otherwise we risk
+		// doing too many reads
+		temp = blocklen - 1;
+		// because we forced 2 bytes previously
+		if (!lpi2c_imx->pec_requested) temp--;
 		temp |= (RECV_DATA << 8);
 		writel(temp, lpi2c_imx->base + LPI2C_MTDR);
 	}
@@ -486,14 +486,38 @@ static void lpi2c_imx_read(struct lpi2c_imx_struct *lpi2c_imx,
 			   struct i2c_msg *msgs)
 {
 	unsigned int temp;
+	int msg_len;
 
 	lpi2c_imx->rx_buf = msgs->buf;
 	lpi2c_imx->block_data = msgs->flags & I2C_M_RECV_LEN;
 
 	lpi2c_imx_set_rx_watermark(lpi2c_imx);
-	temp = msgs->len > CHUNK_DATA ? CHUNK_DATA - 1 : msgs->len - 1;
-	temp |= (RECV_DATA << 8);
-	writel(temp, lpi2c_imx->base + LPI2C_MTDR);
+
+	if (lpi2c_imx->block_data) {
+
+		// we need to know if PEC byte is needed
+		if (msgs->len == 2) lpi2c_imx->pec_requested = 1;
+		else lpi2c_imx->pec_requested = 0;
+		// always force a 2 byte transfer as a workaround for early NAK
+		temp = (RECV_DATA << 8) | 1;
+		writel(temp, lpi2c_imx->base + LPI2C_MTDR);
+
+	} else {
+
+		msg_len = msgs->len;
+
+		while (msg_len > CHUNK_DATA) {
+			temp = CHUNK_DATA - 1;
+			temp |= (RECV_DATA << 8);
+			writel(temp, lpi2c_imx->base + LPI2C_MTDR);
+			msg_len -= CHUNK_DATA;
+		}
+
+		temp = msg_len - 1;
+		temp |= (RECV_DATA << 8);
+		writel(temp, lpi2c_imx->base + LPI2C_MTDR);
+
+	}
 
 	lpi2c_imx_intctrl(lpi2c_imx, MIER_RDIE | MIER_NDIE);
 }
@@ -735,6 +759,9 @@ static int lpi2c_imx_xfer(struct i2c_adapter *adapter,
 			if (result)
 				goto stop;
 		}
+
+		// length needs to be updates for PEC check
+		msgs[i].len = lpi2c_imx->msglen;
 	}
 
 stop:
