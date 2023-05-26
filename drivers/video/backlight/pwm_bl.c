@@ -111,7 +111,7 @@ void enable_lcd_vdd_en(void)
 	if (lvds_vcc_enable >= 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD.\n");
-		gpio_set_value(lvds_vcc_enable, lvds_vcc_flag);
+		gpio_set_value_cansleep(lvds_vcc_enable, lvds_vcc_flag);
 	}
 
 	printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
@@ -130,7 +130,7 @@ void enable_ldb_bkl_vcc(void)
 	if (bklt_vcc_enable >= 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 3 Start to enable backlight VCC.\n");
-		gpio_set_value(bklt_vcc_enable, bklt_vcc_flag);
+		gpio_set_value_cansleep(bklt_vcc_enable, bklt_vcc_flag);
 	}
 
 	mdelay(bklt_pwm_delay_value); // T8 for AUO 7"
@@ -145,7 +145,7 @@ void enable_ldb_bkl_pwm(void)
 	if (lvds_bkl_enable >= 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 5 Start to enable LVDS backlight.\n");
-		gpio_set_value(lvds_bkl_enable, lvds_bkl_flag);
+		gpio_set_value_cansleep(lvds_bkl_enable, lvds_bkl_flag);
 	}
 }
 
@@ -154,7 +154,7 @@ void disable_lcd_vdd_en(void)
 	if (lvds_vcc_enable >= 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 5 Start to disable LVDS VDD.\n");
-		gpio_set_value(lvds_vcc_enable, (lvds_vcc_flag)?0:1);
+		gpio_set_value_cansleep(lvds_vcc_enable, (lvds_vcc_flag)?0:1);
 	}
 }
 
@@ -165,7 +165,7 @@ void disable_ldb_bkl_vcc(void)
 	if (bklt_vcc_enable >= 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 3 Start to disable backlight VCC.\n");
-		gpio_set_value(bklt_vcc_enable, (bklt_vcc_flag)?0:1);
+		gpio_set_value_cansleep(bklt_vcc_enable, (bklt_vcc_flag)?0:1);
 	}
 
 	printk(KERN_INFO "[LVDS Sequence] 4 Start to disable LVDS signal.\n");
@@ -176,7 +176,7 @@ void disable_ldb_bkl_pwm(void)
 	if (lvds_bkl_enable >= 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 1 Start to disable LVDS backlight.\n");
-		gpio_set_value(lvds_bkl_enable, (lvds_bkl_flag)?0:1);
+		gpio_set_value_cansleep(lvds_bkl_enable, (lvds_bkl_flag)?0:1);
 	}
 
 	mdelay(bklt_en_disable_delay_value);

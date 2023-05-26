@@ -15,7 +15,7 @@
 	panel@0 {
 		compatible = "auo,g101uan02";
 		reg = <0>;
-		pinctrl-0 = <&pinctrl_mipi_dsi_en &pinctrl_mipi_dsi_bklt_vcc_en &pinctrl_mipi_dsi_bklt_en>;
+		pinctrl-0 = <&pinctrl_mipi_dsi_en &pinctrl_mipi_dsi_bklt_vcc_en>;
 		dsi-vcc-enable-gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;      /* LCD_VDD_EN */
 		bklt-vcc-enable-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;      /* VDD_BKLT1_EN */
 		bklt-enable-gpio = <&gpio_exp2 7 GPIO_ACTIVE_LOW>;        /* LCD_BKLT1_EN */
@@ -44,12 +44,6 @@
 	pinctrl_mipi_dsi_bklt_vcc_en: mipi_dsi_bklt_vcc_en_grp {
 		fsl,pins = <
 			MX8MP_IOMUXC_GPIO1_IO01__GPIO1_IO01     0x19    /* VDD_BKLT1_EN */
-		>;
-	};
-
-	pinctrl_mipi_dsi_bklt_en: mipi_dsi_bklt_en_grp {
-		fsl,pins = <
-			MX8MP_IOMUXC_ECSPI2_SCLK__GPIO5_IO10    0x19    /* LCD_BKLT1_EN */
 		>;
 	};
 };
