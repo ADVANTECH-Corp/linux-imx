@@ -134,6 +134,7 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mp-evk-ndm.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mp-rsb3720-a1-lvds1-auo.dtb \
 						  imx8mp-rsb3720-a1-lvds-dual.dtb \
 						  imx8mp-rsb3720-a1-adv7535.dtb \
+						  imx8mp-rsb3720-a1-auog101uan02.dtb \
 						  imx8mp-rsb3720-a1.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mq-evk.dtb imx8mq-evk-rpmsg.dtb imx8mq-evk-pcie1-m2.dtb imx8mq-evk-usd-wifi.dtb \
 			  imx8mq-evk-usdhc2-m2.dtb
