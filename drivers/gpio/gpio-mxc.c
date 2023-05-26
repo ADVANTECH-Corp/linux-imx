@@ -480,11 +480,21 @@ static int mxc_gpio_probe(struct platform_device *pdev)
 		port->mx_irq_handler = mx3_gpio_irq_handler;
 
 	mxc_update_irq_chained_handler(port, true);
+	
+#ifdef CONFIG_ARCH_ADVANTECH
+	err = bgpio_init(&port->gc, &pdev->dev, 4,
+                         port->base + GPIO_DR,
+                         port->base + GPIO_DR, NULL,
+                         port->base + GPIO_GDIR, NULL,
+                         BGPIOF_READ_OUTPUT_REG_SET);
+#else
 	err = bgpio_init(&port->gc, &pdev->dev, 4,
 			 port->base + GPIO_PSR,
 			 port->base + GPIO_DR, NULL,
 			 port->base + GPIO_GDIR, NULL,
 			 BGPIOF_READ_OUTPUT_REG_SET);
+#endif
+
 	if (err)
 		goto out_bgio;
 
