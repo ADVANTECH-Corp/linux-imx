@@ -27,9 +27,6 @@
 #include <linux/proc-board.h>
 #endif
 */
-#include <asm/system_misc.h>
-
-#define ADV_WDT_MAX_RETRIES	3
 #define ADV_WDT_WCR		0x00		/* Control Register */
 #define ADV_WDT_WCR_WT		(0xFF << 8)	/* -> Watchdog Timeout Field */
 #define ADV_WDT_WCR_WRE	(1 << 3)	/* -> WDOG Reset Enable */
@@ -64,7 +61,9 @@
 
 static int gpio_wdt_en;
 static int gpio_wdt_ping;
-//static int gpio_wdt_out;
+static int gpio_wdt_out;
+
+
 struct i2c_client *adv_client;
 
 static struct {
@@ -103,9 +102,6 @@ struct watchdog_info adv_wdt_info = {
 static int adv_wdt_i2c_write_reg(struct i2c_client *client, u8 reg, void *buf, size_t len)
 {
 	u8 val[1 + len];
-	u8 retry = 0;
-	int err;
-
 	struct i2c_msg msg[1] = {
 		{
 			.addr = client->addr,
@@ -118,27 +114,17 @@ static int adv_wdt_i2c_write_reg(struct i2c_client *client, u8 reg, void *buf, s
 	val[0] = reg;
 	memcpy(&val[1], buf, len);
 
-	do {
-		err = i2c_transfer(client->adapter, msg, 1);
-		if (err == 1) {
-			msleep(100);
-			return 0;
-		}
+	if (i2c_transfer(client->adapter, msg, 1) != 1) {
+		dev_err(&client->dev, "adv_wdt_i2c_write: i2c transfer failed\n");
+		return -EIO;
+	}
 
-		retry++;
-		dev_err(&client->dev, "adv_wdt_i2c_write_reg : i2c transfer failed, retrying\n");
-		//msleep(3);
-	} while (retry <= ADV_WDT_MAX_RETRIES);
-
-	dev_err(&client->dev, "adv_wdt_i2c_write: i2c transfer failed\n");
-	return -EIO;
+	msleep(100);
+	return 0;
 }
 
 static int adv_wdt_i2c_read_reg(struct i2c_client *client, u8 reg, void *buf, size_t len)
 {
-	u8 retry = 0;
-	int err;
-
 	struct i2c_msg msg[2] = {
 		{
 			.addr	= client->addr,
@@ -154,30 +140,12 @@ static int adv_wdt_i2c_read_reg(struct i2c_client *client, u8 reg, void *buf, si
 		}
 	};
 
-	do {
-		err = i2c_transfer(client->adapter, msg, 2);
-		if (err == 2) {
-			msleep(100);
-			return 0;
-		}
+	if (i2c_transfer(client->adapter, msg, 2) != 2) {
+		dev_err(&client->dev, "adv_wdt_i2c_read: i2c transfer failed\n");
+		return -EIO;
+	}
 
-		retry++;
-		dev_err(&client->dev, "adv_wdt_i2c_read : i2c transfer failed, retrying\n");
-		//msleep(3);
-	} while (retry <= ADV_WDT_MAX_RETRIES);
-
-	dev_err(&client->dev, "adv_wdt_i2c_read: i2c transfer failed\n");
-	return -EIO;
-}
-
-int adv_wdt_i2c_fix_first_comm_issue(struct i2c_client *client, unsigned int val)
-{
-	int ret = 0;
-	val = WDOG_SEC_TO_COUNT(val) & 0x0000FFFF;
-	ret = adv_wdt_i2c_write_reg(client, REG_WDT_WATCHDOG_TIME_OUT, &val, 2);
 	msleep(100);
-	val = 0;
-	ret = adv_wdt_i2c_write_reg(client, REG_WDT_WATCHDOG_TIME_OUT, &val, 2);
 	return 0;
 }
 
@@ -224,23 +192,15 @@ int adv_wdt_i2c_read_version(struct i2c_client *client, unsigned int *val)
 
 static inline void adv_wdt_ping(void)
 {
-	/* watchdog counter refresh input. Both edge trigger */
+	msleep(800);
 	adv_wdt.wdt_ping_status= !adv_wdt.wdt_ping_status;
 	gpio_set_value(gpio_wdt_ping, adv_wdt.wdt_ping_status);
-	msleep(50);
+	msleep(100);
 	//printk("adv_wdt_ping:%x\n", adv_wdt.wdt_ping_status);
 	//printk("wdt_en_ping:%x\n", gpio_get_value(gpio_wdt_en));
 }
 
-static inline void adv_wdt_ping_nosleep(void)
-{
-	/* watchdog counter refresh input. Both edge trigger */
-	adv_wdt.wdt_ping_status= !adv_wdt.wdt_ping_status;
-	gpio_set_value(gpio_wdt_ping, adv_wdt.wdt_ping_status);
-
-}
-
-static void adv_wdt_start(u8 sleep)
+static void adv_wdt_start(void)
 {
 	if (!test_and_set_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status)) 
 	{
@@ -249,10 +209,7 @@ static void adv_wdt_start(u8 sleep)
 	} 
 
 	/* Watchdog is enabled - time to reload the timeout value */
-	if(sleep == 1)
-		adv_wdt_ping();
-	else
-		adv_wdt_ping_nosleep();
+	adv_wdt_ping();
 }
 
 static void adv_wdt_stop(void)
@@ -268,7 +225,7 @@ static int adv_wdt_open(struct inode *inode, struct file *file)
 {
 	if (test_and_set_bit(ADV_WDT_STATUS_OPEN, &adv_wdt.status))
 		return -EBUSY;
-	adv_wdt_start(1);
+	adv_wdt_start();
 	return nonseekable_open(inode, file);
 }
 
@@ -295,7 +252,7 @@ static long adv_wdt_ioctl(struct file *file, unsigned int cmd,
 	int __user *p = argp;
 	unsigned int new_value = 0;
 //	u16 val;
-	int myopt = 0;
+
 	switch (cmd) {
 	case WDIOC_GETSUPPORT:
 		adv_wdt_ping();
@@ -326,29 +283,18 @@ static long adv_wdt_ioctl(struct file *file, unsigned int cmd,
 		adv_wdt.timeout = new_value;
 		adv_wdt_i2c_set_timeout(adv_client, adv_wdt.timeout);
 		adv_wdt_ping();
-		return 	0;
 
 		/* Fallthrough to return current value */
 	case WDIOC_GETTIMEOUT:
 		adv_wdt_i2c_read_timeout(adv_client, &adv_wdt.timeout);
 		//printk("WDIOC_GETTIMEOUT:%x\n", adv_wdt.timeout);
-		return put_user((int)(adv_wdt.timeout & 0xFFFF)/10, p);
+		return put_user(adv_wdt.timeout & 0xFFFF, p);
 
 	case WDIOC_GETTIMELEFT:
 		adv_wdt_i2c_read_remain_time(adv_client, &adv_wdt.remain_time);
 		//printk("WDIOC_GETTIMELEFT:%x\n", adv_wdt.remain_time);
-		return put_user((int)(adv_wdt.remain_time & 0xFFFF)/10, p);
-	case WDIOC_SETOPTIONS:
-		get_user(myopt, p);
-		if(WDIOS_DISABLECARD & myopt)
-		{
-			adv_wdt_stop();	
-		}
-		else if(WDIOS_ENABLECARD & myopt)
-		{
-			adv_wdt_start(1);
-		}
-		return 	0;
+		return put_user(adv_wdt.remain_time & 0xFFFF, p);
+
 	default:
 		return -ENOTTY;
 	}
@@ -397,14 +343,12 @@ static int adv_wdt_restart_handle(struct notifier_block *this, unsigned long mod
 {
 	if (test_and_set_bit(ADV_WDT_STATUS_OPEN, &adv_wdt.status))
 		return -EBUSY;
-
-	/* don't sleep in restart handler */
-	adv_wdt_start(0);
-
-	/* wait for wdog to fire */
-	while(true)
-		;
-
+	adv_wdt_start();
+	adv_wdt.timeout = 1;
+	adv_wdt_i2c_set_timeout(adv_client, adv_wdt.timeout);
+	//wait to show "Rebooting..." messages
+	mdelay(500);
+	adv_wdt_ping();
 	return NOTIFY_DONE;
 }
 
@@ -479,31 +423,6 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		dev_warn(&client->dev, "Initial timeout out of range! "
 			"Clamped from %u to %u\n", timeout, adv_wdt.timeout);
 
-	if (of_get_property(np, "fix-first-comm-issue", NULL))
-		adv_wdt_i2c_fix_first_comm_issue(client, adv_wdt.timeout);
-
-	ret = adv_wdt_i2c_set_timeout(client, adv_wdt.timeout);
-	if (ret)
-	{
-		pr_err("Set watchdog timeout err=%d\n", ret);
-		goto fail;
-	}
-	
-	ret = adv_wdt_i2c_read_version(client, &tmp_version);
-	
-	if (ret == 0 )
-	{
-     adv_wdt.version[0]= (tmp_version & 0xFF00) >> 8;
-     adv_wdt.version[1]= tmp_version & 0xFF;
-     adv_wdt_info.firmware_version = (unsigned int)(adv_wdt.version[1] - '0') * 10 + (unsigned int)(adv_wdt.version[0] - '0');
-	} else {
-		pr_err("Read watchdog version err=%d\n", ret);
-		goto fail;
-	}
-	
-	dev_info(&client->dev,
-						"Advantech Watchdog Timer enabled. timeout=%ds (nowayout=%d), Ver.%d\n",
-						adv_wdt.timeout, nowayout, adv_wdt_info.firmware_version);
 	adv_wdt_miscdev.parent = &client->dev;
 	ret = misc_register(&adv_wdt_miscdev);
 	if (ret)
@@ -512,7 +431,20 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	     WATCHDOG_MINOR, ret);
 		goto fail;
 	}
-	
+
+	ret = adv_wdt_i2c_read_version(client, &tmp_version);
+
+	if (ret == 0 )
+	{
+     adv_wdt.version[0]= (tmp_version & 0xFF00) >> 8;
+     adv_wdt.version[1]= tmp_version & 0xFF;
+     adv_wdt_info.firmware_version = (unsigned int)(adv_wdt.version[1] - '0') * 10 + (unsigned int)(adv_wdt.version[0] - '0');
+	}
+
+	dev_info(&client->dev,
+						"Advantech Watchdog Timer enabled. timeout=%ds (nowayout=%d), Ver.%d\n",
+						adv_wdt.timeout, nowayout, adv_wdt_info.firmware_version);
+
 	ret = register_restart_handler(&adv_wdt_restart_handler);
 	if (ret) {
 		pr_err("cannot register restart handler (err=%d)\n", ret);
@@ -539,9 +471,7 @@ static int __exit adv_wdt_i2c_remove(struct i2c_client *client)
 	clear_bit(ADV_WDT_EXPECT_CLOSE, &adv_wdt.status);
 	clear_bit(ADV_WDT_STATUS_OPEN, &adv_wdt.status);
 	clear_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status);
-
 	adv_wdt_miscdev.parent = NULL;
-
 	return 0;
 }
 
@@ -567,9 +497,10 @@ static int adv_wdt_i2c_suspend(struct device *dev)
 static void adv_wdt_i2c_shutdown(struct i2c_client *client)
 {
 	if (test_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status)) {
-		/* set timeout to 1 sec here and expect WDT_EN in restart handler */
+		/* we are running, we need to delete the timer but will give
+		 * max timeout before reboot will take place */
 		gpio_set_value(gpio_wdt_en, adv_wdt.wdt_en_off);
-		adv_wdt_i2c_set_timeout(client, 1);
+		adv_wdt_i2c_set_timeout(client, ADV_WDT_MAX_TIME);
 		adv_wdt_ping();
 
 		dev_crit(adv_wdt_miscdev.parent,
