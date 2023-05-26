@@ -7,10 +7,18 @@
 * Author : Yu-Mei Pan (ympan@realtek.com.cn)
 *  $Id: smi.c,v 1.2 2008-04-10 03:04:19 shiehyy Exp $
 */
+#include <linux/init.h>
+#include <linux/kernel.h>
+#include <linux/platform_device.h>
+#include <linux/of_gpio.h>
+
 #include "../../rtk_types.h"
 #include "../../rtk_error.h"
 #include "rtl8367c_smi.h"
 
+static void adv_gpio_set_dir_flags(unsigned gpio,rtk_uint32 direction);
+static void adv_gpio_get_value(unsigned gpio,rtk_uint32 *pData);
+static void adv_gpio_set_value(unsigned gpio,rtk_uint32 Data);
 
 #if defined(MDC_MDIO_OPERATION)
 /*******************************************************************************/
@@ -48,15 +56,39 @@ rtk_uint32  smi_SCK = 1;    /* GPIO used for SMI Clock Generation */
 rtk_uint32  smi_SDA = 2;    /* GPIO used for SMI Data signal */
 
 /* I2C, redefine/implement the following Macro */
-#define GPIO_DIRECTION_SET(gpioID, direction)
-#define GPIO_DATA_SET(gpioID, data)
-#define GPIO_DATA_GET(gpioID, pData)
+#define GPIO_DIRECTION_SET(gpioID, direction)	adv_gpio_set_dir_flags(gpioID, direction)
+#define GPIO_DATA_SET(gpioID, data)   			adv_gpio_set_value(gpioID, data)
+#define GPIO_DATA_GET(gpioID, pData)  			adv_gpio_get_value(gpioID,pData)
 
 
 
 
 
 #endif
+
+static void adv_gpio_set_dir_flags(unsigned gpio,rtk_uint32 direction)
+{	
+	if(direction)
+		gpio_direction_input(gpio);
+	else
+		gpio_direction_output(gpio, 1);
+}
+
+static void adv_gpio_get_value(unsigned gpio,rtk_uint32 *pData)
+{
+	*pData=(rtk_uint32)gpio_get_value(gpio);
+}
+
+static void adv_gpio_set_value(unsigned gpio,rtk_uint32 Data)
+{
+	gpio_set_value(gpio,(int)Data);
+}
+
+void adv_set_smi_gpio(unsigned scl,unsigned sda)
+{
+	smi_SCK=scl;
+	smi_SDA=sda;
+}
 
 static void rtlglue_drvMutexLock(void)
 {

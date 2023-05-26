@@ -1,4 +1,5 @@
-obj-y += acl.o \
+obj-y += rtl8367c.o \
+acl.o \
 chip.o \
 cpu.o \
 dot1x.o \
