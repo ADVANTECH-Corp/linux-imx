@@ -18,7 +18,7 @@
 		pinctrl-0 = <&pinctrl_mipi_dsi_en &pinctrl_mipi_dsi_bklt_vcc_en &pinctrl_mipi_dsi_bklt_en>;
 		dsi-vcc-enable-gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;      /* LCD_VDD_EN */
 		bklt-vcc-enable-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;      /* VDD_BKLT1_EN */
-		bklt-enable-gpio = <&gpio5 10 GPIO_ACTIVE_LOW>;        /* LCD_BKLT1_EN */
+		bklt-enable-gpio = <&gpio_exp2 7 GPIO_ACTIVE_LOW>;        /* LCD_BKLT1_EN */
 
 		port {
 			panel1_in: endpoint {
