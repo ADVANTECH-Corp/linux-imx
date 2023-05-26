@@ -23,7 +23,8 @@
 		reg = <0x3d>;
 		adi,addr-cec = <0x3b>;
 		adi,dsi-lanes = <4>;
-		dsi-vcc-enable-gpio = <&gpio1 13 GPIO_ACTIVE_LOW>;	/* LCD_VDD_EN */
+		dsi-vcc-enable-gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;	/* LCD_VDD_EN */
+		bklt-vcc-enable-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;	/* VDD_BKLT1_EN */
 		status = "okay";
 
 		port {
