@@ -5,18 +5,6 @@
 
 #include "imx8mp-rsb3720-a1.dts"
 
-&ldb {
-	status = "disabled";
-};
-
-&ldb_phy {
-	status = "disabled";
-};
-
-&lvds_backlight0 {
-	status = "disabled";
-};
-
 &lvds_backlight1 {
 	status = "okay";
 };
