@@ -487,6 +487,8 @@
 };
 
 &hdmiphy {
+	tx_vl_5c = <0x29>;	//For SI test
+	tx_vl_60 = <0x52>;	//For SI test
 	status = "okay";
 };
 
