@@ -8,6 +8,10 @@
  * Author: Sean Cross <xobs@kosagi.com>
  */
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#define DEBUG 1
+#endif
+
 #include <dt-bindings/soc/imx8_hsio.h>
 #include <linux/bitfield.h>
 #include <linux/clk.h>
@@ -38,6 +42,10 @@
 #include "../../pci.h"
 
 #include "pcie-designware.h"
+
+#ifdef CONFIG_ARCH_ADVANTECH
+char boot_command[256] = {0};
+#endif
 
 #define IMX8MQ_PCIE_LINK_CAP_REG_OFFSET		0x7c
 #define IMX8MQ_PCIE_LINK_CAP_L1EL_64US		GENMASK(18, 17)
@@ -1191,7 +1199,11 @@ static void imx6_pcie_deassert_core_reset(struct imx6_pcie *imx6_pcie)
 	if (gpio_is_valid(imx6_pcie->reset_gpio)) {
 		gpio_set_value_cansleep(imx6_pcie->reset_gpio,
 					imx6_pcie->gpio_active_high);
+#ifdef CONFIG_ARCH_ADVANTECH
+		mdelay(imx6_pcie->reset_time);
+#else
 		msleep(20);
+#endif
 		gpio_set_value_cansleep(imx6_pcie->reset_gpio,
 					!imx6_pcie->gpio_active_high);
 	}
@@ -1814,7 +1826,11 @@ static int imx6_pcie_start_link(struct dw_pcie *pci)
 	 * started in Gen2 mode, there is a possibility the devices on the
 	 * bus will not be detected at all.  This happens with PCIe switches.
 	 */
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (strstr(boot_command, "PCIE_SI_TEST")== NULL) {
+#else
 	if (!imx6_pcie_cz_enabled) {
+#endif
 		tmp = dw_pcie_readl_dbi(pci, offset + PCI_EXP_LNKCAP);
 		tmp &= ~PCI_EXP_LNKCAP_SLS;
 		tmp |= PCI_EXP_LNKCAP_SLS_2_5GB;
@@ -1893,7 +1909,12 @@ err_reset_phy:
 		dw_pcie_readl_dbi(pci, PCIE_PORT_DEBUG0),
 		dw_pcie_readl_dbi(pci, PCIE_PORT_DEBUG1));
 	imx6_pcie_reset_phy(imx6_pcie);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (strstr(boot_command, "PCIE_SI_TEST")== NULL) {
+#else
 	if (!imx6_pcie_cz_enabled) {
+#endif
 		imx6_pcie_clk_disable(imx6_pcie);
 		if (imx6_pcie->vpcie != NULL)
 			regulator_disable(imx6_pcie->vpcie);
@@ -2409,6 +2430,12 @@ static int imx6_pcie_probe(struct platform_device *pdev)
 		imx6_pcie->hsio_cfg = 0;
 	if (of_property_read_u32(node, "ext_osc", &imx6_pcie->ext_osc) < 0)
 		imx6_pcie->ext_osc = 0;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_property_read_u32(node, "reset-time", &imx6_pcie->reset_time) < 0)
+		imx6_pcie->reset_time = 20;
+#endif
+
 	if (of_property_read_u32(node, "local-addr", &imx6_pcie->local_addr))
 		imx6_pcie->local_addr = 0;
 	if (of_property_read_bool(node, "l1ss-disabled"))
@@ -2708,7 +2735,11 @@ static int imx6_pcie_probe(struct platform_device *pdev)
 
 		ret = dw_pcie_host_init(&pci->pp);
 		if (ret < 0) {
+#ifdef CONFIG_ARCH_ADVANTECH
+			if (strstr(boot_command, "PCIE_SI_TEST")) {
+#else
 			if (imx6_pcie_cz_enabled) {
+#endif
 				/* The PCIE clocks wouldn't be turned off */
 				dev_info(dev, "To do the compliance tests.\n");
 				ret = 0;
@@ -2981,6 +3012,10 @@ static int __init imx6_pcie_init(void)
 	 */
 	hook_fault_code(8, imx6q_pcie_abort_handler, SIGBUS, 0,
 			"external abort on non-linefetch");
+#endif
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	sprintf(boot_command, boot_command_line);
 #endif
 
 	return platform_driver_register(&imx6_pcie_driver);
