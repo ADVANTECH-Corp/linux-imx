@@ -608,7 +608,11 @@ static int hci_init3_req(struct hci_request *req, unsigned long opt)
 
 	if (hdev->commands[18] & 0x04 &&
 	    !test_bit(HCI_QUIRK_BROKEN_ERR_DATA_REPORTING, &hdev->quirks))
+
+#ifndef CONFIG_ARCH_ADVANTECH
+	if (hdev->commands[18] & 0x02)
 		hci_req_add(req, HCI_OP_READ_DEF_ERR_DATA_REPORTING, 0, NULL);
+#endif
 
 	/* Some older Broadcom based Bluetooth 1.2 controllers do not
 	 * support the Read Page Scan Type command. Check support for
