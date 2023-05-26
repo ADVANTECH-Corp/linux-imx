@@ -12,6 +12,11 @@
 	model = "Advantech i.MX8MPlus RSB3720A1 board";
 	compatible = "fsl,imx8mp-evk", "fsl,imx8mp";
 
+	aliases {
+		rtc0 = &s35390a;
+		rtc1 = &snvs_rtc;
+	};
+
 	reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
