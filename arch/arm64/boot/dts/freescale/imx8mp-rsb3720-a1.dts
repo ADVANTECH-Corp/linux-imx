@@ -189,15 +189,16 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		ethphy0: ethernet-phy@4 {
+		ethphy0: ethernet-phy@1 {
+			/* Realtek RTL8211F (0x001cc916) */
 			compatible = "ethernet-phy-ieee802.3-c22";
-			reg = <4>;
+			reg = <1>;
 			eee-broken-1000t;
-			at803x,eee-disabled;
-			at803x,vddio-1p8v;
 			reset-gpios = <&gpio4 22 GPIO_ACTIVE_LOW>;
-			reset-assert-us = <500>;
-			reset-deassert-us = <500>;
+			reset-assert-us = <10000>;
+			reset-deassert-us = <30000>;
+			interrupt-parent = <&gpio4>;
+			interrupts = <21 IRQ_TYPE_LEVEL_LOW>;
 		};
 	};
 };
@@ -214,15 +215,16 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		
-		ethphy1: ethernet-phy@4 {
+		ethphy1: ethernet-phy@1 {
+			/* Realtek RTL8211F (0x001cc916) */
 			compatible = "ethernet-phy-ieee802.3-c22";
-			reg = <4>;
+			reg = <1>;
 			eee-broken-1000t;
-			at803x,eee-disabled;
-			at803x,vddio-1p8v;
 			reset-gpios = <&gpio4 2 GPIO_ACTIVE_LOW>;
-			reset-assert-us = <500>;
-			reset-deassert-us = <500>;
+			reset-assert-us = <10000>;
+			reset-deassert-us = <30000>;
+			interrupt-parent = <&gpio4>;
+			interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
 		};
 	};
 };
