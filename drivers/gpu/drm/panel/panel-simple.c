@@ -204,12 +204,8 @@ struct panel_simple {
 
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
 bool blank_flag = false;
-static int panel_simple_disabled = 0;
 extern void enable_ldb_bkl_vcc(void);
 extern void enable_ldb_bkl_pwm(void);
-extern void disable_ldb_bkl_vcc(void);
-extern void disable_ldb_bkl_pwm(void);
-extern void disable_ldb_signal(void);
 #endif
 
 static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
@@ -347,13 +343,6 @@ static int panel_simple_disable(struct drm_panel *panel)
 	if (!p->enabled)
 		return 0;
 
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-	if(panel_simple_disabled) {
-		disable_ldb_bkl_pwm();
-		disable_ldb_bkl_vcc();
-	}
-	panel_simple_disabled = 1;
-#endif
 
 	if (p->desc->delay.disable)
 		msleep(p->desc->delay.disable);
