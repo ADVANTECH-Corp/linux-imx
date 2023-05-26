@@ -342,16 +342,6 @@
 		};
 	};
 
-	wdt: msp430g2202@29 {
-		compatible = "fsl,adv-wdt-i2c";
-		reg = <0x29>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
-		wdt-en = <&gpio3 19 0>;
-		wdt-ping = <&gpio4 20 0>;
-		status = "okay";
-	};
-
 	s35390a: s35390a@30 {
 		compatible = "sii,s35390a";
 		reg = <0x30>;
@@ -388,6 +378,16 @@
 		clock-names = "mclk";
 		pinctrl-names = "default";
 	};
+
+	wdt: msp430g2202@29 {
+                compatible = "fsl,adv-wdt-i2c";
+                reg = <0x29>;
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+                wdt-en = <&gpio3 19 0>;
+                wdt-ping = <&gpio4 20 0>;
+                status = "okay";
+        };
 };
 
 &i2c2 {
