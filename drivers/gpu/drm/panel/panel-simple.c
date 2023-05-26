@@ -206,6 +206,9 @@ struct panel_simple {
 bool blank_flag = false;
 extern void enable_ldb_bkl_vcc(void);
 extern void enable_ldb_bkl_pwm(void);
+extern void disable_ldb_bkl_vcc(void);
+extern void disable_ldb_bkl_pwm(void);
+extern void disable_ldb_signal(void);
 #endif
 
 static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
@@ -342,6 +345,11 @@ static int panel_simple_disable(struct drm_panel *panel)
 
 	if (!p->enabled)
 		return 0;
+
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	disable_ldb_bkl_pwm();
+	disable_ldb_bkl_vcc();
+#endif
 
 	if (p->desc->delay.disable)
 		msleep(p->desc->delay.disable);
@@ -1463,8 +1471,13 @@ static const struct panel_desc auo_t215hvn01 = {
 		.height = 270,
 	},
 	.delay = {
+#ifdef CONFIG_ARCH_ADVANTECH
+		.disable = 100,
+		.unprepare = 5,
+#else
 		.disable = 5,
 		.unprepare = 1000,
+#endif
 	}
 };
 
