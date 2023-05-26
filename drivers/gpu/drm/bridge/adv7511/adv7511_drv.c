@@ -12,6 +12,9 @@
 #include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/of_graph.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#endif
 #include <linux/slab.h>
 
 #include <media/cec.h>
@@ -1261,6 +1264,9 @@ static int adv7511_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	unsigned int pkt_i2c_addr = main_i2c_addr - 0xa;
 	unsigned int val;
 	int ret;
+#ifdef CONFIG_ARCH_ADVANTECH
+	int dsi_vcc_enable_gpio;
+#endif
 
 	if (!dev->of_node)
 		return -EINVAL;
@@ -1323,6 +1329,15 @@ static int adv7511_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		gpiod_set_value_cansleep(adv7511->gpio_pd, 0);
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	dsi_vcc_enable_gpio = of_get_named_gpio(dev->of_node, "dsi-vcc-enable-gpio", 0);
+	if (gpio_is_valid(dsi_vcc_enable_gpio)) {
+		ret = devm_gpio_request_one(dev, dsi_vcc_enable_gpio, GPIOF_OUT_INIT_LOW,
+			"dsi_vcc_enable_gpio");
+	}
+
+	mdelay(50);
+#endif
 	adv7511->regmap = devm_regmap_init_i2c(i2c, &adv7511_regmap_config);
 	if (IS_ERR(adv7511->regmap)) {
 		ret = PTR_ERR(adv7511->regmap);
