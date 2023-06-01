@@ -35,7 +35,12 @@
 #define MX8ULP_PAD_PTC10__FLEXSPI0_A_DATA0                           0x0128 0x0000 0x8 0x0
 #define MX8ULP_PAD_PTC10__PTC10_GPIOC                                0x0128 0x0000 0x1 0x0
 
+#define MX8ULP_PAD_PTC11__PTC11_GPIOC                                0x012c 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTC12__PTC12_GPIOC                                0x0130 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC13__PTC13_GPIOC                                0x0134 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC14__PTC14_GPIOC                                0x0138 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC15__PTC15_GPIOC                                0x013c 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTC17__PTC17_GPIOC                                0x0144 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTC18__PTC18_GPIOC                                0x0148 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTC19__PTC19_GPIOC                                0x014c 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTC20__PTC20_GPIOC                                0x0150 0x0000 0x1 0x0
@@ -45,16 +50,29 @@
 
 #define MX8ULP_PAD_PTB0__PTB0_GPIOB                                  0x0080 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTB1__PTB1_GPIOB                                  0x0084 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTB2__PTB2_GPIOB                                  0x0088 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTB3__PTB3_GPIOB                                  0x008c 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTB4__PTB4_GPIOB                                  0x0090 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTB5__PTB5_GPIOB                                  0x0094 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTB6__PTB6_GPIOB                                  0x0098 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTB12__PTB12_GPIOB                                0x00b0 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTB13__PTB13_GPIOB                                0x00b4 0x0000 0x1 0x0
 
 #define MX8ULP_PAD_PTA5__PTA5_GPIOA                                  0x0014 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTA6__PTA6_GPIOA                                  0x0018 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA8__PTA8_GPIOA                                  0x0020 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA9__PTA9_GPIOA                                  0x0024 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA10__PTA10_GPIOA                                0x0028 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA11__PTA11_GPIOA                                0x002c 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTA12__PTA12_GPIOA                                0x0030 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTA15__PTA15_GPIOA                                0x003c 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTA16__PTA16_GPIOA                                0x0040 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA17__PTA17_GPIOA                                0x0044 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA19__PTA19_GPIOA                                0x004c 0x0000 0x1 0x0
 #define MX8ULP_PAD_PTA20__PTA20_GPIOA                                0x0050 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA21__PTA21_GPIOA                                0x0054 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA22__PTA22_GPIOA                                0x0058 0x0000 0x1 0x0
+#define MX8ULP_PAD_PTA23__PTA23_GPIOA                                0x005c 0x0000 0x1 0x0
 /* end of IOMUX0 */
 
 #define MX8ULP_PAD_PTD0__PTD0                                        0x0000 0x0000 0x1 0x0
