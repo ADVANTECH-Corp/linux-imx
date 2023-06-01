@@ -481,6 +481,11 @@
 	scl-gpios = <&gpio5 16 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio5 17 GPIO_ACTIVE_HIGH>;
 	status = "okay";
+
+	eeprom2: 24c64@51 {
+		compatible = "st,24c64";
+		reg = <0x51>;
+	};
 };
 
 &i2c3 {
@@ -491,6 +496,11 @@
 	scl-gpios = <&gpio5 18 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio5 19 GPIO_ACTIVE_HIGH>;
 	status = "okay";
+
+	eeprom3: 24c64@53 {
+		compatible = "st,24c64";
+		reg = <0x53>;
+	};
 };
 
 &i2c4 {
@@ -565,6 +575,11 @@
         pinctrl-names = "default";
     };
 #endif
+
+	eeprom4: 24c64@53 {
+		compatible = "st,24c64";
+		reg = <0x53>;
+	};
 };
 
 &irqsteer_hdmi {
