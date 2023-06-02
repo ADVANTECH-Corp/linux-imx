@@ -407,9 +407,9 @@
 		status = "okay";
 	};
 
-	gpio_exp2: tca9538@71 {
+	gpio_exp2: tca9538@72 {
 		compatible = "nxp,pca9538";
-		reg = <0x71>;
+		reg = <0x72>;
 		pinctrl-0 = <&pinctrl_tca9538_2>;
 		interrupt-parent = <&gpio4>;
 		interrupts = <1 IRQ_TYPE_NONE>;
@@ -443,9 +443,9 @@
         #interrupt-cells = <2>;
     };
 
-    gpio_exp5: tca9538@72 {
+    gpio_exp5: tca9538@71 {
         compatible = "nxp,pca9538";
-        reg = <0x72>;
+        reg = <0x71>;
         pinctrl-0 = <&pinctrl_tca9538_4>;
         interrupt-parent = <&gpio3>;
         interrupts = <24 IRQ_TYPE_NONE>;
@@ -454,13 +454,13 @@
 		interrupt-controller;
         #interrupt-cells = <2>;
       };
-
+/*
 	st33htpi: st33htpi@2e {
 		compatible = "st,st33htpm-i2c";
 		reg = <0x2e>;
 		pinctrl-names = "default";
 	};
-
+*/
 	wdt: msp430g2202@29 {
 		compatible = "fsl,adv-wdt-i2c";
 		reg = <0x29>;
@@ -540,13 +540,13 @@
 		compatible = "st,24c64";
 		reg = <0x57>;
 	};
-
+/*
 	gpio_exp3: tca9538@70 {
 		compatible = "nxp,pca9538";
 		reg = <0x70>;
 		gpio-controller;
 		#gpio-cells = <2>;
-	};
+	};*/
 #endif
 };
 
@@ -817,13 +817,23 @@
 			MX8MP_IOMUXC_HDMI_DDC_SDA__HDMIMIX_HDMI_SDA	0x400001c3
 			MX8MP_IOMUXC_HDMI_HPD__HDMIMIX_HDMI_HPD		0x40000019
 			//MX8MP_IOMUXC_SAI1_TXD6__GPIO4_IO18	0x19		/* GPIO0 / CAM0_PWR# */
-			//MX8MP_IOMUXC_SAI1_TXD7__GPIO4_IO19	0x19		/* GPIO1 / CAM1_PWR#  */
-			//MX8MP_IOMUXC_SAI3_RXFS__GPIO4_IO28	0x19		/* GPIO2 / CAM0_RST# */
-			//MX8MP_IOMUXC_SAI3_RXC__GPIO4_IO29	0x19		/* GPIO3 / CAM1_RST# */
+			MX8MP_IOMUXC_SAI1_TXD7__GPIO4_IO19	0x19		/* GPIO1 / CAM1_PWR#  */
+			MX8MP_IOMUXC_SAI3_RXFS__GPIO4_IO28	0x19		/* GPIO2 / CAM0_RST# */
+			MX8MP_IOMUXC_SAI3_RXC__GPIO4_IO29	0x19		/* GPIO3 / CAM1_RST# */
 			MX8MP_IOMUXC_SAI2_MCLK__GPIO4_IO27	0x19		/* GPIO4 */
 			MX8MP_IOMUXC_SPDIF_EXT_CLK__GPIO5_IO05	0x19		/* GPIO5 */
 			MX8MP_IOMUXC_UART3_RXD__GPIO5_IO26	0x19		/* GPIO6 */
 			MX8MP_IOMUXC_UART3_TXD__GPIO5_IO27	0x19		/* GPIO7 */
+			MX8MP_IOMUXC_SD1_DATA4__GPIO2_IO06	0x19		/* GPIO15 */
+			MX8MP_IOMUXC_SD1_DATA5__GPIO2_IO07	0x19		/* GPIO14*/
+			MX8MP_IOMUXC_ECSPI1_SS0__GPIO5_IO09	0x19		/* GPIO16*/
+			MX8MP_IOMUXC_ECSPI1_SCLK__GPIO5_IO06	0x19		/* GPIO17*/
+			MX8MP_IOMUXC_ECSPI1_MISO__GPIO5_IO08	0x19		/* GPIO18*/
+			MX8MP_IOMUXC_ECSPI1_MOSI__GPIO5_IO07	0x19		/* GPIO19*/
+			MX8MP_IOMUXC_ECSPI2_SS0__GPIO5_IO13	0x19		/* GPIO20*/
+			MX8MP_IOMUXC_ECSPI2_SCLK__GPIO5_IO10	0x19		/* GPIO22*/
+			MX8MP_IOMUXC_ECSPI2_MISO__GPIO5_IO12	0x19		/* GPIO23*/
+			MX8MP_IOMUXC_ECSPI2_MOSI__GPIO5_IO11	0x19		/* GPIO24*/
 		>;
 	};
 
