@@ -497,7 +497,7 @@
 	status = "okay";
 
 	24c02@50 {
-		compatible = "fsl,24c02";
+		compatible = "atmel,24c02";
 		reg = <0x50>;
 	};
 };
