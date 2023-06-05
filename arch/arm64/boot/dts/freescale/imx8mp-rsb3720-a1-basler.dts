@@ -14,8 +14,6 @@
  * GNU General Public License for more details.
  */
 
-/dts-v1/;
-
 #include "imx8mp-rsb3720-a1.dts"
 
 &i2c2 {
@@ -31,18 +29,18 @@
 			basler_ep_0: endpoint {
 				data-lanes = <1 2 3 4>;
 				clock-lanes = <0>;
-				link-frequencies = /bits/ 64 <248000000>;
+				link-frequencies = /bits/ 64 <750000000>;
+				max-lane-frequency = /bits/ 64 <750000000>;
+				max-pixel-frequency = /bits/ 64 <500000000>;
+				max-data-rate = /bits/ 64 <0>;
 				remote-endpoint = <&mipi_csi0_ep>;
 			};
 		};
 	};
 };
 
-&i2c3 {
-	/delete-node/ov5640_mipi@3c;
-};
-
 &mipi_csi_0 {
+status = "okay";
 	/delete-node/port@0;
 
 	port@0 {
@@ -73,4 +71,8 @@
 
 &dewarp {
 	status = "okay";
+};
+
+&i2c3 {
+	/delete-node/ov5640_mipi@3c;
 };
