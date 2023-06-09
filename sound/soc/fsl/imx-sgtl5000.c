@@ -69,7 +69,6 @@ static int imx_sgtl5000_probe(struct platform_device *pdev)
 		goto audmux_config_done;
 	}
 #endif
-#ifndef CONFIG_ARCH_ADVANTECH
 	ret = of_property_read_u32(np, "mux-int-port", &int_port);
 	if (ret) {
 		dev_err(&pdev->dev, "mux-int-port missing or invalid\n");
@@ -105,7 +104,6 @@ static int imx_sgtl5000_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "audmux external port setup failed\n");
 		return ret;
 	}
-#endif
 #ifdef CONFIG_ARCH_ADVANTECH
 	audmux_config_done:
 #endif
