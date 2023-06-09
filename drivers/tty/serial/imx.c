@@ -240,7 +240,6 @@ struct imx_port {
 #ifdef CONFIG_ARCH_ADVANTECH
 	/* RS-485 fields */
 	struct serial_rs485	rs485;
-	struct gpio_desc *rs485_gpio;
 #endif
 	unsigned int            saved_reg[10];
 	bool			context_saved;
@@ -481,10 +480,7 @@ static void imx_uart_stop_tx(struct uart_port *port)
 
 			ucr2 = imx_uart_readl(sport, UCR2);
 #ifdef CONFIG_ARCH_ADVANTECH
-			if(!IS_ERR(sport->rs485_gpio))
-				gpiod_set_value(sport->rs485_gpio, 0);
-			else
-				ucr2 &= ~UCR2_CTS;
+			ucr2 &= ~UCR2_CTS;
 #else
 			if (port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
 				imx_uart_rts_active(sport, &ucr2);
@@ -723,10 +719,7 @@ static void imx_uart_start_tx(struct uart_port *port)
 			else
 				imx_uart_rts_inactive(sport, &ucr2);
 #else
-			if(!IS_ERR(sport->rs485_gpio))
-				gpiod_set_value(sport->rs485_gpio, 1);
-			else
-				ucr2 |= UCR2_CTS;
+			ucr2 |= UCR2_CTS;
 #endif
 			imx_uart_writel(sport, ucr2, UCR2);
 
@@ -1980,13 +1973,9 @@ static int imx_uart_rs485_config(struct uart_port *port,
 		else
 			imx_uart_rts_inactive(sport, &ucr2);
 #else
-		if(!IS_ERR(sport->rs485_gpio))
-			gpiod_set_value(sport->rs485_gpio, 1);
-		else {
-			ucr2 &= ~UCR2_CTSC;
-			ucr2 &= ~UCR2_CTS;
-			ucr2 |= UCR2_IRTS;
-		}
+		ucr2 &= ~UCR2_CTSC;
+		ucr2 &= ~UCR2_CTS;
+		ucr2 |= UCR2_IRTS;
 #endif
 		imx_uart_writel(sport, ucr2, UCR2);
 	}
@@ -2002,13 +1991,6 @@ static int imx_uart_rs485_config(struct uart_port *port,
 }
 
 #ifdef CONFIG_ARCH_ADVANTECH
-enum uart_mode_type {
-	RS232_MODE,
-	RS485_MODE,
-	RS422_MODE,
-	MAX_MODE
-};
-extern int adv_get_uart_mode(int index);
 /*
  * Handle TIOCSRS485 & TIOCSRS485 ioctl for RS-485 support
  */
@@ -2422,15 +2404,6 @@ static int imx_uart_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-#ifdef CONFIG_ARCH_ADVANTECH
-	if(RS485_MODE == adv_get_uart_mode(sport->port.line))
-	{
-		sport->port.rs485.flags |= SER_RS485_ENABLED;
-		if (of_get_property(pdev->dev.of_node, "rs485-dir-gpios", NULL))
-			sport->have_rtsgpio = 1;
-	}
-#endif
-
 	if (sport->port.rs485.flags & SER_RS485_ENABLED &&
 	    (!sport->have_rtscts && !sport->have_rtsgpio))
 		dev_err(&pdev->dev, "no RTS control, disabling rs485\n");
@@ -2589,14 +2562,6 @@ static int imx_uart_probe(struct platform_device *pdev)
 
 	} else if (uart_enable_gpio == -EPROBE_DEFER) {
 		return uart_enable_gpio;
-	}
-
-	sport->rs485_gpio = gpiod_get(dev, "rs485-dir", GPIOD_OUT_LOW);
-	if (!IS_ERR(sport->rs485_gpio)) {
-		gpiod_direction_output(sport->rs485_gpio, 1);
-		//gpiod_set_value(sport->rs485_gpio, 1);
-	} else if (sport->rs485_gpio == -EPROBE_DEFER) {
-		return sport->rs485_gpio;
 	}
 #endif
 
