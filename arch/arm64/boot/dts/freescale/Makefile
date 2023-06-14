@@ -98,6 +98,15 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mn-beacon-kit.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mn-evk.dtb imx8mn-evk-rm67191.dtb imx8mn-evk-rpmsg.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mm-ab2.dtb imx8mm-ab2-m4.dtb imx8mm-ddr4-ab2.dtb imx8mm-ddr4-ab2-m4.dtb \
 			  imx8mm-ddr4-ab2-revb.dtb imx8mm-ddr4-ab2-m4-revb.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mm-rom5721-a1-adv7535.dtb \
+			  imx8mm-rom5721-a1-auog101uan02.dtb \
+			  imx8mm-rom5721-a1-dsi2dp.dtb \
+			  imx8mm-rom5721-a1-dsi2lvds-g150xgel05.dtb \
+			  imx8mm-rom5721-a1-dsi2lvds-g215hvn01.dtb \
+			  imx8mm-rom5721-a1-m2-sdio.dtb \
+			  imx8mm-rom5721-a1-m2-i2s.dtb \
+			  imx8mm-rom5721-a1-rpmsg.dtb \
+			  imx8mm-rom5721-a1.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mn-evk.dtb imx8mn-evk-rm67191.dtb imx8mn-evk-rpmsg.dtb imx8mn-evk-ak5558.dtb \
 			  imx8mn-evk-8mic-revE.dtb imx8mn-evk-8mic-swpdm.dtb imx8mn-ddr3l-evk.dtb \
 			  imx8mn-evk-iqaudio-dacplus.dtb imx8mn-evk-iqaudio-dacpro.dtb imx8mn-evk-hifiberry-dacplus.dtb \
