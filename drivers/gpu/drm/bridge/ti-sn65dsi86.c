@@ -96,6 +96,14 @@
 #define  AUX_IRQ_STATUS_AUX_SHORT		BIT(5)
 #define  AUX_IRQ_STATUS_NAT_I2C_FAIL		BIT(6)
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#define        SN_IRQ_EN_REG			0xE0
+#define        SN_HPD_ENABLE_REG		0xE6
+#define        SN_IRQ_HPD_REG			0xF5
+#define  HPD_INSERTION					BIT(1)
+#define  HPD_REMOVAL					BIT(2)
+#endif
+
 #define MIN_DSI_CLK_FREQ_MHZ	40
 
 /* fudge factor required to account for 8b/10b encoding */
@@ -171,6 +179,10 @@ struct ti_sn65dsi86 {
 #if defined(CONFIG_OF_GPIO)
 	struct gpio_chip		gchip;
 	DECLARE_BITMAP(gchip_output, SN_NUM_GPIOS);
+#endif
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct i2c_client *i2c_client;
+	int first_detect;
 #endif
 };
 
@@ -279,8 +291,10 @@ static void ti_sn65dsi86_enable_comms(struct ti_sn65dsi86 *pdata)
 	 * change this to be conditional on someone specifying that HPD should
 	 * be used.
 	 */
+#ifndef CONFIG_ARCH_ADVANTECH
 	regmap_update_bits(pdata->regmap, SN_HPD_DISABLE_REG, HPD_DISABLE,
 			   HPD_DISABLE);
+#endif
 
 	pdata->comms_enabled = true;
 
@@ -724,7 +738,11 @@ static int ti_sn_bridge_attach(struct drm_bridge *bridge,
 	/* TODO: setting to 4 MIPI lanes always for now */
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
+#ifdef CONFIG_ARCH_ADVANTECH
+	dsi->mode_flags = MIPI_DSI_MODE_VIDEO |  MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_VIDEO_SYNC_PULSE;
+#else
 	dsi->mode_flags = MIPI_DSI_MODE_VIDEO;
+#endif
 
 	/* check if continuous dsi clock is required or not */
 	pm_runtime_get_sync(pdata->dev);
@@ -1039,6 +1057,9 @@ static void ti_sn_bridge_enable(struct drm_bridge *bridge)
 	max_dp_lanes = ti_sn_get_max_lanes(pdata);
 	pdata->dp_lanes = min(pdata->dp_lanes, max_dp_lanes);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	pdata->first_detect++;
+#endif
 	/* DSI_A lane config */
 	val = CHA_DSI_LANES(SN_MAX_DP_LANES - pdata->dsi->lanes);
 	regmap_update_bits(pdata->regmap, SN_DSI_LANES_REG,
@@ -1051,6 +1072,19 @@ static void ti_sn_bridge_enable(struct drm_bridge *bridge)
 	/* set dsi clk frequency value */
 	ti_sn_bridge_set_dsi_rate(pdata);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	/* General LCD doesn't support the ASSR, disable ASSR */
+	/* ASSR RW control, Page 7 */
+	regmap_write(pdata->regmap, 0xFF, 0x07);
+	/* ASSR Control to RW from R-only. TEST2 pin must be high at rising edge of EN pin */
+	regmap_write(pdata->regmap, 0x16, 0x01);
+	/* SSR RW control, Page 0 */
+	regmap_write(pdata->regmap, 0xFF, 0x00);
+	/* ASSR_CONTROL, disable ASSR */
+	regmap_read(pdata->regmap, SN_ENH_FRAME_REG, &val);
+	val = val & 0xFE;
+	regmap_write(pdata->regmap, SN_ENH_FRAME_REG, val);
+#else
 	/*
 	 * The SN65DSI86 only supports ASSR Display Authentication method and
 	 * this method is enabled by default. An eDP panel must support this
@@ -1059,6 +1093,7 @@ static void ti_sn_bridge_enable(struct drm_bridge *bridge)
 	 */
 	drm_dp_dpcd_writeb(&pdata->aux, DP_EDP_CONFIGURATION_SET,
 			   DP_ALTERNATE_SCRAMBLER_RESET_ENABLE);
+#endif
 
 	/* Set the DP output format (18 bpp or 24 bpp) */
 	val = (ti_sn_bridge_get_bpp(pdata) == 18) ? BPP_18_RGB : 0;
@@ -1491,9 +1526,41 @@ static int ti_sn65dsi86_parse_regulators(struct ti_sn65dsi86 *pdata)
 				       pdata->supplies);
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static irqreturn_t sn65dsi86_irq_handler(int irq, void *dev_id)
+{
+		struct ti_sn65dsi86 *pdata = dev_id;
+		unsigned int val;
+		regmap_read(pdata->regmap, SN_IRQ_HPD_REG, &val);
+
+		if (pdata->first_detect > 0)
+		{
+			if ((val & HPD_REMOVAL)) //If SN_IRQ_HPD_REG is 0X04
+					printk("%s: DP cable remove\n", "sn65dsi86");
+
+			if ((val & HPD_INSERTION)) //If SN_IRQ_HPD_REG is 0X02 , Re-enable bridge
+			{
+				printk("%s: DP cable plug-in\n", "sn65dsi86");
+				ti_sn_bridge_enable(&pdata->bridge);
+			}
+			pdata->first_detect = 1;
+		}
+		else
+		{
+			printk("%s: First Plug-in detect skip\n", "sn65dsi86");
+			pdata->first_detect++;
+		}
+		regmap_write(pdata->regmap, SN_IRQ_HPD_REG, 0xFF); //Write 0xFF to SN_IRQ_HPD_REG to clear
+		return IRQ_HANDLED;
+}
+#endif
+
 static int ti_sn65dsi86_probe(struct i2c_client *client,
 			      const struct i2c_device_id *id)
 {
+#ifdef CONFIG_ARCH_ADVANTECH
+	unsigned int val;
+#endif
 	struct device *dev = &client->dev;
 	struct ti_sn65dsi86 *pdata;
 	int ret;
@@ -1507,6 +1574,9 @@ static int ti_sn65dsi86_probe(struct i2c_client *client,
 	if (!pdata)
 		return -ENOMEM;
 	dev_set_drvdata(dev, pdata);
+#ifdef CONFIG_ARCH_ADVANTECH
+		pdata->i2c_client = client;
+#endif
 	pdata->dev = dev;
 
 	mutex_init(&pdata->comms_mutex);
@@ -1517,11 +1587,13 @@ static int ti_sn65dsi86_probe(struct i2c_client *client,
 		return dev_err_probe(dev, PTR_ERR(pdata->regmap),
 				     "regmap i2c init failed\n");
 
+#ifndef CONFIG_ARCH_ADVANTECH
 	pdata->enable_gpio = devm_gpiod_get_optional(dev, "enable",
 						     GPIOD_OUT_LOW);
 	if (IS_ERR(pdata->enable_gpio))
 		return dev_err_probe(dev, PTR_ERR(pdata->enable_gpio),
 				     "failed to get enable gpio from DT\n");
+#endif
 
 	ret = ti_sn65dsi86_parse_regulators(pdata);
 	if (ret)
@@ -1538,6 +1610,28 @@ static int ti_sn65dsi86_probe(struct i2c_client *client,
 	ret = devm_add_action_or_reset(dev, ti_sn65dsi86_runtime_disable, dev);
 	if (ret)
 		return ret;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (pdata->i2c_client->irq)
+	{
+		pdata->first_detect = 0;
+		ret = devm_request_threaded_irq(&client->dev,
+									client->irq,
+									NULL, sn65dsi86_irq_handler,
+									IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+									"sn65dsi86", pdata);
+		if (ret)
+			printk("%s: Unable to request irq: %d for use\n", __func__, client->irq);
+
+		regmap_write(pdata->regmap, SN_IRQ_EN_REG, 1);
+		regmap_read(pdata->regmap, SN_IRQ_EN_REG, &val);
+		regmap_write(pdata->regmap, SN_HPD_ENABLE_REG, 0x07);
+		regmap_read(pdata->regmap, SN_HPD_ENABLE_REG, &val);
+		regmap_read(pdata->regmap, SN_IRQ_HPD_REG, &val);
+	}
+	else
+		printk("%s: Without setting irq \n", __func__);
+#endif
 
 	ti_sn65dsi86_debugfs_init(pdata);
 

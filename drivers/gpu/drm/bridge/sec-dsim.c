@@ -273,6 +273,11 @@
 #define conn_to_sec_mipi_dsim(conn)		\
 	container_of(conn, struct sec_mipi_dsim, connector)
 
+extern void enable_lcd_vdd_en(void);
+extern void enable_bridge_stdy_en(void);
+extern void enable_ldb_bkl_vcc(void);
+extern void enable_ldb_bkl_pwm(void);
+
 /* used for CEA standard modes */
 struct dsim_hblank_par {
 	char *name;		/* drm display mode name */
@@ -1258,6 +1263,7 @@ int sec_mipi_dsim_check_pll_out(void *driver_private,
 	pix_clk = mode->clock;
 	bit_clk = DIV_ROUND_UP(pix_clk * bpp, dsim->lanes);
 
+
 	if (bit_clk * 1000 > pdata->max_data_rate) {
 		dev_err(dsim->dev,
 			"reuest bit clk freq exceeds lane's maximum value\n");
@@ -1346,6 +1352,9 @@ sec_mipi_dsim_bridge_atomic_enable(struct drm_bridge *bridge,
 	if (dsim->enabled)
 		return;
 
+	enable_bridge_stdy_en();
+	enable_lcd_vdd_en();
+
 	/* config main display mode */
 	sec_mipi_dsim_set_main_mode(dsim);
 
@@ -1358,12 +1367,15 @@ sec_mipi_dsim_bridge_atomic_enable(struct drm_bridge *bridge,
 		dev_err(dsim->dev, "dsim pll config failed: %d\n", ret);
 		return;
 	}
-
+ 
+        enable_ldb_bkl_vcc();
+	msleep(200);
 	/* config dphy timings */
 	sec_mipi_dsim_config_dphy(dsim);
 
 	/* initialize FIFO pointers */
 	sec_mipi_dsim_init_fifo_pointers(dsim);
+
 
 	/* prepare panel if exists */
 	if (dsim->panel) {
@@ -1376,6 +1388,10 @@ sec_mipi_dsim_bridge_atomic_enable(struct drm_bridge *bridge,
 
 	/* config esc clock, byte clock and etc */
 	sec_mipi_dsim_config_clkctrl(dsim);
+	
+
+
+    enable_ldb_bkl_pwm();
 
 	/* enable panel if exists */
 	if (dsim->panel) {
@@ -1388,6 +1404,8 @@ sec_mipi_dsim_bridge_atomic_enable(struct drm_bridge *bridge,
 
 	/* enable data transfer of dsim */
 	sec_mipi_dsim_set_standby(dsim, true);
+	
+
 
 	dsim->enabled = true;
 
