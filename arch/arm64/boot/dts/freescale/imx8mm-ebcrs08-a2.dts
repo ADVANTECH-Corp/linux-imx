@@ -214,10 +214,11 @@
 &uart1 { 
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1>;
-	fsl,uart-has-rtscts;
+	//fsl,uart-has-rtscts;
 	/*rs485-rts-active-low;
 	rts-gpios = <&gpio4 23 GPIO_ACTIVE_LOW>;
 	rs485-rx-during-tx;*/
+	rts-gpios = <&gpio4 24 GPIO_ACTIVE_HIGH>;
 	linux,rs485-enabled-at-boot-time;
 	status = "okay";
 };
@@ -703,7 +704,8 @@
 			MX8MM_IOMUXC_SAI2_RXC_UART1_RX		0x140
 			MX8MM_IOMUXC_SAI2_RXD0_UART1_RTS_B	0x140
 			/*MX8MM_IOMUXC_SAI2_RXD0_GPIO4_IO23	0x146*/
-			MX8MM_IOMUXC_SAI2_TXFS_UART1_CTS_B	0x140
+			//MX8MM_IOMUXC_SAI2_TXFS_UART1_CTS_B	0x140
+			MX8MM_IOMUXC_SAI2_TXFS_GPIO4_IO24		0x146
 
 		>;
 	};
