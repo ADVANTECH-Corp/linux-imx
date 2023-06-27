@@ -287,63 +287,25 @@
 			status = "disabled";
 		};
 
-		per_bridge0: bus@28000000 {
-                        compatible = "simple-bus";
-                        reg = <0x28000000 0x800000>;
-                        #address-cells = <1>;
-                        #size-cells = <1>;
-                        ranges;
-
-                        cgc0: clock-controller@2802f000 {
-                                compatible = "fsl,imx8ulp-cgc0";
-                                reg = <0x2802f000 0x10000>;
-                                clocks = <&sosc>, <&frosc>;
-                                clock-names = "sosc", "frosc";
-                                #clock-cells = <1>;
-                        };
-
-                        pcc0: clock-controller@28030000 {
-                                compatible = "fsl,imx8ulp-pcc0";
-                                reg = <0x28030000 0x10000>;
-                                #clock-cells = <1>;
-                                #reset-cells = <1>;
-                        };
-                };
-
 		per_bridge1: bus@28080000 {
 			compatible = "simple-bus";
-			reg = <0x28080000 0x800000>;
+			reg = <0x28080000 0x80000>;
 			#address-cells = <1>;
 			#size-cells = <1>;
 			ranges;
 
 			iomuxc0: pinctrl@280a1000 {
 				compatible = "fsl,imx8ulp-iomuxc0";
-				reg = <0x280a1000 0x10000>;
+				reg = <0x280a1000 0x1000>;
 			};
 
 			pcc1: clock-controller@28091000 {
 				compatible = "fsl,imx8ulp-pcc1";
-				reg = <0x28091000 0x10000>;
+				reg = <0x28091000 0x1000>;
 				#clock-cells = <1>;
 				#reset-cells = <1>;
 			};
 		};
-
-		per_bridge2: bus@28100000 {
-                        compatible = "simple-bus";
-                        reg = <0x28100000 0x800000>;
-                        #address-cells = <1>;
-                        #size-cells = <1>;
-                        ranges;
-
-                        pcc2: clock-controller@28102000 {
-                                compatible = "fsl,imx8ulp-pcc2";
-                                reg = <0x28102000 0x10000>;
-                                #clock-cells = <1>;
-                                #reset-cells = <1>;
-                        };
-                };
 
 		per_bridge3: bus@29000000 {
 			compatible = "simple-bus";
