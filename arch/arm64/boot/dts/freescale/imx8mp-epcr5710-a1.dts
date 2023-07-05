@@ -475,6 +475,7 @@
 };
 
 &hdmi {
+	skip_hdmi_4k_display;
 	status = "okay";
 };
 
