@@ -194,13 +194,13 @@
 		assigned-clock-rates = <24576000>;
 	};
 
-	24c32@57 {				//DB5901-U19
-                compatible = "fsl,24c32";
+	24c64@57 {				//DB5901-U19
+                compatible = "atmel,24c64";
                 reg = <0x57>;
         };
 
-	24c32@50 {				//DB5901-I2C_GP_1
-                compatible = "fsl,24c32";
+	24c64@50 {				//DB5901-I2C_GP_1
+                compatible = "atmel,24c64";
                 reg = <0x50>;
         };
         tca9538_2: pca9538@70 {
