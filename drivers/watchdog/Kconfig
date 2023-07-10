@@ -1030,6 +1030,17 @@ config SUNPLUS_WATCHDOG
 	  To compile this driver as a module, choose M here: the
 	  module will be called sunplus_wdt.
 
+config ADVANTECH_RISC_WDT
+	tristate "ADVANTECH Watchdog"
+	depends on ARCH_ADVANTECH
+	help
+	  This is the driver for the hardware watchdog
+	  If you have one of these processors and wish to have
+	  watchdog support enabled, say Y, otherwise say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called adv_wdt.
+
 # X86 (i386 + ia64 + x86_64) Architecture
 
 config ACQUIRE_WDT
