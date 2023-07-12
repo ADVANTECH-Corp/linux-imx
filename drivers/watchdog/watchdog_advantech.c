@@ -526,7 +526,7 @@ fail:
 	return ret;
 }
 
-static int __exit adv_wdt_i2c_remove(struct i2c_client *client)
+static void __exit adv_wdt_i2c_remove(struct i2c_client *client)
 {
 	misc_deregister(&adv_wdt_miscdev);
 	unregister_restart_handler(&adv_wdt_restart_handler);
@@ -541,8 +541,6 @@ static int __exit adv_wdt_i2c_remove(struct i2c_client *client)
 	clear_bit(ADV_WDT_STATUS_STARTED, &adv_wdt.status);
 
 	adv_wdt_miscdev.parent = NULL;
-
-	return 0;
 }
 
 static int adv_wdt_i2c_resume(struct device *dev)
