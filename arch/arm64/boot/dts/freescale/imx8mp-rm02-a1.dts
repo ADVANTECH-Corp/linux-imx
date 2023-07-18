@@ -765,13 +765,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usb_otg>;
 	dr_mode = "otg";
-	// dr_mode = "peripheral";
-	// maximum="super-speed";
-	// usb-role-switch;
-	hnp-disable;
-	srp-disable;
-	adp-disable;
-	maximum-speed;
 	extcon = <&extcon_usb_otg>;
 	vbus-supply = <&reg_usb_otg_vbus>;
 	status = "okay";
