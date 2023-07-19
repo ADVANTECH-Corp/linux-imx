@@ -185,6 +185,8 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb)
 	struct pwm_state state;
 	int err;
 
+	enable_ldb_bkl_vcc();
+
 	pwm_get_state(pb->pwm, &state);
 	if (pb->enabled)
 		return;
@@ -203,6 +205,8 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb)
 		gpiod_set_value_cansleep(pb->enable_gpio, 1);
 
 	pb->enabled = true;
+
+	enable_ldb_bkl_pwm();
 }
 
 static void pwm_backlight_power_off(struct pwm_bl_data *pb)
