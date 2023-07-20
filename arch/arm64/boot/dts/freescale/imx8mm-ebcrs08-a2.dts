@@ -35,6 +35,18 @@
 		status = "disabled";
 	};
 
+    leds {
+		compatible = "gpio-leds";
+		pinctrl-0 = <&pinctrl_gpio_led>;
+		pinctrl-names = "default";
+		status = "okay";
+		user {
+			label = "user";
+			gpios = <&gpio1 11 GPIO_ACTIVE_HIGH>; /* GPIO_ACTIVE_LOW:1 */
+			default-state = "off";
+		};
+    };
+
 	misc-adv-gpio {
 		compatible = "misc-adv-gpio";
 		status = "okay";
@@ -166,4 +178,11 @@
 			MX8MM_IOMUXC_NAND_CE1_B_USDHC3_STROBE           0x196
 		>;
 	};
+	
+	pinctrl_gpio_led: gpio_userkeygrp-1 {
+		fsl,pins = <
+			MX8MM_IOMUXC_GPIO1_IO11_GPIO1_IO11		0x19	/* LID */
+		>;
+	};
+
 };
