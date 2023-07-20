@@ -95,20 +95,17 @@
 		enable-active-high;
 	};
 
-        gpio-keys {
-                compatible = "gpio-keys";
+        leds {
+                compatible = "gpio-leds";
                 #address-cells = <1>;
                 #size-cells = <0>;
-                pinctrl-0 = <&pinctrl_lid_key>;
+                pinctrl-0 = <&pinctrl_gpio_led>;
                 pinctrl-names = "default";
-                status = "disabled";
-                lid@1 {
-                        label = "LID KEY";
-                        gpios = <&gpio1 11 0>; /* GPIO_ACTIVE_LOW:1 */
-                        linux,input-type = <1>; /* EV_KEY */
-                        linux,code = <116>;     /* KEY_POWER */
-                        wakeup-source;
-                        debounce-interval = <100>;
+                status = "okay";
+                user {
+                        label = "user";
+                        gpios = <&gpio1 11 GPIO_ACTIVE_HIGH>; /* GPIO_ACTIVE_LOW:1 */
+                        default-state = "off";
                 };
         };
         
@@ -925,7 +922,7 @@
 		>;
 	};
 
-        pinctrl_lid_key: gpio_userkeygrp-1 {
+        pinctrl_gpio_led: gpio_userkeygrp-1 {
                 fsl,pins = <
 			MX8MM_IOMUXC_GPIO1_IO11_GPIO1_IO11		0x19	/* LID */
                 >;
