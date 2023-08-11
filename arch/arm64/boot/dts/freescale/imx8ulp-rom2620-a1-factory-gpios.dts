@@ -441,10 +441,12 @@
                         MX8ULP_PAD_PTE23__PTE23         0x3
 
                         MX8ULP_PAD_PTF3__PTF3           0x3
+                        MX8ULP_PAD_PTF7__PTF7           0x3
                         MX8ULP_PAD_PTF8__PTF8           0x3
                         MX8ULP_PAD_PTF9__PTF9           0x3
                         MX8ULP_PAD_PTF10__PTF10         0x3
                         MX8ULP_PAD_PTF11__PTF11         0x3
+                        MX8ULP_PAD_PTF16__PTF16         0x3
                         MX8ULP_PAD_PTF25__PTF25         0x3
                         MX8ULP_PAD_PTF27__PTF27         0x3
                         MX8ULP_PAD_PTF28__PTF28         0x3
