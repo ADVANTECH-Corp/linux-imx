@@ -437,7 +437,7 @@
 		reg = <0x71>;
 		pinctrl-0 = <&pinctrl_tca9538_2>;
 		interrupt-parent = <&gpio4>;
-		interrupts = <1 IRQ_TYPE_NONE>;
+		interrupts = <1 IRQ_TYPE_EDGE_FALLING>;
 		gpio-controller;
 		#gpio-cells = <2>;
 		interrupt-controller;
@@ -449,7 +449,7 @@
 		reg = <0x70>;
 		pinctrl-0 = <&pinctrl_tca9538_1>;
 		interrupt-parent = <&gpio4>;
-		interrupts = <0 IRQ_TYPE_NONE>;
+		interrupts = <0 IRQ_TYPE_EDGE_FALLING>;
 		gpio-controller;
 		#gpio-cells = <2>;
 		interrupt-controller;
