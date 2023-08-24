@@ -202,6 +202,19 @@
 	};
 };
 
+&per_bridge5 {
+	tpm8: pwm@2da80000 {
+		compatible = "fsl,imx8ulp-pwm", "fsl,imx7ulp-pwm";
+		reg = <0x2da80000 0x10000>;
+		clocks = <&pcc5 IMX8ULP_CLK_TPM8>;
+		clock-names = "ipg";
+		assigned-clocks = <&pcc5 IMX8ULP_CLK_TPM8>;
+		assigned-clock-parents =  <&cgc1 IMX8ULP_CLK_SOSC_DIV2>;
+		assigned-clock-rates = <24000000>;
+		status = "disabled";
+	};
+};
+
 &dcnano {
 	status = "okay";
 };
@@ -529,6 +542,13 @@
 	};
 };
 
+&tpm8 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pwm>;
+	#pwm-cells = <3>;
+	status = "okay";
+};
+
 &iomuxc1 {
 	pinctrl_dsi: dsigrp {
 		fsl,pins = <
@@ -685,7 +705,7 @@
 
 	pinctrl_pwm: pwmgrp {
 		fsl,pins = <
-			MX8ULP_PAD_PTD19__PTD19         0x2 /* DISP_BL_PWM */
+			MX8ULP_PAD_PTD19__TPM8_CH1      0x42 /* DISP_BL_PWM */
 		>;
 	};
 
