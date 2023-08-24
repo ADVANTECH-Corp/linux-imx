@@ -200,6 +200,19 @@
 	};
 };
 
+&per_bridge3 {
+	tpm4: tpm@29330000 {
+		compatible = "fsl,imx8ulp-pwm", "fsl,imx7ulp-pwm";
+		reg = <0x29330000 0x1000>;
+		clocks = <&pcc3 IMX8ULP_CLK_TPM4>;
+		clock-names = "ipg";
+		assigned-clocks = <&pcc3 IMX8ULP_CLK_TPM4>;
+		assigned-clock-parents =  <&cgc1 IMX8ULP_CLK_SOSC_DIV2>;
+		assigned-clock-rates = <24000000>;
+		status = "disabled";
+	};
+};
+
 &per_bridge4 {
 	tpm7: pwm@29830000 {
 		compatible = "fsl,imx8ulp-pwm", "fsl,imx7ulp-pwm";
@@ -344,22 +357,6 @@
 	memory-region = <&vdevbuffer>, <&vdev0vring0>, <&vdev0vring1>,
 			<&vdev1vring0>, <&vdev1vring1>, <&rsc_table>;
 	status = "okay";
-};
-
-&lpspi5 {
-	fsl,spi-num-chipselects = <1>;
-	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&pinctrl_lpspi5>;
-	pinctrl-1 = <&pinctrl_lpspi5>;
-	cs-gpios = <&gpiof 19 GPIO_ACTIVE_LOW>;
-	pinctrl-assert-gpios = <&pca6416_1 10 GPIO_ACTIVE_LOW>;
-	status = "okay";
-
-	spidev0: spi@0 {
-		reg = <0>;
-		compatible = "lwn,bk4";
-		spi-max-frequency = <1000000>;
-	};
 };
 
 &lpuart4 {
@@ -557,6 +554,13 @@
 };
 */
 
+&tpm4 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&pinctrl_tpm4>;
+	pinctrl-1 = <&pinctrl_tpm4>;
+	status = "okay";
+};
+
 &tpm7 {
 	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&pinctrl_tpm7>;
@@ -643,15 +647,6 @@
 			/*
 			MX8ULP_PAD_PTF10__ENET0_1588_CLKIN 0x43
 			*/
-		>;
-	};
-
-	pinctrl_lpspi5: lpspi5grp {
-		fsl,pins = <
-			MX8ULP_PAD_PTF16__LPSPI5_SIN	0x3
-			MX8ULP_PAD_PTF17__LPSPI5_SOUT	0x3
-			MX8ULP_PAD_PTF18__LPSPI5_SCK	0x3
-			MX8ULP_PAD_PTF19__PTF19		0x3
 		>;
 	};
 
@@ -779,6 +774,12 @@
 	pinctrl_pwm: pwmgrp {
 		fsl,pins = <
 			MX8ULP_PAD_PTD19__PTD19         0x2 /* DISP_BL_PWM */
+		>;
+	};
+
+	pinctrl_tpm4: tpm4grp {
+		fsl,pins = <
+			MX8ULP_PAD_PTF16__TPM4_CH4      0x42 /* PWM1 */
 		>;
 	};
 
