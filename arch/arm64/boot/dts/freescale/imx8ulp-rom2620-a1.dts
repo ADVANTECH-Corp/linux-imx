@@ -111,12 +111,6 @@
 			no-map;
 		};
 
-		audio_reserved: audio@0xa8500000 {
-			compatible = "shared-dma-pool";
-			no-map;
-			reg = <0 0xa8500000 0 0x100000>;
-		};
-
 		m33_reserved: m33_noncacheable_section@a8600000 {
 			no-map;
 			reg = <0 0xa8600000 0 0x1000000>;
@@ -185,19 +179,6 @@
 			"Headphone Jack", "HP_OUT";
 		no-audmux;
 	};
-
-	rpmsg_audio: rpmsg-audio {
-		compatible = "fsl,imx8ulp-rpmsg-audio";
-		model = "wm8960-audio";
-		fsl,rpmsg-out;
-		fsl,rpmsg-in;
-		audio-codec = <&wm8960>;
-		memory-region = <&audio_reserved>;
-		audio-routing =
-			"LINPUT1", "MICB",
-			"LINPUT3", "MICB";
-		status = "okay";
-	};
 };
 
 &per_bridge3 {
@@ -244,26 +225,6 @@
 	clock-frequency = <50000000>;
 };
 
-&dcnano {
-	status = "okay";
-};
-
-&dphy {
-	status = "okay";
-};
-
-&dsi {
-	status = "okay";
-	ports {
-		port@1 {
-			reg = <1>;
-			mipi_dsi_out: endpoint {
-				remote-endpoint = <&it6161_from_dsim>;
-			};
-		};
-	};
-};
-
 &dsp {
 	assigned-clocks = <&cgc2 IMX8ULP_CLK_HIFI_SEL>;
 	assigned-clock-parents = <&cgc2 IMX8ULP_CLK_PLL4>;
@@ -298,26 +259,6 @@
 	#size-cells = <0>;
 	status = "okay";
 
-	pca6416_1: gpio@20 {
-		compatible = "ti,tca6416";
-		reg = <0x20>;
-		gpio-controller;
-		#gpio-cells = <2>;
-	};
-
-	mpl3115@60 {
-		compatible = "fsl,mpl3115";
-		reg = <0x60>;
-	};
-
-	wm8960: wm8960@1a {
-		compatible = "wlf,wm8960,lpa";
-		reg = <0x1a>;
-		wlf,shared-lrclk;
-		clocks = <&wm8960_mclk>;
-		clock-names = "mclk";
-	};
-
 	ov5640_mipi: ov5640_mipi@3c {
 		compatible = "ovti,ov5640";
 		reg = <0x3c>;
@@ -333,22 +274,6 @@
 				remote-endpoint = <&mipi_csi0_ep>;
 				data-lanes = <1 2>;
 				clocks-lanes = <0>;
-			};
-		};
-	};
-
-	ite_bridge: it6161@6c {
-		compatible = "ite,it6161";
-		reg = <0x6c>;
-		it6161-addr-hdmi-tx = <0x4c>;
-		enable-gpios = <&pca6416_1 9 GPIO_ACTIVE_LOW>;
-		interrupt-parent = <&rpmsg_gpioa>;
-		interrupts = <19 IRQ_TYPE_LEVEL_LOW>;
-		status = "okay";
-
-		port {
-			it6161_from_dsim: endpoint {
-				remote-endpoint = <&mipi_dsi_out>;
 			};
 		};
 	};
@@ -447,13 +372,6 @@
 		pinctrl-0 = <&pinctrl_sai7_mclk>;
 		clocks = <&cgc1 IMX8ULP_CLK_SPLL3_PFD1_DIV1>;
 		clock-names = "mclk";
-	};
-
-	pcal6408: gpio@21 {
-		compatible = "nxp,pcal9554b";
-		reg = <0x21>;
-		gpio-controller;
-		#gpio-cells = <2>;
 	};
 
 	eeprom1: 24c32@50 {
@@ -640,14 +558,6 @@
                         MX8ULP_PAD_PTF1__PTF1           0x3
                 >;
         };
-
-	pinctrl_dsi: dsigrp {
-		fsl,pins = <
-		/*
-			MX8ULP_PAD_PTF8__PTF8		0x3
-		*/
-		>;
-	};
 
 	pinctrl_enet: enetgrp {
 		fsl,pins = <

@@ -33,8 +33,6 @@
 	};
 };
 
-/delete-node/ &ite_bridge;
-
 &lpi2c6 {
 	lt9211:lt9211@2d {
 		compatible = "lontium,lt9211";
@@ -61,7 +59,17 @@
 	status = "okay";
 };
 
+&dcnano {
+        status = "okay";
+};
+
+&dphy {
+        status = "okay";
+};
+
 &dsi {
+	status = "okay";
+
         panel@0 {
                 compatible = "rocktech,hx8394f";
                 reg = <0>;
