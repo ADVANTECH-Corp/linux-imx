@@ -16,6 +16,7 @@
 #include <linux/slab.h>
 #include <linux/gpio.h>
 #include <linux/clk.h>
+#include <linux/extcon-provider.h>
 #include <sound/soc.h>
 #include <sound/jack.h>
 #include <sound/control.h>
@@ -25,6 +26,16 @@
 #include <linux/mfd/syscon.h>
 #include "../codecs/wm8960.h"
 #include "fsl_sai.h"
+
+#ifdef CONFIG_EXTCON
+struct extcon_dev *wm8960_edev;
+
+static const unsigned int imx_wm8960_extcon_cables[] = {
+	EXTCON_JACK_MICROPHONE,
+	EXTCON_JACK_HEADPHONE,
+	EXTCON_NONE,
+};
+#endif
 
 struct imx_wm8960_data {
 	enum of_gpio_flags hp_active_low;
@@ -63,6 +74,9 @@ static int hp_jack_status_check(void *data)
 	hp_status = gpio_get_value_cansleep(imx_data->imx_hp_jack_gpio.gpio);
 
 	if (hp_status != imx_data->hp_active_low) {
+#ifdef CONFIG_EXTCON
+		extcon_set_state_sync(wm8960_edev, EXTCON_JACK_HEADPHONE, 1);
+#endif
 		snd_soc_dapm_disable_pin(dapm, "Ext Spk");
 		if (imx_data->is_headset_jack) {
 			snd_soc_dapm_enable_pin(dapm, "Mic Jack");
@@ -70,6 +84,9 @@ static int hp_jack_status_check(void *data)
 		}
 		ret = imx_data->imx_hp_jack_gpio.report;
 	} else {
+#ifdef CONFIG_EXTCON
+		extcon_set_state_sync(wm8960_edev, EXTCON_JACK_HEADPHONE, 0);
+#endif
 		snd_soc_dapm_enable_pin(dapm, "Ext Spk");
 		if (imx_data->is_headset_jack) {
 			snd_soc_dapm_disable_pin(dapm, "Mic Jack");
@@ -679,6 +696,18 @@ static int imx_wm8960_probe(struct platform_device *pdev)
 			dev_warn(&pdev->dev, "create mic attr failed (%d)\n", ret);
 	}
 
+#ifdef CONFIG_EXTCON
+	wm8960_edev  = devm_extcon_dev_allocate(&pdev->dev, imx_wm8960_extcon_cables);
+	if (IS_ERR(wm8960_edev)) {
+		dev_err(&pdev->dev, "failed to allocate extcon device\n");
+		goto fail;
+	}
+	ret = devm_extcon_dev_register(&pdev->dev,wm8960_edev);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to register extcon device\n");
+		goto fail;
+	}
+#endif
 out:
 	ret = 0;
 fail:
@@ -714,7 +743,17 @@ static struct platform_driver imx_wm8960_driver = {
 	.probe = imx_wm8960_probe,
 	.remove = imx_wm8960_remove,
 };
-module_platform_driver(imx_wm8960_driver);
+static int __init imx_wm8960_init(void)
+{
+	return platform_driver_register(&imx_wm8960_driver);
+}
+late_initcall_sync(imx_wm8960_init);
+
+static void __exit imx_wm8960_exit(void)
+{
+	platform_driver_unregister(&imx_wm8960_driver);
+}
+module_exit(imx_wm8960_exit);
 
 MODULE_AUTHOR("Freescale Semiconductor, Inc.");
 MODULE_DESCRIPTION("Freescale i.MX WM8960 ASoC machine driver");

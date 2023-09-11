@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2010 Juergen Beisert, Pengutronix
+ * Copyright 2019 NXP
  *
  * This code is based on:
  * Author: Vitaly Wool <vital@embeddedalley.com>
@@ -136,6 +137,8 @@
 #define CTRL1_IRQ_STATUS_SHIFT			8
 
 #define CTRL2_OUTSTANDING_REQS__REQ_16		(4 << 21)
+#define CTRL2_ODD_LINE_PATTERN_BGR		(5 << 16)
+#define CTRL2_EVEN_LINE_PATTERN_BGR		(5 << 12)
 
 #define TRANSFER_COUNT_SET_VCOUNT(x)	(((x) & 0xffff) << 16)
 #define TRANSFER_COUNT_GET_VCOUNT(x)	(((x) >> 16) & 0xffff)
@@ -254,6 +257,7 @@ struct mxsfb_info {
 	struct regulator *reg_lcd;
 	bool wait4vsync;
 	struct completion vsync_complete;
+	ktime_t vsync_nf_timestamp;
 	struct completion flip_complete;
 	int cur_blank;
 	int restore_blank;
@@ -262,11 +266,16 @@ struct mxsfb_info {
 	int id;
 	struct fb_var_screeninfo var;
 	struct pm_qos_request pm_qos_req;
+	u32 pix_fmt;
 
 	char disp_videomode[NAME_LEN];
 
 #ifdef CONFIG_FB_MXC_OVERLAY
 	struct mxsfb_layer overlay;
+#endif
+
+#ifdef CONFIG_FB_FENCE
+	struct fb_fence_context context;
 #endif
 };
 
@@ -534,6 +543,25 @@ static const struct fb_bitfield def_argb32[] = {
 	}
 };
 
+static const struct fb_bitfield def_abgr32[] = {
+	[RED] = {
+		.offset = 0,
+		.length = 8,
+	},
+	[GREEN] = {
+		.offset = 8,
+		.length = 8,
+	},
+	[BLUE] = {
+		.offset = 16,
+		.length = 8,
+	},
+	[TRANSP] = {
+		.offset = 24,
+		.length = 8,
+	}
+};
+
 #define bitfield_is_equal(f1, f2)  (!memcmp(&(f1), &(f2), sizeof(f1)))
 
 static inline bool pixfmt_is_equal(struct fb_var_screeninfo *var,
@@ -542,6 +570,32 @@ static inline bool pixfmt_is_equal(struct fb_var_screeninfo *var,
 	if (bitfield_is_equal(var->red, f[RED]) &&
 	    bitfield_is_equal(var->green, f[GREEN]) &&
 	    bitfield_is_equal(var->blue, f[BLUE]))
+		return true;
+
+	return false;
+}
+
+static const struct fb_bitfield* pixfmt_to_bf(u32 pix_fmt)
+{
+	if (pix_fmt == V4L2_PIX_FMT_RGB565)
+		return def_rgb565;
+	else if (pix_fmt == V4L2_PIX_FMT_RGB666)
+		return def_rgb666;
+	else if (pix_fmt == V4L2_PIX_FMT_RGB24)
+		return def_rgb888;
+	else if (pix_fmt == V4L2_PIX_FMT_ARGB32)
+		return def_argb32;
+	else if (pix_fmt == V4L2_PIX_FMT_ABGR32)
+		return def_abgr32;
+	else {
+		pr_err("unsupported pix format\n");
+		return NULL;
+	}
+}
+
+static inline bool need_swizzle_rgb(struct fb_var_screeninfo *var)
+{
+	if (pixfmt_is_equal(var, def_abgr32))
 		return true;
 
 	return false;
@@ -570,6 +624,7 @@ static irqreturn_t mxsfb_irq_handler(int irq, void *dev_id)
 		writel(CTRL1_VSYNC_EDGE_IRQ_EN,
 			     host->base + LCDC_CTRL1 + REG_CLR);
 		host->wait4vsync = 0;
+		host->vsync_nf_timestamp = ktime_get();
 		complete(&host->vsync_complete);
 	}
 
@@ -579,6 +634,9 @@ static irqreturn_t mxsfb_irq_handler(int irq, void *dev_id)
 		writel(CTRL1_CUR_FRAME_DONE_IRQ_EN,
 			     host->base + LCDC_CTRL1 + REG_CLR);
 		complete(&host->flip_complete);
+#ifdef CONFIG_FB_FENCE
+		fb_handle_fence(&host->context);
+#endif
 	}
 
 	if (acked_status & CTRL1_UNDERFLOW_IRQ)
@@ -632,12 +690,17 @@ static int mxsfb_check_var(struct fb_var_screeninfo *var,
 			if (pixfmt_is_equal(var, def_rgb666))
 				/* 24 bit to 18 bit mapping */
 				rgb = def_rgb666;
+			else if (host->pix_fmt && pixfmt_to_bf(host->pix_fmt))
+				rgb = pixfmt_to_bf(host->pix_fmt);
 			else
 				rgb = def_rgb888;
 			break;
 		case STMLCDIF_24BIT:
 			/* real 24 bit */
-			rgb = def_rgb888;
+			if (host->pix_fmt && pixfmt_to_bf(host->pix_fmt))
+				rgb = pixfmt_to_bf(host->pix_fmt);
+			else
+				rgb = def_rgb888;
 			break;
 		default:
 			/*
@@ -733,8 +796,10 @@ static void mxsfb_enable_controller(struct fb_info *fb_info)
 	}
 #endif
 
-	writel(CTRL2_OUTSTANDING_REQS__REQ_16,
-		host->base + LCDC_V4_CTRL2 + REG_SET);
+	reg = CTRL2_OUTSTANDING_REQS__REQ_16;
+	if (need_swizzle_rgb(&(fb_info->var)))
+		reg |= CTRL2_ODD_LINE_PATTERN_BGR | CTRL2_EVEN_LINE_PATTERN_BGR;
+	writel(reg, host->base + LCDC_V4_CTRL2 + REG_SET);
 
 	/* if it was disabled, re-enable the mode again */
 	writel(CTRL_DOTCLK_MODE, host->base + LCDC_CTRL + REG_SET);
@@ -855,9 +920,12 @@ static int mxsfb_set_par(struct fb_info *fb_info)
 	fb_info->fix.line_length = line_size;
 	fb_size = fb_info->var.yres_virtual * line_size;
 
-	if (fb_size > fb_info->fix.smem_len) {
-		dev_err(&host->pdev->dev, "exceeds the fb buffer size limit!\n");
-		return -ENOMEM;
+	if (!fb_info->fix.smem_start || fb_size > fb_info->fix.smem_len) {
+		if (fb_info->fix.smem_start)
+			mxsfb_unmap_videomem(fb_info);
+
+		if (mxsfb_map_videomem(fb_info) < 0)
+			return -ENOMEM;
 	}
 
 	/*
@@ -1019,6 +1087,62 @@ static int mxsfb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
 	return ret;
 }
 
+#if defined(CONFIG_ANDROID) || defined(CONFIG_FB_FENCE)
+static int mxsfb_update_screen(struct mxsfb_info *host, struct mxcfb_buffer *buffer)
+{
+	struct fb_info *fb_info = host->fb_info;
+	unsigned offset;
+
+	if (buffer->xoffset < 0 || buffer->yoffset < 0 || buffer->stride < 0) {
+		dev_err(fb_info->device, "get invalid buffer\n");
+		return -EINVAL;
+	}
+
+	// refer to pan_display: xoffset is not supported.
+	if (buffer->xoffset > 0) {
+		dev_err(fb_info->device, "x panning not supported\n");
+		return -EINVAL;
+	}
+
+	if (buffer->stride != fb_info->fix.line_length) {
+		dev_err(fb_info->device, "stride is not aligned to line_length\n");
+		return -EINVAL;
+	}
+
+	if (host->cur_blank != FB_BLANK_UNBLANK) {
+		dev_err(fb_info->device, "can't update screen when fb "
+			"is blank\n");
+		return -EINVAL;
+	}
+
+	// refer to pan_display.
+	offset = buffer->stride * buffer->yoffset;
+
+	/* update on next VSYNC */
+	writel(buffer->phys + offset, host->base + host->devdata->next_buf);
+
+	writel(CTRL1_CUR_FRAME_DONE_IRQ_EN,
+		host->base + LCDC_CTRL1 + REG_SET);
+
+	return 0;
+}
+#endif
+
+#ifdef CONFIG_FB_FENCE
+static int mxsfb_update_data(int64_t dma_address, struct fb_var_screeninfo *var, struct fb_info *fb_info)
+{
+	struct mxcfb_buffer buffer;
+	struct mxsfb_info *host = fb_info->par;
+
+	buffer.phys = dma_address;
+	buffer.xoffset = var->xoffset;
+	buffer.yoffset = var->yoffset;
+	buffer.stride = fb_info->fix.line_length;
+
+	return mxsfb_update_screen(host, &buffer);
+}
+#endif
+
 static int mxsfb_wait_for_vsync(struct fb_info *fb_info)
 {
 	struct mxsfb_info *host = fb_info->par;
@@ -1036,7 +1160,7 @@ static int mxsfb_wait_for_vsync(struct fb_info *fb_info)
 	writel(CTRL1_VSYNC_EDGE_IRQ_EN,
 		host->base + LCDC_CTRL1 + REG_SET);
 	ret = wait_for_completion_interruptible_timeout(
-				&host->vsync_complete, 1 * HZ);
+				&host->vsync_complete, HZ/10);
 	if (ret == 0) {
 		dev_err(fb_info->device,
 			"mxs wait for vsync timeout\n");
@@ -1054,8 +1178,54 @@ static int mxsfb_ioctl(struct fb_info *fb_info, unsigned int cmd,
 	int ret = -EINVAL;
 
 	switch (cmd) {
+#ifdef CONFIG_ANDROID
+	case MXCFB_UPDATE_SCREEN:
+		{
+			struct mxcfb_buffer buffer;
+			struct mxsfb_info *host = fb_info->par;
+			if (copy_from_user(&buffer, (void *)arg, sizeof(buffer))) {
+				ret = -EFAULT;
+				break;
+			}
+			ret = mxsfb_update_screen(host, &buffer);
+		}
+		break;
+#endif
+#ifdef CONFIG_FB_FENCE
+	case MXCFB_UPDATE_OVERLAY:
+		{
+			struct mxcfb_datainfo buffer;
+			struct mxsfb_info *host = fb_info->par;
+			if (copy_from_user(&buffer, (void *)arg, sizeof(buffer))) {
+				ret = -EFAULT;
+				break;
+			}
+			ret = fb_update_overlay(&host->context, &buffer);
+		}
+		break;
+	case MXCFB_PRESENT_SCREEN:
+		{
+			struct mxcfb_datainfo buffer;
+			struct mxsfb_info *host = fb_info->par;
+			if (copy_from_user(&buffer, (void *)arg, sizeof(buffer))) {
+				ret = -EFAULT;
+				break;
+			}
+			ret = fb_present_screen(&host->context, &buffer);
+		}
+		break;
+#endif
 	case MXCFB_WAIT_FOR_VSYNC:
-		ret = mxsfb_wait_for_vsync(fb_info);
+		{
+			long long timestamp;
+			struct mxsfb_info *host = fb_info->par;
+			ret = mxsfb_wait_for_vsync(fb_info);
+			timestamp = ktime_to_ns(host->vsync_nf_timestamp);
+			if ((ret == 0) && copy_to_user((void *)arg,
+				&timestamp, sizeof(timestamp))) {
+				ret = -EFAULT;
+			}
+		}
 		break;
 	default:
 		break;
@@ -1312,6 +1482,7 @@ static int mxsfb_init_fbinfo_dt(struct mxsfb_info *host)
 	struct device_node *timings_np;
 	struct display_timings *timings = NULL;
 	const char *disp_dev, *disp_videomode;
+	const char *pixfmt;
 	u32 width;
 	int i;
 	int ret = 0;
@@ -1354,6 +1525,27 @@ static int mxsfb_init_fbinfo_dt(struct mxsfb_info *host)
 	if (ret < 0) {
 		dev_err(dev, "failed to get property bits-per-pixel\n");
 		goto put_display_node;
+	}
+
+	ret = of_property_read_string(display_np, "fbpix", &pixfmt);
+	if (ret) {
+		host->pix_fmt = 0;
+		dev_warn(dev, "not find property pix fmt\n");
+	} else {
+		if (!strncmp(pixfmt, "RGB565", 6))
+			host->pix_fmt = V4L2_PIX_FMT_RGB565;
+		else if (!strncmp(pixfmt, "RGB666", 6))
+			host->pix_fmt = V4L2_PIX_FMT_RGB666;
+		else if (!strncmp(pixfmt, "RGB888", 6))
+			host->pix_fmt = V4L2_PIX_FMT_RGB24;
+		else if (!strncmp(pixfmt, "ARGB32", 6))
+			host->pix_fmt = V4L2_PIX_FMT_ARGB32;
+		else if (!strncmp(pixfmt, "ABGR32", 6))
+			host->pix_fmt = V4L2_PIX_FMT_ABGR32;
+		else {
+			dev_warn(dev, "no pix fmt assigned, use default\n");
+			host->pix_fmt = 0;
+		}
 	}
 
 	ret = of_property_read_string(np, "disp-dev", &disp_dev);
@@ -1505,6 +1697,26 @@ static int mxsfb_dispdrv_init(struct platform_device *pdev,
 
 	return 0;
 }
+
+static ssize_t mxsfb_get_vsync(struct device *dev,
+                 struct device_attribute *attr, char *buf)
+{
+	long long timestamp = 0;
+	struct fb_info *fb_info = dev_get_drvdata(dev);
+	struct mxsfb_info *host = fb_info->par;
+	int ret = -EINVAL;
+
+	ret = mxsfb_wait_for_vsync(fb_info);
+	timestamp = ktime_to_ns(host->vsync_nf_timestamp);
+	if (ret != 0) {
+		dev_err(dev, "MXCFB_WAIT_FOR_VSYNC: timeout %d\n", ret);
+		return -EFAULT;
+	}
+
+	return snprintf(buf, PAGE_SIZE, "VSYNC=%llu", timestamp);
+}
+
+static DEVICE_ATTR(vsync, S_IRUGO, mxsfb_get_vsync, NULL);
 
 static void mxsfb_free_videomem(struct mxsfb_info *host)
 {
@@ -2324,6 +2536,10 @@ static int mxsfb_probe(struct platform_device *pdev)
 		pm_runtime_get_sync(&host->pdev->dev);
 	}
 
+#ifdef CONFIG_FB_FENCE
+	fb_init_fence_context(&host->context, "lcdif", fb_info, mxsfb_update_data);
+#endif
+
 	ret = register_framebuffer(fb_info);
 	if (ret != 0) {
 		dev_err(&pdev->dev, "Failed to register framebuffer\n");
@@ -2341,6 +2557,10 @@ static int mxsfb_probe(struct platform_device *pdev)
 		goto fb_unregister;
 	}
 #endif
+
+	ret = device_create_file(fb_info->dev, &dev_attr_vsync);
+	if (ret)
+		dev_err(&pdev->dev, "Failed to create vsync file\n");
 
 	dev_info(&pdev->dev, "initialized\n");
 
@@ -2373,6 +2593,7 @@ static int mxsfb_remove(struct platform_device *pdev)
 	struct mxsfb_info *host = platform_get_drvdata(pdev);
 	struct fb_info *fb_info = host->fb_info;
 
+	device_remove_file(fb_info->dev, &dev_attr_vsync);
 	if (host->enabled)
 		mxsfb_disable_controller(fb_info);
 

@@ -58,6 +58,15 @@
 			reg = <0x9ff20000 0xe0000>;
 			no-map;
 		};
+
+		ramoops@0x99b00000 {
+			compatible = "ramoops";
+			reg = <0x99b00000 0x00100000>;
+			record-size     = <0x00020000>;
+			console-size    = <0x00020000>;
+			ftrace-size     = <0x00020000>;
+			pmsg-size       = <0x00020000>;
+		};
 	};
 
 	backlight {
@@ -75,11 +84,10 @@
 		#reset-cells = <0>;
 	};
 
-	modem_reset: modem-reset {
-		compatible = "gpio-reset";
-		reset-gpios = <&rpmsg_gpio0 15 GPIO_ACTIVE_LOW>;
-		reset-delay-us = <1000>;
-		#reset-cells = <0>;
+	bt_rfkill {
+		compatible = "fsl,mxc_bt_rfkill";
+		bt-power-gpios = <&rpmsg_gpio0 15 GPIO_ACTIVE_LOW>;
+		status ="okay";
 	};
 
 	pf1550-rpmsg {
@@ -317,8 +325,9 @@
 	display = <&display0>;
 
 	display0: display@0 {
-		bits-per-pixel = <16>;
+		bits-per-pixel = <32>;
 		bus-width = <24>;
+		fbpix = "ABGR32";
 
 		display-timings {
 			native-mode = <&timing0>;
@@ -353,7 +362,6 @@
 	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&pinctrl_lpuart6>;
 	pinctrl-1 = <&pinctrl_lpuart6>;
-	resets = <&modem_reset>;
 	status = "okay";
 };
 

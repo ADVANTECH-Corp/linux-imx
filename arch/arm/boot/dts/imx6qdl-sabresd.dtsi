@@ -8,6 +8,47 @@
 #include <dt-bindings/input/input.h>
 
 / {
+	firmware {
+		android {
+			compatible = "android,firmware";
+			fstab {
+				compatible = "android,fstab";
+				system {
+					compatible = "android,system";
+					/* default emmc node used for GSI */
+					dev = "/dev/block/platform/soc0/soc/2100000.aips-bus/219c000.usdhc/by-name/system";
+					/* sd card node which used if androidboot.boot_device_root=mmcblk2 */
+					dev_mmcblk2 = "/dev/block/platform/soc0/soc/2100000.aips-bus/2198000.usdhc/by-name/system";
+					/* emmc node which used if androidboot.boot_device_root=mmcblk3 */
+					dev_mmcblk3 = "/dev/block/platform/soc0/soc/2100000.aips-bus/219c000.usdhc/by-name/system";
+					type = "ext4";
+					mnt_flags = "ro,barrier=1,inode_readahead_blks=8";
+					fsmgr_flags = "wait,avb";
+				};
+				vendor {
+					compatible = "android,vendor";
+					/* default emmc node used for GSI */
+					dev = "/dev/block/platform/soc0/soc/2100000.aips-bus/219c000.usdhc/by-name/vendor";
+					/* sd card node which used if androidboot.boot_device_root=mmcblk2 */
+					dev_mmcblk2 = "/dev/block/platform/soc0/soc/2100000.aips-bus/2198000.usdhc/by-name/vendor";
+					/* emmc node which used if androidboot.boot_device_root=mmcblk3 */
+					dev_mmcblk3 = "/dev/block/platform/soc0/soc/2100000.aips-bus/219c000.usdhc/by-name/vendor";
+					type = "ext4";
+					mnt_flags = "ro,barrier=1,inode_readahead_blks=8";
+					fsmgr_flags = "wait,avb";
+				};
+			};
+			vbmeta {
+				/*we need use FirstStageMountVBootV2 if we enable avb*/
+				compatible = "android,vbmeta";
+				/*parts means the partition witch can be mount in first stage*/
+				parts = "vbmeta,dtbo,boot,system,vendor";
+			};
+		};
+	};
+};
+
+/ {
 	aliases {
 		mxcfb0 = &mxcfb1;
 		mxcfb1 = &mxcfb2;
@@ -19,22 +60,24 @@
 		stdout-path = &uart1;
 	};
 
-	battery: max8903@0 {
-		compatible = "fsl,max8903-charger";
-		pinctrl-names = "default";
-		dok_input = <&gpio2 24 1>;
-		uok_input = <&gpio1 27 1>;
-		chg_input = <&gpio3 23 1>;
-		flt_input = <&gpio5 2 1>;
-		fsl,dcm_always_high;
-		fsl,dc_valid;
-		fsl,usb_valid;
-		status = "okay";
-	};
 
 	memory: memory@10000000 {
 		device_type = "memory";
 		reg = <0x10000000 0x40000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+		ramoops@0x3ff00000 {
+			compatible = "ramoops";
+			reg = <0x3ff00000 0x00100000>;
+			record-size     = <0x00020000>;
+			console-size    = <0x00020000>;
+			ftrace-size     = <0x00020000>;
+			pmsg-size       = <0x00020000>;
+		};
 	};
 
 	reg_usb_otg_vbus: regulator-usb-otg-vbus {
@@ -117,14 +160,12 @@
 		volume-up {
 			label = "Volume Up";
 			gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;
-			wakeup-source;
 			linux,code = <KEY_VOLUMEUP>;
 		};
 
 		volume-down {
 			label = "Volume Down";
 			gpios = <&gpio1 5 GPIO_ACTIVE_LOW>;
-			wakeup-source;
 			linux,code = <KEY_VOLUMEDOWN>;
 		};
 	};

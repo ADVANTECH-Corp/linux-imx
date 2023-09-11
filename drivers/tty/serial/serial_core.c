@@ -218,10 +218,8 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
 
 	retval = uport->ops->startup(uport);
 	if (retval == 0) {
-		if (uart_console(uport) && uport->cons->cflag) {
+		if (uart_console(uport) && uport->cons->cflag)
 			tty->termios.c_cflag = uport->cons->cflag;
-			uport->cons->cflag = 0;
-		}
 		/*
 		 * Initialise the hardware port settings.
 		 */
@@ -288,7 +286,7 @@ static void uart_shutdown(struct tty_struct *tty, struct uart_state *state)
 		/*
 		 * Turn off DTR and RTS early.
 		 */
-		if (uport && uart_console(uport) && tty)
+		if (uport && uart_console(uport) && tty && tty->termios.c_cflag)
 			uport->cons->cflag = tty->termios.c_cflag;
 
 		if (!tty || C_HUPCL(tty))
@@ -2603,6 +2601,7 @@ struct tty_driver *uart_console_device(struct console *co, int *index)
 	*index = co->index;
 	return p->tty_driver;
 }
+EXPORT_SYMBOL_GPL(uart_console_device);
 
 static ssize_t uart_get_attr_uartclk(struct device *dev,
 	struct device_attribute *attr, char *buf)

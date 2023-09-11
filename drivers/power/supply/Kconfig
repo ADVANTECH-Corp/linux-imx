@@ -495,7 +495,7 @@ config CHARGER_GPIO
 	  called gpio-charger.
 
 config CHARGER_MANAGER
-	bool "Battery charger manager for multiple chargers"
+	tristate "Battery charger manager for multiple chargers"
 	depends on REGULATOR
 	select EXTCON
 	help
@@ -731,5 +731,11 @@ config FUEL_GAUGE_BQ40Z50
 	default y
 	help
 	  Say Y to enable support for TI bq40z50 fuel gauge driver
+
+config BATTERY_DUMMY
+	tristate "Dummy battery driver"
+	depends on ANDROID
+	help
+	  Say Y to enable support for dummy battery and USB power.
 
 endif # POWER_SUPPLY
