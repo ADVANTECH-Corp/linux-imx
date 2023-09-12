@@ -3,7 +3,7 @@
  * Copyright 2019 NXP
  */
 
-#include "imx8mp-rsb3720-a1-adv7535.dts"
+#include "imx8mp-rsb3720-a1-lvds-dual_g215hcj_lh1.dts"
 
 / {
 	firmware {

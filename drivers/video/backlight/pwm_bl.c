@@ -19,10 +19,10 @@
 #include <linux/pwm_backlight.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
-#ifdef CONFIG_ARCH_ADVANTECH
+//#ifdef CONFIG_ARCH_ADVANTECH
 #include <linux/of_gpio.h>
 #include <linux/delay.h>
-#endif
+//#endif
 
 struct pwm_bl_data {
 	struct pwm_device	*pwm;
@@ -92,7 +92,7 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 	pb->enabled = false;
 }
 
-#ifdef CONFIG_ARCH_ADVANTECH
+//#ifdef CONFIG_ARCH_ADVANTECH
 int lvds_vcc_enable;
 int lvds_bkl_enable;
 int bklt_vcc_enable;
@@ -184,7 +184,7 @@ void disable_ldb_bkl_pwm(void)
 	printk(KERN_INFO "[LVDS Sequence] 2 Start to disable backlight PWM.\n");
 }
 
-#endif
+//#endif
 
 static int compute_duty_cycle(struct pwm_bl_data *pb, int brightness)
 {
@@ -478,7 +478,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 		data->max_brightness--;
 	}
 
-#ifdef CONFIG_ARCH_ADVANTECH
+//#ifdef CONFIG_ARCH_ADVANTECH
 	lvds_vcc_enable = of_get_named_gpio_flags(node, "lvds-vcc-enable", 0, &lvds_vcc_flag);
 	bklt_vcc_enable = of_get_named_gpio_flags(node, "bklt-vcc-enable", 0, &bklt_vcc_flag);
 	lvds_bkl_enable = of_get_named_gpio_flags(node, "lvds-bkl-enable", 0, &lvds_bkl_flag);
@@ -548,7 +548,7 @@ get_delays:
 	{
 		bklt_en_disable_delay_value = 5;
 	}
-#endif
+//#endif
 
 	return 0;
 }
@@ -830,7 +830,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	bl->props.brightness = data->dft_brightness;
 	bl->props.power = pwm_backlight_initial_power_state(pb);
 
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH) //&& !defined(CONFIG_FB_MXC_DISP_FRAMEWORK)
+#if defined(CONFIG_OF) //&& defined(CONFIG_ARCH_ADVANTECH) //&& !defined(CONFIG_FB_MXC_DISP_FRAMEWORK)
 	/* Inorder to power off pwm backlight for SI test */
 	if (!of_machine_is_compatible("fsl,imx8mp")) {
 		bl->props.fb_blank = FB_BLANK_NORMAL;

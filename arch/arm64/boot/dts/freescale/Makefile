@@ -182,8 +182,9 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mp-rsb3720-a1-lvds0-auo.dtb \
 			  imx8mp-rsb3720-a1-adv7535.dtb \
 			  imx8mp-rsb3720-a1-auog101uan02.dtb \
 			  imx8mp-rsb3720-a1-basler.dtb \
-              imx8mp-rsb3720-a1.dtb \
-              imx8mp-rsb3720-a1-android.dtb
+			  imx8mp-rsb3720-a1.dtb \
+			  imx8mp-rsb3720-a1-android.dtb \
+			  imx8mp-rsb3720-a1-lvds-dual_g215hcj_lh1.dtb
 
 dtb-$(CONFIG_ARCH_S32) += s32v234-evb.dtb \
 			  s32v234-sbc.dtb

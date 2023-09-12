@@ -28,9 +28,9 @@
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
-#ifdef CONFIG_ARCH_ADVANTECH
+//#ifdef CONFIG_ARCH_ADVANTECH
 #include <linux/of_gpio.h>
-#endif
+//#endif
 
 #include <video/display_timing.h>
 #include <video/of_display_timing.h>
@@ -116,7 +116,7 @@ struct panel_simple {
 	struct drm_display_mode override_mode;
 };
 
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+#if defined(CONFIG_OF) //&& defined(CONFIG_ARCH_ADVANTECH)
 int blank_count = 0;
 extern void enable_ldb_bkl_vcc(void);
 extern void enable_ldb_bkl_pwm(void);
@@ -250,7 +250,7 @@ static int panel_simple_disable(struct drm_panel *panel)
 	if (p->backlight) {
 		p->backlight->props.power = FB_BLANK_POWERDOWN;
 		p->backlight->props.state |= BL_CORE_FBBLANK;
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+#if defined(CONFIG_OF) //&& defined(CONFIG_ARCH_ADVANTECH)
 		disable_ldb_bkl_pwm();
 		backlight_update_status(p->backlight); //PWM
 		disable_ldb_bkl_vcc();
@@ -318,7 +318,7 @@ static int panel_simple_enable(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
 
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+#if defined(CONFIG_OF) //&& defined(CONFIG_ARCH_ADVANTECH)
 	if (blank_count == 0)
 	{
 		blank_count++;
@@ -335,7 +335,7 @@ static int panel_simple_enable(struct drm_panel *panel)
 	if (p->backlight) {
 		p->backlight->props.state &= ~BL_CORE_FBBLANK;
 		p->backlight->props.power = FB_BLANK_UNBLANK;
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+#if defined(CONFIG_OF) //&& defined(CONFIG_ARCH_ADVANTECH)
 		switch (blank_count)
 		{
 		case 1:
@@ -962,6 +962,33 @@ static const struct panel_desc auo_t215hvn01 = {
 		.disable = 5,
 		.unprepare = 1000,
 #endif
+	}
+};
+
+static const struct drm_display_mode innolux_g215hcjlh1_mode = {
+	.clock = 74250,
+	.hdisplay = 1920,
+	.hsync_start = 1920 + 60,
+	.hsync_end = 1920 + 60 + 20,
+	.htotal = 1920 + 60 + 20 + 60,
+	.vdisplay = 1080,
+	.vsync_start = 1080 + 4,
+	.vsync_end = 1080 + 4 + 5,
+	.vtotal = 1080 + 4 + 5 + 36,
+	.vrefresh = 60,
+};
+
+static const struct panel_desc innolux_g215hcjlh1 = {
+	.modes = &innolux_g215hcjlh1_mode,
+	.num_modes = 1,
+	.bpc = 8,
+	.size = {
+		.width = 476,
+		.height = 268,
+	},
+	.delay = {
+		.disable = 10,
+		.unprepare = 10,
 	}
 };
 
@@ -3243,6 +3270,9 @@ static const struct of_device_id platform_of_match[] = {
 		.compatible = "auo,t215hvn01",
 		.data = &auo_t215hvn01,
 	}, {
+		.compatible = "innolux,g215hcjlh1",
+		.data = &innolux_g215hcjlh1,
+	}, {
 		.compatible = "avic,tm070ddh03",
 		.data = &avic_tm070ddh03,
 	}, {
@@ -3839,10 +3869,10 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	const struct panel_desc_dsi *desc;
 	const struct of_device_id *id;
 	int err;
-#if defined(CONFIG_ARCH_ADVANTECH)
+//#if defined(CONFIG_ARCH_ADVANTECH)
 	int dsi_vcc_enable_gpio, bklt_vcc_enable_gpio, bkl_enable_gpio;
 	enum of_gpio_flags vcc_enable_flag, bklt_vcc_enable_flag, bkl_enable_flag;
-#endif
+//#endif
 
 	id = of_match_node(dsi_of_match, dsi->dev.of_node);
 	if (!id)
@@ -3850,7 +3880,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 
 	desc = id->data;
 
-#if defined(CONFIG_ARCH_ADVANTECH)
+//#if defined(CONFIG_ARCH_ADVANTECH)
 	dsi_vcc_enable_gpio = of_get_named_gpio_flags(dsi->dev.of_node, "dsi-vcc-enable-gpio", 0, &vcc_enable_flag);
 	if (dsi_vcc_enable_gpio >= 0)
 	{
@@ -3883,7 +3913,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 		else
 			gpio_direction_output(bkl_enable_gpio, bkl_enable_flag);
 	}
-#endif
+//#endif
 
 	err = panel_simple_probe(&dsi->dev, &desc->desc);
 	if (err < 0)
