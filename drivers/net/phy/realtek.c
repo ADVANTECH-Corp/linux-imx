@@ -9,8 +9,10 @@
  * Copyright (c) 2004 Freescale Semiconductor, Inc.
  */
 #include <linux/bitops.h>
+#include <linux/of.h>
 #include <linux/phy.h>
 #include <linux/module.h>
+#include <linux/delay.h>
 
 #define RTL821x_PHYSR				0x11
 #define RTL821x_PHYSR_DUPLEX			BIT(13)
@@ -54,6 +56,15 @@ MODULE_DESCRIPTION("Realtek PHY driver");
 MODULE_AUTHOR("Johnson Leung");
 MODULE_LICENSE("GPL");
 
+static void rtl8211f_phy_fixup(struct phy_device *dev)
+{
+	msleep(200);
+	phy_write(dev, 0x1f, 0x0d04);
+	/*PHY LED OK*/
+	phy_write(dev, 0x10, 0xa050);
+	phy_write(dev, 0x11, 0x0000);
+	phy_write(dev, 0x1f, 0x0000);
+}
 static int rtl821x_read_page(struct phy_device *phydev)
 {
 	return __phy_read(phydev, RTL821x_PAGE_SELECT);
@@ -179,6 +190,7 @@ static int rtl8211f_config_init(struct phy_device *phydev)
 	/* enable TX-delay for rgmii-{id,txid}, and disable it for rgmii and
 	 * rgmii-rxid. The RX-delay can be enabled by the external RXDLY pin.
 	 */
+	rtl8211f_phy_fixup(phydev);
 	switch (phydev->interface) {
 	case PHY_INTERFACE_MODE_RGMII_ID:
 		rxdly = RTL8211F_RX_DELAY;
