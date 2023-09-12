@@ -1,4 +1,4 @@
-#ifdef CONFIG_ARCH_ADVANTECH
+//#ifdef CONFIG_ARCH_ADVANTECH
 /*
  * Advantech Watchdog driver
  */
@@ -595,4 +595,4 @@ module_exit(adv_wdt_i2c_exit);
 MODULE_DESCRIPTION("Advantech Watchdog I2C Driver");
 MODULE_LICENSE("GPL");
 
-#endif
+//#endif
