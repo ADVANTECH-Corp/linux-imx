@@ -73,16 +73,14 @@
 		board-cpu = "DualQuad";
 	};
 	
-	regulators {
-                reg_usb_otg_vbus: regulator-usb-otg-vbus {
+	reg_usb_otg_vbus: regulator-usb-otg-vbus {
                         compatible = "regulator-fixed";
                         regulator-name = "usb_otg_vbus";
                         regulator-min-microvolt = <5000000>;
                         regulator-max-microvolt = <5000000>;
                         gpio = <&gpio1 28 GPIO_ACTIVE_HIGH>;
                         enable-active-high;
-                };
-        };
+	};
 
         usdhc1_pwrseq: usdhc1_pwrseq {
                 compatible = "mmc-pwrseq-simple";
@@ -226,7 +224,7 @@
                                 MX6QDL_PAD_NANDF_D1__GPIO2_IO01        	0x80000000      /* M.2 BT OFF */
 				MX6QDL_PAD_GPIO_19__GPIO4_IO05		0x80000000	/* UART 5 WAKE */
                                 MX6QDL_PAD_GPIO_0__CCM_CLKO1            0x130b0		/* AUDIO CLK */
-                                MX6QDL_PAD_ENET_TX_EN__GPIO1_IO28       0x80000000      /* USB_OTG_PWR */
+                                MX6QDL_PAD_ENET_TX_EN__GPIO1_IO28       0x1b0b0      /* USB_OTG_PWR */
                         >;
                 };
 		pinctrl_hog_2: hoggrp-2 {
