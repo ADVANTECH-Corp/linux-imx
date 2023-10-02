@@ -82,6 +82,10 @@ struct imx6_pcie_drvdata {
 
 struct imx6_pcie {
 	struct dw_pcie		*pci;
+#ifdef CONFIG_ARCH_ADVANTECH
+        int                     power_on_gpio;
+        int                     power_on_gpio2;
+#endif
 	int			reset_gpio;
 	bool			gpio_active_high;
 	bool			link_is_up;
@@ -828,6 +832,14 @@ static int imx6_pcie_deassert_core_reset(struct imx6_pcie *imx6_pcie)
 	struct dw_pcie *pci = imx6_pcie->pci;
 	struct device *dev = pci->dev;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (gpio_is_valid(imx6_pcie->power_on_gpio))
+		gpio_set_value_cansleep(imx6_pcie->power_on_gpio, 1);
+
+	if (gpio_is_valid(imx6_pcie->power_on_gpio2))
+                gpio_set_value_cansleep(imx6_pcie->power_on_gpio2, 1);
+#endif
+
 	switch (imx6_pcie->drvdata->variant) {
 	case IMX8MQ:
 	case IMX8MQ_EP:
@@ -1548,6 +1560,36 @@ static int imx6_pcie_probe(struct platform_device *pdev)
 		imx6_pcie->hsio_cfg = 0;
 	if (of_property_read_u32(node, "local-addr", &imx6_pcie->local_addr))
 		imx6_pcie->local_addr = 0;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+        imx6_pcie->power_on_gpio = of_get_named_gpio(node, "power-on-gpio", 0);
+        if (gpio_is_valid(imx6_pcie->power_on_gpio)) {
+                ret = devm_gpio_request_one(&pdev->dev,
+                                            imx6_pcie->power_on_gpio,
+                                            GPIOF_OUT_INIT_LOW,
+                                            "PCIe power enable");
+                if (ret) {
+                        dev_err(&pdev->dev, "unable to get power-on gpio\n");
+                        return ret;
+                }
+        } else if (imx6_pcie->power_on_gpio == -EPROBE_DEFER) {
+                return imx6_pcie->power_on_gpio;
+        }
+
+	imx6_pcie->power_on_gpio2 = of_get_named_gpio(node, "power-on-gpio2", 0);
+        if (gpio_is_valid(imx6_pcie->power_on_gpio2)) {
+                ret = devm_gpio_request_one(&pdev->dev,
+                                            imx6_pcie->power_on_gpio2,
+                                            GPIOF_OUT_INIT_LOW,
+                                            "PCIe power enable2");
+                if (ret) {
+                        dev_err(&pdev->dev, "unable to get power-on gpio2\n");
+                        return ret;
+                }
+        } else if (imx6_pcie->power_on_gpio2 == -EPROBE_DEFER) {
+                return imx6_pcie->power_on_gpio2;
+        }
+#endif
 
 	/* Fetch GPIOs */
 	imx6_pcie->reset_gpio = of_get_named_gpio(node, "reset-gpio", 0);
