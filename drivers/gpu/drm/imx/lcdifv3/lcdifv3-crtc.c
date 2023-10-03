@@ -32,6 +32,12 @@ struct lcdifv3_crtc {
 	u32 pix_fmt;		/* drm fourcc */
 };
 
+#if defined(CONFIG_ARCH_ADVANTECH)
+static int first_flip_complete = 1;
+extern void enable_lcd_vdd_en(void);
+extern void enable_ldb_signal(void);
+#endif
+
 #define to_lcdifv3_crtc(crtc) container_of(crtc, struct lcdifv3_crtc, base)
 
 static void lcdifv3_crtc_reset(struct drm_crtc *crtc)
@@ -179,6 +185,14 @@ static void lcdifv3_crtc_atomic_enable(struct drm_crtc *crtc,
 	lcdifv3_set_pitch(lcdifv3, plane_state->fb->pitches[0]);
 	lcdifv3_plane_atomic_update(crtc->primary, state);
 	lcdifv3_en_shadow_load(lcdifv3);
+
+#if defined(CONFIG_ARCH_ADVANTECH)
+	if (first_flip_complete) {
+		enable_lcd_vdd_en();
+		enable_ldb_signal();
+		first_flip_complete = 0;
+	}
+#endif
 
 	/* run LCDIFv3 */
 	lcdifv3_enable_controller(lcdifv3);

@@ -18,6 +18,10 @@
 #include <linux/pwm_backlight.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#include <linux/delay.h>
+#endif
 
 struct pwm_bl_data {
 	struct pwm_device	*pwm;
@@ -106,10 +110,72 @@ static int compute_duty_cycle(struct pwm_bl_data *pb, int brightness)
 	return duty_cycle + lth;
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+int lvds_vcc_enable;
+int lvds_bkl_enable;
+int bklt_vcc_enable;
+int lvds_vcc_delay_value;
+int lvds_bkl_delay_value;
+int bklt_pwm_delay_value;
+int bklt_en_delay_value;
+enum of_gpio_flags lvds_vcc_flag;
+enum of_gpio_flags lvds_bkl_flag;
+enum of_gpio_flags bklt_vcc_flag;
+
+void enable_lcd_vdd_en(void)
+{
+	/* LVDS Panel power enable */
+	if (lvds_vcc_enable >= 0)
+	{
+		printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD. lvds_vcc_flag=%d\n",lvds_vcc_flag);
+		gpio_set_value_cansleep(lvds_vcc_enable, lvds_vcc_flag);
+	}
+
+	printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
+}
+
+void enable_ldb_signal(void)
+{
+	mdelay(lvds_vcc_delay_value); // T2 for AUO 7"
+}
+
+void enable_ldb_bkl_vcc(void)
+{
+	mdelay(lvds_bkl_delay_value); // T3 for AUO 7"
+
+	// Backlight On (VCC)
+	if (bklt_vcc_enable >= 0)
+	{
+		printk(KERN_INFO "[LVDS Sequence] 3 Start to enable backlight VCC. bklt_vcc_flag=%d\n",bklt_vcc_flag);
+		gpio_set_value_cansleep(bklt_vcc_enable, bklt_vcc_flag);
+	}
+
+	mdelay(bklt_pwm_delay_value); // T8 for AUO 7"
+	printk(KERN_INFO "[LVDS Sequence] 4 Start to enable backlight PWM.\n");
+}
+
+void enable_ldb_bkl_pwm(void)
+{
+	mdelay(bklt_en_delay_value); // T9 for AUO 7"
+
+	// Backlight Enable (Display On/Off)
+        if (lvds_bkl_enable >= 0)
+	{
+		printk(KERN_INFO "[LVDS Sequence] 5 Start to enable LVDS backlight.\n");
+		gpio_set_value_cansleep(lvds_bkl_enable, lvds_bkl_flag);
+	}
+}
+
+#endif
+
 static int pwm_backlight_update_status(struct backlight_device *bl)
 {
 	struct pwm_bl_data *pb = bl_get_data(bl);
+#ifndef CONFIG_ARCH_ADVANTECH
 	int brightness = backlight_get_brightness(bl);
+#else
+	int brightness = bl->props.brightness;
+#endif
 	struct pwm_state state;
 
 	if (pb->notify)
@@ -372,6 +438,74 @@ static int pwm_backlight_parse_dt(struct device *dev,
 
 		data->max_brightness = num_levels - 1;
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	lvds_vcc_enable = of_get_named_gpio_flags(node, "lvds-vcc-enable", 0, &lvds_vcc_flag);
+	bklt_vcc_enable = of_get_named_gpio_flags(node, "bklt-vcc-enable", 0, &bklt_vcc_flag);
+	lvds_bkl_enable = of_get_named_gpio_flags(node, "lvds-bkl-enable", 0, &lvds_bkl_flag);
+
+	if (of_find_property(node, "skip-gpios-init", NULL)) {
+		printk("[LVDS] Skip setting GPIOs to default states\n");
+		goto get_delays;
+	}
+
+	/* Set default to output */
+	if (lvds_vcc_enable >= 0)
+	{
+		ret = gpio_request(lvds_vcc_enable,"lvds_vcc_enable");
+
+		if (ret < 0)
+			printk("\nRequest lvds_vcc_enable failed!!\n");
+		else
+			gpio_direction_output(lvds_vcc_enable, (lvds_vcc_flag)?0:1);
+	}
+
+	if (bklt_vcc_enable >= 0)
+	{
+		ret = gpio_request(bklt_vcc_enable,"bklt_vdd_enable");
+
+		if (ret < 0)
+			printk("\nRequest bklt_vdd_enable failed!!\n");
+		else
+			gpio_direction_output(bklt_vcc_enable, (bklt_vcc_flag)?0:1);
+	}
+
+	if (lvds_bkl_enable >= 0)
+        {
+		ret = gpio_request(lvds_bkl_enable,"lvds_bkl_enable");
+
+		if (ret < 0)
+			printk("\nRequest lvds_bkl_enable failed!!\n");
+		else
+			gpio_direction_output(lvds_bkl_enable, (lvds_bkl_flag)?0:1);
+	}
+
+get_delays:
+	ret = of_property_read_u32(node,"lvds-vcc-delay-time",&lvds_vcc_delay_value);
+	if (ret < 0)
+	{
+		lvds_vcc_delay_value = 25;
+	}
+
+	ret = of_property_read_u32(node,"lvds-bkl-delay-time",&lvds_bkl_delay_value);
+	if (ret < 0)
+	{
+		lvds_bkl_delay_value = 210;
+	}
+
+	ret = of_property_read_u32(node,"bklt-pwm-delay-time",&bklt_pwm_delay_value);
+	if (ret < 0)
+	{
+		bklt_pwm_delay_value = 20;
+	}
+
+	ret = of_property_read_u32(node,"bklt-en-delay-time",&bklt_en_delay_value);
+	if (ret < 0)
+	{
+		bklt_en_delay_value = 20;
+	}
+#endif
+
 	return 0;
 }
 

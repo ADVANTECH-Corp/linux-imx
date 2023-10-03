@@ -158,6 +158,12 @@ struct panel_simple {
 	enum drm_panel_orientation orientation;
 };
 
+#if defined(CONFIG_ARCH_ADVANTECH)
+bool blank_flag = false;
+extern void enable_ldb_bkl_vcc(void);
+extern void enable_ldb_bkl_pwm(void);
+#endif
+
 static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
 {
 	return container_of(panel, struct panel_simple, base);
@@ -385,6 +391,14 @@ static int panel_simple_enable(struct drm_panel *panel)
 
 	if (p->desc->delay.enable)
 		msleep(p->desc->delay.enable);
+
+#if defined(CONFIG_ARCH_ADVANTECH)
+	if (!blank_flag) {
+		enable_ldb_bkl_vcc();
+		enable_ldb_bkl_pwm();
+		blank_flag = true;
+	}
+#endif
 
 	p->enabled = true;
 
