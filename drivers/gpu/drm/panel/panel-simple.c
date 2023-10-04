@@ -30,6 +30,9 @@
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#endif
 
 #include <video/display_timing.h>
 #include <video/of_display_timing.h>
@@ -4793,12 +4796,51 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	const struct panel_desc_dsi *desc;
 	const struct of_device_id *id;
 	int err;
+#if defined(CONFIG_ARCH_ADVANTECH)
+	int dsi_vcc_enable_gpio, bklt_vcc_enable_gpio, bkl_enable_gpio;
+	enum of_gpio_flags vcc_enable_flag, bklt_vcc_enable_flag, bkl_enable_flag;
+#endif
 
 	id = of_match_node(dsi_of_match, dsi->dev.of_node);
 	if (!id)
 		return -ENODEV;
 
 	desc = id->data;
+
+#if defined(CONFIG_ARCH_ADVANTECH)
+	dsi_vcc_enable_gpio = of_get_named_gpio_flags(dsi->dev.of_node, "dsi-vcc-enable-gpio", 0, &vcc_enable_flag);
+	if (dsi_vcc_enable_gpio >= 0)
+	{
+		err = gpio_request(dsi_vcc_enable_gpio, "dsi_vcc_enable_gpio");
+
+		if (err < 0)
+			printk("\nRequest dsi_vcc_enable_gpio failed!!\n");
+		else
+			gpio_direction_output(dsi_vcc_enable_gpio, vcc_enable_flag);
+	}
+
+	bklt_vcc_enable_gpio = of_get_named_gpio_flags(dsi->dev.of_node, "bklt-vcc-enable-gpio", 0, &bklt_vcc_enable_flag);
+	if (bklt_vcc_enable_gpio >= 0)
+	{
+		err = gpio_request(bklt_vcc_enable_gpio, "bklt_vcc_enable_gpio");
+
+		if (err < 0)
+			printk("\nRequest bklt_vcc_enable_gpio failed!!\n");
+		else
+			gpio_direction_output(bklt_vcc_enable_gpio, bklt_vcc_enable_flag);
+	}
+
+	bkl_enable_gpio = of_get_named_gpio_flags(dsi->dev.of_node, "bklt-enable-gpio", 0, &bkl_enable_flag);
+	if (bkl_enable_gpio >= 0)
+	{
+		err = gpio_request(bkl_enable_gpio, "bkl_enable_gpio");
+
+		if (err < 0)
+			printk("\nRequest bkl_enable_gpio failed!!\n");
+		else
+			gpio_direction_output(bkl_enable_gpio, bkl_enable_flag);
+	}
+#endif
 
 	err = panel_simple_probe(&dsi->dev, &desc->desc);
 	if (err < 0)
