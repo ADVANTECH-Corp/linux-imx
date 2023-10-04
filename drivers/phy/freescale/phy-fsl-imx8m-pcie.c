@@ -82,6 +82,11 @@
 #define  LN0_TG_RX_SIGVAL_LBF_DELAY	0x4
 
 static int imx8_pcie_phy_tuned;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+int tx_drv_lvl_ctrl_g1 = 0;	//For SI test
+#endif
+
 enum imx8_pcie_phy_type {
 	IMX8MM,
 	IMX8MP,
@@ -180,6 +185,48 @@ static int imx8_pcie_phy_power_on(struct phy *phy)
 	 * between two i.MX8MP EVK boards in the EP/RC validation system.
 	 */
 	if (imx8_pcie_phy_tuned && (imx8_phy->drvdata->variant == IMX8MP)) {
+#ifdef CONFIG_ARCH_ADVANTECH
+		if (tx_drv_lvl_ctrl_g1 > 0) {
+			writel(tx_drv_lvl_ctrl_g1,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG001);
+		}
+		else {
+			writel(LN0_OVRD_TX_DRV_LVL_G1,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG001);
+			writel(LN0_OVRD_TX_DRV_LVL_G2,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG002);
+			writel(LN0_OVRD_TX_DRV_LVL_G3,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG003);
+			writel(LN0_OVRD_TX_DRV_PST_LVL_G1,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG005);
+			writel(LN0_OVRD_TX_DRV_PST_LVL_G2,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG006);
+			writel(LN0_OVRD_TX_DRV_PST_LVL_G3,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG007);
+			writel(LN0_OVRD_TX_DRV_PRE_LVL_G1,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG009);
+			writel(LN0_OVRD_TX_DRV_PRE_LVL_G23,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG00A);
+			writel(LN0_OVRD_RX_CTLE_RS1_G1,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG059);
+			writel(LN0_OVRD_RX_CTLE_RS1_G2_G3,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG060);
+			writel(LN0_ANA_RX_CTLE_IBLEED,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG069);
+			writel(LN0_OVRD_RX_RTERM_VCM_EN,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG107);
+			writel(LN0_ANA_OVRD_RX_SQHS_DIFN_OC,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG109);
+			writel(LN0_ANA_OVRD_RX_SQHS_DIFP_OC,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG110);
+			writel(LN0_RX_CDR_FBB_FINE_G1_G2,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG158);
+			writel(LN0_RX_CDR_FBB_FINE_G3_G4,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG159);
+			writel(LN0_TG_RX_SIGVAL_LBF_DELAY,
+				imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG206);
+		}
+#else
 		writel(LN0_OVRD_TX_DRV_LVL_G1,
 		       imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG001);
 		writel(LN0_OVRD_TX_DRV_LVL_G2,
@@ -214,6 +261,7 @@ static int imx8_pcie_phy_power_on(struct phy *phy)
 		       imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG159);
 		writel(LN0_TG_RX_SIGVAL_LBF_DELAY,
 		       imx8_phy->base + IMX8MP_PCIE_PHY_TRSV_REG206);
+#endif
 	}
 
 	/* Do the PHY common block reset */
@@ -301,6 +349,10 @@ static int imx8_pcie_phy_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	imx8_phy->drvdata = of_device_get_match_data(dev);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	of_property_read_u32(np, "tx_drv_lvl_ctrl_g1", &tx_drv_lvl_ctrl_g1);
+#endif
 
 	/* get PHY refclk pad mode */
 	of_property_read_u32(np, "fsl,refclk-pad-mode",
