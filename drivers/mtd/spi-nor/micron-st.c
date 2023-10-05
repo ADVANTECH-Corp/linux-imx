@@ -168,6 +168,12 @@ static const struct flash_info micron_nor_parts[] = {
 };
 
 static const struct flash_info st_nor_parts[] = {
+#ifdef  CONFIG_ARCH_ADVANTECH
+	{ "n25qba16",    INFO(0x20ba16, 0, 64 * 1024,  64)
+	        NO_SFDP_FLAGS(SECT_4K) },
+	{ "n25qbb16",    INFO(0x20bb16, 0, 64 * 1024,  64)
+		NO_SFDP_FLAGS( SECT_4K) },
+#endif
 	{ "n25q016a",	 INFO(0x20bb15, 0, 64 * 1024,   32)
 		NO_SFDP_FLAGS(SECT_4K | SPI_NOR_QUAD_READ) },
 	{ "n25q032",	 INFO(0x20ba16, 0, 64 * 1024,   64)
