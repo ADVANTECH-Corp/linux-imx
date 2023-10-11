@@ -1176,6 +1176,60 @@ static const struct panel_desc auo_t215hvn01 = {
 	}
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static const struct display_timing auo_g070vw01_v0_timings = {
+        .pixelclock = { 29500000, 29500000, 29500000 },
+        .hactive = { 800, 800, 800 },
+        .hfront_porch = { 24, 24, 24 },
+        .hback_porch = { 96, 96, 96 },
+        .hsync_len = { 72, 72, 72 },
+        .vactive = { 480, 480, 480 },
+        .vfront_porch = { 10, 10, 10 },
+        .vback_porch = { 3, 3, 3 },
+        .vsync_len = { 7, 7, 7 },
+        .flags = DISPLAY_FLAGS_DE_HIGH,
+};
+
+static const struct panel_desc auo_g070vw01_v0 = {
+        .timings = &auo_g070vw01_v0_timings,
+        .num_timings = 1,
+        .bpc = 8,
+        .size = {
+                .width = 152,
+                .height = 91,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
+        .bus_flags = DRM_BUS_FLAG_DE_HIGH,
+        .connector_type = DRM_MODE_CONNECTOR_LVDS,
+};
+
+static const struct display_timing auo_g215hvn01_0_timings = {
+        .pixelclock = { 170000000, 170000000, 170000000 },
+        .hactive = { 1920, 1920, 1920 },
+        .hfront_porch = { 30, 30, 30 },
+        .hback_porch = { 90, 90, 90 },
+        .hsync_len = { 60, 60, 60 },
+        .vactive = { 1080, 1080, 1080 },
+        .vfront_porch = { 38, 38, 38 },
+        .vback_porch = { 5, 5, 5 },
+        .vsync_len = { 7, 7, 7 },
+        .flags = DISPLAY_FLAGS_DE_HIGH,
+};
+
+static const struct panel_desc auo_g215hvn01_0 = {
+        .timings = &auo_g215hvn01_0_timings,
+        .num_timings = 1,
+        .bpc = 8,
+        .size = {
+                .width = 476,
+                .height = 268,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
+        .bus_flags = DRM_BUS_FLAG_DE_HIGH,
+        .connector_type = DRM_MODE_CONNECTOR_LVDS,
+};
+#endif
+
 static const struct drm_display_mode avic_tm070ddh03_mode = {
 	.clock = 51200,
 	.hdisplay = 1024,
@@ -4062,6 +4116,14 @@ static const struct of_device_id platform_of_match[] = {
 		.compatible = "auo,t215hvn01",
 		.data = &auo_t215hvn01,
 	}, {
+#ifdef CONFIG_ARCH_ADVANTECH
+		.compatible = "auo,g070vw01_v0",
+		.data = &auo_g070vw01_v0,
+	}, {
+		.compatible = "auo,g215hvn01_0",
+		.data = &auo_g215hvn01_0,
+	}, {
+#endif
 		.compatible = "avic,tm070ddh03",
 		.data = &avic_tm070ddh03,
 	}, {
