@@ -198,6 +198,13 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mp-evk-revb4-sof-wm8962.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mp-evk-revb4-rpmsg.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mp-evk-revb4-rpmsg-lpv.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mp-rsb3720-a2.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mp-rsb3720-a2-adv7535.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mp-rsb3720-a2-auog101uan02.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mp-rsb3720-a2-basler.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mp-rsb3720-a2-dual-basler.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mp-rsb3720-a2-lvds-dual.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mp-rsb3720-a2-lvds0-auo.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mp-rsb3720-a2-lvds1-auo.dtb
 
 dtb-$(CONFIG_ARCH_MXC) += imx8mq-evk.dtb imx8mq-evk-rpmsg.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mq-evk.dtb imx8mq-evk-rpmsg.dtb imx8mq-evk-pcie1-m2.dtb imx8mq-evk-usd-wifi.dtb \
