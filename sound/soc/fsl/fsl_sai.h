@@ -297,6 +297,9 @@ struct fsl_sai {
 	bool monitor_spdif;
 	bool monitor_spdif_start;
 	bool mclk_direction_output;
+#ifdef CONFIG_ARCH_ADVANTECH
+	bool mclk_always_on;
+#endif
 
 	int gpr_idx;
 
