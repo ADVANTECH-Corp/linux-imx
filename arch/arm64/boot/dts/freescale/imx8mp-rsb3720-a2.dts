@@ -671,6 +671,7 @@
 		 <&clk IMX8MP_CLK_DUMMY>;
 	clock-names = "bus", "mclk0", "mclk1", "mclk2", "mclk3";
 	fsl,sai-mclk-direction-output;
+	fsl,sai-mclk-always-on;
 	status = "okay";
 };
 
