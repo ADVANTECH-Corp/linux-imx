@@ -4725,11 +4725,46 @@ static const struct panel_desc_dsi osd101t2045_53ts = {
 	.lanes = 4,
 };
 
+#if defined(CONFIG_DRM_PANEL_AUO_G101UAN02)
+static const struct drm_display_mode auo_g101uan02_mode = {
+    .clock = 148500,
+    .hdisplay = 1920,
+    .hsync_start = 1920 + 60,
+    .hsync_end = 1920 + 60 + 18,
+    .htotal = 1920 + 60 + 18 + 60,
+    .vdisplay = 1200,
+    .vsync_start = 1200 + 4,
+    .vsync_end = 1200 + 4 + 4,
+    .vtotal = 1200 + 4 + 4 + 4,
+};
+
+static const struct panel_desc_dsi auo_g101uan02 = {
+    .desc = {
+        .modes = &auo_g101uan02_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 217,
+            .height = 136,
+        },
+        .connector_type = DRM_MODE_CONNECTOR_DSI,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
+#endif
+
 static const struct of_device_id dsi_of_match[] = {
 	{
 		.compatible = "auo,b080uan01",
 		.data = &auo_b080uan01
 	}, {
+#if defined(CONFIG_DRM_PANEL_AUO_G101UAN02)
+		.compatible = "auo,g101uan02",
+		.data = &auo_g101uan02
+	}, {
+#endif
 		.compatible = "boe,tv080wum-nl0",
 		.data = &boe_tv080wum_nl0
 	}, {

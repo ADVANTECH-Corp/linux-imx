@@ -126,6 +126,11 @@ config DRM_PANEL_EBBG_FT8719
 	  The panel has a resolution of 1080x2246. It provides a MIPI DSI
 	  interface to the host.
 
+config DRM_PANEL_AUO_G101UAN02
+	tristate "support for AUO G101UAN02 panel"
+	help
+	  DRM panel driver for AUO G101UAN02 panel.
+
 config DRM_PANEL_ELIDA_KD35T133
 	tristate "Elida KD35T133 panel driver"
 	depends on OF
