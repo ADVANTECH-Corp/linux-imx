@@ -369,6 +369,9 @@ MODULE_DEVICE_TABLE(i2c, tpm_tis_i2c_id);
 #ifdef CONFIG_OF
 static const struct of_device_id of_tis_i2c_match[] = {
 	{ .compatible = "infineon,slb9673", },
+#ifdef CONFIG_ARCH_ADVANTECH
+	{ .compatible = "st,st33htpm-i2c", "tcg,tpm-tis-i2c", },
+#endif
 	{}
 };
 MODULE_DEVICE_TABLE(of, of_tis_i2c_match);
