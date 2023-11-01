@@ -277,6 +277,19 @@ config LTR501
 	  This driver can also be built as a module.  If so, the module
 	  will be called ltr501.
 
+config LTRF216
+	tristate "LTR-F216A light sensor"
+	depends on I2C
+	select REGMAP_I2C
+	select IIO_BUFFER
+	select IIO_TRIGGERED_BUFFER
+	help
+	  If you say yes here you get support for the Lite-On LTR-216A
+	  ambient light and proximity sensor.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called ltr216.
+
 config LV0104CS
 	tristate "LV0104CS Ambient Light Sensor"
 	depends on I2C
