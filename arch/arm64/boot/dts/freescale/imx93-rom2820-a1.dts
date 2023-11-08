@@ -381,7 +381,7 @@
 
 		ethphy2: ethernet-phy@2 {
 			compatible = "ethernet-phy-ieee802.3-c22";
-			reg = <2>;
+			reg = <1>;
 			eee-broken-1000t;
 		};
 	};
