@@ -678,16 +678,28 @@
 	status = "okay";
 };
 
-&lpuart5 {
-	/* BT */
-	pinctrl-names = "default";
-	pinctrl-assert-gpios = <&pcal6524 19 GPIO_ACTIVE_HIGH>;
-	pinctrl-0 = <&pinctrl_uart5>;
-	status = "okay";
+&lpuart2 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_uart2>;
+        status = "okay";
+};
 
-	bluetooth {
-		compatible = "nxp,88w8987-bt";
-	};
+&lpuart3 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_uart3>;
+        status = "okay";
+};
+
+&lpuart5 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_uart5>;
+        status = "okay";
+};
+
+&lpuart6 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_uart6>;
+        status = "okay";
 };
 
 &media_blk_ctrl {
@@ -863,14 +875,38 @@
 		>;
 	};
 
+
+	pinctrl_uart2: uart2grp {
+                fsl,pins = <
+                        MX93_PAD_UART2_RXD__LPUART2_RX                  0x31e
+                        MX93_PAD_UART2_TXD__LPUART2_TX                  0x31e
+                >;
+        };
+
+	pinctrl_uart3: uart3grp {
+                fsl,pins = <
+                        MX93_PAD_GPIO_IO15__LPUART3_RX                  0x31e
+                        MX93_PAD_GPIO_IO14__LPUART3_TX                  0x31e
+                >;
+        };
+
 	pinctrl_uart5: uart5grp {
-		fsl,pins = <
-			MX93_PAD_DAP_TDO_TRACESWO__LPUART5_TX	0x31e
-			MX93_PAD_DAP_TDI__LPUART5_RX		0x31e
-			MX93_PAD_DAP_TMS_SWDIO__LPUART5_RTS_B	0x31e
-			MX93_PAD_DAP_TCLK_SWCLK__LPUART5_CTS_B	0x31e
-		>;
-	};
+                fsl,pins = <
+                        MX93_PAD_GPIO_IO01__LPUART5_RX                  0x31e
+                        MX93_PAD_GPIO_IO00__LPUART5_TX                  0x31e
+			MX93_PAD_GPIO_IO03__LPUART5_RTS_B		0x31e
+			MX93_PAD_GPIO_IO02__LPUART5_CTS_B		0x31e
+                >;
+        };
+
+	pinctrl_uart6: uart6grp {
+                fsl,pins = <
+                        MX93_PAD_GPIO_IO05__LPUART6_RX                  0x31e
+                        MX93_PAD_GPIO_IO04__LPUART6_TX                  0x31e
+			MX93_PAD_GPIO_IO07__LPUART6_RTS_B		0x31e
+			MX93_PAD_GPIO_IO06__LPUART6_CTS_B               0x31e
+                >;
+        };
 
 	pinctrl_usdhc1: usdhc1grp {
 		fsl,pins = <
