@@ -564,6 +564,15 @@
 			#pwm-cells = <3>;
 		};
 	};
+
+	gpio_exp1: tca9538@20 {
+               compatible = "nxp,pca6416";
+               reg = <0x20>;
+               gpio-controller;
+               #gpio-cells = <2>;
+               //reset-gpios = <&gpio3 25 GPIO_ACTIVE_LOW>;
+       };
+
 };
 
 &lpi2c3 {
