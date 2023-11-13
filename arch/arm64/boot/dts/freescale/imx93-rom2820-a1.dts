@@ -13,8 +13,14 @@
 };
 
 / {
-	model = "NXP i.MX93 11X11 EVK board";
+	model = "Advantech i.MX93 ROM2820A1 board";
 	compatible = "fsl,imx93-11x11-evk", "fsl,imx93";
+
+	board {
+		compatible = "proc-board";
+		board-type = "ROM-2820 A1";
+		board-cpu = "IMX93";
+		};
 
 	chosen {
 		stdout-path = &lpuart1;

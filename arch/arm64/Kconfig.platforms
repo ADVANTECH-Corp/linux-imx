@@ -369,4 +369,9 @@ config ARCH_ZYNQMP
 	help
 	  This enables support for Xilinx ZynqMP Family
 
+config ARCH_ADVANTECH
+        bool "Advantech board"
+        help
+          This enables support for Advantech Board.
+
 endmenu # "Platform selection"
