@@ -121,7 +121,7 @@
 		regulator-name = "reg_vdd_12v";
 		regulator-min-microvolt = <12000000>;
 		regulator-max-microvolt = <12000000>;
-		gpio = <&pcal6524 14 GPIO_ACTIVE_HIGH>;
+		//gpio = <&pcal6524 14 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 	};
 
@@ -134,7 +134,7 @@
 
 	usdhc3_pwrseq: usdhc3_pwrseq {
 		compatible = "mmc-pwrseq-simple";
-		reset-gpios = <&pcal6524 20 GPIO_ACTIVE_LOW>;
+		//reset-gpios = <&pcal6524 20 GPIO_ACTIVE_LOW>;
 	};
 
 	reg_audio_pwr: regulator-audio-pwr {
@@ -208,7 +208,7 @@
 		model = "wm8962-audio";
 		audio-cpu = <&sai3>;
 		audio-codec = <&codec>;
-		hp-det-gpio = <&pcal6524 4 GPIO_ACTIVE_HIGH>;
+		//hp-det-gpio = <&pcal6524 4 GPIO_ACTIVE_HIGH>;
 		audio-routing =
 			"Headphone Jack", "HPOUTL",
 			"Headphone Jack", "HPOUTR",
@@ -464,8 +464,10 @@
 	pmic@25 {
 		compatible = "nxp,pca9451a";
 		reg = <0x25>;
-		interrupt-parent = <&pcal6524>;
-		interrupts = <11 IRQ_TYPE_EDGE_FALLING>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_pmic>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <27 IRQ_TYPE_LEVEL_LOW>;
 
 		regulators {
 			buck1: BUCK1 {
@@ -536,19 +538,6 @@
 		};
 	};
 
-	pcal6524: gpio@22 {
-		compatible = "nxp,pcal6524";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_pcal6524>;
-		reg = <0x22>;
-		gpio-controller;
-		#gpio-cells = <2>;
-		interrupt-controller;
-		#interrupt-cells = <2>;
-		interrupt-parent = <&gpio3>;
-		interrupts = <27 IRQ_TYPE_LEVEL_LOW>;
-	};
-
 	adp5585: mfd@34 {
 		compatible = "adi,adp5585";
 		reg = <0x34>;
@@ -583,14 +572,6 @@
 	pinctrl-0 = <&pinctrl_lpi2c3>;
 	pinctrl-1 = <&pinctrl_lpi2c3>;
 	status = "okay";
-
-	pcf2131: rtc@53 {
-			compatible = "nxp,pcf2131";
-			reg = <0x53>;
-			interrupt-parent = <&pcal6524>;
-			interrupts = <1 IRQ_TYPE_EDGE_FALLING>;
-			status = "okay";
-	};
 
 	ptn5110: tcpc@50 {
 		compatible = "nxp,ptn5110";
@@ -808,7 +789,7 @@
 	pinctrl-1 = <&pinctrl_usdhc3>, <&pinctrl_usdhc3_wlan>;
 	pinctrl-2 = <&pinctrl_usdhc3>, <&pinctrl_usdhc3_wlan>;
 	mmc-pwrseq = <&usdhc3_pwrseq>;
-	pinctrl-assert-gpios = <&pcal6524 13 GPIO_ACTIVE_HIGH>;
+	//pinctrl-assert-gpios = <&pcal6524 13 GPIO_ACTIVE_HIGH>;
 	bus-width = <4>;
 	keep-power-in-suspend;
 	non-removable;
@@ -866,12 +847,6 @@
                         MX93_PAD_GPIO_IO13__LPI2C8_SCL                  0x40000b9e
                 >;
         };
-
-	pinctrl_pcal6524: pcal6524grp {
-		fsl,pins = <
-			MX93_PAD_CCM_CLKO2__GPIO3_IO27			0x31e
-		>;
-	};
 
 	pinctrl_eqos: eqosgrp {
 		fsl,pins = <
@@ -1041,6 +1016,13 @@
 			MX93_PAD_GPIO_IO23__SPDIF_OUT		0x31e
 		>;
 	};
+
+	pinctrl_pmic: pmicgrp {
+                fsl,pins = <
+                        MX93_PAD_CCM_CLKO2__CCMSRCGPCMIX_CLKO2            0x31e
+                >;
+        };
+
 };
 
 &epxp {
