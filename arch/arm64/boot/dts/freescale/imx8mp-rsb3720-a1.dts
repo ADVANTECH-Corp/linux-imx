@@ -120,6 +120,7 @@
 	};
 
 	sound {
+		status = "disabled";
 		compatible = "fsl,sgtl5000", "fsl,imx-audio-sgtl5000";
 		model = "sgtl5000";
 		codec-master;
@@ -375,6 +376,7 @@
 	};
 
 	codec: sgtl5000@a {
+		status = "disabled";
 		compatible = "fsl,sgtl5000";
 		reg = <0x0a>;
 		clocks = <&audiomix_clk IMX8MP_CLK_AUDIOMIX_SAI3_MCLK1>;
@@ -383,14 +385,14 @@
 	};
 
 	wdt: msp430g2202@29 {
-                compatible = "fsl,adv-wdt-i2c";
-                reg = <0x29>;
-                pinctrl-names = "default";
-                pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
-                wdt-en = <&gpio3 19 0>;
-                wdt-ping = <&gpio4 20 0>;
-                status = "okay";
-        };
+		compatible = "fsl,adv-wdt-i2c";
+		reg = <0x29>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+		wdt-en = <&gpio3 19 0>;
+		wdt-ping = <&gpio4 20 0>;
+		status = "okay";
+	};
 };
 
 &i2c2 {

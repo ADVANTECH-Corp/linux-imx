@@ -696,7 +696,6 @@ config MAX77620_WATCHDOG
 
 config ADVANTECH_RISC_WDT
         tristate "ADVANTECH Watchdog"
-        depends on ARCH_ADVANTECH
         help
           This is the driver for the hardware watchdog
           If you have one of these processors and wish to have

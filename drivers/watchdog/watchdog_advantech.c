@@ -44,7 +44,7 @@
 #define ADV_WDT_WRSR_TOUT	(1 << 1)	/* -> Reset due to Timeout */
 
 #define ADV_WDT_MAX_TIME	6527		/* in seconds */
-#define ADV_WDT_DEFAULT_TIME	60		/* in seconds */
+#define ADV_WDT_DEFAULT_TIME	5		/* in seconds */
 
 #define WDOG_SEC_TO_COUNT(s)	(s * 10)	/* Time unit for register: 100ms */
 
@@ -380,6 +380,12 @@ static struct notifier_block adv_wdt_restart_handler = {
 	.priority = 128,
 };
 
+void adv_arm_pm_restart(enum reboot_mode reboot_mode, const char *cmd)
+{
+	//adv_wdt_i2c_set_timeout(adv_client, 1);
+	adv_wdt_restart_handle(NULL, reboot_mode, (void*)cmd);
+}
+
 static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int ret;
@@ -452,9 +458,9 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		pr_err("Set watchdog timeout err=%d\n", ret);
 		goto fail;
 	}
-	
+/*
 	ret = adv_wdt_i2c_read_version(client, &tmp_version);
-	
+
 	if (ret == 0 )
 	{
      adv_wdt.version[0]= (tmp_version & 0xFF00) >> 8;
@@ -464,10 +470,12 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		pr_err("Read watchdog version err=%d\n", ret);
 		goto fail;
 	}
-	
+
 	dev_info(&client->dev,
 						"Advantech Watchdog Timer enabled. timeout=%ds (nowayout=%d), Ver.%d\n",
 						adv_wdt.timeout, nowayout, adv_wdt_info.firmware_version);
+*/
+
 	adv_wdt_miscdev.parent = &client->dev;
 	ret = misc_register(&adv_wdt_miscdev);
 	if (ret)
@@ -484,7 +492,8 @@ static int adv_wdt_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	}
 
 	original_arm_pm_restart = arm_pm_restart;
-	arm_pm_restart=NULL;
+	//arm_pm_restart=NULL;
+	arm_pm_restart=adv_arm_pm_restart;
 
 	return 0;
 
