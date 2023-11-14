@@ -893,6 +893,11 @@ static bool joydev_match(struct input_handler *handler, struct input_dev *dev)
 	if (joydev_dev_is_absolute_mouse(dev))
 		return false;
 
+	/* Avoid EETI virtual devices */
+	#define VID_EETI 0x0EEF
+	if (( BUS_VIRTUAL == dev->id.bustype) && (VID_EETI == dev->id.vendor))
+		return false;
+
 	return true;
 }
 
