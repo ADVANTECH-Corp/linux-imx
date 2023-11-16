@@ -168,7 +168,8 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mq-rom5720-a1.dtb \
 			  imx8mq-rom5720-a1-dual-display.dts \
 			  imx8mq-rom5720-a1-m2-sdio.dtb \
 			  imx8mq-rom5720-a1-otg.dtb
-dtb-$(CONFIG_ARCH_MXC) += imx8mm-rom5721-a1-adv7535.dtb \
+dtb-$(CONFIG_ARCH_MXC) += imx8mm-rom5721-a1-es8326.dtb \
+                          imx8mm-rom5721-a1-adv7535.dtb \
 			  imx8mm-rom5721-a1-auog101uan02.dtb \
 			  imx8mm-rom5721-a1-dsi2dp.dtb \
 			  imx8mm-rom5721-a1-dsi2lvds-g150xgel05.dtb \

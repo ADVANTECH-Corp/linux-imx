@@ -8,6 +8,9 @@
 #include <dt-bindings/usb/pd.h>
 #include "imx8mm.dtsi"
 #include <dt-bindings/display/drm_mipi_dsi.h>
+
+#define CODEC_SGTL5000
+
 / {
 	model = "NXP i.MX8MM SMARC 2.0 Computer-on-Module";
 	compatible = "fsl,imx8mm-evk", "fsl,imx8mm";
@@ -119,6 +122,7 @@
                 };
         };
 
+#ifdef CODEC_SGTL5000
         sound {
                 compatible = "fsl,sgtl5000",
                              "fsl,imx-audio-sgtl5000";
@@ -132,6 +136,33 @@
                         "Headphone Jack", "HP_OUT";
                 no-audmux;
         };
+#else
+        sound-es8326 {
+		status = "okay";
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";  //set data type
+		simple-audio-card,name = "fsl-es8326";  //card name
+		simple-audio-card,mclk-fs = <256>;  //void signal
+		
+		// sound part
+		simple-audio-card,widgets =
+				"Microphone", "Microphone Jack",
+				"Headphone", "Headphone Jack";
+		simple-audio-card,routing =
+				"Microphone Jack", "MICBIAS1",
+				"MIC1", "Microphone Jack",
+				"Headphone Jack", "HPOL",
+				"Headphone Jack", "HPOR";
+		// set cpu
+		simple-audio-card,cpu {
+			sound-dai = <&sai1>;
+		};
+		//set codec
+                simple-audio-card,codec {
+			sound-dai = <&es8326>;
+		};
+	};
+#endif
 };
 
 &A53_0 {
@@ -190,6 +221,7 @@
         assigned-clocks = <&clk IMX8MM_CLK_SAI1>;
         assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
         assigned-clock-rates = <0>, <24576000>;
+		#sound-dai-cells = <0>;
         status = "okay";
 };
 
@@ -572,6 +604,7 @@
         sda-gpios = <&gpio5 21 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
+#ifdef CODEC_SGTL5000
         codec: sgtl5000@a {
                 compatible = "fsl,sgtl5000";
                 reg = <0x0a>;
@@ -583,6 +616,21 @@
 		assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
 		assigned-clock-rates = <24576000>;
 	};
+#else
+        es8326: es8326@18 {
+                status = "okay";
+                #sound-dai-cells = <0>;
+                compatible = "everest,es8326";
+                reg = <0x18>;  //codec adress
+	        clocks = <&clk IMX8MM_CLK_SAI1_ROOT>;
+                clock-names = "mclk";
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinctrl_sai1_mclk>;
+                assigned-clocks = <&clk IMX8MM_CLK_SAI1>;
+                assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL2_OUT>;
+                assigned-clock-rates = <11289600>;
+        };
+#endif
 
 	24c32@57 {				//DB5901-U19
                 compatible = "fsl,24c32";
