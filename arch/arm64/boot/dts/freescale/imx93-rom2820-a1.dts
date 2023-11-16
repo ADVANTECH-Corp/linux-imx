@@ -449,6 +449,10 @@
 		adi,addr-cec = <0x3b>;
 		adi,dsi-lanes = <4>;
 		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_dsi>;
+		dsi-vcc-enable-gpio = <&gpio3 23 GPIO_ACTIVE_LOW>;	/* DISP_BL_EN */
+		bklt-vcc-enable-gpio = <&gpio3 24 GPIO_ACTIVE_LOW>;	/* DSIP_VDD_EN */
 
 		port {
 			adv7535_to_dsi: endpoint {
@@ -990,8 +994,6 @@
 			MX93_PAD_SD3_CLK__USDHC3_CLK		0x15fe
 			MX93_PAD_SD3_CMD__USDHC3_CMD		0x13fe
 			MX93_PAD_SD3_DATA0__USDHC3_DATA0	0x13fe
-			MX93_PAD_SD3_DATA1__USDHC3_DATA1	0x13fe
-			MX93_PAD_SD3_DATA2__USDHC3_DATA2	0x13fe
 			MX93_PAD_SD3_DATA3__USDHC3_DATA3	0x13fe
 		>;
 	};
@@ -1041,6 +1043,14 @@
                         MX93_PAD_CCM_CLKO2__CCMSRCGPCMIX_CLKO2            0x31e
                 >;
         };
+
+	pinctrl_dsi: dsigrp {
+                fsl,pins = <
+                        MX93_PAD_SD3_DATA2__GPIO3_IO24            0x31e
+			MX93_PAD_SD3_DATA1__GPIO3_IO23            0x31e
+                >;
+        };
+
 
 };
 
