@@ -22,6 +22,11 @@
 		board-cpu = "IMX93";
 		};
 
+	aliases {
+		rtc0 = &rtc0;
+		rtc1 = &bbnsm_rtc;
+	};
+
 	chosen {
 		stdout-path = &lpuart1;
 	};
@@ -567,6 +572,14 @@
                #gpio-cells = <2>;
                //reset-gpios = <&gpio3 25 GPIO_ACTIVE_LOW>;
        };
+
+	rtc0: rx8900@32 {
+		compatible = "epson,rx8900";
+		reg = <0x32>;
+		epson,vdet-disable;
+		trickle-diode-disable;
+		status = "okay";
+	};
 
 };
 
