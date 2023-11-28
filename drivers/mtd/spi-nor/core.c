@@ -3219,6 +3219,9 @@ static const struct spi_device_id spi_nor_dev_ids[] = {
 	 * hack around the fact that the SPI core does not provide uevent
 	 * matching for .of_match_table
 	 */
+	#ifdef CONFIG_ARCH_ADVANTECH
+	{"n25qba16"}, {"n25qbb16"}, {"mx25u3235f"}, {"w25q64dw"},
+	#endif
 	{"spi-nor"},
 
 	/*
