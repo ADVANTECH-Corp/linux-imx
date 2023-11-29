@@ -667,6 +667,20 @@
         pinctrl-0 = <&pinctrl_lpi2c5>;
         pinctrl-1 = <&pinctrl_lpi2c5>;
         status = "okay";
+
+	gpio_exp2: tca9538@20 {
+		compatible = "nxp,pca6416";
+		reg = <0x20>;
+		gpio-controller;
+		#gpio-cells = <2>;
+
+		LTE_PWR_EN {
+			gpio-hog;
+			gpios = <0 GPIO_ACTIVE_HIGH>;
+			output-high;
+			line-name = "LTE_PWR_EN";
+		};
+	};
 };
 
 &lpi2c8 {
