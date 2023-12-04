@@ -486,22 +486,30 @@
 	pinctrl-1 = <&pinctrl_lpi2c3>;
 	status = "okay";
 
-	ap1302: ap1302_mipi@3c {
-		compatible = "onsemi,ap1302";
-		reg = <0x3c>;
-		//ireset-gpios   = <&adp5585gpio 0 GPIO_ACTIVE_LOW>;
-		//isp_en-gpios  = <&adp5585gpio_isp 2 GPIO_ACTIVE_HIGH>;
-		DVDD-supply   = <&reg_dvdd_1v2>;
-		VDDIO-supply  = <&reg_vddio_1v8>;
-		AVDD-supply   = <&reg_avdd_2v8>;
-		status = "okay";
+	ov5640_0: ov5640_mipi@3c {
+                compatible = "ovti,ov5640";
+                reg = <0x3c>;
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinctrl_cam_pwr>, <&pinctrl_cam_rst>, <&pinctrl_cam_mclk>;
+                clocks = <&clk IMX93_CLK_CCM_CKO3>;
+                clock-names = "xclk";
+                assigned-clocks = <&clk IMX93_CLK_CCM_CKO3>;
+                assigned-clock-parents = <&clk IMX93_CLK_24M>;
+                assigned-clock-rates = <24000000>;
+                csi_id = <0>;
+                mclk = <24000000>;
+                mclk_source = <0>;
+		mipi_csi;
+                status = "okay";
 
-		port {
-			ar1302_mipi_ep: endpoint {
-				remote-endpoint = <&mipi_csi_ep>;
-			};
-		};
-	};
+                port {
+                        ov5640_mipi_ep: endpoint {
+                                remote-endpoint = <&mipi_csi_ep>;
+				data-lanes = <1 2>;
+				lock-lanes = <0>;
+                        };
+                };
+        };
 };
 
 &lpi2c5 {
@@ -880,6 +888,23 @@
                 >;
         };
 
+	pinctrl_cam_pwr: cam_pwr_grp {
+                fsl,pins = <
+                        MX93_PAD_SD3_CMD__GPIO3_IO21            0x31e
+                >;
+        };
+
+	pinctrl_cam_rst: cam_rst_grp {
+                fsl,pins = <
+                        MX93_PAD_SD3_CLK__GPIO3_IO20            0x31e
+                >;
+        };
+
+	pinctrl_cam_mclk: cam_mclk_grp {
+                fsl,pins = <
+                        MX93_PAD_CCM_CLKO3__CCMSRCGPCMIX_CLKO3            0x31e
+                >;
+        };
 };
 
 &epxp {
@@ -906,11 +931,11 @@
 	port@0 {
 		reg = <0>;
 		mipi_csi_ep: endpoint {
-			remote-endpoint = <&ar1302_mipi_ep>;
-			data-lanes = <2>;
-			cfg-clk-range = <28>;
-			hs-clk-range = <0x2b>;
-			bus-type = <4>;
+		    remote-endpoint = <&ov5640_mipi_ep>;
+		    data-lanes = <2>;
+		    cfg-clk-range = <28>;
+		    hs-clk-range = <0x16>;
+		    bus-type = <4>;
 		};
 	};
 };
