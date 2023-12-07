@@ -40,6 +40,9 @@
 #include <drm/drm_edid.h>
 #include <drm/drm_mipi_dsi.h>
 #include <drm/drm_panel.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#endif
 
 /**
  * struct panel_desc - Describes a simple panel.
@@ -4684,11 +4687,46 @@ static const struct panel_desc_dsi osd101t2045_53ts = {
 	.lanes = 4,
 };
 
+#if defined(CONFIG_DRM_PANEL_AUO_G101UAN02)
+static const struct drm_display_mode auo_g101uan02_mode = {
+    .clock = 148500,
+    .hdisplay = 1920,
+    .hsync_start = 1920 + 60,
+    .hsync_end = 1920 + 60 + 18,
+    .htotal = 1920 + 60 + 18 + 60,
+    .vdisplay = 1200,
+    .vsync_start = 1200 + 4,
+    .vsync_end = 1200 + 4 + 4,
+    .vtotal = 1200 + 4 + 4 + 4,
+};
+
+static const struct panel_desc_dsi auo_g101uan02 = {
+    .desc = {
+        .modes = &auo_g101uan02_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 217,
+            .height = 136,
+        },
+        .connector_type = DRM_MODE_CONNECTOR_DSI,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
+#endif
+
 static const struct of_device_id dsi_of_match[] = {
 	{
 		.compatible = "auo,b080uan01",
 		.data = &auo_b080uan01
 	}, {
+#if defined(CONFIG_DRM_PANEL_AUO_G101UAN02)
+		.compatible = "auo,g101uan02",
+		.data = &auo_g101uan02
+	}, {
+#endif
 		.compatible = "boe,tv080wum-nl0",
 		.data = &boe_tv080wum_nl0
 	}, {
@@ -4718,11 +4756,51 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	const struct of_device_id *id;
 	int err;
 
+	#if defined(CONFIG_ARCH_ADVANTECH)
+	int dsi_vcc_enable_gpio, bklt_vcc_enable_gpio, bkl_enable_gpio;
+	enum of_gpio_flags vcc_enable_flag, bklt_vcc_enable_flag, bkl_enable_flag;
+	#endif
+
 	id = of_match_node(dsi_of_match, dsi->dev.of_node);
 	if (!id)
 		return -ENODEV;
 
 	desc = id->data;
+
+	#if defined(CONFIG_ARCH_ADVANTECH)
+	dsi_vcc_enable_gpio = of_get_named_gpio_flags(dsi->dev.of_node, "dsi-vcc-enable-gpio", 0, &vcc_enable_flag);
+	if (dsi_vcc_enable_gpio >= 0)
+	{
+		err = gpio_request(dsi_vcc_enable_gpio, "dsi_vcc_enable_gpio");
+
+		if (err < 0)
+			printk("\nRequest dsi_vcc_enable_gpio failed!!\n");
+		else
+			gpio_direction_output(dsi_vcc_enable_gpio, vcc_enable_flag);
+	}
+
+	bklt_vcc_enable_gpio = of_get_named_gpio_flags(dsi->dev.of_node, "bklt-vcc-enable-gpio", 0, &bklt_vcc_enable_flag);
+	if (bklt_vcc_enable_gpio >= 0)
+	{
+		err = gpio_request(bklt_vcc_enable_gpio, "bklt_vcc_enable_gpio");
+
+		if (err < 0)
+			printk("\nRequest bklt_vcc_enable_gpio failed!!\n");
+		else
+			gpio_direction_output(bklt_vcc_enable_gpio, bklt_vcc_enable_flag);
+	}
+
+	bkl_enable_gpio = of_get_named_gpio_flags(dsi->dev.of_node, "bklt-enable-gpio", 0, &bkl_enable_flag);
+	if (bkl_enable_gpio >= 0)
+	{
+		err = gpio_request(bkl_enable_gpio, "bkl_enable_gpio");
+
+		if (err < 0)
+			printk("\nRequest bkl_enable_gpio failed!!\n");
+		else
+			gpio_direction_output(bkl_enable_gpio, bkl_enable_flag);
+	}
+#endif
 
 	err = panel_simple_probe(&dsi->dev, &desc->desc);
 	if (err < 0)
