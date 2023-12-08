@@ -573,6 +573,27 @@
 			output-high;
 			line-name = "LTE_PWR_EN";
 		};
+
+		W_DISABLE1 {
+			gpio-hog;
+			gpios = <9 GPIO_ACTIVE_HIGH>;
+			output-high;
+			line-name = "W_DISABLE1";
+		};
+	};
+
+	gpio_exp3: tca9538@21 {
+		compatible = "nxp,pca6416";
+		reg = <0x21>;
+		gpio-controller;
+		#gpio-cells = <2>;
+
+		UR_SEL {
+			gpio-hog;
+			gpios = <2 GPIO_ACTIVE_HIGH>;
+			output-high;
+			line-name = "UR_SEL";
+		};
 	};
 };
 

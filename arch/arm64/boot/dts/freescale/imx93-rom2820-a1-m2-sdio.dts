@@ -1,0 +1,45 @@
+#include "imx93-rom2820-a1.dts"
+
+/delete-node/ &reg_usdhc2_vmmc;
+
+/ {
+
+	usdhc2_pwrseq: usdhc2_pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		post-power-on-delay-ms = <80>;
+		reset-gpios = <&gpio3 7 GPIO_ACTIVE_LOW>;
+	};
+
+	lpuart5_mod_reset: lpuart5-mod-reset {
+		compatible = "gpio-reset";
+		reset-gpios = <&gpio_exp2 10 GPIO_ACTIVE_LOW>;
+		reset-delay-us = <2000>;
+		reset-post-delay-ms = <40>;
+		#reset-cells = <0>;
+	};
+};
+
+&lpuart5 {
+	/* BT */
+	resets = <&lpuart5_mod_reset>;
+	fsl,uart-has-rtscts;
+	status = "okay";
+};
+
+&usdhc2 {
+	/delete-property/vmmc-supply;
+	/delete-property/cd-gpios;
+	/delete-property/no-sdio;
+	/delete-property/no-mmc;
+
+	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-0 = <&pinctrl_usdhc2>,<&pinctrl_reg_usdhc2_vmmc>;
+	pinctrl-1 = <&pinctrl_usdhc2>,<&pinctrl_reg_usdhc2_vmmc>;
+	pinctrl-2 = <&pinctrl_usdhc2>,<&pinctrl_reg_usdhc2_vmmc>;
+	mmc-pwrseq = <&usdhc2_pwrseq>;
+	pinctrl-assert-gpios = <&gpio_exp2 6 GPIO_ACTIVE_HIGH>;
+	keep-power-in-suspend;
+	non-removable;
+	bus-width = <4>;
+	status = "okay";
+};
