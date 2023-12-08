@@ -5499,15 +5499,15 @@ static const struct panel_desc_dsi auo_g101uan02 = {
 #endif
 #if defined(CONFIG_ARCH_ADVANTECH)
 static const struct drm_display_mode auo_g070vw01v0_mode = {
-    .clock = 29500,
+    .clock = 25000,
     .hdisplay = 800,
-    .hsync_start = 800 + 24,
-    .hsync_end = 800 + 24 + 72,
-    .htotal = 800 + 24 + 72 + 96,
+    .hsync_start = 800 + 200,
+    .hsync_end = 800 + 200 + 6,
+    .htotal = 800 + 200 + 6 + 50,
     .vdisplay = 480,
-    .vsync_start = 480 + 10,
-    .vsync_end = 480 + 10 + 7,
-    .vtotal = 480 + 10 + 3 + 7,
+    .vsync_start = 480 + 20,
+    .vsync_end = 480 + 20 + 4,
+    .vtotal = 480 + 20 + 4 + 4,
 };
 
 static const struct panel_desc_dsi auo_g070vw01v0 = {
@@ -5526,6 +5526,61 @@ static const struct panel_desc_dsi auo_g070vw01v0 = {
     .lanes = 4,
 };
 
+static const struct drm_display_mode ampire_am800480btmqw_mode = {
+    .clock = 25000,
+    .hdisplay = 800,
+    .hsync_start = 800 + 40,
+    .hsync_end = 800 + 40 + 48,
+    .htotal = 800 + 40 + 48 + 40,
+    .vdisplay = 480,
+    .vsync_start = 480 + 13,
+    .vsync_end = 480 + 13 + 3,
+    .vtotal = 480 + 13 + 3 + 29,
+};
+
+static const struct panel_desc_dsi ampire_am800480btmqw = {
+    .desc = {
+        .modes = &ampire_am800480btmqw_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 154,
+            .height = 87,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_NO_EOT_PACKET,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
+
+static const struct drm_display_mode ampire_am1280800w6tzqw_mode = {
+    .clock = 54000,
+    .hdisplay = 1280,
+    .hsync_start = 1280 + 60,
+    .hsync_end = 1280 + 60 + 40,
+    .htotal = 1280 + 60 + 40 + 60,
+    .vdisplay = 800,
+    .vsync_start = 800 + 14,
+    .vsync_end = 800 + 14 + 10,
+    .vtotal = 800 + 14 + 10 + 14,
+};
+
+static const struct panel_desc_dsi ampire_am1280800w6tzqw = {
+    .desc = {
+        .modes = &ampire_am1280800w6tzqw_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 217,
+            .height = 136,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_NO_EOT_PACKET,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
 static const struct drm_display_mode auo_g150xgel05_mode = {
     .clock = 63500,
     .hdisplay = 1024,
@@ -5772,6 +5827,12 @@ static const struct of_device_id dsi_of_match[] = {
 	}, {
 		.compatible = "auo,g150xgel05",
 		.data = &auo_g150xgel05
+	},{
+		.compatible = "ampire,am800480btmqw",
+		.data = &ampire_am800480btmqw
+	}, {
+		.compatible = "ampire,am1280800w6tzqw",
+		.data = &ampire_am1280800w6tzqw
 	}, {
 		.compatible = "auo,g215hvn01",
 		.data = &auo_g215hvn01
