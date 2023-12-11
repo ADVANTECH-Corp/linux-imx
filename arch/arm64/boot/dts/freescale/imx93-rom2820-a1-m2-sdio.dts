@@ -20,6 +20,10 @@
 };
 
 &lpuart5 {
+	/delete-property/linux,rs485-enabled-at-boot-time;
+	/delete-property/rs485-rx-during-tx;
+	/delete-property/rs485-rts-active-low;
+
 	/* BT */
 	resets = <&lpuart5_mod_reset>;
 	fsl,uart-has-rtscts;
