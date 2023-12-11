@@ -1245,6 +1245,39 @@ static const struct panel_desc boe_ev121wxm_n10_1850 = {
 	.connector_type = DRM_MODE_CONNECTOR_LVDS,
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static const struct drm_display_mode auo_g070vw01_v0_mode = {
+        .clock = 33000,
+        .hdisplay = 800,
+        .hsync_start = 800 + 24,
+        .hsync_end = 800 + 24 + 72,
+        .htotal = 800 + 24 + 72 + 96,
+        .vdisplay = 480,
+        .vsync_start = 480 + 10,
+        .vsync_end = 480 + 10 + 7,
+        .vtotal = 480 + 10 + 3 + 7,
+};
+
+static const struct panel_desc auo_g070vw01_v0 = {
+        .modes = &auo_g070vw01_v0_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+                .width = 152,
+                .height = 91,
+        },
+        .delay = {
+                .prepare = 8,
+                .enable = 300,
+                .unprepare = 300,
+                .disable = 60,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
+        .bus_flags = DRM_BUS_FLAG_DE_HIGH,
+        .connector_type = DRM_MODE_CONNECTOR_LVDS,
+};
+#endif
+
 static const struct drm_display_mode boe_hv070wsa_mode = {
 	.clock = 42105,
 	.hdisplay = 1024,
@@ -4092,6 +4125,12 @@ static const struct of_device_id platform_of_match[] = {
 		.compatible = "boe,ev121wxm-n10-1850",
 		.data = &boe_ev121wxm_n10_1850,
 	}, {
+
+#ifdef CONFIG_ARCH_ADVANTECH
+		.compatible = "auo,g070vw01_v0",
+		.data = &auo_g070vw01_v0,
+	}, {
+#endif
 		.compatible = "boe,hv070wsa-100",
 		.data = &boe_hv070wsa
 	}, {
