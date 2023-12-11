@@ -587,13 +587,6 @@
 		reg = <0x21>;
 		gpio-controller;
 		#gpio-cells = <2>;
-
-		UR_SEL {
-			gpio-hog;
-			gpios = <2 GPIO_ACTIVE_HIGH>;
-			output-high;
-			line-name = "UR_SEL";
-		};
 	};
 };
 
@@ -664,12 +657,20 @@
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_uart5>;
         status = "okay";
+
+	linux,rs485-enabled-at-boot-time;
+	rs485-rx-during-tx;
+	rs485-rts-active-low;
 };
 
 &lpuart6 {
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_uart6>;
         status = "okay";
+
+	linux,rs485-enabled-at-boot-time;
+        rs485-rx-during-tx;
+        rs485-rts-active-low;
 };
 
 &media_blk_ctrl {
