@@ -696,6 +696,9 @@ static const struct of_device_id spidev_dt_ids[] = {
 	{ .compatible = "menlo,m53cpld" },
 	{ .compatible = "cisco,spi-petra" },
 	{ .compatible = "micron,spi-authenta" },
+#ifdef CONFIG_ARCH_ADVANTECH
+	{ .compatible = "imx8,spidev" },
+#endif
 	{},
 };
 MODULE_DEVICE_TABLE(of, spidev_dt_ids);

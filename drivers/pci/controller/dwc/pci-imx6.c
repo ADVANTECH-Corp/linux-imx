@@ -127,6 +127,7 @@ struct imx6_pcie {
 	int			power_on_gpio;
 	int			usb_host_pwr_en_gpio;
 	int			reset_time;
+	int 		power_on_gpio_5g;
 #endif
 	bool			gpio_active_high;
 	struct clk		*pcie_bus;
@@ -1179,6 +1180,9 @@ static void imx6_pcie_deassert_core_reset(struct imx6_pcie *imx6_pcie)
 #ifdef CONFIG_ARCH_ADVANTECH
 	if (gpio_is_valid(imx6_pcie->power_on_gpio))
 		gpio_set_value_cansleep(imx6_pcie->power_on_gpio, 1);
+
+	if (gpio_is_valid(imx6_pcie->power_on_gpio_5g))
+		gpio_set_value_cansleep(imx6_pcie->power_on_gpio_5g, 1);
 #endif
 
 	switch (imx6_pcie->drvdata->variant) {
@@ -2477,6 +2481,20 @@ static int imx6_pcie_probe(struct platform_device *pdev)
 		}
 	} else if (imx6_pcie->power_on_gpio == -EPROBE_DEFER) {
 		return imx6_pcie->power_on_gpio;
+	}
+
+	imx6_pcie->power_on_gpio_5g = of_get_named_gpio(node, "power-on-gpio-5g", 0);
+	if (gpio_is_valid(imx6_pcie->power_on_gpio_5g)) {
+		ret = devm_gpio_request_one(&pdev->dev,
+					    imx6_pcie->power_on_gpio_5g,
+					    GPIOF_OUT_INIT_LOW,
+					    "m.2 5g power enable");
+		if (ret) {
+			dev_err(&pdev->dev, "unable to get power-on m.2 5g\n");
+			return ret;
+		}
+	} else if (imx6_pcie->power_on_gpio_5g == -EPROBE_DEFER) {
+		return imx6_pcie->power_on_gpio_5g;
 	}
 
 	imx6_pcie->usb_host_pwr_en_gpio = of_get_named_gpio(node, "usb-host-pwr-en", 0);

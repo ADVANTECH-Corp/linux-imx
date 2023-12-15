@@ -1958,6 +1958,7 @@ static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9215)}, /* Quectel EC20 */
 	{ USB_DEVICE(QUECTEL_VENDOR_ID, 0x0125)}, /* Quectel EC25/EC20 R2.0*/
 	{ USB_DEVICE(QUECTEL_VENDOR_ID, 0x0121)}, /* Quectel EC21 */
+	{ USB_DEVICE(QUECTEL_VENDOR_ID, 0x0800)}, /* Quectel RM500Q */
 	{ USB_DEVICE_INTERFACE_CLASS(SIERRA_VENDOR_ID, 0x9071, 0xff),
 	  .driver_info = NCTRL(0) | NCTRL(2) | RSVD(8) | RSVD(10) | RSVD(11) }, /* Sierra MC7430 */
 	{ USB_DEVICE_INTERFACE_CLASS(SIERRA_VENDOR_ID, 0x68c0, 0xff),
@@ -2212,6 +2213,9 @@ static struct usb_serial_driver option_1port_device = {
 #ifdef CONFIG_PM
 	.suspend           = usb_wwan_suspend,
 	.resume            = usb_wwan_resume,
+#ifdef CONFIG_ARCH_ADVANTECH
+	.reset_resume = usb_wwan_resume,
+#endif
 #endif
 };
 
@@ -2254,6 +2258,20 @@ static int option_probe(struct usb_serial *serial,
 	 */
 	if (device_flags & NUMEP2 && iface_desc->bNumEndpoints != 2)
 		return -ENODEV;
+
+#ifdef CONFIG_ARCH_ADVANTECH //  Quectel
+//Quectel modules’s interface 4 can be used as USB network device
+if (serial->dev->descriptor.idVendor == cpu_to_le16(0x2C7C)) {
+//some interfaces can be used as USB Network device (ecm, rndis, mbim)
+if (serial->interface->cur_altsetting->desc.bInterfaceClass != 0xFF) {
+return -ENODEV;
+}
+//interface 4 can be used as USB Network device (qmi)
+else if (serial->interface->cur_altsetting->desc.bInterfaceNumber >= 4) {
+return -ENODEV;
+}
+}
+#endif
 
 	/* Store the device flags so we can use them during attach. */
 	usb_set_serial_data(serial, (void *)device_flags);

@@ -22,6 +22,75 @@
 #include "dal/dal_mgmt.h"
 #include "dal/rtl8367c/rtl8367c_asicdrv_port.h"
 
+#include <linux/uaccess.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+static char mac_buf[150];
+static ssize_t proc_83867_detect_write(struct file *file,
+        const char __user *buffer, size_t count, loff_t *pos)
+{
+        char *buf=NULL;
+        buf=kmalloc(count,GFP_KERNEL);
+        copy_from_user(buf,buffer,count);
+        buf[count - 1] = '\0';
+        if (strcmp(buf,"1")==0){
+                rtk_api_ret_t retVal;
+                rtk_uint32 address = 0;
+                rtk_l2_ucastAddr_t l2_data;
+                char temp[20];
+                int i;
+                memset(mac_buf,0,150);
+                for(i=0;i<10;i++)
+                {
+                        msleep(2000);
+                        if((retVal= rtk_l2_addr_next_get(READMETHOD_NEXT_L2UC,UTP_PORT0,&address,&l2_data)) != RT_ERR_OK)
+                        {
+                                break;
+                        }
+                        if(l2_data.port>=0&&l2_data.port<5){
+                                sprintf(temp, "%02x:%02x:%02x:%02x:%02x:%02x;",l2_data.mac.octet[0],l2_data.mac.octet[1],l2_data.mac.octet[2],l2_data.mac.octet[3],l2_data.mac.octet[4],l2_data.mac.octet[5]);
+                                strcat(mac_buf,temp);
+                                sprintf(temp,"%d;\n",l2_data.port);
+                                strcat(mac_buf,temp);
+                        }
+                        address++;
+                        msleep(200);
+                }
+                if(i==10){
+                        printk("realtek search out of time.\n");
+                }
+        }else{
+                printk("error input\n");
+        }
+        return count;
+}
+static int proc_83867_detect_show(struct seq_file *m, void *v)
+{
+        seq_printf(m, "%s\n", mac_buf);
+
+        return 0;
+}
+
+static int proc_83867_detect_open(struct inode *inode, struct file *file)
+{
+        return single_open(file, proc_83867_detect_show, NULL);
+}
+
+static const struct proc_ops proc_83867_detect_fops = {
+        .proc_open           = proc_83867_detect_open,
+        .proc_read           = seq_read,
+        .proc_write          = proc_83867_detect_write,
+        .proc_lseek         = seq_lseek,
+        .proc_release        = single_release,
+};
+
+static int __init proc_83867_detect_init(void)
+{
+        proc_create("83867_detect", 0, NULL, &proc_83867_detect_fops);
+        return 0;
+}
+fs_initcall(proc_83867_detect_init);
+
 extern void adv_set_smi_gpio(unsigned scl,unsigned sda);
 
 static int rtl8367c_init(struct platform_device *pdev)

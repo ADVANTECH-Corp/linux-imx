@@ -1,0 +1,5 @@
+Tag: lf-5.10.72-2.2.0
+Package version: mxm5x17283.p2
+Driver version: MM5X17283.p2-GPL
+Firmware version: 16.92.10.p219.5
+md5sum: 315e3bbc9052fc6b6060545e5c1c6c94

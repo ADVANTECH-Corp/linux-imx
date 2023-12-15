@@ -158,6 +158,26 @@ static struct thermal_zone_of_device_ops tmu_tz_ops = {
 	.set_trip_temp = tmu_set_trip_temp,
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+int g_cpu_thermal_trip1 = -1;
+
+static int __init setup_cpu_thermal_trip1(char *buf)
+{
+	int ret = -1;
+
+	if (!buf)
+		return -EINVAL;
+
+	ret =  simple_strtol(buf, NULL, 10);
+
+	if(ret > 0)
+		g_cpu_thermal_trip1 = ret;
+
+	return ret;
+}
+early_param("cpu_thermal_trip1", setup_cpu_thermal_trip1);
+#endif
+
 static void imx8mm_tmu_enable(struct imx8mm_tmu *tmu, bool enable)
 {
 	u32 val;
@@ -180,8 +200,13 @@ static void imx8mm_tmu_probe_sel_all(struct imx8mm_tmu *tmu)
 
 static int imx8mm_tmu_probe(struct platform_device *pdev)
 {
-	const struct thermal_soc_data *data;
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct thermal_trip *trips;
+#else
 	const struct thermal_trip *trips;
+#endif
+
+	const struct thermal_soc_data *data;
 	struct imx8mm_tmu *tmu;
 	int ret;
 	int i;
@@ -254,6 +279,11 @@ static int imx8mm_tmu_probe(struct platform_device *pdev)
 		trips = of_thermal_get_trip_points(tmu->sensors[i].tzd);
 
 		/* get the thermal trip temp */
+	#ifdef CONFIG_ARCH_ADVANTECH
+		if(g_cpu_thermal_trip1 > 0)
+			trips[1].temperature = g_cpu_thermal_trip1;
+	#endif
+
 		tmu->sensors[i].temp_passive = trips[0].temperature;
 		tmu->sensors[i].temp_critical = trips[1].temperature;
 	}

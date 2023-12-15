@@ -26,6 +26,9 @@
 #include <linux/pm_runtime.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/busfreq-imx.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#endif
 
 #include "fsl_dsd.h"
 #include "fsl_sai.h"
@@ -810,10 +813,18 @@ static int fsl_sai_trigger(struct snd_pcm_substream *substream, int cmd,
 
 		regmap_update_bits(sai->regmap, FSL_SAI_xCSR(tx, ofs),
 				   FSL_SAI_CSR_xIE_MASK, FSL_SAI_FLAGS);
+#ifdef CONFIG_ARCH_ADVANTECH
+		if (!IS_ERR(sai->mute_gpio))
+			gpiod_direction_output(sai->mute_gpio, 1);
+#endif
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+#ifdef CONFIG_ARCH_ADVANTECH
+		if (!IS_ERR(sai->mute_gpio))
+			gpiod_direction_output(sai->mute_gpio, 0);
+#endif
 		regmap_update_bits(sai->regmap, FSL_SAI_xCSR(tx, ofs),
 				   FSL_SAI_CSR_FRDE, 0);
 		regmap_update_bits(sai->regmap, FSL_SAI_xCSR(tx, ofs),
@@ -905,6 +916,10 @@ static int fsl_sai_dai_probe(struct snd_soc_dai *cpu_dai)
 {
 	struct fsl_sai *sai = dev_get_drvdata(cpu_dai->dev);
 	unsigned int ofs = sai->soc_data->reg_offset;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	sai->mute_gpio = gpiod_get(cpu_dai->dev, "mute", GPIOD_OUT_LOW);
+#endif
 
 	regmap_update_bits(sai->regmap, FSL_SAI_TCR1(ofs),
 			   FSL_SAI_CR1_RFW_MASK(sai->soc_data->fifo_depth),

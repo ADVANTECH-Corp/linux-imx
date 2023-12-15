@@ -43,6 +43,10 @@
 /* 1111: +24% ... 0000: -6% step: 2% */
 #define PHY_CTRL3_TXVREF_TUNE_MASK	GENMASK(25, 22)
 #define PHY_CTRL3_TXVREF_TUNE_SHIFT	22
+#ifdef CONFIG_ARCH_ADVANTECH
+#define PHY_CTRL3_TXVBOOST_TUNE_MASK	GENMASK(31, 29)
+#define PHY_CTRL3_TXVBOOST_TUNE_SHIFT	29
+#endif
 #define PHY_CTRL3_TX_VBOOST_LEVEL_MASK	GENMASK(31, 29)
 #define PHY_CTRL3_TX_VBOOST_LEVEL_SHIFT	29
 
@@ -93,6 +97,9 @@ struct imx8mq_usb_phy {
 	struct notifier_block chg_det_nb;
 	struct power_supply *vbus_power_supply;
 	enum power_supply_usb_type chg_type;
+#ifdef CONFIG_ARCH_ADVANTECH
+	u32 tx_vboost_lvl;
+#endif
 	struct dentry *debugfs;
 	u16	cr_access_base;
 	u16	cr_read_count;
@@ -310,6 +317,12 @@ static void imx8m_get_phy_tuning_data(struct imx8mq_usb_phy *imx_phy)
 {
 	struct device *dev = imx_phy->phy->dev.parent;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (device_property_read_u32(dev, "fsl,phy-tx-vboost-tune",
+				     &imx_phy->tx_vboost_lvl))
+		imx_phy->tx_vboost_lvl = PHY_TUNE_DEFAULT;
+#endif
+
 	if (device_property_read_u32(dev, "fsl,phy-tx-vref-tune",
 				     &imx_phy->tx_vref_tune))
 		imx_phy->tx_vref_tune = PHY_TUNE_DEFAULT;
@@ -395,6 +408,13 @@ static void imx8m_phy_tune(struct imx8mq_usb_phy *imx_phy)
 		 imx_phy->tx_preemp_amp_tune << PHY_CTRL3_TXPREEMP_TUNE_SHIFT |
 		 imx_phy->tx_vboost_level << PHY_CTRL3_TX_VBOOST_LEVEL_SHIFT |
 		 imx_phy->comp_dis_tune;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (imx_phy->tx_vboost_lvl != PHY_TUNE_DEFAULT) {
+		value &= ~PHY_CTRL3_TXVBOOST_TUNE_MASK;
+		value |= imx_phy->tx_vboost_lvl << PHY_CTRL3_TXVBOOST_TUNE_SHIFT;
+	}
+#endif
 
 	writel(value, imx_phy->base + PHY_CTRL3);
 }

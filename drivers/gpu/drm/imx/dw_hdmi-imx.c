@@ -27,6 +27,10 @@
 #include "imx8mp-hdmi-pavi.h"
 #include "imx-drm.h"
 
+#ifdef CONFIG_ARCH_ADVANTECH
+struct device_node *hdmi_node ;
+#endif
+
 struct imx_hdmi;
 
 struct imx_hdmi_encoder {
@@ -210,6 +214,16 @@ imx8mp_hdmi_mode_valid(struct dw_hdmi *hdmi, void *data,
 		return MODE_CLOCK_LOW;
 	if (mode->clock > 297000)
 		return MODE_CLOCK_HIGH;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_get_property(hdmi_node, "skip_hdmi_4k_display", NULL))
+	{
+		if (mode->hdisplay > 1920 || mode->vdisplay > 1080 )
+		{
+			return MODE_BAD;
+		}
+	}
+#endif
 
 	if (!imx8mp_hdmi_check_clk_rate(mode->clock))
 		return MODE_CLOCK_RANGE;
@@ -412,7 +426,9 @@ static int dw_hdmi_imx_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	platform_set_drvdata(pdev, hdmi);
+#ifdef CONFIG_ARCH_ADVANTECH
 	hdmi->dev = &pdev->dev;
+#endif
 
 	hdmi->regmap = syscon_regmap_lookup_by_phandle(np, "gpr");
 	if (IS_ERR(hdmi->regmap)) {
@@ -452,6 +468,10 @@ static int dw_hdmi_imx_probe(struct platform_device *pdev)
 		dw_hdmi_remove(hdmi->hdmi);
 		return -ENODEV;
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	hdmi_node = pdev->dev.of_node;
+#endif
 
 	ret = component_add(&pdev->dev, &dw_hdmi_imx_ops);
 	if (ret)
