@@ -5499,7 +5499,7 @@ static const struct panel_desc_dsi auo_g101uan02 = {
 #endif
 #if defined(CONFIG_ARCH_ADVANTECH)
 static const struct drm_display_mode auo_g070vw01v0_mode = {
-    .clock = 25000,
+    .clock = 29500,
     .hdisplay = 800,
     .hsync_start = 800 + 200,
     .hsync_end = 800 + 200 + 6,
@@ -5527,7 +5527,7 @@ static const struct panel_desc_dsi auo_g070vw01v0 = {
 };
 
 static const struct drm_display_mode ampire_am800480btmqw_mode = {
-    .clock = 25000,
+    .clock = 29500,
     .hdisplay = 800,
     .hsync_start = 800 + 40,
     .hsync_end = 800 + 40 + 48,
