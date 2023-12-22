@@ -1247,7 +1247,7 @@ static const struct panel_desc boe_ev121wxm_n10_1850 = {
 
 #ifdef CONFIG_ARCH_ADVANTECH
 static const struct drm_display_mode auo_g070vw01_v0_mode = {
-        .clock = 33000,
+        .clock = 35000,
         .hdisplay = 800,
         .hsync_start = 800 + 24,
         .hsync_end = 800 + 24 + 72,
