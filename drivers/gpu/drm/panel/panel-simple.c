@@ -1267,7 +1267,7 @@ static const struct panel_desc auo_g070vw01_v0 = {
                 .height = 91,
         },
         .delay = {
-                .prepare = 8,
+                .prepare = 1,
                 .enable = 300,
                 .unprepare = 300,
                 .disable = 60,
