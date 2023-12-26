@@ -103,6 +103,8 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mm-rom5721-a1-adv7535.dtb \
 			  imx8mm-rom5721-a1-dsi2dp.dtb \
 			  imx8mm-rom5721-a1-dsi2lvds-g150xgel05.dtb \
 			  imx8mm-rom5721-a1-dsi2lvds-g215hvn01.dtb \
+			  imx8mm-rom5721-a1-dsi2lvds-am800480btmqw.dtb \
+			  imx8mm-rom5721-a1-dsi2lvds-am1280800w6tzqw.dtb \
 			  imx8mm-rom5721-a1-m2-sdio.dtb \
 			  imx8mm-rom5721-a1-m2-i2s.dtb \
 			  imx8mm-rom5721-a1-rpmsg.dtb \
