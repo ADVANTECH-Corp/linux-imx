@@ -2510,6 +2510,15 @@ static int imx_uart_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if(RS485_MODE == adv_get_uart_mode(sport->port.line))
+	{
+		sport->port.rs485.flags |= SER_RS485_ENABLED;
+		if (of_get_property(pdev->dev.of_node, "rs485-dir-gpios", NULL))
+			sport->have_rtsgpio = 1;
+	}
+#endif
+
 	if (sport->port.rs485.flags & SER_RS485_ENABLED &&
 	    (!sport->have_rtscts && !sport->have_rtsgpio))
 		dev_err(&pdev->dev, "no RTS control, disabling rs485\n");
@@ -2645,6 +2654,14 @@ static int imx_uart_probe(struct platform_device *pdev)
 		}else{
 			dev_warn(dev,"RS232 MODE\n");
 		}
+	}
+
+	sport->rs485_gpio = gpiod_get(dev, "rs485-dir", GPIOD_OUT_LOW);
+	if (!IS_ERR(sport->rs485_gpio)) {
+		gpiod_direction_output(sport->rs485_gpio, 1);
+		//gpiod_set_value(sport->rs485_gpio, 1);
+	} else if (sport->rs485_gpio == -EPROBE_DEFER) {
+		return sport->rs485_gpio;
 	}
 
 	sport->uart_enable_gpio  =
