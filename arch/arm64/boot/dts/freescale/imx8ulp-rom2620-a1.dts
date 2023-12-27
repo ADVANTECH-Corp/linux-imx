@@ -231,23 +231,6 @@
 	status = "okay";
 };
 
-&flexspi2 {
-	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&pinctrl_flexspi2_ptd>;
-	pinctrl-1 = <&pinctrl_flexspi2_ptd>;
-	status = "okay";
-
-	mx25uw51345gxdi00: flash@0 {
-		reg = <0>;
-		#address-cells = <1>;
-		#size-cells = <1>;
-		compatible = "jedec,spi-nor";
-		spi-max-frequency = <200000000>;
-		spi-tx-bus-width = <8>;
-		spi-rx-bus-width = <8>;
-	};
-};
-
 &i2c_rpbus_0 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -562,18 +545,6 @@
 			MX8ULP_PAD_PTE23__ENET0_TXD0    0x43
 			MX8ULP_PAD_PTE22__ENET0_TXD1    0x43
 			MX8ULP_PAD_PTE19__ENET0_REFCLK  0x43
-		>;
-	};
-
-	pinctrl_flexspi2_ptd: flexspi2ptdgrp {
-		fsl,pins = <
-
-			MX8ULP_PAD_PTD12__FLEXSPI2_A_SS0_B	0x42
-			MX8ULP_PAD_PTD13__FLEXSPI2_A_SCLK	0x42
-			MX8ULP_PAD_PTD19__FLEXSPI2_A_DATA7	0x42
-			MX8ULP_PAD_PTD20__FLEXSPI2_A_DATA6	0x42
-			MX8ULP_PAD_PTD21__FLEXSPI2_A_DATA5	0x42
-			MX8ULP_PAD_PTD22__FLEXSPI2_A_DATA4	0x42
 		>;
 	};
 
