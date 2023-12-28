@@ -118,11 +118,14 @@ struct panel_simple {
 
 #if defined(CONFIG_OF) //&& defined(CONFIG_ARCH_ADVANTECH)
 int blank_count = 0;
+extern void enable_lcd_vdd_en(void);
 extern void enable_ldb_bkl_vcc(void);
 extern void enable_ldb_bkl_pwm(void);
 extern void disable_ldb_bkl_vcc(void);
 extern void disable_ldb_bkl_pwm(void);
 extern void disable_ldb_signal(void);
+extern void disable_ldb_bkl_en(void);
+extern void disable_lcd_vdd_en(void);
 #endif
 
 static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
@@ -251,9 +254,8 @@ static int panel_simple_disable(struct drm_panel *panel)
 		p->backlight->props.power = FB_BLANK_POWERDOWN;
 		p->backlight->props.state |= BL_CORE_FBBLANK;
 #if defined(CONFIG_OF) //&& defined(CONFIG_ARCH_ADVANTECH)
-		disable_ldb_bkl_pwm();
 		backlight_update_status(p->backlight); //PWM
-		disable_ldb_bkl_vcc();
+		msleep(10); //T9
 #else
 		backlight_update_status(p->backlight);
 #endif
@@ -274,8 +276,11 @@ static int panel_simple_unprepare(struct drm_panel *panel)
 	if (!p->prepared)
 		return 0;
 
+	disable_ldb_bkl_en();
+	disable_ldb_bkl_vcc();
+	msleep(200); //T6
 	gpiod_set_value_cansleep(p->enable_gpio, 0);
-
+	disable_lcd_vdd_en(); //T3
 	regulator_disable(p->supply);
 
 	if (p->desc->delay.unprepare)
@@ -300,7 +305,7 @@ static int panel_simple_prepare(struct drm_panel *panel)
 		dev_err(panel->dev, "failed to enable supply: %d\n", err);
 		return err;
 	}
-
+	enable_lcd_vdd_en(); //T2
 	gpiod_set_value_cansleep(p->enable_gpio, 1);
 
 	delay = p->desc->delay.prepare;
@@ -340,8 +345,10 @@ static int panel_simple_enable(struct drm_panel *panel)
 		{
 		case 1:
 			enable_ldb_bkl_vcc();
-			backlight_update_status(p->backlight); //PWM
+			msleep(265); //T5
 			enable_ldb_bkl_pwm();
+			msleep(10); //T8
+			backlight_update_status(p->backlight); //PWM T8
 			blank_count++;
 			break;
 		default:
@@ -964,9 +971,10 @@ static const struct panel_desc auo_t215hvn01 = {
 #endif
 	}
 };
-
+// the freq should be 74250/74.25 MHz (148500/2). However, it something weired on clock setting.
+// This LVDS clock in 148500 will get 74.25 MHz to meet the spec.
 static const struct drm_display_mode innolux_g215hcjlh1_mode = {
-	.clock = 74250,
+	.clock = 148500,
 	.hdisplay = 1920,
 	.hsync_start = 1920 + 60,
 	.hsync_end = 1920 + 60 + 20,

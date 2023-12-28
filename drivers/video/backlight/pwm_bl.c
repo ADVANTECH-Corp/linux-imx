@@ -108,11 +108,18 @@ enum of_gpio_flags bklt_vcc_flag;
 
 void enable_lcd_vdd_en(void)
 {
+	int ret;
 	/* LVDS Panel power enable */
 	if (lvds_vcc_enable >= 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD.\n");
-		gpio_set_value_cansleep(lvds_vcc_enable, lvds_vcc_flag);
+		ret = gpio_request(lvds_vcc_enable,"lvds_vcc_enable");
+
+		if (ret < 0)
+			printk("\nRequest lvds_vcc_enable failed!!\n");
+		else{
+			gpio_direction_output(lvds_vcc_enable, (lvds_vcc_flag)?0:1);
+		}
 	}
 
 	printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
@@ -143,7 +150,7 @@ void enable_ldb_bkl_pwm(void)
 	mdelay(bklt_en_delay_value); // T9 for AUO 7"
 
 	// Backlight Enable (Display On/Off)
-        if (lvds_bkl_enable >= 0)
+	 if (lvds_bkl_enable >= 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 5 Start to enable LVDS backlight.\n");
 		gpio_set_value_cansleep(lvds_bkl_enable, lvds_bkl_flag);
@@ -182,6 +189,15 @@ void disable_ldb_bkl_pwm(void)
 
 	mdelay(bklt_en_disable_delay_value);
 	printk(KERN_INFO "[LVDS Sequence] 2 Start to disable backlight PWM.\n");
+}
+
+void disable_ldb_bkl_en(void)
+{
+	if (lvds_bkl_enable >= 0)
+	{
+		printk(KERN_INFO "[LVDS Sequence] 1 Start to disable LVDS backlight enable.\n");
+		gpio_set_value_cansleep(lvds_bkl_enable, (lvds_bkl_flag)?0:1);
+	}
 }
 
 //#endif
@@ -489,15 +505,17 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	}
 
 	/* Set default to output */
+	/*
 	if (lvds_vcc_enable >= 0)
 	{
 		ret = gpio_request(lvds_vcc_enable,"lvds_vcc_enable");
 
 		if (ret < 0)
 			printk("\nRequest lvds_vcc_enable failed!!\n");
-		else
+		else{
 			gpio_direction_output(lvds_vcc_enable, (lvds_vcc_flag)?0:1);
-	}
+		}
+	}*/
 	if (bklt_vcc_enable >= 0)
 	{
 		ret = gpio_request(bklt_vcc_enable,"bklt_vdd_enable");
@@ -536,7 +554,7 @@ get_delays:
 	ret = of_property_read_u32(node,"bklt-en-delay-time",&bklt_en_delay_value);
 	if (ret < 0)
 	{
-		bklt_en_delay_value = 20;
+		bklt_en_delay_value = 0; //T8
 	}
 	ret = of_property_read_u32(node,"bklt-en-disable-delay-time",&lvds_bkl_disable_delay_value);
 	if (ret < 0)
