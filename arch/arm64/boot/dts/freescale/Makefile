@@ -229,6 +229,14 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mq-zii-ultra-zest.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mq-ddr3l-val.dtb imx8mq-ddr4-val.dtb imx8mq-ddr4-val-gpmi-nand.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mq-evk-pcie-ep.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mq-wevk.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mq-rom5720-a1.dtb \
+			  imx8mq-rom5720-a1-dcss-adv7535.dtb \
+			  imx8mq-rom5720-a1-dcss-auog101uan02.dtb \
+			  imx8mq-rom5720-a1-dual-display.dts \
+			  imx8mq-rom5720-a1-lcdif-adv7535.dtb \
+			  imx8mq-rom5720-a1-m2-sdio.dtb \
+			  imx8mq-rom5720-a1-otg.dtb \
+			  imx8mq-rom5720-a1-sn65dsi84-r190ece-l01.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8qm-mek.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8qxp-ai_ml.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8qxp-colibri-eval-v3.dtb
