@@ -3,7 +3,7 @@
  * Copyright 2019 NXP
  */
 
-#include "imx8mp-rom5722-a2.dts"
+#include "imx8mp-rom5722-a1.dts"
 
 &i2c4 {
 	adv_bridge: adv7535@3d {

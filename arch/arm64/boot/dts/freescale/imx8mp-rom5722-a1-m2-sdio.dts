@@ -12,7 +12,7 @@
  * GNU General Public License for more details.
  */
 
-#include "imx8mp-rom5722-a2.dts"
+#include "imx8mp-rom5722-a1.dts"
 
 / {
 	usdhc2_pwrseq: usdhc2_pwrseq {

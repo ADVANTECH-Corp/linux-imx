@@ -16,7 +16,7 @@
 
 /dts-v1/;
 
-#include "imx8mp-rom5722-a2.dts"
+#include "imx8mp-rom5722-a1.dts"
 
 &i2c2 {
 	/delete-node/ov5640_mipi@3c;
