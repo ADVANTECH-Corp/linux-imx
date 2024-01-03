@@ -1,0 +1,7 @@
+#include "imx8ulp-rom2620-a1-m2-sdio.dts"
+
+&lpuart4 {
+	bluetooth {
+		compatible = "nxp,88w8987-bt";
+	};
+};
