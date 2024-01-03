@@ -17,18 +17,6 @@
 		stdout-path = &lpuart5;
 	};
 
-	gpio-keys {
-		compatible = "gpio-keys";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_gpio_keys>;
-
-		power-on {
-			label = "PowerOn";
-			gpios = <&gpiof 31 GPIO_ACTIVE_LOW>;
-			linux,code = <KEY_POWER>;
-		};
-	};
-
 	memory@80000000 {
 		device_type = "memory";
 		reg = <0x0 0x80000000 0 0x80000000>;
@@ -199,6 +187,19 @@
 			"LINPUT1", "MICB",
 			"LINPUT3", "MICB";
 		status = "okay";
+	};
+};
+
+&per_bridge4 {
+	tpm7: pwm@29830000 {
+		compatible = "fsl,imx8ulp-pwm", "fsl,imx7ulp-pwm";
+		reg = <0x29830000 0x10000>;
+                clocks = <&pcc4 IMX8ULP_CLK_TPM7>;
+                clock-names = "ipg", "sel";
+                assigned-clocks = <&pcc4 IMX8ULP_CLK_TPM7>, <&cgc1 IMX8ULP_CLK_TPM7_SEL>;
+                assigned-clock-parents =  <&cgc1 IMX8ULP_CLK_SOSC_DIV2>, <&cgc1 IMX8ULP_CLK_SOSC_TPM>;
+                assigned-clock-rates = <24000000>;
+                status = "disabled";
 	};
 };
 
@@ -542,6 +543,13 @@
 	};
 };
 
+&tpm7 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&pinctrl_tpm7>;
+	pinctrl-1 = <&pinctrl_tpm7>;
+	status = "okay";
+};
+
 &tpm8 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pwm>;
@@ -570,12 +578,6 @@
 			MX8ULP_PAD_PTE23__ENET0_TXD0    0x43
 			MX8ULP_PAD_PTE22__ENET0_TXD1    0x43
 			MX8ULP_PAD_PTE19__ENET0_REFCLK  0x43
-		>;
-	};
-
-	pinctrl_gpio_keys: gpiokeys {
-		fsl,pins = <
-			MX8ULP_PAD_PTF31__PTF31		0x3
 		>;
 	};
 
@@ -708,6 +710,15 @@
 			MX8ULP_PAD_PTD19__TPM8_CH1      0x42 /* DISP_BL_PWM */
 		>;
 	};
+
+	pinctrl_tpm7: tpm7grp {
+                fsl,pins = <
+                        MX8ULP_PAD_PTF25__TPM7_CH5      0x42 /* PWM2 */
+                        MX8ULP_PAD_PTF29__TPM7_CH2      0x42 /* PWM3 */
+                        MX8ULP_PAD_PTF30__TPM7_CH3      0x42 /* PWM4 */
+                        MX8ULP_PAD_PTF31__TPM7_CH4      0x42 /* PWM5 */
+                >;
+        };
 
 	pinctrl_cam: camgrp {
 		fsl,pins = <
