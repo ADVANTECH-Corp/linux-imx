@@ -576,11 +576,21 @@
                         MX8ULP_PAD_PTC18__PTC18_GPIOC   0x3
                         MX8ULP_PAD_PTC19__PTC19_GPIOC   0x3
                         MX8ULP_PAD_PTC20__PTC20_GPIOC   0x3
-                        MX8ULP_PAD_PTC21__PTC21_GPIOC   0x3
-                        MX8ULP_PAD_PTC22__PTC22_GPIOC   0x3
-                        MX8ULP_PAD_PTC23__PTC23_GPIOC   0x3
                 >;
         };
+
+	pinctrl_usdhc2_gpio: usdhc2grpgpio {
+		fsl,pins = <
+			MX8ULP_PAD_PTC21__PTC21_GPIOC 0x3 /* M2_SDIO_RST */
+			MX8ULP_PAD_PTC23__PTC23_GPIOC 0x3 /* W_DISABLE1 */
+		>;
+	};
+
+	pinctrl_lpuart4_gpio: lpuart4grpgpio {
+		fsl,pins = <
+			MX8ULP_PAD_PTC22__PTC22_GPIOC 0x2 /* W_DISABLE2 */
+		>;
+	};
 };
 
 &iomuxc1 {
