@@ -294,6 +294,9 @@
 	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&pinctrl_lpuart4>;
 	pinctrl-1 = <&pinctrl_lpuart4>;
+	fsl,uart-has-rtscts;
+	linux,rs485-enabled-at-boot-time;
+	rs485-rx-during-tx;
 	status = "okay";
 };
 
