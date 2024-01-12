@@ -2395,6 +2395,20 @@ lpuart32_set_termios(struct uart_port *port, struct ktermios *termios,
 			sport->lpuart_dma_rx_use = false;
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	/* set auto RTS mode, when RS-485 is enabled */
+	if (sport->port.rs485.flags & SER_RS485_ENABLED) {
+		modem |= UARTMODEM_TXRTSE;
+
+		if (sport->port.rs485.flags & SER_RS485_RTS_ON_SEND)
+			modem &= ~UARTMODEM_TXRTSPOL;
+		else if (sport->port.rs485.flags & SER_RS485_RTS_AFTER_SEND)
+			modem |= UARTMODEM_TXRTSPOL;
+
+		lpuart32_write(&sport->port, modem, UARTMODIR);
+	}
+#endif
+
 	spin_unlock_irqrestore(&sport->port.lock, flags);
 }
 
