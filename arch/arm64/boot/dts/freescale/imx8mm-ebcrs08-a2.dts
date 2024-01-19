@@ -118,6 +118,16 @@
 	status = "okay";
 };
 
+&uart1 { /* BT */
+	/delete-property/ dmas;
+	/delete-property/ dma-names;
+};
+
+&uart3 {
+	/delete-property/ dmas;
+	/delete-property/ dma-names;
+};
+
 &iomuxc {
 	pinctrl_flexspi: flexspigrp {
 		fsl,pins = <
