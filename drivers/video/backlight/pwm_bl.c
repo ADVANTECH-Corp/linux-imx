@@ -114,7 +114,7 @@ enum of_gpio_flags lvds_stby_flag;
 void enable_lcd_vdd_en(void)
 {
 	/* LVDS Panel power enable */
-	if (lvds_vcc_enable > 0)
+	if (lvds_vcc_enable >= 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD. lvds_vcc_flag=%d\n",lvds_vcc_flag);
 		gpio_set_value_cansleep(lvds_vcc_enable, lvds_vcc_flag);
@@ -174,7 +174,7 @@ void enable_ldb_bkl_pwm(void)
 	mdelay(bklt_en_delay_value); // T9 for AUO 7"
 
 	// Backlight Enable (Display On/Off)
-        if (lvds_bkl_enable > 0)
+        if (lvds_bkl_enable >= 0)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 5 Start to enable LVDS backlight.\n");
 		gpio_set_value_cansleep(lvds_bkl_enable, lvds_bkl_flag);
@@ -493,7 +493,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 		goto get_delays;
 	}
 	/* Set default to output */
-	if (lvds_vcc_enable > 0)
+	if (lvds_vcc_enable >= 0)
 	{
 		ret = gpio_request(lvds_vcc_enable,"lvds_vcc_enable");
 
@@ -512,7 +512,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 		else
 			gpio_direction_output(bklt_vcc_enable, (bklt_vcc_flag)?0:1);
 	}
-	if (lvds_bkl_enable > 0)
+	if (lvds_bkl_enable >= 0)
         {
 		ret = gpio_request(lvds_bkl_enable,"lvds_bkl_enable");
 
