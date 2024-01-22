@@ -644,11 +644,11 @@ static int panel_simple_prepare(struct drm_panel *panel)
 	if (p->prepared)
 		return 0;
 
-	ret = pm_runtime_get_sync(panel->dev);
-	if (ret < 0) {
-		pm_runtime_put_autosuspend(panel->dev);
-		return ret;
-	}
+	//ret = pm_runtime_get_sync(panel->dev);
+	//if (ret < 0) {
+	//	pm_runtime_put_autosuspend(panel->dev);
+	//	return ret;
+	//}
 
 	p->prepared = true;
 
