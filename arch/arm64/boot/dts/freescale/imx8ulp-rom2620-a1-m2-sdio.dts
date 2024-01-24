@@ -42,10 +42,11 @@
 
 &lpuart4 {
 	/delete-property/pinctrl-1;
+	/delete-property/linux,rs485-enabled-at-boot-time;
+	/delete-property/rs485-rx-during-tx;
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_lpuart4>, <&pinctrl_lpuart4_gpio>;
-	fsl,uart-has-rtscts;
 	resets = <&lpuart4_mod_reset>;
 };
 
