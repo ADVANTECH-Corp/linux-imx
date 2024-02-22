@@ -1,0 +1,85 @@
+/*
+ * Copyright 2018 NXP
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "imx8mm-rom5721-a1.dts"
+
+/ {
+	osc_27m: clock-osc-27m {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <27000000>;
+		clock-output-names = "osc_27m";
+	};
+
+        panel: edp_panel {
+                        compatible ="std,1080p", "simple-panel";
+                        status = "okay";
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+                        port@0 {
+                                reg = <0>;
+                                panel_in: endpoint {
+                                        remote-endpoint = <&sn65dsi86_out>;
+                                };
+                        };
+
+                };
+};
+&i2c2 {
+        sn65dsi86@2d {
+                compatible = "ti,sn65dsi86";
+                reg = <0x2d>;
+                #address-cells = <1>;
+                #size-cells = <0>;
+                clock-names = "refclk";
+                clocks = <&osc_27m>;
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinctrl_dsi2dp_irq>;
+                interrupt-parent = <&gpio1>;
+                interrupts = <0 IRQ_TYPE_LEVEL_HIGH>;
+                status = "okay";
+                ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@0 {
+                                reg = <0>;
+                                sn65dsi86_from_dsim: endpoint {
+                                        remote-endpoint = <&dsim_to_sn65dsi86>;
+                                };
+                        };
+
+                        port@1 {
+                                reg = <1>;
+                                sn65dsi86_out: endpoint {
+                                        data-lanes = <2 1 3 0>;
+                                        lane-polarities = <0 1 0 1>;
+                                        remote-endpoint = <&panel_in>;
+                                };
+                        };
+                };
+
+        };
+};
+
+&mipi_dsi {
+	/delete-node/panel@0;
+        port@1 {
+                dsim_to_sn65dsi86: endpoint {
+                        remote-endpoint = <&sn65dsi86_from_dsim>;
+                        attach-bridge;
+                };
+        };
+	
+};
