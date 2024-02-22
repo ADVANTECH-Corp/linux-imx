@@ -1017,7 +1017,6 @@
 					compatible = "fsl,sec-v4.0-job-ring";
 					reg = <0x1000 0x1000>;
 					interrupts = <GIC_SPI 105 IRQ_TYPE_LEVEL_HIGH>;
-					status = "disabled";
 				};
 
 				sec_jr1: jr@2000 {
@@ -1052,6 +1051,16 @@
 				clocks = <&clk IMX8MM_CLK_I2C2_ROOT>;
 				status = "disabled";
 			};
+			//re-order i2c3 and i2c4 to match the original gpio expander order in Yocto 2.5
+			i2c4: i2c@30a50000 {
+				compatible = "fsl,imx8mm-i2c", "fsl,imx21-i2c";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0x30a50000 0x10000>;
+				interrupts = <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>;
+				clocks = <&clk IMX8MM_CLK_I2C4_ROOT>;
+				status = "disabled";
+			};
 
 			i2c3: i2c@30a40000 {
 				#address-cells = <1>;
@@ -1060,16 +1069,6 @@
 				reg = <0x30a40000 0x10000>;
 				interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clk IMX8MM_CLK_I2C3_ROOT>;
-				status = "disabled";
-			};
-
-			i2c4: i2c@30a50000 {
-				compatible = "fsl,imx8mm-i2c", "fsl,imx21-i2c";
-				#address-cells = <1>;
-				#size-cells = <0>;
-				reg = <0x30a50000 0x10000>;
-				interrupts = <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>;
-				clocks = <&clk IMX8MM_CLK_I2C4_ROOT>;
 				status = "disabled";
 			};
 
@@ -1187,6 +1186,7 @@
 				nvmem-cells = <&fec_mac_address>;
 				nvmem-cell-names = "mac-address";
 				fsl,stop-mode = <&gpr 0x10 3>;
+				fsl,wakeup_irq = <2>;
 				status = "disabled";
 			};
 
