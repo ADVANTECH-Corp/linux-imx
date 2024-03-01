@@ -19,29 +19,10 @@
 		reg = <0x0 0x40000000 0 0x80000000>;
 	};
 
-	ir_recv: ir-receiver {
-		compatible = "gpio-ir-receiver";
-		gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_ir_recv>;
-		linux,autosuspend-period = <125>;
-	};
-
 	pcie0_refclk: pcie0-refclk {
 		compatible = "fixed-clock";
 		#clock-cells = <0>;
 		clock-frequency = <100000000>;
-	};
-
-	reg_pcie0: regulator-pcie {
-		compatible = "regulator-fixed";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_pcie0_reg>;
-		regulator-name = "MPCIE_3V3";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio1 5 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
 	};
 
 	reg_usdhc2_vmmc: regulator-usdhc2 {
@@ -442,31 +423,26 @@
 };
 
 &pcie_phy {
-	fsl,refclk-pad-mode = <IMX8_PCIE_REFCLK_PAD_INPUT>;
-	fsl,tx-deemph-gen1 = <0x2d>;
-	fsl,tx-deemph-gen2 = <0xf>;
-	clocks = <&pcie0_refclk>;
-	status = "okay";
+        fsl,refclk-pad-mode = <IMX8_PCIE_REFCLK_PAD_INPUT>;
+        fsl,clkreq-unsupported;
+        fsl,tx-deemph-gen1 = <0x2d>;
+        fsl,tx-deemph-gen2 = <0xf>;
+        clocks = <&pcie0_refclk>;
+        status = "okay";
 };
 
-&pcie0{
+&pcie0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie0>;
-	//disable-gpio = <&tca9538_2 0 GPIO_ACTIVE_LOW>; //W_DISABLE1
 	reset-gpio = <&gpio1 13 GPIO_ACTIVE_LOW>;
-	clocks = <&clk IMX8MM_CLK_PCIE1_ROOT>,
-		 <&clk IMX8MM_CLK_PCIE1_AUX>,
-		 <&clk IMX8MM_CLK_PCIE1_PHY>,
+	clocks = <&clk IMX8MM_CLK_PCIE1_ROOT>, <&clk IMX8MM_CLK_PCIE1_AUX>,
 		 <&pcie0_refclk>;
-	clock-names = "pcie", "pcie_aux", "pcie_phy", "pcie_bus";
+	clock-names = "pcie", "pcie_aux", "pcie_bus";
 	assigned-clocks = <&clk IMX8MM_CLK_PCIE1_AUX>,
-			  <&clk IMX8MM_CLK_PCIE1_PHY>,
 			  <&clk IMX8MM_CLK_PCIE1_CTRL>;
-	assigned-clock-rates = <10000000>, <100000000>, <250000000>;
+	assigned-clock-rates = <10000000>, <250000000>;
 	assigned-clock-parents = <&clk IMX8MM_SYS_PLL2_50M>,
-				 <&clk IMX8MM_SYS_PLL2_100M>,
 				 <&clk IMX8MM_SYS_PLL2_250M>;
-	ext_osc = <1>;
 	status = "okay";
 };
 
@@ -570,12 +546,6 @@
 };
 
 &iomuxc {
-	pinctrl_ir_recv: ir-recv {
-		fsl,pins = <
-			MX8MM_IOMUXC_GPIO1_IO13_GPIO1_IO13		0x4f
-		>;
-	};
-
 	pinctrl_csi_clk: csi_clk_grp {
 		fsl,pins = <
 			MX8MM_IOMUXC_GPIO1_IO14_CCMSRCGPCMIX_CLKO1		0x19
@@ -618,7 +588,7 @@
 			MX8MM_IOMUXC_ENET_RXC_ENET1_RGMII_RXC		0x91
 			MX8MM_IOMUXC_ENET_RX_CTL_ENET1_RGMII_RX_CTL	0x91
 			MX8MM_IOMUXC_ENET_TX_CTL_ENET1_RGMII_TX_CTL	0x1f
-			MX8MM_IOMUXC_GPIO1_IO06_GPIO1_IO6		0x19	/* RGMII0_INT# */
+			MX8MM_IOMUXC_GPIO1_IO06_GPIO1_IO6		0x19	/* RGMII0_INT# */			        
 		>;
 	};
 
@@ -655,13 +625,6 @@
 			MX8MM_IOMUXC_GPIO1_IO13_GPIO1_IO13		0x41	/* PCIE_RST */
 		>;
 	};
-
-	pinctrl_pcie0_reg: pcie0reggrp {
-		fsl,pins = <
-			MX8MM_IOMUXC_GPIO1_IO05_GPIO1_IO5       0x41
-		>;
-	};
-
 	pinctrl_pmic: pmicirqgrp {
 		fsl,pins = <
 			MX8MM_IOMUXC_GPIO1_IO03_GPIO1_IO3		0x141
