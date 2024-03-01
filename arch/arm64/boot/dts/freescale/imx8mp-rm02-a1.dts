@@ -415,7 +415,6 @@
 		interrupts = <1 IRQ_TYPE_NONE>;
 		gpio-controller;
 		#gpio-cells = <2>;
-		interrupt-controller;
 		#interrupt-cells = <2>;
 	};
 
@@ -427,7 +426,6 @@
 		interrupts = <0 IRQ_TYPE_NONE>;
 		gpio-controller;
 		#gpio-cells = <2>;
-		interrupt-controller;
 		#interrupt-cells = <2>;
 	};
 
@@ -439,7 +437,6 @@
         interrupts = <25 IRQ_TYPE_NONE>;
         gpio-controller;
         #gpio-cells = <2>;
-        interrupt-controller;
         #interrupt-cells = <2>;
     };
 
@@ -451,7 +448,6 @@
         interrupts = <24 IRQ_TYPE_NONE>;
         gpio-controller;
         #gpio-cells = <2>;
-		interrupt-controller;
         #interrupt-cells = <2>;
       };
 /*
@@ -540,14 +536,6 @@
 		compatible = "st,24c64";
 		reg = <0x57>;
 	};
-/*
-	gpio_exp3: tca9538@70 {
-		compatible = "nxp,pca9538";
-		reg = <0x70>;
-		gpio-controller;
-		#gpio-cells = <2>;
-	};*/
-
 };
 
 &i2c6 {
