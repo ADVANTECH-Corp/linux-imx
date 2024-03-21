@@ -55,10 +55,6 @@
 	status = "disabled";
 };
 
-&lpi2c5 {
-        status = "disabled";
-};
-
 &lcdif {
 	assigned-clock-rates = <498000000>, <71142857>, <400000000>, <133333333>;
 };
