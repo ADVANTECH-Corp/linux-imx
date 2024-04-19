@@ -37,6 +37,8 @@
 #include <video/mipi_display.h>
 
 #include "nwl-dsi.h"
+extern void enable_lcd_vdd_en(void);
+extern void enable_ldb_bkl_pwm(void);
 
 #define DRV_NAME "nwl-dsi"
 
@@ -491,6 +493,11 @@ static int nwl_dsi_host_attach(struct mipi_dsi_host *dsi_host,
 	dsi->format = device->format;
 	dsi->dsi_mode_flags = device->mode_flags;
 
+#ifdef CONFIG_DRM_PANEL_AUO_G101UAN02
+	enable_lcd_vdd_en();
+	msleep(950);
+	enable_ldb_bkl_pwm();
+#endif
 	return 0;
 }
 

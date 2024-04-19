@@ -4958,7 +4958,7 @@ static const struct panel_desc_dsi auo_g101uan02 = {
         },
         .connector_type = DRM_MODE_CONNECTOR_DSI,
     },
-    .flags = MIPI_DSI_MODE_VIDEO,
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE,
     .format = MIPI_DSI_FMT_RGB888,
     .lanes = 4,
 };
