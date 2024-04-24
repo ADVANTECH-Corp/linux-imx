@@ -34,6 +34,9 @@
 #include <linux/dma/imx-dma.h>
 #include <linux/busfreq-imx.h>
 #include <linux/pm_qos.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#endif
 
 #include "serial_mctrl_gpio.h"
 
@@ -234,6 +237,9 @@ struct imx_port {
 	dma_cookie_t		rx_cookie;
 	unsigned int		tx_bytes;
 	unsigned int		dma_tx_nents;
+#ifdef CONFIG_ARCH_ADVANTECH
+	int uart_enable_gpio;
+#endif
 	unsigned int            saved_reg[10];
 	bool			context_saved;
 
@@ -2509,6 +2515,34 @@ static int imx_uart_probe(struct platform_device *pdev)
 	imx_uart_ports[sport->port.line] = sport;
 
 	platform_set_drvdata(pdev, sport);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct device *dev = &pdev->dev;
+	enum of_gpio_flags flags;
+
+	sport->uart_enable_gpio =
+		of_get_named_gpio_flags(dev->of_node, "en-gpio", 0, &flags);
+
+	if (gpio_is_valid(sport->uart_enable_gpio)) {
+		ret = gpio_request(sport->uart_enable_gpio, "UART Enable Pin");
+		if (ret) {
+			dev_warn(dev, "Could not request GPIO %d : %d\n",
+                        sport->uart_enable_gpio, ret);
+			return -EFAULT;
+		}
+
+		ret = gpio_direction_output(sport->uart_enable_gpio, 1);
+		if (ret) {
+			dev_warn(dev, "Could not drive GPIO %d :%d\n",
+                        sport->uart_enable_gpio, ret);
+			return -EFAULT;
+		}
+
+	} else if (sport->uart_enable_gpio == -EPROBE_DEFER) {
+		return sport->uart_enable_gpio;
+	}
+
+#endif
 
 	return uart_add_one_port(&imx_uart_uart_driver, &sport->port);
 }

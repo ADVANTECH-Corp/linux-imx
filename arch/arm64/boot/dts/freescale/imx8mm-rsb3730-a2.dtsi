@@ -401,6 +401,7 @@
 	assigned-clock-parents = <&clk IMX8MM_SYS_PLL1_80M>;
 	fsl,uart-has-rtscts;
 	resets = <&uart1_mod_reset>;
+	en-gpio = <&gpio5 6 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
 

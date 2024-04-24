@@ -133,7 +133,7 @@
 &uart4 { /* M4 debug */
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart4>;
-	en-gpio = <&gpio5 6 GPIO_ACTIVE_HIGH>;
+	// en-gpio = <&gpio5 6 GPIO_ACTIVE_HIGH>;
 	status = "disabled";
 };
 
