@@ -85,6 +85,7 @@ struct imx6_pcie {
 #ifdef CONFIG_ARCH_ADVANTECH
         int                     power_on_gpio;
         int                     power_on_gpio2;
+        int                     m2_power_en_gpio;
 #endif
 	int			reset_gpio;
 	bool			gpio_active_high;
@@ -1589,6 +1590,20 @@ static int imx6_pcie_probe(struct platform_device *pdev)
         } else if (imx6_pcie->power_on_gpio2 == -EPROBE_DEFER) {
                 return imx6_pcie->power_on_gpio2;
         }
+
+	imx6_pcie->m2_power_en_gpio = of_get_named_gpio(node, "m2-pwr-en", 0);
+	if (gpio_is_valid(imx6_pcie->m2_power_en_gpio)) {
+		ret = devm_gpio_request_one(&pdev->dev,
+					    imx6_pcie->m2_power_en_gpio,
+					    GPIOF_OUT_INIT_HIGH,
+					    "m2-pwr-en");
+		if (ret) {
+			dev_err(&pdev->dev, "unable to get m2-pwr-en gpio\n");
+			return ret;
+		}
+	} else if (imx6_pcie->m2_power_en_gpio == -EPROBE_DEFER) {
+		return imx6_pcie->m2_power_en_gpio;
+	}
 #endif
 
 	/* Fetch GPIOs */
