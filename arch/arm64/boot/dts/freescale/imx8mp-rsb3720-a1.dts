@@ -66,6 +66,15 @@
 		off-on-delay-us = <12000>;
 	};
 
+	reg_usb_otg_vbus: regulator-usb-vbus {
+		compatible = "regulator-fixed";
+		regulator-name = "usb_otg_vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
 	sound-hdmi {
 		compatible = "fsl,imx-audio-cdnhdmi";
 		model = "audio-hdmi";
@@ -151,6 +160,11 @@
 				};
 			};
 		};
+	};
+
+	extcon_usb_otg: extcon_usb_otg@1 {
+		compatible = "linux,extcon-usb-gpio";
+		id-gpio = <&gpio1 10 GPIO_ACTIVE_HIGH>;
 	};
 };
 
@@ -673,7 +687,11 @@
 };
 
 &usb_dwc3_0 {
-	dr_mode = "host";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usb_otg>;
+	dr_mode = "otg";
+	extcon = <&extcon_usb_otg>;
+	vbus-supply = <&reg_usb_otg_vbus>;
 	status = "okay";
 };
 
@@ -958,6 +976,12 @@
 		fsl,pins = <
 			MX8MP_IOMUXC_UART4_RXD__UART4_DCE_RX	0x49
 			MX8MP_IOMUXC_UART4_TXD__UART4_DCE_TX	0x49
+		>;
+	};
+
+	pinctrl_usb_otg: usb_otg_grp {
+		fsl,pins = <
+			MX8MP_IOMUXC_GPIO1_IO10__GPIO1_IO10     0x19
 		>;
 	};
 
