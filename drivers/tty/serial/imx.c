@@ -1991,6 +1991,17 @@ static int imx_uart_rs485_config(struct uart_port *port, struct ktermios *termio
 	return 0;
 }
 
+
+#ifdef CONFIG_ARCH_ADVANTECH
+enum uart_mode_type {
+	RS232_MODE,
+	RS485_MODE,
+	RS422_MODE,
+	MAX_MODE
+};
+extern int adv_get_uart_mode(int index);
+#endif
+
 static const struct uart_ops imx_uart_pops = {
 	.tx_empty	= imx_uart_tx_empty,
 	.set_mctrl	= imx_uart_set_mctrl,
@@ -2385,6 +2396,15 @@ static int imx_uart_probe(struct platform_device *pdev)
 		clk_disable_unprepare(sport->clk_ipg);
 		return ret;
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if(RS485_MODE == adv_get_uart_mode(sport->port.line))
+	{
+		sport->port.rs485.flags |= SER_RS485_ENABLED;
+		if (of_get_property(pdev->dev.of_node, "rs485-dir-gpios", NULL))
+			sport->have_rtsgpio = 1;
+	}
+#endif
 
 	if (sport->port.rs485.flags & SER_RS485_ENABLED &&
 	    (!sport->have_rtscts && !sport->have_rtsgpio))
