@@ -1,0 +1,5 @@
+Tag: lf-6.1.1-1.0.0
+Package version: mxm5x17391.p3
+Driver version: MM5X16391.p3-GPL
+Firmware version: 16.92.21.p84.4
+md5sum: 4c97a5ab8fb7b598b88341e15d14f73a
