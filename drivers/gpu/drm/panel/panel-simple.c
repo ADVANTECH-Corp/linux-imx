@@ -282,7 +282,7 @@ static int panel_simple_unprepare(struct drm_panel *panel)
 	gpiod_set_value_cansleep(p->enable_gpio, 0);
 	disable_lcd_vdd_en(); //T3
 	regulator_disable(p->supply);
-
+	blank_count=0;
 	if (p->desc->delay.unprepare)
 		msleep(p->desc->delay.unprepare);
 
