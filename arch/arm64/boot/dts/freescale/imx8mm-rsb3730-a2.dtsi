@@ -267,44 +267,46 @@
                         #address-cells = <1>;
                         #size-cells = <0>;
                         codec: sgtl5000@a {
-                        compatible = "fsl,sgtl5000";
-                        reg = <0x0a>;
-                        clocks = <&clk IMX8MM_CLK_SAI1_ROOT>;
-                        clock-names = "mclk";
-                        pinctrl-names = "default";
-                        pinctrl-0 = <&pinctrl_sai1_mclk>;
-                        assigned-clocks = <&clk IMX8MM_CLK_SAI1>;
-                        assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
-                        assigned-clock-rates = <24576000>;
+	        		            compatible = "fsl,sgtl5000";
+	        		            reg = <0x0a>;
+	        		            clocks = <&clk IMX8MM_CLK_SAI1_ROOT>;
+	        		            clock-names = "mclk";
+	        		            pinctrl-names = "default";
+	        		            pinctrl-0 = <&pinctrl_sai1_mclk>;
+	        		            assigned-clocks = <&clk IMX8MM_CLK_SAI1>;
+	        		            assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
+	        		            assigned-clock-rates = <24576000>;
                         };
                 };
 
-                i2c@1 {
-                        reg = <1>;
-                        #address-cells = <1>;
-                        #size-cells = <0>;
+		i2c@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
 
-            //             lt9611uxc: lt9611uxc@2b {
-            //             compatible = "lontium,lt9611uxc";
-            //             status = "disabled";
-            //             reg = <0x2b>;
-            //             #sound-dai-cells = <0>;
+			lt9611uxc: lt9611uxc@2b {
+                        compatible = "lontium,lt9611uxc";
+                        status = "disabled";
+                        reg = <0x2b>;
+                        #sound-dai-cells = <0>;
 
-            //             reset-gpios = <&gpio5 5 GPIO_ACTIVE_HIGH>;
-            //             interrupts-extended = <&gpio3 20 IRQ_TYPE_EDGE_FALLING>;
-            //             pinctrl-names = "default";
-            //             pinctrl-0 = <&pinctrl_hdmi_bridge>;
-			// };
+                        reset-gpios = <&gpio5 5 GPIO_ACTIVE_HIGH>;
+                        interrupts-extended = <&gpio3 20 IRQ_TYPE_EDGE_FALLING>;
+                        pinctrl-names = "default";
+                        pinctrl-0 = <&pinctrl_hdmi_bridge>;
+			};
 		};
-                i2c@2 {
-                        reg = <2>;
-                        #address-cells = <1>;
-                        #size-cells = <0>;
+
+		i2c@2 {
+			reg = <2>;
+			#address-cells = <1>;
+			#size-cells = <0>;
 		};
-                i2c@3 {
-                        reg = <3>;
-                        #address-cells = <1>;
-                        #size-cells = <0>;
+
+		i2c@3 {
+			reg = <3>;
+			#address-cells = <1>;
+			#size-cells = <0>;
 	
 			gpio_exp1: pca9538@73 {
 				compatible = "nxp,pca9538";
@@ -326,31 +328,31 @@
        status = "okay";
 };
 
-// &lt9611uxc {
-// 	status = "okay";
+&lt9611uxc {
+	status = "okay";
 
-// 	ports {
-// 		#address-cells = <1>;
-// 		#size-cells = <0>;
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
 
-// 		port@0 {
-// 			reg = <0>;
-// 			lt9611uxc_from_dsim: endpoint {
-// 				remote-endpoint = <&dsim_to_lt9611uxc>;
-// 			};
-// 		};
-// 	};
-// };
+		port@0 {
+			reg = <0>;
+			lt9611uxc_from_dsim: endpoint {
+				remote-endpoint = <&dsim_to_lt9611uxc>;
+			};
+		};
+	};
+};
 
 &mipi_dsi {
        status = "okay";
 
-    //    port@1 {
-	// 	dsim_to_lt9611uxc: endpoint {
-	// 		remote-endpoint = <&lt9611uxc_from_dsim>;
-	// 		attach-bridge;
-	// 	};
-	// };
+       port@1 {
+		dsim_to_lt9611uxc: endpoint {
+			remote-endpoint = <&lt9611uxc_from_dsim>;
+			attach-bridge;
+		};
+	};
 };
 
 &pcie_phy {

@@ -17,10 +17,10 @@
 / {
 };
 
-// &lt9611uxc {
-// 	status = "disabled";
-// 	/delete-node/ ports;
-// };
+&lt9611uxc {
+	status = "disabled";
+	/delete-node/ ports;
+};
 
 &mipi_dsi {
 	/delete-node/ port@1;
