@@ -22,6 +22,9 @@
 #include <linux/mfd/syscon.h>
 #include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
 #include <linux/busfreq-imx.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#endif
 
 #include "fsl_sai.h"
 #include "fsl_utils.h"
@@ -805,10 +808,18 @@ static int fsl_sai_trigger(struct snd_pcm_substream *substream, int cmd,
 
 		regmap_update_bits(sai->regmap, FSL_SAI_xCSR(tx, ofs),
 				   FSL_SAI_CSR_xIE_MASK, FSL_SAI_FLAGS);
+#ifdef CONFIG_ARCH_ADVANTECH
+		if (!IS_ERR(sai->mute_gpio))
+			gpiod_direction_output(sai->mute_gpio, 1);
+#endif
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+#ifdef CONFIG_ARCH_ADVANTECH
+		if (!IS_ERR(sai->mute_gpio))
+			gpiod_direction_output(sai->mute_gpio, 0);
+#endif
 		regmap_update_bits(sai->regmap, FSL_SAI_xCSR(tx, ofs),
 				   FSL_SAI_CSR_FRDE, 0);
 		regmap_update_bits(sai->regmap, FSL_SAI_xCSR(tx, ofs),
@@ -910,6 +921,9 @@ static int fsl_sai_dai_probe(struct snd_soc_dai *cpu_dai)
 		regmap_write(sai->regmap, FSL_SAI_TCSR(ofs), 0);
 		regmap_write(sai->regmap, FSL_SAI_RCSR(ofs), 0);
 	}
+
+		/*  sgtl5000 mute gpio  for linout */
+	sai->mute_gpio = gpiod_get(cpu_dai->dev, "mute", GPIOD_OUT_LOW);
 #else
 	/* Software Reset for both Tx and Rx */
 	regmap_write(sai->regmap, FSL_SAI_TCSR(ofs), FSL_SAI_CSR_SR);

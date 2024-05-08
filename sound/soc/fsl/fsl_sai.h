@@ -299,6 +299,7 @@ struct fsl_sai {
 	bool mclk_direction_output;
 #ifdef CONFIG_ARCH_ADVANTECH
 	bool mclk_always_on;
+	struct gpio_desc *mute_gpio;
 #endif
 
 	int gpr_idx;
