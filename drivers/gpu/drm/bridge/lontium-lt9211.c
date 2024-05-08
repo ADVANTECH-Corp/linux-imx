@@ -87,6 +87,8 @@ typedef  struct LT9211{
     struct backlight_device *backlight;
     struct regulator *supply;
     int bus_format;
+    /* PCR Parameter */
+    int rgd_capital_fst;
 }LT9211_info_t;
 
 struct i2c_client *g_client;
@@ -381,6 +383,7 @@ static void LT9211_MipiRxPll(struct i2c_client *client)
 
 static void LT9211_MipiPcr(struct i2c_client *client)
 {
+    uint8_t val;
     u8 loopx;
     u8 pcr_m;
  
@@ -395,8 +398,22 @@ static void LT9211_MipiPcr(struct i2c_client *client)
     /*stage1 hs mode*/
     LT9211_mipi_write(client,0x25,0xf0);  //line limit
     LT9211_mipi_write(client,0x2a,0x30);  //step in limit
-    LT9211_mipi_write(client,0x21,0x4f);  //hs_step
-    LT9211_mipi_write(client,0x22,0x00); 
+
+    //hs_step
+    if (g_LT9211->rgd_capital_fst > 0) {
+	/* 0xD021 */
+	val = (uint8_t)LT9211_read(client, 0x21) & 0xF0; // Reserve first four bits
+	val |= (uint8_t)((g_LT9211->rgd_capital_fst >> 8) & 0xF);
+	// lt9211_printk("LT9211 0xD021 => 0x%x \n", val);
+	LT9211_mipi_write(client,0x21,val);
+	/* 0xD022 */
+	val = (uint8_t)(g_LT9211->rgd_capital_fst & 0xFF);
+	// lt9211_printk("LT9211 0xD022 => 0x%x \n", val);
+	LT9211_mipi_write(client,0x22,val);
+    } else {
+	LT9211_mipi_write(client,0x21,0x4f);
+	LT9211_mipi_write(client,0x22,0x00);
+    }
 
     /*stage2 hs mode*/
     LT9211_mipi_write(client,0x1e,0x01);  //RGD_DIFF_SND[7:4],RGD_DIFF_FST[3:0]
@@ -873,6 +890,10 @@ static int LT9211_probe(struct i2c_client *client, const struct i2c_device_id *i
     if (!of_property_read_u32(client->dev.of_node, "delay_ms", &val))
         LT9211->m_rst_delay=val;
 
+    LT9211->rgd_capital_fst = -1;
+    if (!of_property_read_u32(client->dev.of_node, "rgd_capital_fst", &val))
+	LT9211->rgd_capital_fst = val;
+
     LT9211->reset_pin = of_get_named_gpio_flags(client->dev.of_node, "reset_gpio", 0,(enum of_gpio_flags *)&gpio_flags);
     LT9211->enable_pin = of_get_named_gpio_flags(client->dev.of_node, "enable_gpio", 0,(enum of_gpio_flags *)&gpio_flags);
     LT9211->gpio_flags = 1-gpio_flags;
@@ -902,6 +923,7 @@ static int LT9211_probe(struct i2c_client *client, const struct i2c_device_id *i
     lt9211_printk("LT9211->blk_pwr_pin  :%d\n",LT9211->blk_pwr_pin);
     lt9211_printk("LT9211->blk_en_pin   :%d\n",LT9211->blk_en_pin);
     lt9211_printk("LT9211->pwm_pin   :%d\n",LT9211->pwm_pin);
+    lt9211_printk("LT9211->rgd_capital_fst   :%d\n",LT9211->rgd_capital_fst); // PCR step parameter
     if(LT9211->enable_pin > 0)
     {
         if (!gpio_is_valid(LT9211->enable_pin))
