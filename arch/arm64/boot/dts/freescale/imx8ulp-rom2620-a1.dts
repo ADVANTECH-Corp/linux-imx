@@ -511,10 +511,8 @@
 	status = "okay";
 
 	panel@0 {
-		compatible = "rocktech,hx8394f";
+		compatible = "lontium,lt9211_800x480";
 		reg = <0>;
-		adv-panel = "lontium,lt9211_800x480";
-		himax,dsi-lanes = <4>;
 
 		port {
 			panel_in: endpoint {
