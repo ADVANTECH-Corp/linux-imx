@@ -303,8 +303,9 @@ static void LT9211_SetVideoTiming(struct i2c_client *client,struct video_timing 
     g_pclk_khz = (u32)(video_format->pclk_khz);
 }
 
-static void LT9211_TimingSet(struct i2c_client *client)
+static int LT9211_TimingSet(struct i2c_client *client)
 {
+    int ret = 0; // 0:ok -1:video mode mismatch
     u32 hact ;
     u32 vact ;
     char fmt ;
@@ -355,7 +356,10 @@ static void LT9211_TimingSet(struct i2c_client *client)
     {
         VideoFormat = video_none;
         lt9211_printk("video_none \n");
+        ret = -1;
     }
+
+    return ret;
 }
 
 static void LT9211_MipiRxPll(struct i2c_client *client)
@@ -672,7 +676,7 @@ static void LT9211_VideoCheckDebug(struct i2c_client *client)
     lt9211_printk("vfp %d, vs %d, vbp %d, vact %d, vtotal = %d\n",vfp,vs,vbp,vact,vtotal);
 }
 
-void lt9211_init(struct i2c_client *client)
+int lt9211_init(struct i2c_client *client)
 {
     int err = 0;
     //lt9211_power_on(g_LT9211);
@@ -681,7 +685,6 @@ void lt9211_init(struct i2c_client *client)
     LT9211_SystemInt(client);
     LT9211_MipiRxPhy(client);
     LT9211_MipiRxDigital(client); 
-    LT9211_TimingSet(client);
 /*
     if(g_LT9211->supply)
     {
@@ -690,6 +693,12 @@ void lt9211_init(struct i2c_client *client)
     }
     msleep(40);
 */
+
+    if (LT9211_TimingSet(client) < 0) {
+        lt9211_printk("video mode not correct\n");
+        return -EPROBE_DEFER; // Try to probe again lately.
+    }
+
     LT9211_MipiRxPll(client);
     LT9211_MipiPcr(client);
     LT9211_TxDigital(client);
@@ -758,6 +767,8 @@ void lt9211_init(struct i2c_client *client)
 	}
     }
 #endif
+
+    return 0;
 }
 
 static void lt9211_shutdown(struct i2c_client *client)
@@ -769,15 +780,17 @@ static void lt9211_shutdown(struct i2c_client *client)
     {
         if (gpio_is_valid(g_LT9211->blk_en_pin))
         {
-                       lt9211_printk("LT9211_shutdown disable blk_en_pin\n");
+            lt9211_printk("LT9211_shutdown disable blk_en_pin\n");
             gpio_direction_output(g_LT9211->blk_en_pin,0);
+            gpio_free(g_LT9211->blk_en_pin);
         }
         msleep(10);
 
 	if (gpio_is_valid(g_LT9211->pwm_pin))
         {
-                       lt9211_printk("LT9211_shutdown disable pwm_pin\n");
+            lt9211_printk("LT9211_shutdown disable pwm_pin\n");
             gpio_direction_output(g_LT9211->pwm_pin,0);
+            gpio_free(g_LT9211->pwm_pin);
         }
         g_LT9211->backlight->props.brightness = 0;
         backlight_update_status(g_LT9211->backlight);
@@ -786,27 +799,40 @@ static void lt9211_shutdown(struct i2c_client *client)
 	msleep(10);
         if (gpio_is_valid(g_LT9211->blk_pwr_pin))
         {
-                       lt9211_printk("LT9211_shutdown disable blk_pwr_pin\n");
+            lt9211_printk("LT9211_shutdown disable blk_pwr_pin\n");
             gpio_direction_output(g_LT9211->blk_pwr_pin,0);
+            gpio_free(g_LT9211->blk_pwr_pin);
         }
         msleep(300);
     }
 
     lt9211_printk("LT9211_shutdown disable LT9211\n");
-    gpio_direction_output(g_LT9211->reset_pin, !g_LT9211->gpio_flags);
+    if(g_LT9211->reset_pin)
+    {
+        if (gpio_is_valid(g_LT9211->reset_pin))
+        {
+    	    gpio_direction_output(g_LT9211->reset_pin, !g_LT9211->gpio_flags);
+            lt9211_printk("LT9211_shutdown reset_pin free\n");
+            gpio_free(g_LT9211->reset_pin);
+        }
+    }
 
     if(g_LT9211->enable_pin > 0)
     {
 	if (gpio_is_valid(g_LT9211->enable_pin))
         {
             gpio_direction_output(g_LT9211->enable_pin,0);
+            gpio_free(g_LT9211->enable_pin);
         }
     }
     msleep(10);
     if(g_LT9211->supply)
     {
-        err = regulator_disable(g_LT9211->supply);
-        lt9211_printk("regulator_disable supply err = %d\n",err);
+        if (0 < regulator_is_enabled(g_LT9211->supply))
+	{
+            err = regulator_disable(g_LT9211->supply);
+            lt9211_printk("regulator_disable supply err = %d\n",err);
+	}
     }
 
 }
@@ -1021,7 +1047,14 @@ static int LT9211_probe(struct i2c_client *client, const struct i2c_device_id *i
 
     //msleep(5000);
 
-    lt9211_init(client);
+    ret = lt9211_init(client);
+    if (ret < 0)
+    {
+        printk(" mipi to lvds LT9211_probe failure !!!!!!!!!!!!\n");
+        lt9211_shutdown(client);
+        return ret;
+    }
+
     //if (LT9211->backlight) {
     //LT9211->backlight->props.power = FB_BLANK_UNBLANK;
     //backlight_update_status(LT9211->backlight);
