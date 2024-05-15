@@ -865,12 +865,21 @@ static void lt9211_power_on(LT9211_info_t* lt9211)
     gpio_direction_output(lt9211->reset_pin,lt9211->gpio_flags);
 }
 
-#if 0
 static void lt9211_power_off(LT9211_info_t* lt9211)
 {
-    gpio_direction_output(lt9211->reset_pin, 0);//1
+    if(lt9211->reset_pin) {
+        if (gpio_is_valid(lt9211->reset_pin)) {
+            gpio_direction_output(lt9211->reset_pin, !lt9211->gpio_flags);
+        }
+    }
+
     msleep(100);
-    gpio_direction_output(lt9211->enable_pin,0);
+
+    if(lt9211->enable_pin > 0) {
+        if (gpio_is_valid(lt9211->enable_pin)) {
+            gpio_direction_output(lt9211->enable_pin,0);
+        }
+    }
 }
 
 static void LT9211_resume_work(struct work_struct *work)
@@ -885,7 +894,6 @@ static void LT9211_suspend_work(struct work_struct *work)
     //printk("################## %s \n",__FUNCTION__);
     lt9211_power_off(g_LT9211);
 }
-#endif
 
 static int LT9211_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -1062,38 +1070,27 @@ static int LT9211_probe(struct i2c_client *client, const struct i2c_device_id *i
     //g_LT9211_probe = 1;
     printk(" mipi to lvds LT9211_probe end !!!!!!!!!!!!\n");
 
-//    INIT_WORK(&LT9211->Lt9211_resume_work,LT9211_resume_work);
-//    INIT_WORK(&LT9211->Lt9211_suspend_work,LT9211_suspend_work);
+    INIT_WORK(&LT9211->Lt9211_resume_work,LT9211_resume_work);
+    INIT_WORK(&LT9211->Lt9211_suspend_work,LT9211_suspend_work);
 
     return 0;
 }
 
-/*
-static struct of_device_id lt8911exb_dt_ids[] = {
-    { .compatible = "LT9211" },
-    { }
-};
-
-static struct i2c_device_id lt8911exb_id[] = {
-    {"LT9211", 0 },
-    { }
-};
-
-static int LT9211_suspend(void)
+static int LT9211_suspend(struct device *dev)
 {
     //printk("################## %s \n",__FUNCTION__);
     schedule_work(&g_LT9211->Lt9211_suspend_work);
     return 0;
 }
 
-static int LT9211_resume(void)
+static int LT9211_resume(struct device *dev)
 {
     //printk("################## %s \n",__FUNCTION__);
     schedule_work(&g_LT9211->Lt9211_resume_work);
     return 0;
 }
 
-static const struct dev_pm_ops lt8911_pm_ops = {
+static const struct dev_pm_ops lt9211_pm_ops = {
 #ifdef CONFIG_PM_SLEEP
     .suspend = LT9211_suspend,
     .resume = LT9211_resume,
@@ -1101,7 +1098,6 @@ static const struct dev_pm_ops lt8911_pm_ops = {
     .restore = LT9211_resume,
 #endif
 };
-*/
 
 static const struct of_device_id LT9211_dt_ids[] = {
     {.compatible = "lontium,lt9211",},
@@ -1118,7 +1114,7 @@ MODULE_DEVICE_TABLE(i2c, LT9211_id);
 struct i2c_driver LT9211_driver  = {
     .driver = {
         .owner	= THIS_MODULE,
-        //.pm		= &lt8911_pm_ops,
+        .pm	= &lt9211_pm_ops,
         .name	= "LT9211",
         .of_match_table = of_match_ptr(LT9211_dt_ids),
     },
