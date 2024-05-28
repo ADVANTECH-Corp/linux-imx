@@ -576,8 +576,8 @@ endif
 
 
 
-obj-m := mlan_mxm6x17408_pcieuart_88w9098.o
-mlan_mxm6x17408_pcieuart_88w9098-objs := $(MLANOBJS)
+obj-m := mlan_mxm6x17408_pcieuart.o
+mlan_mxm6x17408_pcieuart-objs := $(MLANOBJS)
 
 ifeq ($(CONFIG_MUSB),y)
 MOALOBJS += mlinux/moal_usb.o
@@ -588,8 +588,8 @@ endif
 ifeq ($(CONFIG_PCIE),y)
 MOALOBJS += mlinux/moal_pcie.o
 endif
-obj-m += moal_mxm6x17408_pcieuart_88w9098.o
-moal_mxm6x17408_pcieuart_88w9098-objs := $(MOALOBJS)
+obj-m += moal_mxm6x17408_pcieuart.o
+moal_mxm6x17408_pcieuart-objs := $(MOALOBJS)
 
 # Otherwise we were called directly from the command line; invoke the kernel build system.
 else
