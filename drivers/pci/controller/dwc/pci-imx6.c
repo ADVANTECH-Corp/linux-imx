@@ -114,6 +114,9 @@ struct imx6_pcie {
 	struct dw_pcie		*pci;
 	int			clkreq_gpio;
 	int			dis_gpio;
+#ifdef CONFIG_ARCH_ADVANTECH
+        int                     m2_power_en_gpio;
+#endif
 	int			reset_gpio;
 	bool			gpio_active_high;
 	struct clk		*pcie_bus;
@@ -2405,6 +2408,23 @@ static int imx6_pcie_probe(struct platform_device *pdev)
 		imx6_pcie->l1ss_clkreq = 0;
 	else
 		imx6_pcie->l1ss_clkreq = 1;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+
+	imx6_pcie->m2_power_en_gpio = of_get_named_gpio(node, "m2-pwr-en", 0);
+	if (gpio_is_valid(imx6_pcie->m2_power_en_gpio)) {
+		ret = devm_gpio_request_one(&pdev->dev,
+					    imx6_pcie->m2_power_en_gpio,
+					    GPIOF_OUT_INIT_HIGH,
+					    "m2-pwr-en");
+		if (ret) {
+			dev_err(&pdev->dev, "unable to get m2-pwr-en gpio\n");
+			return ret;
+		}
+	} else if (imx6_pcie->m2_power_en_gpio == -EPROBE_DEFER) {
+		return imx6_pcie->m2_power_en_gpio;
+	}
+#endif
 
 	/* Fetch GPIOs */
 	imx6_pcie->clkreq_gpio = of_get_named_gpio(node, "clkreq-gpio", 0);
