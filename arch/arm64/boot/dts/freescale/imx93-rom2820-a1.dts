@@ -673,6 +673,12 @@
         rs485-rts-active-low;
 };
 
+&tpm6 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_tpm6>;
+        status = "okay";
+};
+
 &media_blk_ctrl {
 	status = "okay";
 };
@@ -862,6 +868,12 @@
 			MX93_PAD_GPIO_IO06__LPUART6_CTS_B               0x31e
                 >;
         };
+
+	pinctrl_tpm6: tpm6grp {
+         fsl,pins = <
+			MX93_PAD_GPIO_IO19__TPM6_CH2			0x19e
+         >;
+	};
 
 	pinctrl_usb_en: usbengrp {
                 fsl,pins = <
