@@ -34,7 +34,7 @@
 
 	sd1_mod_reset: sd1-mod-reset {
 		compatible = "gpio-reset";
-		reset-gpios = <&gpio1 8 GPIO_ACTIVE_LOW>;
+		// reset-gpios = <&gpio1 8 GPIO_ACTIVE_LOW>;
 		reset-delay-us = <2000>;
 		reset-post-delay-ms = <40>;
 		#reset-cells = <0>;
@@ -78,14 +78,21 @@
 		enable-active-high;
 	};
 
-        rtl8367 {
-                compatible = "realtek,rtl8367b";
-                pinctrl-names = "default";
-                gpio-sda = <&gpio4 1 GPIO_ACTIVE_HIGH>;
-                gpio-sck = <&gpio1 0 GPIO_ACTIVE_HIGH>;
-                gpio-sel = <&gpio3 19 GPIO_ACTIVE_LOW>;
-                realtek,extif0 = <1 0 1 1 1 1 1 1 2>;
-        };
+	misc-adv-gpio {
+		compatible = "misc-adv-gpio";
+		status = "okay";
+		pinctrl-names = "default";
+
+		input-gpios = <&gpio1 0 GPIO_ACTIVE_HIGH
+					&gpio1 5 GPIO_ACTIVE_HIGH
+					&gpio1 6 GPIO_ACTIVE_HIGH
+					&gpio1 7 GPIO_ACTIVE_HIGH>;
+
+		output-gpios = <&gpio1 1 GPIO_ACTIVE_LOW
+					&gpio1 11 GPIO_ACTIVE_LOW
+					&gpio1 12 GPIO_ACTIVE_LOW
+					&gpio1 14 GPIO_ACTIVE_LOW>;
+	};
 };
 
 &A53_0 {
@@ -171,6 +178,7 @@
 	assigned-clocks = <&clk IMX8MM_CLK_UART1>;
 	assigned-clock-parents = <&clk IMX8MM_SYS_PLL1_80M>;
 	fsl,uart-has-rtscts;
+	rs485-rts-active-low;
 	status = "okay";
 };
 
@@ -194,6 +202,8 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart4>;
 	en-gpio = <&gpio5 6 GPIO_ACTIVE_HIGH>;
+	fsl,uart-has-rtscts;
+	rs485-rts-active-low;
 	status = "okay";
 };
 
@@ -400,28 +410,17 @@
 	sda-gpios = <&gpio5 17 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
-	wdt@29 {
-		compatible = "fsl,adv-wdt-i2c";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
-		fix-first-comm-issue;
-		status = "okay";
-		wdt-en = <&gpio1 9 0>;
-		wdt-ping = <&gpio1 15 0>;
-		reg = <0x29>;
-	};
-
-	s35390a: s35390a@30 {
+	s35390a: s35390a@32 {
 		compatible = "sii,s35390a";
-		reg = <0x30>;
+		reg = <0x32>;
 		status = "okay";
 	};
 
-	st33htpi: st33htpi@2e{
-		compatible = "st,st33htpm-i2c";
-		reg= <0x2e>;
-		status = "okay";
-	};
+	// st33htpi: st33htpi@2e{
+	// 	compatible = "st,st33htpm-i2c";
+	// 	reg= <0x2e>;
+	// 	status = "okay";
+	// };
 };
 
 &i2c3 {
@@ -432,6 +431,17 @@
 	scl-gpios = <&gpio5 18 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio5 19 GPIO_ACTIVE_HIGH>;
 	status = "okay";
+
+	// wdt@71 {
+	// 	compatible = "fsl,adv-wdt-i2c";
+	// 	pinctrl-names = "default";
+	// 	pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+	// 	fix-first-comm-issue;
+	// 	status = "okay";
+	// 	wdt-en = <&gpio1 9 0>;
+	// 	wdt-ping = <&gpio1 15 0>;
+	// 	reg = <0x71>;
+	// };
 };
 
 &i2c4 {
@@ -442,6 +452,17 @@
 	scl-gpios = <&gpio5 20 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio5 21 GPIO_ACTIVE_HIGH>;
 	status = "okay";
+
+	wdt@70 {
+		compatible = "fsl,adv-wdt-i2c";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
+		fix-first-comm-issue;
+		status = "okay";
+		wdt-en = <&gpio1 9 0>;
+		wdt-ping = <&gpio1 15 0>;
+		reg = <0x70>;
+	};
 };
 
 &ddrc {
@@ -496,10 +517,8 @@
 			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21		0x116	/* GPIO5 */
 			MX8MM_IOMUXC_ECSPI2_SS0_GPIO5_IO13		0x116	/* GPIO6 */
 			MX8MM_IOMUXC_ECSPI2_SCLK_GPIO5_IO10		0x116	/* GPIO7 */
-			MX8MM_IOMUXC_ECSPI2_MISO_GPIO5_IO12		0x116	/* GPIO8 */
 			MX8MM_IOMUXC_ECSPI2_MOSI_GPIO5_IO11		0x116	/* GPIO9 */
 			MX8MM_IOMUXC_SAI3_RXFS_GPIO4_IO28		0x116	/* GPIO10 */
-			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0		0x116	/* GPIO11 */
 			MX8MM_IOMUXC_SAI1_RXC_GPIO4_IO1			0x116	/* GPIO12 */
                 >;
         };
@@ -639,14 +658,15 @@
 			MX8MM_IOMUXC_UART3_TXD_UART3_DCE_TX		0x140
 			MX8MM_IOMUXC_ECSPI1_SS0_UART3_DCE_RTS_B		0x140
 			MX8MM_IOMUXC_ECSPI1_MISO_UART3_DCE_CTS_B	0x140
-			MX8MM_IOMUXC_ECSPI1_SCLK_GPIO5_IO6      0x19	/* UART EN */
 		>;
 	};
 
 	pinctrl_uart4: uart4grp {
 		fsl,pins = <
-			MX8MM_IOMUXC_UART4_RXD_UART4_DCE_RX	0x140
-			MX8MM_IOMUXC_UART4_TXD_UART4_DCE_TX	0x140
+			MX8MM_IOMUXC_UART4_RXD_UART4_DCE_RX		0x140
+			MX8MM_IOMUXC_UART4_TXD_UART4_DCE_TX		0x140
+			MX8MM_IOMUXC_ECSPI2_MISO_UART4_DCE_CTS_B		0x140
+			MX8MM_IOMUXC_ECSPI2_MISO_UART4_DTE_RTS_B		0x140
 		>;
 	};
 

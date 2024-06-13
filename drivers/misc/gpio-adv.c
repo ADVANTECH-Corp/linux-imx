@@ -62,7 +62,113 @@ static int misc_adv_gpio_probe(struct platform_device *pdev)
 	bool  minipcie_pwr_active;
 	bool  lan2_reset_active;
 
+    int num_en_gpios, num_reset_gpios;
+    int num_input_gpios, num_output_gpios;
+    int i, gpio, err;
+    bool active;
+    int  reset_delay = 50;
+
     np = dev->of_node;
+    num_en_gpios = of_gpio_named_count(np, "en-gpios");
+    num_reset_gpios = of_gpio_named_count(np, "reset-gpios");
+    num_input_gpios = of_gpio_named_count(np, "input-gpios");
+    num_output_gpios = of_gpio_named_count(np, "output-gpios");
+
+    // DIO
+    for (i = 0; i < num_input_gpios; i++)
+    {
+        gpio = of_get_named_gpio(np, "input-gpios", i);
+		if (gpio_is_valid(gpio))
+		{
+            err = gpio_request(gpio, "uio_input_gpio");
+            if (!err)
+            {
+                gpio_direction_input(gpio);
+                gpio_export(gpio, false);
+            }
+        }
+    }
+
+    for (i = 0; i < num_output_gpios; i++)
+    {
+        gpio = of_get_named_gpio_flags(np, "output-gpios", i, &flags);
+		if (gpio_is_valid(gpio))
+		{
+            err = gpio_request(gpio, "uio_output_gpio");
+            if (!err)
+            {
+                active = !(flags & OF_GPIO_ACTIVE_LOW);
+                if(active)
+                    gpio_direction_output(gpio, GPIOF_OUT_INIT_HIGH);
+                else
+                    gpio_direction_output(gpio, GPIOF_OUT_INIT_LOW);
+                gpio_export(gpio, false);
+            }
+        }
+    }
+
+    // en-gpios
+    for (i = 0; i < num_en_gpios; i++)
+    {
+        gpio = of_get_named_gpio_flags(np, "en-gpios", i, &flags);
+        if (gpio_is_valid(gpio))
+        {
+            err = gpio_request(gpio, "adv_en_gpios");
+            if (!err)
+            {
+                active = !(flags & OF_GPIO_ACTIVE_LOW);
+                if(active)
+                    gpio_direction_output(gpio, GPIOF_OUT_INIT_HIGH);
+                else
+                    gpio_direction_output(gpio, GPIOF_OUT_INIT_LOW);
+            }
+
+            gpio_free(gpio);
+        }
+    }
+
+    //mdelay(50);
+    // reset-gpios
+    for (i = 0; i < num_reset_gpios; i++)
+    {
+        gpio = of_get_named_gpio_flags(np, "reset-gpios", i, &flags);
+        if (gpio_is_valid(gpio))
+        {
+            err = gpio_request(gpio, "adv_reset_gpios");
+            if (!err)
+            {
+                active = !(flags & OF_GPIO_ACTIVE_LOW);
+                if(active)
+                    gpio_direction_output(gpio, GPIOF_OUT_INIT_HIGH);
+                else
+                    gpio_direction_output(gpio, GPIOF_OUT_INIT_LOW);
+            }
+        }
+    }
+
+    // reset delay
+    if (of_property_read_u32(np, "reset-delay", &reset_delay))
+        reset_delay = 50;
+    if(reset_delay)
+        mdelay(reset_delay);
+
+    for (i = 0; i < num_reset_gpios; i++)
+    {
+        gpio = of_get_named_gpio_flags(np, "reset-gpios", i, &flags);
+        if (gpio_is_valid(gpio))
+        {
+            active = !(flags & OF_GPIO_ACTIVE_LOW);
+            if(active)
+                gpio_direction_output(gpio, GPIOF_OUT_INIT_LOW);
+            else
+                gpio_direction_output(gpio, GPIOF_OUT_INIT_HIGH);
+
+            gpio_free(gpio);
+        }
+    }
+
+    mdelay(10);
+
 	minipcie_reset_gpio = of_get_named_gpio_flags(np, "minipcie-reset-gpio", 0, &flags);
 	if (gpio_is_valid(minipcie_reset_gpio))
 	{
