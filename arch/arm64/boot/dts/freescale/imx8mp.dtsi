@@ -128,7 +128,7 @@
 			clock-latency-ns = <150000>;
 			opp-suspend;
 		};
-
+		/*
 		opp-1600000000 {
 			opp-hz = /bits/ 64 <1600000000>;
 			opp-microvolt = <950000>;
@@ -143,7 +143,7 @@
 			opp-supported-hw = <0x20>, <0x3>;
 			clock-latency-ns = <150000>;
 			opp-suspend;
-		};
+		};*/
 	};
 
 	ddr_pmu0: ddr_pmu@3d800000 {
@@ -1637,9 +1637,9 @@
 							"noc_hdmi";
 				assigned-clocks =  <&clk IMX8MP_CLK_HDMI_AXI>,
 								<&clk IMX8MP_CLK_HDMI_APB>;
-				assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_500M>,
+				assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>,
 							 <&clk IMX8MP_SYS_PLL1_800M>;
-				assigned-clock-rates = <500000000>, <200000000>;
+				assigned-clock-rates = <400000000>, <200000000>;
 				interrupts = <8 IRQ_TYPE_LEVEL_HIGH>;
 				interrupt-parent = <&irqsteer_hdmi>;
 				resets = <&hdmimix_reset IMX_HDMIMIX_LCDIF_RESET>;
@@ -1679,9 +1679,9 @@
 							<&clk IMX8MP_CLK_HDMI_AXI>,
 							<&clk IMX8MP_CLK_HDMI_24M>;
 				assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>,
-							<&clk IMX8MP_SYS_PLL2_500M>,
+							<&clk IMX8MP_SYS_PLL1_800M>,
 							<&clk IMX8MP_CLK_24M>;
-				assigned-clock-rates = <200000000>, <500000000>, <24000000>;
+				assigned-clock-rates = <200000000>, <400000000>, <24000000>;
 				phys = <&hdmiphy>;
 				phy-names = "hdmi";
 				resets = <&hdmimix_reset IMX_HDMIMIX_HDMI_TX_RESET>;
@@ -1764,7 +1764,7 @@
 					clock-names = "disp_axi", "disp_apb", "disp_axi_root", "disp_apb_root";
 					assigned-clocks = <&clk IMX8MP_CLK_MEDIA_AXI_ROOT>,
 							  <&clk IMX8MP_CLK_MEDIA_APB_ROOT>;
-					assigned-clock-rates = <500000000>, <200000000>;
+					assigned-clock-rates = <400000000>, <200000000>;
 					no-reset-control;
 					power-domains = <&mediamix_pd>;
 					status = "disabled";
@@ -1792,7 +1792,7 @@
 					clock-names = "disp_axi", "disp_apb", "disp_axi_root", "disp_apb_root";
 					assigned-clocks = <&clk IMX8MP_CLK_MEDIA_AXI_ROOT>,
 							  <&clk IMX8MP_CLK_MEDIA_APB_ROOT>;
-					assigned-clock-rates = <500000000>, <200000000>;
+					assigned-clock-rates = <400000000>, <200000000>;
 					no-reset-control;
 					power-domains = <&mediamix_pd>;
 					status = "disabled";
@@ -1810,8 +1810,8 @@
 					clocks = <&clk IMX8MP_CLK_MEDIA_ISP_SRC>;
 					clock-names = "isp_root";
 					assigned-clocks = <&clk IMX8MP_CLK_MEDIA_ISP_SRC>;
-					assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_500M>;
-					assigned-clock-rates = <500000000>;
+					assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>;
+					assigned-clock-rates = <400000000>;
 					power-domains = <&ispdwp_pd>;
 					status = "disabled";
 				};
@@ -1823,8 +1823,8 @@
 					clocks = <&clk IMX8MP_CLK_MEDIA_ISP_SRC>;
 					clock-names = "isp_root";
 					assigned-clocks = <&clk IMX8MP_CLK_MEDIA_ISP_SRC>;
-					assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_500M>;
-					assigned-clock-rates = <500000000>;
+					assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>;
+					assigned-clock-rates = <400000000>;
 					power-domains = <&ispdwp_pd>;
 					status = "disabled";
 				};
@@ -1833,14 +1833,14 @@
 					compatible = "fsl,imx8mp-mipi-csi", "fsl,imx8mn-mipi-csi";
 					reg = <0x32e40000 0x10000>;
 					interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
-					clock-frequency = <500000000>;
+					clock-frequency = <400000000>;
 					clocks = <&clk IMX8MP_CLK_MEDIA_CAM1_PIX>,
 						 <&clk IMX8MP_CLK_MEDIA_AXI>,
 						 <&clk IMX8MP_CLK_MEDIA_APB>;
 					clock-names = "mipi_clk", "disp_axi", "disp_apb";
 					assigned-clocks = <&clk IMX8MP_CLK_MEDIA_CAM1_PIX>;
-					assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_1000M>;
-					assigned-clock-rates = <500000000>;
+					assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>;
+					assigned-clock-rates = <400000000>;
 					bus-width = <4>;
 					csi-gpr = <&mediamix_gasket0>;
 					csi-gpr2 = <&mediamix_gpr>;
@@ -1966,12 +1966,12 @@
 				  <&clk IMX8MP_CLK_GPU3D_SHADER_SRC>,
 				  <&clk IMX8MP_CLK_GPU_AXI>,
 				  <&clk IMX8MP_CLK_GPU_AHB>;
-		assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_1000M>,
-					 <&clk IMX8MP_SYS_PLL2_1000M>,
+		assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>,
 					 <&clk IMX8MP_SYS_PLL1_800M>,
-					 <&clk IMX8MP_SYS_PLL1_800M>;
-		assigned-clock-rates = <1000000000>, <1000000000>,
-				       <800000000>, <400000000>;
+					 <&clk IMX8MP_SYS_PLL3_OUT>,
+					 <&clk IMX8MP_SYS_PLL3_OUT>;
+		assigned-clock-rates = <800000000>, <800000000>,
+				       <600000000>, <300000000>;
 		power-domains = <&gpu3d_pd>;
 		status = "disabled";
 	};
@@ -1987,10 +1987,10 @@
 		assigned-clocks = <&clk IMX8MP_CLK_GPU2D_SRC>,
 				  <&clk IMX8MP_CLK_GPU_AXI>,
 				  <&clk IMX8MP_CLK_GPU_AHB>;
-		assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_1000M>,
-					 <&clk IMX8MP_SYS_PLL1_800M>,
-					 <&clk IMX8MP_SYS_PLL1_800M>;
-		assigned-clock-rates = <1000000000>, <800000000>, <400000000>;
+		assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>,
+					 <&clk IMX8MP_SYS_PLL3_OUT>,
+					 <&clk IMX8MP_SYS_PLL3_OUT>;
+		assigned-clock-rates = <800000000>, <600000000>, <300000000>;
 		power-domains = <&gpu2d_pd>;
 		status = "disabled";
 	};
@@ -2014,8 +2014,8 @@
 			 <&clk IMX8MP_CLK_USB_ROOT>;
 		clock-names = "hsio", "bus", "suspend";
 		assigned-clocks = <&clk IMX8MP_CLK_HSIO_AXI_SRC>;
-		assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_500M>;
-		assigned-clock-rates = <500000000>;
+		assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>;
+		assigned-clock-rates = <400000000>;
 		interrupts = <GIC_SPI 148 IRQ_TYPE_LEVEL_HIGH>;
 		power-domains = <&hsiomix_pd>;
 		#address-cells = <2>;
@@ -2057,8 +2057,8 @@
 			 <&clk IMX8MP_CLK_USB_ROOT>;
 		clock-names = "hsio", "bus", "suspend";
 		assigned-clocks = <&clk IMX8MP_CLK_HSIO_AXI_SRC>;
-		assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_500M>;
-		assigned-clock-rates = <500000000>;
+		assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>;
+		assigned-clock-rates = <400000000>;
 		interrupts = <GIC_SPI 149 IRQ_TYPE_LEVEL_HIGH>;
 		power-domains = <&hsiomix_pd>;
 		#address-cells = <2>;
@@ -2104,8 +2104,8 @@
 		clocks = <&clk IMX8MP_CLK_VPU_G2_ROOT>, <&clk IMX8MP_CLK_VPU_ROOT>;
 		clock-names = "clk_hantro", "clk_hantro_bus";
 		assigned-clocks = <&clk IMX8MP_CLK_VPU_G2>, <&clk IMX8MP_CLK_VPU_BUS>;
-		assigned-clock-parents = <&clk IMX8MP_VPU_PLL_OUT>, <&clk IMX8MP_SYS_PLL3_OUT>;
-		assigned-clock-rates = <400000000>, <600000000>;
+		assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_1000M>, <&clk IMX8MP_SYS_PLL3_OUT>;
+		assigned-clock-rates = <500000000>, <600000000>, <700000000>;
 		power-domains = <&vpu_g2_pd>;
 		status = "disabled";
 	};
@@ -2119,7 +2119,7 @@
 		clocks = <&clk IMX8MP_CLK_VPU_VC8KE_ROOT>, <&clk IMX8MP_CLK_VPU_ROOT>;
 		clock-names = "clk_hantro_vc8000e", "clk_hantro_vc8000e_bus";
 		assigned-clocks = <&clk IMX8MP_CLK_VPU_VC8000E>,<&clk IMX8MP_CLK_VPU_BUS>;
-		assigned-clock-parents = <&clk IMX8MP_VPU_PLL_OUT>, <&clk IMX8MP_SYS_PLL3_OUT>;
+		assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>, <&clk IMX8MP_SYS_PLL3_OUT>;
 		assigned-clock-rates = <400000000>, <600000000>;
 		power-domains = <&vpu_h1_pd>;
 		status = "disabled";
@@ -2137,10 +2137,10 @@
 		assigned-clocks = <&clk IMX8MP_CLK_ML_SRC>,
 				  <&clk IMX8MP_CLK_ML_AXI>,
 				  <&clk IMX8MP_CLK_ML_AHB>;
-		assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_1000M>,
+		assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>,
 					 <&clk IMX8MP_SYS_PLL1_800M>,
-					 <&clk IMX8MP_SYS_PLL1_800M>;
-		assigned-clock-rates = <1000000000>, <800000000>, <400000000>;
+					 <&clk IMX8MP_SYS_PLL3_OUT>;
+		assigned-clock-rates = <800000000>, <800000000>, <300000000>;
 		power-domains = <&mlmix_pd>;
 		status = "disabled";
 	};

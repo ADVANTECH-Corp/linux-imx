@@ -601,7 +601,7 @@
 	assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_500M>,
 				 <&clk IMX8MP_SYS_PLL2_50M>;
 	reserved-region = <&rpmsg_reserved>;
-	status = "okay";
+	status = "disabled";
 };
 
 &pcie_phy{
