@@ -200,16 +200,6 @@
 		regulator-max-microvolt = <1800000>;
 	};
 
-	reg_usb_vbus: regulator-vbus {
-		compatible = "regulator-fixed";
-		regulator-name = "USB_VBUS";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		gpio = <&i2c7_pcal6524 3 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-always-on;
-	};
-
 	reg_m2_pwr: regulator-m2-pwr {
 		compatible = "regulator-fixed";
 		regulator-name = "M.2-power";
@@ -710,8 +700,6 @@
 
 &usb2 {
 	dr_mode = "host";
-	vbus-supply = <&reg_usb_vbus>;
-	disable-over-current;
 	status = "okay";
 };
 
