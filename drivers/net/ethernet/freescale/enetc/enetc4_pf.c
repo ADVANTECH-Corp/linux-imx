@@ -808,6 +808,9 @@ static int enetc4_pf_probe(struct pci_dev *pdev,
 	struct enetc_si *si;
 	struct enetc_pf *pf;
 	int err;
+#ifdef CONFIG_ARCH_ADVANTECH
+	const char *cus_ifname = NULL;
+#endif
 
 	err = netc_ierb_get_init_status();
 	if (err) {
@@ -822,6 +825,13 @@ static int enetc4_pf_probe(struct pci_dev *pdev,
 
 	priv = netdev_priv(ndev);
 	mutex_init(&priv->mm_lock);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_property_read_string(node, "if-name", &cus_ifname))
+		dev_err(dev, "No specified if-name\n");
+	else
+		snprintf(ndev->name, sizeof(ndev->name), "%s", cus_ifname);
+#endif
 
 	priv->ipg_clk = devm_clk_get(dev, "ipg_clk");
 	if (IS_ERR(priv->ipg_clk)) {
