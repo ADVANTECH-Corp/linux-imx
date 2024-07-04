@@ -507,6 +507,16 @@
 	status = "okay";
 };
 
+&lpi2c8 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <1000000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&pinctrl_lpi2c8>;
+	pinctrl-1 = <&pinctrl_lpi2c8>;
+	status = "okay";
+};
+
 &lpuart1 {
 	/* console */
 	pinctrl-names = "default";
@@ -756,8 +766,8 @@
 
 	pinctrl_lpi2c3: lpi2c3grp {
 		fsl,pins = <
-			IMX95_PAD_GPIO_IO00__LPI2C3_SDA			0x40000b9e
-			IMX95_PAD_GPIO_IO01__LPI2C3_SCL			0x40000b9e
+			IMX95_PAD_GPIO_IO28__LPI2C3_SDA			0x40000b9e
+			IMX95_PAD_GPIO_IO29__LPI2C3_SCL			0x40000b9e
 		>;
 	};
 
@@ -772,6 +782,13 @@
 		fsl,pins = <
 			IMX95_PAD_GPIO_IO08__LPI2C7_SDA			0x40000b9e
 			IMX95_PAD_GPIO_IO09__LPI2C7_SCL			0x40000b9e
+		>;
+	};
+
+	pinctrl_lpi2c8: lpi2c8grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO10__LPI2C8_SDA			0x40000b9e
+			IMX95_PAD_GPIO_IO11__LPI2C8_SCL			0x40000b9e
 		>;
 	};
 
