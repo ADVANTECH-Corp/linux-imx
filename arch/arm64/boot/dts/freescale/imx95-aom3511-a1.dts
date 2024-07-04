@@ -394,7 +394,7 @@
 	status = "okay";
 
 	gpio_exp1: pca6416@20 {
-		compatible = "nxp,pcal6416";
+		compatible = "nxp,pca6416";
 		#gpio-cells = <2>;
 		gpio-controller;
 		reg = <0x20>;
@@ -408,7 +408,7 @@
 	};
 
 	gpio_exp2: pca6416@21 {
-		compatible = "nxp,pcal6416";
+		compatible = "nxp,pca6416";
 		#gpio-cells = <2>;
 		gpio-controller;
 		reg = <0x21>;
