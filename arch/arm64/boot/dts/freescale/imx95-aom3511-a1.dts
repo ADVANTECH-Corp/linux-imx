@@ -144,44 +144,6 @@
 		regulator-name = "+V3.3_SW";
 	};
 
-	reg_can1_stby: regulator-can1-stby {
-		compatible = "regulator-fixed";
-		regulator-name = "can1-stby";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-//		gpio = <&i2c6_gpio_expander_21 5 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		vin-supply = <&reg_can1_en>;
-	};
-
-	reg_can1_en: regulator-can1-en {
-		compatible = "regulator-fixed";
-		regulator-name = "can1-en";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-//		gpio = <&i2c6_gpio_expander_21 6 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-	};
-
-	reg_can2_stby: regulator-can2-stby {
-		compatible = "regulator-fixed";
-		regulator-name = "can2-stby";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		// gpio = <&i2c4_gpio_expander_21 3 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		vin-supply = <&reg_can2_en>;
-	};
-
-	reg_can2_en: regulator-can2-en {
-		compatible = "regulator-fixed";
-		regulator-name = "can2-en";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		// gpio = <&i2c4_gpio_expander_21 4 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-	};
-
 	reg_usdhc2_vmmc: regulator-usdhc2 {
 		compatible = "regulator-fixed";
 		pinctrl-names = "default";
@@ -299,6 +261,8 @@
 			"IN1R", "AMIC";
 	};
 */
+
+/*
 	sound-micfil {
 		compatible = "fsl,imx-audio-card";
 		model = "micfil-audio";
@@ -310,6 +274,7 @@
 			};
 		};
 	};
+*/
 
 	bt_sco_codec: bt_sco_codec {
 		#sound-dai-cells = <1>;
@@ -369,22 +334,17 @@
 	status = "okay";
 };
 
-/* pin conflict with PDM */
 &flexcan1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_flexcan1>;
-	xceiver-supply = <&reg_can1_stby>;
-	status = "disabled";
-};
-
-/*
-&flexcan2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_flexcan2>;
-	xceiver-supply = <&reg_can2_stby>;
 	status = "okay";
 };
-*/
+
+&flexcan3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_flexcan3>;
+	status = "okay";
+};
 
 &flexspi1 {
 	pinctrl-names = "default";
@@ -761,14 +721,13 @@
 			IMX95_PAD_PDM_BIT_STREAM0__AONMIX_TOP_CAN1_RX	0x39e
 		>;
 	};
-/*
-	pinctrl_flexcan2: flexcan2grp {
+
+	pinctrl_flexcan3: flexcan3grp {
 		fsl,pins = <
-			IMX95_PAD_GPIO_IO25__CAN2_TX			0x39e
-			IMX95_PAD_GPIO_IO27__CAN2_RX			0x39e
+			IMX95_PAD_CCM_CLKO3__CAN3_TX			0x39e
+			IMX95_PAD_CCM_CLKO4__CAN3_RX			0x39e
 		>;
 	};
-*/
 /*
 	pinctrl_hp: hpgrp {
 		fsl,pins = <
@@ -940,12 +899,14 @@
 		>;
 	};
 
+/*
 	pinctrl_pdm: pdmgrp {
 		fsl,pins = <
 			IMX95_PAD_PDM_CLK__AONMIX_TOP_PDM_CLK				0x31e
 			IMX95_PAD_PDM_BIT_STREAM0__AONMIX_TOP_PDM_BIT_STREAM_BIT0	0x31e
 		>;
 	};
+*/
 
 	pinctrl_sai1: sai1grp {
 		fsl,pins = <
@@ -1146,6 +1107,7 @@
 };
 */
 
+/*
 &micfil {
 	#sound-dai-cells = <0>;
 	pinctrl-names = "default";
@@ -1162,3 +1124,4 @@
 			       <361267200>, <49152000>;
 	status = "okay";
 };
+*/
