@@ -676,7 +676,7 @@
 &usb3_dwc3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usb_otg>;
-	dr_mode = "otg";
+	dr_mode = "host";
 	extcon = <&extcon_usb_otg>;
 	vbus-supply = <&reg_usb_otg_vbus>;
 	status = "okay";
