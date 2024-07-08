@@ -300,6 +300,12 @@
 		interrupts-extended = <&gpio_exp2 3 IRQ_TYPE_EDGE_FALLING>;	/* DSI_HDMI_INT */
 	};
 
+	rx8900: rx8900c@32 {
+		compatible = "epson,rx8900";
+		reg = <0x32>;
+		status = "okay";
+	};
+
 	adp5585: mfd@34 {
 		compatible = "adi,adp5585";
 		reg = <0x34>;
