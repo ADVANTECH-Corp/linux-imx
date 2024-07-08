@@ -21,6 +21,7 @@
 		/* ethernet0,1 swap */
 		ethernet0 = &enetc_port1;
 		ethernet1 = &enetc_port0;
+		rtc0 = &rx8900;
 	};
 
 	chosen {
@@ -408,6 +409,12 @@
 		vcc-supply = <&reg_1p8v>;
 	};
 
+	rx8900: rx8900c@32 {
+		compatible = "epson,rx8900";
+		reg = <0x32>;
+		status = "okay";
+	};
+
 	adp5585: mfd@34 {
 		compatible = "adi,adp5585";
 		reg = <0x34>;
@@ -689,6 +696,10 @@
 	extcon = <&extcon_usb_otg>;
 	vbus-supply = <&reg_usb_otg_vbus>;
 	status = "okay";
+};
+
+&scmi_bbm {
+	status = "disabled";
 };
 
 &scmi_misc {
