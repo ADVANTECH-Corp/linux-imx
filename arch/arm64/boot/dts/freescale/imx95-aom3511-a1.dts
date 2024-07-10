@@ -304,6 +304,44 @@
 		compatible = "linux,extcon-usb-gpio";
 		id-gpio = <&gpio4 14 GPIO_ACTIVE_HIGH>;
 	};
+
+	lvds_backlight0: lvds_backlight@0 {
+		compatible = "pwm-backlight";
+		pwms = <&tpm3 3 5000000 0>;
+		status = "disabled";
+
+		brightness-levels = < 0  1  2  3  4  5  6  7  8  9
+				     10 11 12 13 14 15 16 17 18 19
+				     20 21 22 23 24 25 26 27 28 29
+				     30 31 32 33 34 35 36 37 38 39
+				     40 41 42 43 44 45 46 47 48 49
+				     50 51 52 53 54 55 56 57 58 59
+				     60 61 62 63 64 65 66 67 68 69
+				     70 71 72 73 74 75 76 77 78 79
+				     80 81 82 83 84 85 86 87 88 89
+				     90 91 92 93 94 95 96 97 98 99
+				    100>;
+		default-brightness-level = <80>;
+	};
+
+	lvds_backlight1: lvds_backlight@1 {
+		compatible = "pwm-backlight";
+		pwms = <&tpm4 3 5000000 0>;
+		status = "disabled";
+
+		brightness-levels = < 0  1  2  3  4  5  6  7  8  9
+				     10 11 12 13 14 15 16 17 18 19
+				     20 21 22 23 24 25 26 27 28 29
+				     30 31 32 33 34 35 36 37 38 39
+				     40 41 42 43 44 45 46 47 48 49
+				     50 51 52 53 54 55 56 57 58 59
+				     60 61 62 63 64 65 66 67 68 69
+				     70 71 72 73 74 75 76 77 78 79
+				     80 81 82 83 84 85 86 87 88 89
+				     90 91 92 93 94 95 96 97 98 99
+				    100>;
+		default-brightness-level = <80>;
+	};
 };
 
 &adc1 {
@@ -319,13 +357,17 @@
 	status = "okay";
 };
 
-/*
 &tpm3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_tpm3>;
 	status = "okay";
 };
-*/
+
+&tpm4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_tpm4>;
+	status = "okay";
+};
 
 &tpm6 {
 	pinctrl-names = "default";
@@ -406,7 +448,7 @@
 		interrupts = <23 IRQ_TYPE_LEVEL_LOW>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_gpioexp2>;
-		vcc-supply = <&reg_1p8v>;
+		vcc-supply = <&reg_3p3v>;
 	};
 
 	wdt: msp430g2202@29 {
@@ -732,13 +774,18 @@
 		>;
 	};
 
-/*
 	pinctrl_tpm3: tpm3grp {
 		fsl,pins = <
-			IMX95_PAD_GPIO_IO12__TPM3_CH2			0x51e
+			IMX95_PAD_GPIO_IO24__TPM3_CH3			0x51e /* LCD0_BKLT_PWM */
 		>;
 	};
-*/
+
+	pinctrl_tpm4: tpm4grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO25__TPM4_CH3			0x51e /* LCD1_BKLT_PWM */
+		>;
+	};
+
 	pinctrl_tpm6: tpm6grp {
 		fsl,pins = <
 			IMX95_PAD_GPIO_IO19__TPM6_CH2			0x51e
