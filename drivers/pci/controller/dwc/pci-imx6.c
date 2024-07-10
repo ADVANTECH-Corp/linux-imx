@@ -115,6 +115,7 @@ struct imx6_pcie {
 	int			clkreq_gpio;
 	int			dis_gpio;
 #ifdef CONFIG_ARCH_ADVANTECH
+        int                     power_on_gpio;
         int                     m2_power_en_gpio;
 #endif
 	int			reset_gpio;
@@ -1156,6 +1157,11 @@ static void imx6_pcie_deassert_core_reset(struct imx6_pcie *imx6_pcie)
 	struct device *dev = pci->dev;
 	int ret, i;
 	u32 val, tmp;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (gpio_is_valid(imx6_pcie->power_on_gpio))
+		gpio_set_value_cansleep(imx6_pcie->power_on_gpio, 1);
+#endif
 
 	if (imx6_pcie->vpcie && !regulator_is_enabled(imx6_pcie->vpcie)) {
 		ret = regulator_enable(imx6_pcie->vpcie);
@@ -2410,6 +2416,19 @@ static int imx6_pcie_probe(struct platform_device *pdev)
 		imx6_pcie->l1ss_clkreq = 1;
 
 #ifdef CONFIG_ARCH_ADVANTECH
+        imx6_pcie->power_on_gpio = of_get_named_gpio(node, "power-on-gpio", 0);
+        if (gpio_is_valid(imx6_pcie->power_on_gpio)) {
+                ret = devm_gpio_request_one(&pdev->dev,
+                                            imx6_pcie->power_on_gpio,
+                                            GPIOF_OUT_INIT_LOW,
+                                            "PCIe power enable");
+                if (ret) {
+                        dev_err(&pdev->dev, "unable to get power-on gpio\n");
+                        return ret;
+                }
+        } else if (imx6_pcie->power_on_gpio == -EPROBE_DEFER) {
+                return imx6_pcie->power_on_gpio;
+        }
 
 	imx6_pcie->m2_power_en_gpio = of_get_named_gpio(node, "m2-pwr-en", 0);
 	if (gpio_is_valid(imx6_pcie->m2_power_en_gpio)) {
