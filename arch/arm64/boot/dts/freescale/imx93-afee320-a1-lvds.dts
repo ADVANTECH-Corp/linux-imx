@@ -43,9 +43,11 @@
         status = "okay";
 };
 
+/*
 &adv7535 {
 	status = "disabled";
 };
+*/
 
 &dphy {
 	status = "disabled";
