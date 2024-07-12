@@ -268,7 +268,7 @@
 		model = "sgtl5000";
 		codec-master;
 		ssi-controller = <&sai3>;
-		audio-codec = <&acodec>;
+		//audio-codec = <&acodec>;
 		audio-routing =
 			"MIC_IN", "Mic Jack",
 			"Mic Jack", "Mic Bias",
@@ -294,20 +294,6 @@
 
 &dphy {
 	status = "okay";
-};
-
-&dsi {
-	status = "okay";
-
-	ports {
-		port@1 {
-			reg = <1>;
-
-			dsi_to_adv7535: endpoint {
-				remote-endpoint = <&adv7535_to_dsi>;
-			};
-		};
-	};
 };
 
 &flexcan1 {
@@ -380,39 +366,6 @@
  * When add, delete or change any target device setting in &lpi2c1,
  * please synchronize the changes to the &i3c1 bus in imx93-11x11-evk-i3c.dts.
  */
-&lpi2c1 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-	clock-frequency = <400000>;
-	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&pinctrl_lpi2c1>;
-	pinctrl-1 = <&pinctrl_lpi2c1>;
-	status = "okay";
-
-	adv7535: hdmi@3d {
-		compatible = "adi,adv7535";
-		reg = <0x3d>;
-		adi,addr-cec = <0x3b>;
-		adi,dsi-lanes = <4>;
-		status = "okay";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_dsi>;
-		dsi-vcc-enable-gpio = <&gpio3 23 GPIO_ACTIVE_LOW>;	/* DISP_BL_EN */
-		bklt-vcc-enable-gpio = <&gpio3 24 GPIO_ACTIVE_LOW>;	/* DSIP_VDD_EN */
-
-		port {
-			adv7535_to_dsi: endpoint {
-				remote-endpoint = <&dsi_to_adv7535>;
-			};
-		};
-	};
-
-	lsm6dsm@6a {
-		compatible = "st,lsm6dso";
-		reg = <0x6a>;
-	};
-};
-
 &lpi2c2 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -557,41 +510,6 @@
         };
 };
 
-&lpi2c5 {
-        #address-cells = <1>;
-        #size-cells = <0>;
-        clock-frequency = <400000>;
-        pinctrl-names = "default", "sleep";
-        pinctrl-0 = <&pinctrl_lpi2c5>;
-        pinctrl-1 = <&pinctrl_lpi2c5>;
-        status = "okay";
-};
-
-&lpi2c8 {
-        #address-cells = <1>;
-        #size-cells = <0>;
-        clock-frequency = <400000>;
-        pinctrl-names = "default", "sleep";
-        pinctrl-0 = <&pinctrl_lpi2c8>;
-        pinctrl-1 = <&pinctrl_lpi2c8>;
-        status = "okay";
-
-	acodec: sgtl5000@a {
-		#sound-dai-cells = <0>;
-		compatible = "fsl,sgtl5000";
-		reg = <0xa>;
-		VDDA-supply = <&reg_1p8v>;
-		VDDIO-supply = <&reg_1p8v>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_sai3_mclk>;
-		clocks = <&clk IMX93_CLK_SAI3_GATE>;
-		clock-names = "mclk";
-		assigned-clocks = <&clk IMX93_CLK_SAI3>;
-		assigned-clock-parents = <&clk IMX93_CLK_AUDIO_PLL>;
-		assigned-clock-rates = <24576000>;
-	};
-};
-
 &lpspi3 {
         fsl,spi-num-chipselects = <1>;
         pinctrl-names = "default";
@@ -718,13 +636,6 @@
 		>;
 	};
 
-	pinctrl_lpi2c1: lpi2c1grp {
-		fsl,pins = <
-			MX93_PAD_I2C1_SCL__LPI2C1_SCL			0x40000b9e
-			MX93_PAD_I2C1_SDA__LPI2C1_SDA			0x40000b9e
-		>;
-	};
-
 	pinctrl_lpi2c2: lpi2c2grp {
 		fsl,pins = <
 			MX93_PAD_I2C2_SCL__LPI2C2_SCL			0x40000b9e
@@ -738,20 +649,6 @@
 			MX93_PAD_GPIO_IO29__LPI2C3_SCL			0x40000b9e
 		>;
 	};
-
-	pinctrl_lpi2c5: lpi2c5grp {
-                fsl,pins = <
-                        MX93_PAD_GPIO_IO22__LPI2C5_SDA                  0x40000b9e
-                        MX93_PAD_GPIO_IO23__LPI2C5_SCL                  0x40000b9e
-                >;
-        };
-
-	pinctrl_lpi2c8: lpi2c8grp {
-                fsl,pins = <
-                        MX93_PAD_GPIO_IO12__LPI2C8_SDA                  0x40000b9e
-                        MX93_PAD_GPIO_IO13__LPI2C8_SCL                  0x40000b9e
-                >;
-        };
 
 	pinctrl_eqos: eqosgrp {
 		fsl,pins = <
