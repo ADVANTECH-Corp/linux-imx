@@ -83,8 +83,8 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_lvds_vcc>;
 	pinctrl-1 = <&pinctrl_bklt_vcc>;
-	lvds-vcc-enable = <&gpio1 14 GPIO_ACTIVE_HIGH>;	/* LCD_VDD_EN */
-	bklt-vcc-enable = <&gpio3 22 GPIO_ACTIVE_HIGH>;	/* LVDS_BL_EN */
+	lvds-vcc-enable-gpio = <&gpio1 14 GPIO_ACTIVE_LOW>;	/* LCD_VDD_EN */
+	bklt-vcc-enable-gpio = <&gpio3 22 GPIO_ACTIVE_LOW>;	/* LVDS_BL_EN */
 	status = "okay";
 };
 
