@@ -388,6 +388,17 @@
 		pinctrl-0 = <&pinctrl_gpioexp1>;
 	};
 
+	gpio_exp2: tca9538@21 {
+		compatible = "nxp,pca6416";
+		#gpio-cells = <2>;
+		reg = <0x21>;
+		gpio-controller;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		interrupt-parent = <&gpio_exp1>;
+		interrupts = <0 IRQ_TYPE_EDGE_FALLING>;
+	};
+
 	pmic@25 {
 		compatible = "nxp,pca9451a";
 		reg = <0x25>;
@@ -483,6 +494,28 @@
 	pinctrl-0 = <&pinctrl_lpi2c3>;
 	pinctrl-1 = <&pinctrl_lpi2c3>;
 	status = "okay";
+
+	gpio_exp3: tca9538@20 {
+		compatible = "nxp,pca6416";
+		#gpio-cells = <2>;
+		reg = <0x20>;
+		gpio-controller;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		interrupt-parent = <&gpio_exp1>;
+		interrupts = <1 IRQ_TYPE_EDGE_FALLING>;
+	};
+
+	gpio_exp4: tca9538@21 {
+		compatible = "nxp,pca6416";
+		#gpio-cells = <2>;
+		reg = <0x21>;
+		gpio-controller;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		interrupt-parent = <&gpio_exp1>;
+		interrupts = <2 IRQ_TYPE_EDGE_FALLING>;
+	};
 
 	ov5640_0: ov5640_mipi@3c {
                 compatible = "ovti,ov5640";
