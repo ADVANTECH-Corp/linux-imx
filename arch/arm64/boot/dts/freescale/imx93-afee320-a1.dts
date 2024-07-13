@@ -267,7 +267,7 @@
 				"fsl,imx-audio-sgtl5000";
 		model = "sgtl5000";
 		codec-master;
-		ssi-controller = <&sai3>;
+		//ssi-controller = <&sai3>;
 		//audio-codec = <&acodec>;
 		audio-routing =
 			"MIC_IN", "Mic Jack",
@@ -277,6 +277,7 @@
 	};
 };
 
+/*
 &sai3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sai3>;
@@ -286,6 +287,7 @@
 	fsl,sai-mclk-direction-output;
 	status = "okay";
 };
+*/
 
 &adc1 {
 	vref-supply = <&reg_vref_1v8>;
@@ -595,38 +597,20 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1>;
 	status = "okay";
-};
-
-&lpuart2 {
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_uart2>;
-        status = "okay";
-};
-
-&lpuart3 {
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_uart3>;
-        status = "okay";
-};
-
-&lpuart5 {
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_uart5>;
-        status = "okay";
 
 	linux,rs485-enabled-at-boot-time;
 	rs485-rx-during-tx;
 	rs485-rts-active-low;
 };
 
-&lpuart6 {
+&lpuart4 {
         pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_uart6>;
+        pinctrl-0 = <&pinctrl_uart4>;
         status = "okay";
 
 	linux,rs485-enabled-at-boot-time;
-        rs485-rx-during-tx;
-        rs485-rts-active-low;
+	rs485-rx-during-tx;
+	rs485-rts-active-low;
 };
 
 &tpm6 {
@@ -753,41 +737,19 @@
 		fsl,pins = <
 			MX93_PAD_UART1_RXD__LPUART1_RX			0x31e
 			MX93_PAD_UART1_TXD__LPUART1_TX			0x31e
+			MX93_PAD_UART2_RXD__LPUART1_CTS_B		0x31e
+			MX93_PAD_UART2_TXD__LPUART1_RTS_B		0x31e
 		>;
 	};
 
-
-	pinctrl_uart2: uart2grp {
-                fsl,pins = <
-                        MX93_PAD_UART2_RXD__LPUART2_RX                  0x31e
-                        MX93_PAD_UART2_TXD__LPUART2_TX                  0x31e
-                >;
-        };
-
-	pinctrl_uart3: uart3grp {
-                fsl,pins = <
-                        MX93_PAD_GPIO_IO15__LPUART3_RX                  0x31e
-                        MX93_PAD_GPIO_IO14__LPUART3_TX                  0x31e
-                >;
-        };
-
-	pinctrl_uart5: uart5grp {
-                fsl,pins = <
-                        MX93_PAD_GPIO_IO01__LPUART5_RX                  0x31e
-                        MX93_PAD_GPIO_IO00__LPUART5_TX                  0x31e
-			MX93_PAD_GPIO_IO03__LPUART5_RTS_B		0x31e
-			MX93_PAD_GPIO_IO02__LPUART5_CTS_B		0x31e
-                >;
-        };
-
-	pinctrl_uart6: uart6grp {
-                fsl,pins = <
-                        MX93_PAD_GPIO_IO05__LPUART6_RX                  0x31e
-                        MX93_PAD_GPIO_IO04__LPUART6_TX                  0x31e
-			MX93_PAD_GPIO_IO07__LPUART6_RTS_B		0x31e
-			MX93_PAD_GPIO_IO06__LPUART6_CTS_B               0x31e
-                >;
-        };
+	pinctrl_uart4: uart4grp {
+		fsl,pins = <
+			MX93_PAD_GPIO_IO14__LPUART4_TX			0x31e
+			MX93_PAD_GPIO_IO15__LPUART4_RX			0x31e
+			MX93_PAD_GPIO_IO16__LPUART4_CTS_B		0x31e
+			MX93_PAD_GPIO_IO17__LPUART4_RTS_B		0x31e
+		>;
+	};
 
 	pinctrl_tpm6: tpm6grp {
          fsl,pins = <
@@ -835,12 +797,7 @@
 		>;
 	};
 
-	pinctrl_usdhc3_wlan: usdhc3wlangrp {
-		fsl,pins = <
-			MX93_PAD_CCM_CLKO1__GPIO3_IO26		0x31e
-		>;
-	};
-
+/*
 	pinctrl_sai3: sai3grp {
 		fsl,pins = <
 			MX93_PAD_GPIO_IO26__SAI3_TX_SYNC		0x31e
@@ -855,6 +812,7 @@
 			MX93_PAD_GPIO_IO17__SAI3_MCLK			0x31e
 		>;
 	};
+*/
 
 	pinctrl_spdif: spdifgrp {
 		fsl,pins = <
