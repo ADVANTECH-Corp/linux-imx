@@ -65,7 +65,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&adv_gpio_pinmux>;
 
-		reset-gpios = <&gpio3 22 GPIO_ACTIVE_HIGH>; /* USB-HUB-RESET*/
+		reset-gpios = <&gpio3 22 GPIO_ACTIVE_LOW>; /* USB-HUB-RESET*/
 
 		input-gpios = <&gpio3 25 GPIO_ACTIVE_HIGH
 					&gpio3 19 GPIO_ACTIVE_HIGH
@@ -410,7 +410,7 @@
 	sda-gpios = <&gpio5 21 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
-	wdt@70 {
+	wdt@29 {
 		compatible = "fsl,adv-wdt-i2c";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
@@ -418,7 +418,7 @@
 		status = "okay";
 		wdt-en = <&gpio1 9 0>;
 		wdt-ping = <&gpio1 15 0>;
-		reg = <0x70>;
+		reg = <0x29>;
 	};
 };
 
