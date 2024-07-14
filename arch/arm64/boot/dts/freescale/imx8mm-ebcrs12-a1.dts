@@ -75,7 +75,9 @@
 		output-gpios = <&gpio4 28 GPIO_ACTIVE_LOW
 					&gpio4 29 GPIO_ACTIVE_LOW
 					&gpio4 30 GPIO_ACTIVE_LOW
-					&gpio5 5 GPIO_ACTIVE_LOW>;
+					&gpio5 5 GPIO_ACTIVE_LOW
+					&gpio3 23 GPIO_ACTIVE_LOW
+					&gpio3 24 GPIO_ACTIVE_LOW>;
 	};
 
 };
@@ -135,7 +137,7 @@
 	pinctrl-0 = <&pinctrl_pcie0>;
 	reset-gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;
 	power-on-gpio = <&gpio2 8 GPIO_ACTIVE_HIGH>;    /* PCIE_Z_WAKE */
-	disable-gpio = <&gpio2 6 GPIO_ACTIVE_LOW>; //W_DISABLE1
+	// disable-gpio = <&gpio2 6 GPIO_ACTIVE_LOW>; //W_DISABLE1
 	m2-pwr-en = <&gpio4 25 GPIO_ACTIVE_HIGH>;    /* M2_PWR_EN */
 	clocks = <&clk IMX8MM_CLK_PCIE1_ROOT>,
 		 <&clk IMX8MM_CLK_PCIE1_AUX>,
@@ -458,8 +460,6 @@
 	status = "okay";
 };
 
-
-
 &gpu {
 	status = "okay";
 };
@@ -467,9 +467,6 @@
 &iomuxc {
         pinctrl_hog: hoggrp {
                 fsl,pins = <
-			MX8MM_IOMUXC_SAI5_RXD2_GPIO3_IO23		0x116	/* LED1 */
-			MX8MM_IOMUXC_SAI5_RXD3_GPIO3_IO24		0x116	/* LED2 */
-
 			MX8MM_IOMUXC_ECSPI2_MOSI_GPIO5_IO11		0x116	/* 8211 */
                 >;
         };
@@ -485,6 +482,9 @@
 			MX8MM_IOMUXC_SAI3_RXC_GPIO4_IO29		0x116	/* DO2 */
 			MX8MM_IOMUXC_SAI3_RXD_GPIO4_IO30		0x116	/* DO3 */
 			MX8MM_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5		0x116	/* DO4 */
+
+			MX8MM_IOMUXC_SAI5_RXD2_GPIO3_IO23		0x116	/* LED1 */
+			MX8MM_IOMUXC_SAI5_RXD3_GPIO3_IO24		0x116	/* LED2 */
 
 			MX8MM_IOMUXC_SAI5_RXD1_GPIO3_IO22		0x116	/* USB-HUB RESET */
 			 >;
