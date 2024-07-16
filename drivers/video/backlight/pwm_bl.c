@@ -32,6 +32,9 @@ struct pwm_bl_data {
 	struct regulator	*power_supply;
 	struct gpio_desc	*enable_gpio;
 	unsigned int		scale;
+#ifdef CONFIG_ARCH_ADVANTECH
+	unsigned int		dft_enable;
+#endif
 	bool			legacy;
 	unsigned int		post_pwm_on_delay;
 	unsigned int		pwm_off_delay;
@@ -48,11 +51,6 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb)
 {
 	struct pwm_state state;
 	int err;
-	#if defined(CONFIG_ARCH_ADVANTECH)
-	bool blank_flag = false;
-	extern void enable_ldb_bkl_vcc(void);
-	extern void enable_ldb_bkl_pwm(void);
-	#endif
 
 	pwm_get_state(pb->pwm, &state);
 	if (pb->enabled)
@@ -72,15 +70,6 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb)
 		gpiod_set_value_cansleep(pb->enable_gpio, 1);
 
 	pb->enabled = true;
-
-	#if defined(CONFIG_ARCH_ADVANTECH)
-        if (!blank_flag) {
-                enable_ldb_bkl_vcc();
-                enable_ldb_bkl_pwm();
-                blank_flag = true;
-        }
-	#endif
-
 }
 
 static void pwm_backlight_power_off(struct pwm_bl_data *pb)
@@ -188,8 +177,19 @@ void enable_ldb_bkl_pwm(void)
 static int pwm_backlight_update_status(struct backlight_device *bl)
 {
 	struct pwm_bl_data *pb = bl_get_data(bl);
+#ifndef CONFIG_ARCH_ADVANTECH
 	int brightness = backlight_get_brightness(bl);
+#else
+	int brightness = bl->props.brightness;
+#endif
 	struct pwm_state state;
+
+#ifndef CONFIG_ARCH_ADVANTECH
+	if (bl->props.power != FB_BLANK_UNBLANK ||
+	    bl->props.fb_blank != FB_BLANK_UNBLANK ||
+	    bl->props.state & BL_CORE_FBBLANK)
+		brightness = 0;
+#endif
 
 	if (pb->notify)
 		brightness = pb->notify(pb->dev, brightness);
@@ -454,8 +454,8 @@ static int pwm_backlight_parse_dt(struct device *dev,
 
 #ifdef CONFIG_ARCH_ADVANTECH
 	gpio_lvds_vcc_en_desc = devm_gpiod_get_optional(dev, "lvds-vcc-enable", GPIOD_OUT_LOW);
-	gpio_lvds_bkl_en_desc = devm_gpiod_get_optional(dev, "bklt-vcc-enable", GPIOD_OUT_LOW);
-	gpio_bklt_vcc_en_desc = devm_gpiod_get_optional(dev, "lvds-bkl-enable", GPIOD_OUT_LOW);
+	gpio_bklt_vcc_en_desc = devm_gpiod_get_optional(dev, "bklt-vcc-enable", GPIOD_OUT_LOW);
+	gpio_lvds_bkl_en_desc = devm_gpiod_get_optional(dev, "lvds-bkl-enable", GPIOD_OUT_LOW);
 
 	if (gpio_lvds_vcc_en_desc != NULL)
 	{
@@ -463,16 +463,16 @@ static int pwm_backlight_parse_dt(struct device *dev,
 		lvds_vcc_flag = gpiod_is_active_low(gpio_lvds_vcc_en_desc);
 	}
 
-	if (gpio_lvds_bkl_en_desc != NULL)
-	{
-		bklt_vcc_enable = desc_to_gpio(gpio_lvds_bkl_en_desc);
-		bklt_vcc_flag = gpiod_is_active_low(gpio_lvds_bkl_en_desc);
-	}
-
 	if (gpio_bklt_vcc_en_desc != NULL)
 	{
-		lvds_bkl_enable = desc_to_gpio(gpio_bklt_vcc_en_desc);
-		lvds_bkl_flag = gpiod_is_active_low(gpio_bklt_vcc_en_desc);
+		bklt_vcc_enable = desc_to_gpio(gpio_bklt_vcc_en_desc);
+		bklt_vcc_flag = gpiod_is_active_low(gpio_bklt_vcc_en_desc);
+	}
+
+	if (gpio_lvds_bkl_en_desc != NULL)
+	{
+		lvds_bkl_enable = desc_to_gpio(gpio_lvds_bkl_en_desc);
+		lvds_bkl_flag = gpiod_is_active_low(gpio_lvds_bkl_en_desc);
 	}
 
 	if (of_find_property(node, "skip-gpios-init", NULL)) {
@@ -659,6 +659,13 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	pb->pwm_off_delay = data->pwm_off_delay;
 	strcpy(pb->fb_id, data->fb_id);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	pb->dft_enable = 1;
+	if (!of_property_read_u32(node, "default-enable", &ret)) {
+		pb->dft_enable = ret;
+	}
+#endif
+
 	pb->enable_gpio = devm_gpiod_get_optional(&pdev->dev, "enable",
 						  GPIOD_ASIS);
 	if (IS_ERR(pb->enable_gpio)) {
@@ -785,7 +792,13 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 
 	bl->props.brightness = data->dft_brightness;
 	bl->props.power = pwm_backlight_initial_power_state(pb);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if(pb->dft_enable)
+		backlight_update_status(bl);
+#else
 	backlight_update_status(bl);
+#endif
 
 	platform_set_drvdata(pdev, bl);
 	return 0;
@@ -840,8 +853,6 @@ static int pwm_backlight_suspend(struct device *dev)
 static int pwm_backlight_resume(struct device *dev)
 {
 	struct backlight_device *bl = dev_get_drvdata(dev);
-
-	backlight_update_status(bl);
 
 	return 0;
 }

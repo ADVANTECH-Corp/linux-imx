@@ -30,6 +30,7 @@
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
+#include <linux/backlight.h>
 
 #include <video/display_timing.h>
 #include <video/of_display_timing.h>
@@ -160,6 +161,12 @@ struct panel_simple {
 
 	enum drm_panel_orientation orientation;
 };
+
+#if defined(CONFIG_ARCH_ADVANTECH)
+int blank_count = 0;
+extern void enable_ldb_bkl_vcc(void);
+extern void enable_ldb_bkl_pwm(void);
+#endif
 
 static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
 {
@@ -383,11 +390,32 @@ static int panel_simple_enable(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
 
+#if defined(CONFIG_ARCH_ADVANTECH)
+	if (blank_count == 0)
+		blank_count++;
+#endif
+
 	if (p->enabled)
 		return 0;
 
 	if (p->desc->delay.enable)
 		msleep(p->desc->delay.enable);
+
+#if defined(CONFIG_ARCH_ADVANTECH)
+	switch (blank_count)
+	{
+		case 1:
+			enable_ldb_bkl_vcc();
+			backlight_update_status(panel->backlight); //PWM
+			enable_ldb_bkl_pwm();
+			blank_count++;
+			break;
+
+		default:
+			backlight_update_status(panel->backlight);
+			break;
+	}
+#endif
 
 	p->enabled = true;
 
