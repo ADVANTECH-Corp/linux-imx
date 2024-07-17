@@ -23,6 +23,7 @@
 				     90 91 92 93 94 95 96 97 98 99
 				    100>;
 		default-brightness-level = <80>;
+		default-enable = <0>;
 	};
 
 	lvds_panel {
@@ -84,7 +85,7 @@
 	pinctrl-0 = <&pinctrl_lvds_vcc>;
 	pinctrl-1 = <&pinctrl_bklt_vcc>;
 	lvds-vcc-enable-gpio = <&gpio1 14 GPIO_ACTIVE_LOW>;	/* LCD_VDD_EN */
-	bklt-vcc-enable-gpio = <&gpio3 22 GPIO_ACTIVE_LOW>;	/* LVDS_BL_EN */
+	lvds-bkl-enable-gpio = <&gpio3 22 GPIO_ACTIVE_LOW>;	/* LVDS_BL_EN */
 	status = "okay";
 };
 
