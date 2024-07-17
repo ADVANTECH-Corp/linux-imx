@@ -551,6 +551,13 @@
 		#interrupt-cells = <2>;
 		interrupt-parent = <&gpio_exp1>;
 		interrupts = <1 IRQ_TYPE_EDGE_FALLING>;
+
+		VLTE_PWR_EN {
+			gpio-hog;
+			gpios = <0 GPIO_ACTIVE_HIGH>;
+			output-high;
+			line-name = "VLTE_PWR_EN";
+		};
 	};
 
 	gpio_exp4: tca9538@21 {
