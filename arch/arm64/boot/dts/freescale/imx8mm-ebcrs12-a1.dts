@@ -19,7 +19,7 @@
 	};
 
 	aliases {
-		rtc0 = &s35390a;
+		rtc0 = &rtc_bl5372;
 		rtc1 = &snvs_rtc;
 	};
 
@@ -386,11 +386,11 @@
 	sda-gpios = <&gpio5 17 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
-	s35390a: s35390a@32 {
-		compatible = "sii,s35390a";
-		reg = <0x32>;
-		status = "okay";
-	};
+	rtc_bl5372: bl5372@32 {
+                compatible = "ricoh,rs5c372a";
+                reg = <0x32>;
+                status = "okay";
+        };
 };
 
 &i2c3 {
