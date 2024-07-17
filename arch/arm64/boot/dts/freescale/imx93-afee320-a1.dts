@@ -263,12 +263,10 @@
 	};
 
 	sound {
-		compatible = "fsl,sgtl5000",
-				"fsl,imx-audio-sgtl5000";
+		compatible = "fsl,imx-audio-sgtl5000";
 		model = "sgtl5000";
-		codec-master;
-		//ssi-controller = <&sai3>;
-		//audio-codec = <&acodec>;
+		ssi-controller = <&sai1>;
+		audio-codec = <&acodec>;
 		audio-routing =
 			"MIC_IN", "Mic Jack",
 			"Mic Jack", "Mic Bias",
@@ -300,6 +298,16 @@
 		reset-post-delay-ms = <40>;
 		#reset-cells = <0>;
 	};
+};
+
+&sai1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_sai1>;
+	assigned-clocks = <&clk IMX93_CLK_SAI1>;
+	assigned-clock-parents = <&clk IMX93_CLK_AUDIO_PLL>;
+	assigned-clock-rates = <12288000>;
+	fsl,sai-mclk-direction-output;
+	status = "okay";
 };
 
 /*
@@ -400,6 +408,19 @@
 	pinctrl-0 = <&pinctrl_lpi2c2>;
 	pinctrl-1 = <&pinctrl_lpi2c2>;
 	status = "okay";
+
+	acodec: sgtl5000@a {
+		#sound-dai-cells = <0>;
+		compatible = "fsl,sgtl5000";
+		reg = <0xa>;
+		VDDA-supply = <&reg_1p8v>;
+		VDDIO-supply = <&reg_1p8v>;
+		clocks = <&clk IMX93_CLK_SAI1_GATE>;
+		clock-names = "mclk";
+		assigned-clocks = <&clk IMX93_CLK_SAI1>;
+		assigned-clock-parents = <&clk IMX93_CLK_AUDIO_PLL>;
+		assigned-clock-rates = <24576000>;
+	};
 
 	gpio_exp1: tca9538@20 {
 		compatible = "nxp,pca6416";
@@ -839,6 +860,15 @@
 			MX93_PAD_SD3_DATA1__USDHC3_DATA1	0x13fe
 			MX93_PAD_SD3_DATA2__USDHC3_DATA2	0x13fe
 			MX93_PAD_SD3_DATA3__USDHC3_DATA3	0x13fe
+		>;
+	};
+
+	pinctrl_sai1: sai1grp {
+		fsl,pins = <
+			MX93_PAD_SAI1_TXFS__SAI1_TX_SYNC	0x31e
+			MX93_PAD_SAI1_TXC__SAI1_TX_BCLK		0x31e
+			MX93_PAD_SAI1_TXD0__SAI1_TX_DATA00	0x31e
+			MX93_PAD_SAI1_RXD0__SAI1_RX_DATA00	0x31e
 		>;
 	};
 
