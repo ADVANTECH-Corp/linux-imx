@@ -2434,7 +2434,7 @@ static int imx6_pcie_probe(struct platform_device *pdev)
 	if (gpio_is_valid(imx6_pcie->m2_power_en_gpio)) {
 		ret = devm_gpio_request_one(&pdev->dev,
 					    imx6_pcie->m2_power_en_gpio,
-					    GPIOF_OUT_INIT_HIGH,
+					    GPIOF_OUT_INIT_LOW,
 					    "m2-pwr-en");
 		if (ret) {
 			dev_err(&pdev->dev, "unable to get m2-pwr-en gpio\n");
