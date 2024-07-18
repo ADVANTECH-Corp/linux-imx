@@ -136,17 +136,25 @@ static int misc_adv_gpio_probe(struct platform_device *pdev)
                     gpio_direction_output(gpio, GPIOF_OUT_INIT_HIGH);
                 else
                     gpio_direction_output(gpio, GPIOF_OUT_INIT_LOW);
-
-                if(reset_delay)
-                    mdelay(reset_delay);
-
-                if(active)
-                    gpio_direction_output(gpio, GPIOF_OUT_INIT_LOW);
-                else
-                    gpio_direction_output(gpio, GPIOF_OUT_INIT_HIGH);
-
-                gpio_free(gpio);
             }
+        }
+    }
+
+    if(reset_delay)
+        mdelay(reset_delay);
+
+    for (i = 0; i < num_reset_gpios; i++)
+    {
+        gpio = of_get_named_gpio_flags(np, "reset-gpios", i, &flags);
+        if (gpio_is_valid(gpio))
+        {
+            active = !(flags & OF_GPIO_ACTIVE_LOW);
+            if(active)
+                gpio_direction_output(gpio, GPIOF_OUT_INIT_LOW);
+            else
+                gpio_direction_output(gpio, GPIOF_OUT_INIT_HIGH);
+
+            gpio_free(gpio);
         }
     }
 
