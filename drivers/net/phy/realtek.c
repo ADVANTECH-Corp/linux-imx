@@ -81,6 +81,20 @@ struct rtl821x_priv {
 	u16 phycr2;
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static void rtl8211f_phy_fixup(struct phy_device *dev)
+{
+	struct device_node *node = dev->mdio.dev.of_node;
+
+	msleep(200);
+	phy_write(dev, 0x1f, 0x0d04);
+	/*PHY LED OK*/
+	phy_write(dev, 0x10, 0x8910);
+	phy_write(dev, 0x11, 0x0000);
+	phy_write(dev, 0x1f, 0x0000);
+}
+#endif
+
 static bool is_rtl8211fvd(u32 phy_id)
 {
 	return phy_id == RTL_8211FVD_PHYID;
@@ -126,6 +140,12 @@ static int rtl821x_probe(struct phy_device *phydev)
 	}
 
 	phydev->priv = priv;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (phydev && (0x001cc916 == phydev->phy_id)) {
+		rtl8211f_phy_fixup(phydev);
+	}
+#endif
 
 	return 0;
 }
