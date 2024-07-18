@@ -9,7 +9,7 @@
 #include "imx8mm.dtsi"
 
 / {
-	model = "Advantech RISC Single Board";
+	model = "i.MX8MM RS12";
 	compatible = "fsl,imx8mm-evk", "fsl,imx8mm";
 
 	board {
@@ -20,7 +20,6 @@
 
 	aliases {
 		rtc0 = &rtc_bl5372;
-		rtc1 = &snvs_rtc;
 	};
 
 	memory@40000000 {
@@ -58,6 +57,21 @@
 		gpio = <&gpio5 7 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 	};
+
+    leds {
+		compatible = "gpio-leds";
+		status = "okay";
+		led1 {
+			label = "led1";
+			gpios = <&gpio3 23 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+		led2 {
+			label = "led2";
+			gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+    };
 
 	misc-adv-gpio {
 		compatible = "misc-adv-gpio";
@@ -155,8 +169,12 @@
 	status = "okay";
 };
 
+&snvs_rtc {
+	status = "disabled";
+};
+
 &snvs_pwrkey {
-	status = "okay";
+	status = "disabled";
 };
 
 
@@ -242,7 +260,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_wdog>;
 	fsl,ext-reset-output;
-	status = "disabled";
+	status = "okay";
 };
 
 &flexspi {
