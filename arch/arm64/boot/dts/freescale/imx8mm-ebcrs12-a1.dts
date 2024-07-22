@@ -129,19 +129,11 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		ethphy0: ethernet-phy@0 {
+		ethphy0: ethernet-phy@1 {
 			compatible = "ethernet-phy-ieee802.3-c22";
-			reg = <0>;
-			reset-gpios = <&gpio4 22 GPIO_ACTIVE_LOW>;
+			reg = <1>;
 			realtek,aldps-enable;
 			realtek,clkout-disable;
-			qca,disable-smarteee;
-			vddio-supply = <&vddio>;
-
-			vddio: vddio-regulator {
-				regulator-min-microvolt = <1800000>;
-				regulator-max-microvolt = <1800000>;
-			};
 		};
 	};
 };
