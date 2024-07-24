@@ -141,7 +141,7 @@
 &pcie0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie0>;
-	// reset-gpio = <&gpio1 13 GPIO_ACTIVE_LOW>;
+	reset-gpio = <&gpio1 13 GPIO_ACTIVE_LOW>;
 	// power-on-gpio = <&gpio2 8 GPIO_ACTIVE_HIGH>;    /* PCIE_Z_WAKE */
 	disable-gpio = <&gpio2 6 GPIO_ACTIVE_HIGH>; /* PDn */
 	m2-pwr-en = <&gpio4 25 GPIO_ACTIVE_LOW>;    /* M2_PWR_EN */
