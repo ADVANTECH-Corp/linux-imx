@@ -1142,7 +1142,11 @@ static int usb_serial_probe(struct usb_interface *interface,
 	/* register all of the individual ports with the driver core */
 	for (i = 0; i < num_ports; ++i) {
 		port = serial->port[i];
+#ifdef CONFIG_ARCH_ADVANTECH
+		dev_set_name(&port->dev, "ttyU%d", port->minor);
+#else
 		dev_set_name(&port->dev, "ttyUSB%d", port->minor);
+#endif
 		dev_dbg(ddev, "registering %s\n", dev_name(&port->dev));
 		device_enable_async_suspend(&port->dev);
 
@@ -1332,7 +1336,11 @@ static int __init usb_serial_init(void)
 	}
 
 	usb_serial_tty_driver->driver_name = "usbserial";
+#ifdef CONFIG_ARCH_ADVANTECH
+	usb_serial_tty_driver->name = "ttyU";
+#else
 	usb_serial_tty_driver->name = "ttyUSB";
+#endif
 	usb_serial_tty_driver->major = USB_SERIAL_TTY_MAJOR;
 	usb_serial_tty_driver->minor_start = 0;
 	usb_serial_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
