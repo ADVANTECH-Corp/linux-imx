@@ -7,9 +7,6 @@
  *
  * Author: Sean Cross <xobs@kosagi.com>
  */
-#ifdef CONFIG_ARCH_ADVANTECH
-#define DEBUG 1
-#endif
 
 #include <dt-bindings/soc/imx8_hsio.h>
 #include <linux/bitfield.h>
