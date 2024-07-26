@@ -487,6 +487,11 @@
 		vcc-supply = <&reg_3p3v>;
 	};
 
+	eeprom1: 24c32@50 {
+		compatible = "st,24c32";
+		reg = <0x50>;
+	};
+
 	gpio_exp3: tca9538@70 {
 		compatible = "nxp,pca9538";
 		reg = <0x70>;
