@@ -21,6 +21,7 @@
 		/* ethernet0,1 swap */
 		ethernet0 = &enetc_port1;
 		ethernet1 = &enetc_port0;
+		ethernet2 = &enetc_port2;
 		rtc0 = &rx8900;
 	};
 
@@ -198,7 +199,7 @@
 		regulator-name = "aqr-stby";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		// gpio = <&i2c5_gpio_expander_21 1 GPIO_ACTIVE_HIGH>;
+		gpio = <&eg69_gpioexp 1 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 		regulator-always-on;
 	};
@@ -209,8 +210,6 @@
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		vin-supply = <&reg_aqr_stby>;
-		// gpio = <&i2c5_gpio_expander_21 0 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
 	};
 /*
 	reg_serdes_stby: regulator-mac-stby {
@@ -221,16 +220,14 @@
 		gpio = <&i2c7_pcal6524 13 GPIO_ACTIVE_LOW>;
 		regulator-always-on;
 	};
-
+*/
 	reg_serdes_en: regulator-mac-en {
 		compatible = "regulator-fixed";
 		regulator-name = "mac-en";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		vin-supply = <&reg_serdes_stby>;
-		gpio = <&i2c5_gpio_expander_21 3 GPIO_ACTIVE_LOW>;
 	};
-*/
+
 	cm7: imx95-cm7 {
 		compatible = "fsl,imx95-cm7";
 		mbox-names = "tx", "rx", "rxdb";
@@ -481,6 +478,14 @@
 		VDDA-supply = <&reg_audio_pwr>;
 		VDDIO-supply = <&reg_audio_pwr>;
 	};
+
+	eg69_gpioexp: pca6416@20 {
+		compatible = "nxp,pca6416";
+		#gpio-cells = <2>;
+		gpio-controller;
+		reg = <0x20>;
+		vcc-supply = <&reg_3p3v>;
+	};
 };
 
 &lpi2c7 {
@@ -607,15 +612,12 @@
 	status = "okay";
 };
 
-/*
 &enetc_port2 {
 	phy-handle = <&ethphy2>;
 	phy-mode = "10gbase-r";
-	serdes-supply = <&reg_serdes_en>;
 	managed = "in-band-status";
 	status = "okay";
 };
-*/
 
 &netc_timer {
 	status = "okay";
@@ -636,12 +638,11 @@
 		reg = <3>;
 		eee-broken-1000t;
 	};
-/*
+
 	ethphy2: ethernet-phy@8 {
 		compatible = "ethernet-phy-ieee802.3-c45";
 		reg = <8>;
 	};
-*/
 };
 
 &usb2 {
