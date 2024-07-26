@@ -486,6 +486,13 @@
 		reg = <0x20>;
 		vcc-supply = <&reg_3p3v>;
 	};
+
+	gpio_exp3: tca9538@70 {
+		compatible = "nxp,pca9538";
+		reg = <0x70>;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
 };
 
 &lpi2c7 {
