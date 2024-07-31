@@ -584,6 +584,13 @@
 			};
 		};
 	};
+
+	gpio_exp5: tca9538@73 {
+		compatible = "nxp,pca9538";
+		#gpio-cells = <2>;
+		reg = <0x73>;
+		gpio-controller;
+	};
 };
 
 &dsi {
