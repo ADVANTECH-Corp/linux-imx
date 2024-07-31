@@ -126,11 +126,11 @@ static int tcan4x5x_reset(struct tcan4x5x_priv *priv)
 	int ret = 0;
 
 	if (priv->reset_gpio) {
-		gpiod_set_value(priv->reset_gpio, 1);
+		gpiod_set_value_cansleep(priv->reset_gpio, 1);
 
 		/* tpulse_width minimum 30us */
 		usleep_range(30, 100);
-		gpiod_set_value(priv->reset_gpio, 0);
+		gpiod_set_value_cansleep(priv->reset_gpio, 0);
 	} else {
 		ret = regmap_write(priv->regmap, TCAN4X5X_CONFIG,
 				   TCAN4X5X_SW_RESET);
