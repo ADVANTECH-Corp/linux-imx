@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2022 NXP
+ */
+
+#include "imx93-afee320-a1.dts"
+
+&lpuart1 { /* console */
+	/delete-property/linux,rs485-enabled-at-boot-time;
+	/delete-property/rs485-rx-during-tx;
+	/delete-property/rs485-rts-active-low;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart1_txrx>;
+};
+
+&lpuart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart2>;
+	status = "okay";
+};
+
+&iomuxc {
+
+	pinctrl_uart2: uart2grp {
+		fsl,pins = <
+			MX93_PAD_UART2_RXD__LPUART2_RX		0x31e
+			MX93_PAD_UART2_TXD__LPUART2_TX		0x31e
+		>;
+	};
+};
