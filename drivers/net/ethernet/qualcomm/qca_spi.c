@@ -78,6 +78,8 @@ MODULE_PARM_DESC(wr_verify, "SPI register write verify trails. Use 0-3.");
 #define QCASPI_TX_TIMEOUT (1 * HZ)
 #define QCASPI_QCA7K_REBOOT_TIME_MS 1000
 
+static u8 nested_irq_mode = 0;
+
 static void
 start_spi_intr_handling(struct qcaspi *qca, u16 *intr_cause)
 {
@@ -666,6 +668,14 @@ qcaspi_intr_handler(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
+static irqreturn_t qcaspi_thread_fn(int irq, void *dev_id)
+{
+    struct qcaspi *qca = dev_id;
+
+    return IRQ_HANDLED;
+}
+
+
 static int
 qcaspi_netdev_open(struct net_device *dev)
 {
@@ -689,8 +699,15 @@ qcaspi_netdev_open(struct net_device *dev)
 		return PTR_ERR(qca->spi_thread);
 	}
 
-	ret = request_irq(qca->spi_dev->irq, qcaspi_intr_handler, 0,
-			  dev->name, qca);
+	if (nested_irq_mode) {
+		/* nested irq: need thread function defenition */
+		ret = request_threaded_irq(qca->spi_dev->irq, qcaspi_thread_fn, qcaspi_intr_handler, 0,
+					dev->name, qca);
+	} else {
+		ret = request_irq(qca->spi_dev->irq, qcaspi_intr_handler, 0,
+				dev->name, qca);
+	}
+
 	if (ret) {
 		netdev_err(dev, "%s: unable to get IRQ %d (irqval=%d).\n",
 			   QCASPI_DRV_NAME, qca->spi_dev->irq, ret);
@@ -899,6 +916,9 @@ qca_spi_probe(struct spi_device *spi)
 
 	legacy_mode = of_property_read_bool(spi->dev.of_node,
 					    "qca,legacy-mode");
+
+	nested_irq_mode = of_property_read_bool(spi->dev.of_node,
+						"qca,nested-irq-mode");
 
 	if (qcaspi_clkspeed == 0) {
 		if (spi->max_speed_hz)
