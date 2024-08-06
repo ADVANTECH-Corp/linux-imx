@@ -452,6 +452,12 @@
 		status = "okay";
 	};
 
+	st33htpi: st33htpi@2e {
+		compatible = "st,st33htpm-i2c";
+		reg = <0x2e>;
+		pinctrl-names = "default";
+	};
+
 	rx8900: rx8900c@32 {
 		compatible = "epson,rx8900";
 		reg = <0x32>;
