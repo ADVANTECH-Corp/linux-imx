@@ -307,6 +307,31 @@
 				    100>;
 		default-brightness-level = <80>;
 	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+
+		lid@1 {
+			label = "LID KEY";
+			gpios = <&gpio_exp1 14 GPIO_ACTIVE_HIGH>;
+			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
+			linux,code = <KEY_SUSPEND>; //KEY_SUSPEND 205, KEY_SLEEP 142, KEY_POWER 116
+			wakeup-source;
+			debounce-interval = <100>;
+		};
+
+		sleep@2 {
+			label = "SLEEP KEY";
+			gpios = <&gpio_exp1 15 GPIO_ACTIVE_HIGH>;
+			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
+			linux,code = <KEY_SLEEP>; //KEY_SUSPEND 205, KEY_SLEEP 142, KEY_POWER 116
+			wakeup-source;
+			debounce-interval = <100>;
+		};
+	};
 };
 
 &adc1 {
@@ -397,7 +422,7 @@
 		interrupt-controller;
 		#interrupt-cells = <2>;
 		interrupt-parent = <&gpio2>;
-		interrupts = <22 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <22 IRQ_TYPE_EDGE_FALLING>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_gpioexp1>;
 		vcc-supply = <&reg_1p8v>;
