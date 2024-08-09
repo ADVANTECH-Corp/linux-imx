@@ -1,0 +1,77 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2022 NXP
+ */
+
+#include "imx93-afee320-a1.dts"
+
+/ {
+	lpspi5_modem_reset: lpspi5-modem-reset {
+		compatible = "gpio-reset";
+		reset-gpios = <&gpio_exp4 13 GPIO_ACTIVE_HIGH>; /* CAN_RST */
+		reset-delay-us = <2000>;
+		reset-post-delay-ms = <40>;
+		#reset-cells = <0>;
+	};
+};
+
+&lpspi5 {
+	num-cs = <2>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_lpspi5>;
+	pinctrl-1 = <&pinctrl_lpspi5>;
+	cs-gpios = <&gpio2 18 GPIO_ACTIVE_LOW>, <&gpio_exp1 14 GPIO_ACTIVE_LOW>;
+	resets = <&lpspi5_modem_reset>;
+	status = "okay";
+
+	can3: tcan4x5x@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "ti,tcan4x5x";
+		reg = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_can3>;
+		spi-max-frequency = <10000000>;
+		bosch,mram-cfg = <0x0 0 0 32 0 0 1 1>;
+		interrupt-parent = <&gpio2>;            /* Temporary */
+		interrupts = <26 IRQ_TYPE_LEVEL_LOW>;   /* Temporary */
+	};
+
+	can4: tcan4x5x@1 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "ti,tcan4x5x";
+		reg = <1>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_can4>;
+		spi-max-frequency = <10000000>;
+		bosch,mram-cfg = <0x0 0 0 32 0 0 1 1>;
+		interrupt-parent = <&gpio2>;            /* Temporary */
+		interrupts = <13 IRQ_TYPE_LEVEL_LOW>;   /* Temporary */
+	};
+};
+
+&iomuxc {
+
+	pinctrl_lpspi5: lpspi5grp {
+		fsl,pins = <
+			MX93_PAD_GPIO_IO18__GPIO2_IO18		0x3fe
+			MX93_PAD_GPIO_IO19__LPSPI5_SIN		0x3fe
+			MX93_PAD_GPIO_IO20__LPSPI5_SOUT		0x3fe
+			MX93_PAD_GPIO_IO21__LPSPI5_SCK		0x3fe
+		>;
+	};
+
+	pinctrl_can3: can3grp{
+		fsl,pins = <
+			MX93_PAD_GPIO_IO26__GPIO2_IO26		0x3fe
+		>;
+	};
+
+	pinctrl_can4: can4grp{
+		fsl,pins = <
+			MX93_PAD_GPIO_IO13__GPIO2_IO13		0x3fe
+		>;
+	};
+
+};
