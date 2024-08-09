@@ -38,6 +38,17 @@
                 ranges = <0x0 0x0 0x0 0x80000000>,
                          <0x28000000 0x0 0x28000000 0x10000000>;
 
+		tpm2: pwm@44320000 {
+			compatible = "fsl,imx7ulp-pwm";
+			reg = <0x44320000 0x1000>;
+			clocks = <&clk IMX93_CLK_TPM2_GATE>;
+			assigned-clocks = <&clk IMX93_CLK_TPM2>;
+			assigned-clock-parents = <&clk IMX93_CLK_24M>;
+			assigned-clock-rates = <24000000>;
+			#pwm-cells = <3>;
+			status = "disabled";
+		};
+
                     tpm3: pwm@424e0000 {
                                 compatible = "fsl,imx7ulp-pwm";
                                 reg = <0x424e0000 0x1000>;
@@ -681,6 +692,12 @@
 	};
 };
 
+&tpm2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_tpm2>;
+	status = "okay";
+};
+
 /*
 &tpm6 {
         pinctrl-names = "default";
@@ -860,6 +877,13 @@
 			MX93_PAD_DAP_TCLK_SWCLK__LPUART5_CTS_B		0x31e
 			MX93_PAD_DAP_TDI__LPUART5_RX			0x31e
 			MX93_PAD_DAP_TDO_TRACESWO__LPUART5_TX		0x31e
+		>;
+	};
+
+	pinctrl_tpm2: tpm2grp {
+		fsl,pins = <
+			MX93_PAD_I2C1_SCL__TPM2_CH0			0x19e
+			MX93_PAD_I2C1_SDA__TPM2_CH1			0x19e
 		>;
 	};
 /*
