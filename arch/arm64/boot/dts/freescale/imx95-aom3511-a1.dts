@@ -256,9 +256,25 @@
 	};
 
 	sound_hdmi: sound-hdmi {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "sound-hdmi";
+		simple-audio-card,format = "i2s";
+
+		simple-audio-card,cpu {
+			sound-dai = <&sai5>;
+			system-clock-direction-out;
+		};
+
+		simple-audio-card,codec {
+			sound-dai = <&lt9611uxc>;
+		};
+	};
+/*
+	sound_hdmi: sound-hdmi {
 		compatible = "audio-graph-card";
 		dais = <&sai5_p0>;
 	};
+*/
 /*
 	sound-micfil {
 		compatible = "fsl,imx-audio-card";
