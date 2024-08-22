@@ -506,6 +506,34 @@
 	pinctrl-0 = <&pinctrl_lpi2c3>;
 	pinctrl-1 = <&pinctrl_lpi2c3>;
 	status = "okay";
+
+	ov5640_0: ov5640_mipi@3c {
+		compatible = "ovti,ov5640";
+		reg = <0x3c>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_csi1_pwn>, <&pinctrl_csi1_rst>, <&pinctrl_csi_mclk>;
+		clocks = <&scmi_clk IMX95_CLK_CCMCKO1>;
+		clock-names = "xclk";
+		assigned-clocks = <&scmi_clk IMX95_CLK_CCMCKO1>;
+		//assigned-clock-parents = <&osc_24m>;
+		assigned-clock-parents = <&scmi_clk IMX95_CLK_24M>;
+		assigned-clock-rates = <24000000>;
+		csi_id = <0>;
+		powerdown-gpios = <&gpio3 20 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio3 22 GPIO_ACTIVE_LOW>;
+		mclk = <24000000>;
+		mclk_source = <0>;
+		mipi_csi;
+		status = "okay";
+
+		port {
+			ov5640_mipi_0_ep: endpoint {
+				remote-endpoint = <&mipi_csi0_ep>;
+				data-lanes = <1 2>;
+				clock-lanes = <0>;
+			};
+		};
+	};
 };
 
 &lpi2c4 {
@@ -566,6 +594,52 @@
 	pinctrl-0 = <&pinctrl_lpi2c8>;
 	pinctrl-1 = <&pinctrl_lpi2c8>;
 	status = "okay";
+};
+
+&dphy_rx {
+	status = "okay";
+};
+
+&mipi_csi0 {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			mipi_csi0_ep: endpoint {
+				remote-endpoint = <&ov5640_mipi_0_ep>;
+				data-lanes = <1 2>;
+				clock-lanes = <0>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+			mipi_csi0_out: endpoint {
+				remote-endpoint = <&isi_in_2>;
+			};
+		};
+	};
+};
+
+&isi {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@2 {
+			reg = <2>;
+
+			isi_in_2: endpoint {
+				remote-endpoint = <&mipi_csi0_out>;
+			};
+		};
+	};
 };
 
 &lpuart1 {
@@ -1132,6 +1206,24 @@
 			IMX95_PAD_SD2_DATA2__USDHC2_DATA2			0x13fe
 			IMX95_PAD_SD2_DATA3__USDHC2_DATA3			0x13fe
 			IMX95_PAD_SD2_VSELECT__USDHC2_VSELECT			0x51e
+		>;
+	};
+
+	pinctrl_csi_mclk: csi_mclk_grp {
+		fsl,pins = <
+			IMX95_PAD_CCM_CLKO1__CCMSRCGPCMIX_TOP_CLKO_1		0x39e
+		>;
+	};
+
+	pinctrl_csi1_pwn: csi1_pwn_grp {
+		fsl,pins = <
+			IMX95_PAD_SD3_CLK__GPIO3_IO_BIT20			0x31e
+		>;
+	};
+
+	pinctrl_csi1_rst: csi1_rst_grp {
+		fsl,pins = <
+			IMX95_PAD_SD3_DATA0__GPIO3_IO_BIT22			0x31e
 		>;
 	};
 };
