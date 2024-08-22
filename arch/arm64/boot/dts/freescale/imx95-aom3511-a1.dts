@@ -210,6 +210,7 @@
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		vin-supply = <&reg_aqr_stby>;
+		enable-active-high;
 	};
 /*
 	reg_serdes_stby: regulator-mac-stby {
@@ -221,13 +222,15 @@
 		regulator-always-on;
 	};
 */
+
+/*
 	reg_serdes_en: regulator-mac-en {
 		compatible = "regulator-fixed";
 		regulator-name = "mac-en";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 	};
-
+*/
 	cm7: imx95-cm7 {
 		compatible = "fsl,imx95-cm7";
 		mbox-names = "tx", "rx", "rxdb";
@@ -524,11 +527,11 @@
 		VDDIO-supply = <&reg_audio_pwr>;
 	};
 
-	eg69_gpioexp: pca6416@20 {
+	eg69_gpioexp: pca6416@21 {
 		compatible = "nxp,pca6416";
 		#gpio-cells = <2>;
 		gpio-controller;
-		reg = <0x20>;
+		reg = <0x21>;
 		vcc-supply = <&reg_3p3v>;
 	};
 
