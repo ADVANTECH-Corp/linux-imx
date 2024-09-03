@@ -33,6 +33,14 @@
 
 #define DRIVER_NAME			"imx95-ldb"
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+        static int first_flip_complete = 1;
+        extern void enable_lcd_vdd_en(void);
+        extern void enable_ldb_signal(void);
+        extern void disable_lcd_vdd_en(void);
+        extern void disable_ldb_bkl_pwm(void);
+#endif
+
 struct imx95_ldb_channel {
 	struct ldb_channel base;
 	struct phy *phy;
@@ -141,6 +149,14 @@ imx95_ldb_bridge_atomic_enable(struct drm_bridge *bridge,
 	bool is_split = ldb_channel_is_split_link(ldb_ch);
 	int ret;
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+	if (first_flip_complete) {
+                enable_lcd_vdd_en();
+                enable_ldb_signal();
+                first_flip_complete = 0;
+        }
+#endif
+
 	clk_prepare_enable(imx95_ldb->clk_pixel);
 
 	if (ldb_ch->chno == 0 || is_split) {
@@ -189,6 +205,10 @@ imx95_ldb_bridge_atomic_disable(struct drm_bridge *bridge,
 	bool is_split = ldb_channel_is_split_link(ldb_ch);
 	int ret;
 
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+        disable_ldb_bkl_pwm();
+#endif
+
 	ldb_bridge_disable_helper(bridge);
 
 	if (is_split) {
@@ -215,6 +235,10 @@ imx95_ldb_bridge_atomic_disable(struct drm_bridge *bridge,
 	ret = pm_runtime_put(dev);
 	if (ret < 0)
 		dev_err(dev, "failed to put runtime PM: %d\n", ret);
+
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
+        disable_lcd_vdd_en();
+#endif
 }
 
 static const u32 imx95_ldb_bus_output_fmts[] = {

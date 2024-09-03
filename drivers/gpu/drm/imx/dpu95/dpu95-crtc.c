@@ -22,10 +22,6 @@
 #include "dpu95-drv.h"
 #include "dpu95-plane.h"
 
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-	static int first_flip_complete = 1;
-	extern void enable_lcd_vdd_en(void);
-#endif
 
 #define DPU95_CRTC_WAIT_FOR_COMPLETION_TIMEOUT(_name)			\
 do {									\
@@ -428,13 +424,6 @@ static void dpu95_crtc_atomic_enable(struct drm_crtc *crtc,
 	dpu95_fg_primary_clear_channel_status(dpu_crtc->fg);
 
 	dpu95_crtc_queue_state_event(crtc);
-
-#if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH)
-	if (first_flip_complete) {
-		enable_lcd_vdd_en();
-		first_flip_complete = 0;
-	}
-#endif
 }
 
 static void dpu95_crtc_disable(struct drm_crtc *crtc)

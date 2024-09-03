@@ -6,6 +6,7 @@
  */
 
 #include <linux/delay.h>
+#include <uapi/linux/synclink.h>
 #include <linux/gpio/consumer.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -96,12 +97,9 @@ static int compute_duty_cycle(struct pwm_bl_data *pb, int brightness, struct pwm
 }
 
 #ifdef CONFIG_ARCH_ADVANTECH
-struct gpio_desc *gpio_lvds_vcc_en_desc;
-struct gpio_desc *gpio_lvds_bkl_en_desc;
-struct gpio_desc *gpio_bklt_vcc_en_desc;
-int lvds_vcc_enable;
-int lvds_bkl_enable;
-int bklt_vcc_enable;
+struct gpio_desc *gpio_lvds_vcc_en_desc = NULL;
+struct gpio_desc *gpio_lvds_bkl_en_desc = NULL;
+struct gpio_desc *gpio_bklt_vcc_en_desc = NULL;
 int lvds_vcc_delay_value;
 int lvds_bkl_delay_value;
 int bklt_pwm_delay_value;
@@ -113,10 +111,10 @@ int bklt_vcc_flag;
 void enable_lcd_vdd_en(void)
 {
 	/* LVDS Panel power enable */
-	if (lvds_vcc_enable >= 0)
+	if (gpio_lvds_vcc_en_desc != NULL)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 1 Start to enable LVDS VDD. lvds_vcc_flag=%d\n",lvds_vcc_flag);
-		gpio_set_value_cansleep(lvds_vcc_enable, lvds_vcc_flag);
+		gpiod_set_value_cansleep(gpio_lvds_vcc_en_desc, 1);
 	}
 
 	printk(KERN_INFO "[LVDS Sequence] 2 Start to enable LVDS signal.\n");
@@ -132,10 +130,10 @@ void enable_ldb_bkl_vcc(void)
 	mdelay(lvds_bkl_delay_value); // T3 for AUO 7"
 
 	// Backlight On (VCC)
-	if (bklt_vcc_enable >= 0)
+	if (gpio_bklt_vcc_en_desc != NULL)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 3 Start to enable backlight VCC. bklt_vcc_flag=%d\n",bklt_vcc_flag);
-		gpio_set_value_cansleep(bklt_vcc_enable, bklt_vcc_flag);
+		gpiod_set_value_cansleep(gpio_bklt_vcc_en_desc, 1);
 	}
 
 	mdelay(bklt_pwm_delay_value); // T8 for AUO 7"
@@ -147,10 +145,28 @@ void enable_ldb_bkl_pwm(void)
 	mdelay(bklt_en_delay_value); // T9 for AUO 7"
 
 	// Backlight Enable (Display On/Off)
-        if (lvds_bkl_enable >= 0)
+	if (gpio_lvds_bkl_en_desc != NULL)
 	{
 		printk(KERN_INFO "[LVDS Sequence] 5 Start to enable LVDS backlight.\n");
-		gpio_set_value_cansleep(lvds_bkl_enable, lvds_bkl_flag);
+		gpiod_set_value_cansleep(gpio_lvds_bkl_en_desc, 1);
+	}
+}
+
+void disable_lcd_vdd_en(void)
+{
+	if (gpio_lvds_vcc_en_desc != NULL)
+	{
+		printk(KERN_INFO "[LVDS Sequence] 7 Start to disable LVDS VDD. lvds_vcc_flag=%d\n",lvds_vcc_flag);
+		gpiod_set_value_cansleep(gpio_lvds_vcc_en_desc, 0);
+	}
+}
+
+void disable_ldb_bkl_pwm(void)
+{
+	if (gpio_lvds_bkl_en_desc != NULL)
+	{
+		printk(KERN_INFO "[LVDS Sequence] 6 Start to disable LVDS backlight.\n");
+		gpiod_set_value_cansleep(gpio_lvds_bkl_en_desc, 0);
 	}
 }
 
@@ -444,25 +460,22 @@ static int pwm_backlight_parse_dt(struct device *dev,
 
 #ifdef CONFIG_ARCH_ADVANTECH
 	gpio_lvds_vcc_en_desc = devm_gpiod_get_optional(dev, "lvds-vcc-enable", GPIOD_OUT_LOW);
-	gpio_lvds_bkl_en_desc = devm_gpiod_get_optional(dev, "bklt-vcc-enable", GPIOD_OUT_LOW);
-	gpio_bklt_vcc_en_desc = devm_gpiod_get_optional(dev, "lvds-bkl-enable", GPIOD_OUT_LOW);
+	gpio_bklt_vcc_en_desc = devm_gpiod_get_optional(dev, "bklt-vcc-enable", GPIOD_OUT_LOW);
+	gpio_lvds_bkl_en_desc = devm_gpiod_get_optional(dev, "lvds-bkl-enable", GPIOD_OUT_LOW);
 
 	if (gpio_lvds_vcc_en_desc != NULL)
 	{
-		lvds_vcc_enable = desc_to_gpio(gpio_lvds_vcc_en_desc);
 		lvds_vcc_flag = gpiod_is_active_low(gpio_lvds_vcc_en_desc);
-	}
-
-	if (gpio_lvds_bkl_en_desc != NULL)
-	{
-		bklt_vcc_enable = desc_to_gpio(gpio_lvds_bkl_en_desc);
-		bklt_vcc_flag = gpiod_is_active_low(gpio_lvds_bkl_en_desc);
 	}
 
 	if (gpio_bklt_vcc_en_desc != NULL)
 	{
-		lvds_bkl_enable = desc_to_gpio(gpio_bklt_vcc_en_desc);
-		lvds_bkl_flag = gpiod_is_active_low(gpio_bklt_vcc_en_desc);
+		bklt_vcc_flag = gpiod_is_active_low(gpio_bklt_vcc_en_desc);
+	}
+
+	if (gpio_lvds_bkl_en_desc != NULL)
+	{
+		lvds_bkl_flag = gpiod_is_active_low(gpio_lvds_bkl_en_desc);
 	}
 
 	if (of_find_property(node, "skip-gpios-init", NULL)) {
@@ -471,19 +484,19 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	}
 
 	/* Set default to output */
-	if (lvds_vcc_enable >= 0)
+	if (gpio_lvds_vcc_en_desc != NULL)
 	{
-		gpio_direction_output(lvds_vcc_enable, (lvds_vcc_flag)?0:1);
+		gpiod_set_value_cansleep(gpio_lvds_vcc_en_desc, 0);
 	}
 
-	if (bklt_vcc_enable >= 0)
+	if (gpio_bklt_vcc_en_desc != NULL)
 	{
-		gpio_direction_output(bklt_vcc_enable, (bklt_vcc_flag)?0:1);
+		gpiod_set_value_cansleep(gpio_bklt_vcc_en_desc, 0);
 	}
 
-	if (lvds_bkl_enable >= 0)
+	if (gpio_lvds_bkl_en_desc != NULL)
         {
-		gpio_direction_output(lvds_bkl_enable, (lvds_bkl_flag)?0:1);
+		gpiod_set_value_cansleep(gpio_lvds_bkl_en_desc, 0);
 	}
 
 get_delays:

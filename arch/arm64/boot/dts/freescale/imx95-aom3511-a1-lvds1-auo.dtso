@@ -55,8 +55,9 @@
 };
 
 &lvds_backlight1 {
-	lvds-vcc-enable-gpio = <&gpio_exp1 6 GPIO_ACTIVE_LOW>;	/* LCD1_VDD_EN */
-	lvds-bkl-enable-gpio = <&gpio_exp1 7 GPIO_ACTIVE_LOW>;	/* LCD1_BKLT_EN */
+	lvds-vcc-enable-gpio = <&gpio_exp1 6 GPIO_ACTIVE_HIGH>;	/* LCD1_VDD_EN */
+	lvds-bkl-enable-gpio = <&gpio_exp1 7 GPIO_ACTIVE_HIGH>;	/* LCD1_BKLT_EN */
+	lvds-vcc-delay-time = <10>;
 	status = "okay";
 };
 
