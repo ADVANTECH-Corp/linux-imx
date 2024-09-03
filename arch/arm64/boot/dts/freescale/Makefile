@@ -489,7 +489,7 @@ dtb-$(CONFIG_ARCH_MXC) += imx95-19x19-titan-adv7535-ap1302.dtb
 imx95-19x19-titan-os08a20-dtbs := imx95-19x19-titan.dtb imx95-19x19-titan-os08a20.dtbo
 dtb-$(CONFIG_ARCH_MXC) += imx95-19x19-titan-os08a20.dtb
 
-dtb-$(CONFIG_ARCH_MXC) += imx95-aom3511-a1.dtb imx95-aom3511-a1-m2-sdio.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx95-aom3511-a1.dtb imx95-aom3511-a1-m2-sdio.dtb imx95-aom3511-a1-aqr113c.dtb
 
 imx95-aom3511-a1-lvds0-auo-dtbs := imx95-aom3511-a1.dtb imx95-aom3511-a1-lvds0-auo.dtbo
 dtb-$(CONFIG_ARCH_MXC) += imx95-aom3511-a1-lvds0-auo.dtb
