@@ -845,7 +845,9 @@ dtb-$(CONFIG_SOC_IMX6UL) += \
 dtb-$(CONFIG_ARCH_ADVANTECH) += \
         imx6q-rsb4410-a1.dtb \
 	imx6q-rsb4411-a1.dtb \
-	imx6q-rsb3430-a1.dtb
+	imx6q-rsb3430-a1.dtb \
+	imx6dl-rsb4411-a1.dtb \
+	imx6dl-rsb4411-a2.dtb
 dtb-$(CONFIG_SOC_IMX7D) += \
 	imx7d-cl-som-imx7.dtb \
 	imx7d-colibri-aster.dtb \
