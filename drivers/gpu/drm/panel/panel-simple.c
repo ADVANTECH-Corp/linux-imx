@@ -4998,10 +4998,35 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 {
 	const struct panel_desc_dsi *desc;
 	int err;
+#if defined(CONFIG_ARCH_ADVANTECH)
+	struct gpio_desc *gpio_dsi_vcc_enable_desc = NULL;
+	struct gpio_desc *gpio_bklt_vcc_enable_desc = NULL;
+	struct gpio_desc *gpio_dsi_bkl_enable_desc = NULL;
+#endif
 
 	desc = of_device_get_match_data(&dsi->dev);
 	if (!desc)
 		return -ENODEV;
+
+#if defined(CONFIG_ARCH_ADVANTECH)
+	gpio_dsi_vcc_enable_desc = devm_gpiod_get_optional(&dsi->dev, "dsi-vcc-enable", GPIOD_OUT_LOW);
+	if (gpio_dsi_vcc_enable_desc != NULL)
+	{
+		gpiod_set_value_cansleep(gpio_dsi_vcc_enable_desc, 1);
+	}
+
+	gpio_bklt_vcc_enable_desc = devm_gpiod_get_optional(&dsi->dev, "bklt-vcc-enable", GPIOD_OUT_LOW);
+	if (gpio_bklt_vcc_enable_desc != NULL)
+	{
+		gpiod_set_value_cansleep(gpio_bklt_vcc_enable_desc, 1);
+	}
+
+	gpio_dsi_bkl_enable_desc = devm_gpiod_get_optional(&dsi->dev, "dsi-bkl-enable", GPIOD_OUT_LOW);
+	if (gpio_dsi_bkl_enable_desc != NULL)
+	{
+		gpiod_set_value_cansleep(gpio_dsi_bkl_enable_desc, 1);
+	}
+#endif
 
 	err = panel_simple_probe(&dsi->dev, &desc->desc);
 	if (err < 0)
