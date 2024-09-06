@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2019 NXP
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/clock/fsl,imx95-clock.h>
+#include <dt-bindings/gpio/gpio.h>
+
+
+&display_pixel_link {
+	status = "okay";
+};
+
+&lvds_backlight1 {
+	status = "okay";
+};
+
+&mipi_dsi {
+	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	/delete-node/ ports;
+
+	panel@0 {
+		compatible = "auo,g101uan02";
+		reg = <0>;
+		dsi-vcc-enable-gpio = <&gpio_exp1 6 GPIO_ACTIVE_HIGH>;	/* LCD1_VDD_EN */
+		dsi-bkl-enable-gpio = <&gpio_exp1 7 GPIO_ACTIVE_HIGH>;	/* LCD1_BKLT_EN */
+
+		port {
+			panel1_in: endpoint {
+				remote-endpoint = <&mipi_dsi_bridge_out>;
+			};
+		};
+	};
+
+	ports {
+		port@1 {
+			mipi_dsi_bridge_out: endpoint {
+				remote-endpoint = <&panel1_in>;
+			};
+		};
+	};
+};
+
