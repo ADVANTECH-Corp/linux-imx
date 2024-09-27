@@ -55,8 +55,8 @@
 };
 
 / {
-	model = "Freescale i.MX6 Quad RSB4411 A1";
-	compatible = "fsl,imx6q-sabresd", "fsl,imx6q";
+	model = "Advantech i.MX6 Dual lite RSB4411 A1";
+	compatible = "fsl,imx6dl-rsb4411-a1", "fsl,imx6dl";
 
         aliases {
                 mmc0 = &usdhc4;
@@ -489,6 +489,10 @@
 
 &v4l2_capture_1 {
         status = "okay";
+};
+
+&vpu {
+	pu-supply = <&reg_pu>;
 };
 
 &wdog1 {
