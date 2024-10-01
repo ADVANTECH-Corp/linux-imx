@@ -405,6 +405,13 @@
 	status = "okay";
 };
 
+&usbotg {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbotg_2 &pinctrl_usbotg_pwr_1>;
+	vbus-supply = <&reg_usb_otg_vbus>;
+	imx6-usb-charger-detection;
+	status = "okay";
+};
 
 &usdhc2 {
 	pinctrl-names = "default";
