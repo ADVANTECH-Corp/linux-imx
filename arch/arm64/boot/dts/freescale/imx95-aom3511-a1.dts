@@ -510,6 +510,31 @@
 	};
 };
 
+&lpspi4 {
+	num-cs = <2>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&pinctrl_lpspi4>;
+	pinctrl-1 = <&pinctrl_lpspi4>;
+	cs-gpios = <&gpio5 14 GPIO_ACTIVE_LOW>, <&gpio5 13 GPIO_ACTIVE_LOW>;
+	status = "okay";
+
+	flash1: w25q64jwssiq@0 {
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor", "winbond,w25q64";
+		spi-max-frequency = <25000000>;
+	};
+
+	flash2: w25q64jwssiq@1 {
+		reg = <1>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor", "winbond,w25q64";
+		spi-max-frequency = <25000000>;
+	};
+};
+
 &mu7 {
 	status = "okay";
 };
@@ -836,6 +861,16 @@
 		>;
 	};
 */
+	pinctrl_lpspi4: lpspi4grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO33__GPIO5_IO_BIT13			0x3fe	/* SPI4_CS1 */
+			IMX95_PAD_GPIO_IO34__GPIO5_IO_BIT14			0x3fe	/* SPI4_CS0 */
+			IMX95_PAD_GPIO_IO35__LPSPI4_SIN				0x3fe
+			IMX95_PAD_GPIO_IO36__LPSPI4_SOUT			0x3fe
+			IMX95_PAD_GPIO_IO37__LPSPI4_SCK				0x3fe
+		>;
+	};
+
 	pinctrl_emdio: emdiogrp{
 		fsl,pins = <
 			IMX95_PAD_ENET1_MDC__NETCMIX_TOP_NETC_MDC		0x57e
