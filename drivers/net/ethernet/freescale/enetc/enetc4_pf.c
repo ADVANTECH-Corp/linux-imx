@@ -974,7 +974,7 @@ static int enetc4_pf_netdev_create(struct enetc_si *si)
 		priv->rcec = si->pdev->rcec;
 
 #ifdef CONFIG_ARCH_ADVANTECH
-	if (of_property_read_string(node, "if-name", &cus_ifname))
+	if (of_property_read_string(dev->of_node, "if-name", &cus_ifname))
 		dev_err(dev, "No specified if-name\n");
 	else
 		snprintf(ndev->name, sizeof(ndev->name), "%s", cus_ifname);
