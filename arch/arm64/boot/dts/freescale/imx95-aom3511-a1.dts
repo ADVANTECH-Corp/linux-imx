@@ -211,6 +211,34 @@
 	pinctrl-1 = <&pinctrl_lpi2c2>;
 	status = "okay";
 
+	gpio_exp1: pca6416@20 {
+		compatible = "nxp,pca6416";
+		#gpio-cells = <2>;
+		gpio-controller;
+		reg = <0x20>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <22 IRQ_TYPE_EDGE_FALLING>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpioexp1>;
+		vcc-supply = <&reg_1p8v>;
+	};
+
+	gpio_exp2: pca6416@21 {
+		compatible = "nxp,pca6416";
+		#gpio-cells = <2>;
+		gpio-controller;
+		reg = <0x21>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <23 IRQ_TYPE_LEVEL_LOW>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpioexp2>;
+		vcc-supply = <&reg_3p3v>;
+	};
+
 	adp5585: mfd@34 {
 		compatible = "adi,adp5585";
 		reg = <0x34>;
@@ -246,6 +274,13 @@
 	pinctrl-0 = <&pinctrl_lpi2c4>;
 	pinctrl-1 = <&pinctrl_lpi2c4>;
 	status = "okay";
+
+	gpio_exp3: tca9538@70 {
+		compatible = "nxp,pca9538";
+		reg = <0x70>;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
 };
 
 &lpi2c7 {
@@ -577,6 +612,18 @@
 			IMX95_PAD_XSPI1_DATA5__FLEXSPI1_A_DATA_BIT5		0x3fe
 			IMX95_PAD_XSPI1_DATA6__FLEXSPI1_A_DATA_BIT6		0x3fe
 			IMX95_PAD_XSPI1_DATA7__FLEXSPI1_A_DATA_BIT7		0x3fe
+		>;
+	};
+
+	pinctrl_gpioexp1: gpioexp1grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO22__GPIO2_IO_BIT22			0x31e
+		>;
+	};
+
+	pinctrl_gpioexp2: gpioexp2grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO23__GPIO2_IO_BIT23			0x31e
 		>;
 	};
 
