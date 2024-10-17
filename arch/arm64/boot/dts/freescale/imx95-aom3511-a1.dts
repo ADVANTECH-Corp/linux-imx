@@ -182,12 +182,6 @@
 	status = "okay";
 };
 
-&tpm3 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_tpm3>;
-	status = "okay";
-};
-
 /* pin conflict with PDM */
 &flexcan1 {
 	pinctrl-names = "default";
@@ -510,12 +504,6 @@
 };
 
 &scmi_iomuxc {
-	pinctrl_tpm3: tpm3grp {
-		fsl,pins = <
-			IMX95_PAD_GPIO_IO12__TPM3_CH2			0x51e
-		>;
-	};
-
 	pinctrl_flexcan1: flexcan1grp {
 		fsl,pins = <
 			IMX95_PAD_PDM_CLK__AONMIX_TOP_CAN1_TX		0x39e
