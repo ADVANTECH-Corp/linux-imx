@@ -504,6 +504,21 @@
 };
 
 &scmi_iomuxc {
+	
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_hog>;
+
+	pinctrl_hog: hoggrp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO12__GPIO2_IO_BIT12		0x51e /* GPIO0 */
+			IMX95_PAD_SD3_CMD__GPIO3_IO_BIT21		0x51e /* GPIO2 */
+			IMX95_PAD_SD3_DATA1__GPIO3_IO_BIT23		0x51e /* GPIO4 */
+			IMX95_PAD_GPIO_IO16__GPIO2_IO_BIT16		0x51e /* GPIO5 */
+			IMX95_PAD_SD3_DATA2__GPIO3_IO_BIT24		0x51e /* GPIO6 */
+			IMX95_PAD_SD3_DATA3__GPIO3_IO_BIT25		0x51e /* GPIO7 */
+		>;
+	};
+
 	pinctrl_flexcan1: flexcan1grp {
 		fsl,pins = <
 			IMX95_PAD_PDM_CLK__AONMIX_TOP_CAN1_TX		0x39e
