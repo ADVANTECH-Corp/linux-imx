@@ -18,7 +18,9 @@
 	compatible = "fsl,imx95-19x19-evk", "fsl,imx95";
 
 	aliases {
-		ethernet0 = &enetc_port0;
+		/* ethernet0,1 swap */
+		ethernet0 = &enetc_port1;
+		ethernet1 = &enetc_port0;
 	};
 
 	chosen {
@@ -353,6 +355,16 @@
 	pinctrl-0 = <&pinctrl_enetc0>;
 	phy-handle = <&ethphy0>;
 	phy-mode = "rgmii-id";
+	if-name = "eth1"; /* ethernet0,1 swap */
+	status = "okay";
+};
+
+&enetc_port1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_enetc1>;
+	phy-handle = <&ethphy1>;
+	phy-mode = "rgmii-id";
+	if-name = "eth0"; /* ethernet0,1 swap */
 	status = "okay";
 };
 
@@ -371,12 +383,16 @@
 	pinctrl-0 = <&pinctrl_emdio>;
 	status = "okay";
 
-	ethphy0: ethernet-phy@1 {
+	ethphy1: ethernet-phy@1 {
+		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <1>;
 		eee-broken-1000t;
-		reset-assert-us = <10000>;
-		reset-deassert-us = <80000>;
-		realtek,clkout-disable;
+	};
+
+	ethphy0: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <3>;
+		eee-broken-1000t;
 	};
 };
 
@@ -597,6 +613,23 @@
 		fsl,pins = <
 			IMX95_PAD_ENET1_MDC__NETCMIX_TOP_NETC_MDC		0x57e
 			IMX95_PAD_ENET1_MDIO__NETCMIX_TOP_NETC_MDIO		0x97e
+		>;
+	};
+
+	pinctrl_enetc1: enetc1grp {
+		fsl,pins = <
+			IMX95_PAD_ENET2_TD3__NETCMIX_TOP_ETH1_RGMII_TD3		0x57e
+			IMX95_PAD_ENET2_TD2__NETCMIX_TOP_ETH1_RGMII_TD2		0x57e
+			IMX95_PAD_ENET2_TD1__NETCMIX_TOP_ETH1_RGMII_TD1		0x57e
+			IMX95_PAD_ENET2_TD0__NETCMIX_TOP_ETH1_RGMII_TD0		0x57e
+			IMX95_PAD_ENET2_TX_CTL__NETCMIX_TOP_ETH1_RGMII_TX_CTL	0x57e
+			IMX95_PAD_ENET2_TXC__NETCMIX_TOP_ETH1_RGMII_TX_CLK	0x5fe
+			IMX95_PAD_ENET2_RX_CTL__NETCMIX_TOP_ETH1_RGMII_RX_CTL	0x57e
+			IMX95_PAD_ENET2_RXC__NETCMIX_TOP_ETH1_RGMII_RX_CLK	0x5fe
+			IMX95_PAD_ENET2_RD0__NETCMIX_TOP_ETH1_RGMII_RD0		0x57e
+			IMX95_PAD_ENET2_RD1__NETCMIX_TOP_ETH1_RGMII_RD1		0x57e
+			IMX95_PAD_ENET2_RD2__NETCMIX_TOP_ETH1_RGMII_RD2		0x57e
+			IMX95_PAD_ENET2_RD3__NETCMIX_TOP_ETH1_RGMII_RD3		0x57e
 		>;
 	};
 
