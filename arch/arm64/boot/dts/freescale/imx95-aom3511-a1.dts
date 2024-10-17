@@ -180,6 +180,21 @@
 		status = "okay";
 	};
 
+	sound_hdmi: sound-hdmi {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "sound-hdmi";
+		simple-audio-card,format = "i2s";
+
+		simple-audio-card,cpu {
+			sound-dai = <&sai5>;
+			system-clock-direction-out;
+		};
+
+		simple-audio-card,codec {
+			sound-dai = <&lt9611uxc>;
+		};
+	};
+
 	extcon_usb_otg: extcon_usb_otg@1 {
 		compatible = "linux,extcon-usb-gpio";
 		id-gpio = <&gpio4 14 GPIO_ACTIVE_HIGH>;
@@ -241,6 +256,16 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_gpioexp2>;
 		vcc-supply = <&reg_3p3v>;
+	};
+
+	lt9611uxc: lt9611uxc@2b {
+		compatible = "lontium,lt9611uxc";
+		status = "disabled";
+		reg = <0x2b>;
+		#sound-dai-cells = <0>;
+
+		reset-gpios = <&gpio_exp2 5 GPIO_ACTIVE_HIGH>;			/* DSI_RST */
+		interrupts-extended = <&gpio_exp2 3 IRQ_TYPE_EDGE_FALLING>;	/* DSI_HDMI_INT */
 	};
 
 	adp5585: mfd@34 {
@@ -664,6 +689,14 @@
 		>;
 	};
 
+	pinctrl_sai5: sai5grp {
+		fsl,pins = <
+			IMX95_PAD_XSPI1_DATA4__SAI5_TX_DATA_BIT0		0x31e
+			IMX95_PAD_XSPI1_DATA5__SAI5_TX_SYNC			0x31e
+			IMX95_PAD_XSPI1_DATA6__SAI5_TX_BCLK			0x31e
+		>;
+	};
+
 	pinctrl_usb_otg: usb_otg_grp {
 		fsl,pins = <
 			IMX95_PAD_ENET2_MDC__GPIO4_IO_BIT14			0x31e
@@ -792,5 +825,79 @@
 			       <361267200>, <12288000>;
 	fsl,sai-mclk-direction-output;
 	status = "okay";
+};
+
+&sai5 {
+	#sound-dai-cells = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_sai5>;
+	assigned-clocks = <&scmi_clk IMX95_CLK_AUDIOPLL1_VCO>,
+			  <&scmi_clk IMX95_CLK_AUDIOPLL2_VCO>,
+			  <&scmi_clk IMX95_CLK_AUDIOPLL1>,
+			  <&scmi_clk IMX95_CLK_AUDIOPLL2>,
+			  <&scmi_clk IMX95_CLK_SAI5>;
+	assigned-clock-parents = <0>, <0>, <0>, <0>,
+				 <&scmi_clk IMX95_CLK_AUDIOPLL1>;
+	assigned-clock-rates = <3932160000>,
+			       <3612672000>, <393216000>,
+			       <361267200>, <12288000>;
+	fsl,sai-mclk-direction-output;
+	status = "okay";
+};
+
+&display_pixel_link {
+	status = "okay";
+};
+
+&dpu {
+	assigned-clocks = <&scmi_clk IMX95_CLK_DISP1PIX>,
+			  <&scmi_clk IMX95_CLK_VIDEOPLL1_VCO>,
+			  <&scmi_clk IMX95_CLK_VIDEOPLL1>;
+	assigned-clock-parents = <&scmi_clk IMX95_CLK_VIDEOPLL1>;
+	assigned-clock-rates = <0>, <2673000000>, <297000000>;
+};
+
+&lt9611uxc {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			lt9611uxc_from_dsim: endpoint {
+				remote-endpoint = <&dsim_to_lt9611uxc>;
+			};
+		};
+	};
+};
+
+&mipi_dsi {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@1 {
+			reg = <1>;
+
+			dsim_to_lt9611uxc: endpoint {
+				remote-endpoint = <&lt9611uxc_from_dsim>;
+			};
+		};
+	};
+};
+
+&pixel_interleaver {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	channel@0 {
+		reg = <0>;
+		status = "okay";
+	};
 };
 
