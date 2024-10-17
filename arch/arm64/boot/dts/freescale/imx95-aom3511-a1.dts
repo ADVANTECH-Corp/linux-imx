@@ -265,16 +265,6 @@
 	};
 };
 
-&lpi2c3 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-	clock-frequency = <400000>;
-	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&pinctrl_lpi2c3>;
-	pinctrl-1 = <&pinctrl_lpi2c3>;
-	status = "okay";
-};
-
 &lpi2c4 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -549,13 +539,6 @@
 		fsl,pins = <
 			IMX95_PAD_I2C2_SCL__AONMIX_TOP_LPI2C2_SCL	0x40000b9e
 			IMX95_PAD_I2C2_SDA__AONMIX_TOP_LPI2C2_SDA	0x40000b9e
-		>;
-	};
-
-	pinctrl_lpi2c3: lpi2c3grp {
-		fsl,pins = <
-			IMX95_PAD_GPIO_IO00__LPI2C3_SDA			0x40000b9e
-			IMX95_PAD_GPIO_IO01__LPI2C3_SCL			0x40000b9e
 		>;
 	};
 
