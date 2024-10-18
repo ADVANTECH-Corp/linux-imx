@@ -426,6 +426,9 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart2_3>;
 	fsl,uart-has-rtscts;
+	linux,rs485-enabled-at-boot-time;
+	rs485-rx-during-tx;
+	rs485-rts-active-low;
 	status = "okay";
 };
 
