@@ -925,6 +925,13 @@
 	sram = <&sram1>;
 };
 
+&pcie0 {
+	fsl,refclk-pad-mode = <IMX8_PCIE_REFCLK_PAD_OUTPUT>;
+	reset-gpio = <&gpio_exp2 12 GPIO_ACTIVE_LOW>; /* PCIE1_RST */
+	vpcie-supply = <&reg_pcie0>;
+	status = "okay";
+};
+
 &wdog3 {
 	status = "okay";
 };
