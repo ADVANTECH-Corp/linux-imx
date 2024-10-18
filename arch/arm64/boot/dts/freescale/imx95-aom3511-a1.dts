@@ -932,6 +932,13 @@
 	status = "okay";
 };
 
+&pcie1 {
+	fsl,refclk-pad-mode = <IMX8_PCIE_REFCLK_PAD_OUTPUT>;
+	reset-gpio = <&gpio_exp2 11 GPIO_ACTIVE_LOW>; /* PCIE2_RST */
+	vpcie-supply = <&reg_slot_pwr>;
+	status = "okay";
+};
+
 &wdog3 {
 	status = "okay";
 };
