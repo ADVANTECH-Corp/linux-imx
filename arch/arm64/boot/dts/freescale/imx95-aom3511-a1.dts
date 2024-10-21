@@ -180,6 +180,18 @@
 		status = "okay";
 	};
 
+	sound: sound {
+		compatible = "fsl,imx-audio-sgtl5000";
+		model = "sgtl5000";
+		ssi-controller = <&sai3>;
+		audio-codec = <&acodec>;
+		no-audmux;
+		audio-routing =
+			"MIC_IN", "Mic Jack",
+			"Mic Jack", "Mic Bias",
+			"Headphone Jack", "HP_OUT";
+	};
+
 	sound_hdmi: sound-hdmi {
 		compatible = "simple-audio-card";
 		simple-audio-card,name = "sound-hdmi";
@@ -351,6 +363,16 @@
 	pinctrl-0 = <&pinctrl_lpi2c4>;
 	pinctrl-1 = <&pinctrl_lpi2c4>;
 	status = "okay";
+
+	acodec: sgtl5000@a {
+		compatible = "fsl,sgtl5000";
+		reg = <0x0a>;
+		clocks = <&scmi_clk IMX95_CLK_SAI3>;
+		clock-names = "mclk";
+		pinctrl-names = "default";
+		VDDA-supply = <&reg_audio_pwr>;
+		VDDIO-supply = <&reg_audio_pwr>;
+	};
 
 	gpio_exp3: tca9538@70 {
 		compatible = "nxp,pca9538";
@@ -832,6 +854,16 @@
 		>;
 	};
 
+	pinctrl_sai3: sai3grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO17__SAI3_MCLK				0x31e
+			IMX95_PAD_GPIO_IO18__SAI3_RX_BCLK			0x31e
+			IMX95_PAD_GPIO_IO19__SAI3_RX_SYNC			0x31e
+			IMX95_PAD_GPIO_IO20__SAI3_RX_DATA_BIT0			0x31e
+			IMX95_PAD_GPIO_IO21__SAI3_TX_DATA_BIT0			0x31e
+		>;
+	};
+
 	pinctrl_sai5: sai5grp {
 		fsl,pins = <
 			IMX95_PAD_XSPI1_DATA4__SAI5_TX_DATA_BIT0		0x31e
@@ -977,6 +1009,25 @@
 			       <3612672000>, <393216000>,
 			       <361267200>, <12288000>;
 	fsl,sai-mclk-direction-output;
+	status = "okay";
+};
+
+&sai3 {
+	#sound-dai-cells = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_sai3>;
+	assigned-clocks = <&scmi_clk IMX95_CLK_AUDIOPLL1_VCO>,
+			  <&scmi_clk IMX95_CLK_AUDIOPLL2_VCO>,
+			  <&scmi_clk IMX95_CLK_AUDIOPLL1>,
+			  <&scmi_clk IMX95_CLK_AUDIOPLL2>,
+			  <&scmi_clk IMX95_CLK_SAI3>;
+	assigned-clock-parents = <0>, <0>, <0>, <0>,
+				 <&scmi_clk IMX95_CLK_AUDIOPLL1>;
+	assigned-clock-rates = <3932160000>,
+			       <3612672000>, <393216000>,
+			       <361267200>, <12288000>;
+	fsl,sai-mclk-direction-output;
+	fsl,sai-synchronous-rx;
 	status = "okay";
 };
 
