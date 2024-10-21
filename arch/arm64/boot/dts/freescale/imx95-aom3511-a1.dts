@@ -290,6 +290,16 @@
 		vcc-supply = <&reg_3p3v>;
 	};
 
+	wdt: msp430g2202@29 {
+		compatible = "fsl,adv-wdt-i2c";
+		reg = <0x29>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wdt>;
+		wdt-en-gpio = <&gpio3 27 GPIO_ACTIVE_HIGH>;
+		wdt-ping-gpio = <&gpio4 15 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+
 	lt9611uxc: lt9611uxc@2b {
 		compatible = "lontium,lt9611uxc";
 		status = "disabled";
@@ -806,6 +816,13 @@
 		>;
 	};
 
+	pinctrl_wdt: wdt_grp {
+		fsl,pins = <
+			IMX95_PAD_CCM_CLKO2__GPIO3_IO_BIT27			0x31e	/* WDT_EN */
+			IMX95_PAD_ENET2_MDIO__GPIO4_IO_BIT15			0x31e	/* WDT_TRIG */
+		>;
+	};
+
 	pinctrl_sai1: sai1grp {
 		fsl,pins = <
 			IMX95_PAD_SAI1_RXD0__AONMIX_TOP_SAI1_RX_DATA_BIT0    0x31e
@@ -942,10 +959,6 @@
 	fsl,refclk-pad-mode = <IMX8_PCIE_REFCLK_PAD_OUTPUT>;
 	reset-gpio = <&gpio_exp2 11 GPIO_ACTIVE_LOW>; /* PCIE2_RST */
 	vpcie-supply = <&reg_slot_pwr>;
-	status = "okay";
-};
-
-&wdog3 {
 	status = "okay";
 };
 
