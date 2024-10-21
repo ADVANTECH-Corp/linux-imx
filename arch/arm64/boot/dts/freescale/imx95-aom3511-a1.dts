@@ -268,7 +268,7 @@
 &lpi2c2 {
 	#address-cells = <1>;
 	#size-cells = <0>;
-	clock-frequency = <400000>;
+	clock-frequency = <100000>;
 	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&pinctrl_lpi2c2>;
 	pinctrl-1 = <&pinctrl_lpi2c2>;
