@@ -343,6 +343,11 @@
 			#pwm-cells = <3>;
 		};
 	};
+
+	eeprom1: 24c64@50 {
+		compatible = "st,24c64";
+		reg = <0x50>;
+	};
 };
 
 &lpi2c3 {
@@ -374,6 +379,11 @@
 		VDDIO-supply = <&reg_audio_pwr>;
 	};
 
+	eeprom2: 24c64@50 {
+		compatible = "st,24c64";
+		reg = <0x50>;
+	};
+
 	gpio_exp3: tca9538@70 {
 		compatible = "nxp,pca9538";
 		reg = <0x70>;
@@ -390,6 +400,11 @@
 	pinctrl-0 = <&pinctrl_lpi2c7>;
 	pinctrl-1 = <&pinctrl_lpi2c7>;
 	status = "okay";
+
+	eeprom3: 24c64@57 {
+		compatible = "st,24c64";
+		reg = <0x57>;
+	};
 };
 
 &lpi2c8 {
