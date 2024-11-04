@@ -1,0 +1,76 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2024 NXP
+ */
+
+#include "imx95-aom3511-a1.dts"
+
+/ {
+	lvds0_panel {
+		compatible = "auo,g070vw01_v0";
+		backlight = <&lvds_backlight0>;
+
+		port {
+			panel_lvds_in: endpoint {
+				remote-endpoint = <&lvds_out>;
+			};
+		};
+	};
+};
+
+&display_pixel_link {
+	status = "okay";
+};
+
+&ldb {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	assigned-clocks = <&scmi_clk IMX95_CLK_LDBPLL_VCO>,
+			  <&scmi_clk IMX95_CLK_LDBPLL>;
+	assigned-clock-rates = <2684500000>, <206500000>;
+	status = "okay";
+
+	channel@0 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "okay";
+		reg = <0>;
+
+		port@1 {
+			reg = <1>;
+
+			lvds_out: endpoint {
+				remote-endpoint = <&panel_lvds_in>;
+			};
+		};
+	};
+};
+
+&ldb0_phy {
+	status = "okay";
+};
+
+&dpu {
+        /delete-property/ assigned-clocks;
+        /delete-property/ assigned-clock-parents;
+        /delete-property/ assigned-clock-rates;
+};
+
+&lvds_backlight0 {
+	lvds-vcc-enable-gpio = <&gpio_exp2 6 GPIO_ACTIVE_HIGH>; /* LCD0_VDD_EN */
+	lvds-bkl-enable-gpio = <&gpio_exp1 8 GPIO_ACTIVE_HIGH>; /* LCD0_BKLT_EN */
+	lvds-vcc-delay-time = <10>;
+	status = "okay";
+};
+
+&pixel_interleaver {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	channel@0 {
+		reg = <0>;
+		status = "okay";
+	};
+};
+
