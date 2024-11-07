@@ -298,6 +298,10 @@
 	pmic@25 {
 		compatible = "nxp,pca9451a";
 		reg = <0x25>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_pmic>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <27 IRQ_TYPE_LEVEL_LOW>;
 
 		regulators {
 			buck1: BUCK1 {
@@ -719,6 +723,12 @@
 			MX93_PAD_GPIO_IO17__GPIO2_IO17			0x51e
 			MX93_PAD_GPIO_IO19__GPIO2_IO19			0x51e
 			MX93_PAD_GPIO_IO20__GPIO2_IO20			0x51e
+		>;
+	};
+
+	pinctrl_pmic: pmicgrp {
+		fsl,pins = <
+			MX93_PAD_CCM_CLKO2__CCMSRCGPCMIX_CLKO2		0x31e
 		>;
 	};
 };
