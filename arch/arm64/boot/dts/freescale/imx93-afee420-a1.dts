@@ -156,16 +156,6 @@
 
 &dsi {
 	status = "okay";
-
-	ports {
-		port@1 {
-			reg = <1>;
-
-			dsi_to_adv7535: endpoint {
-				remote-endpoint = <&adv7535_to_dsi>;
-			};
-		};
-	};
 };
 
 &flexcan2 {
@@ -246,35 +236,6 @@
  * When add, delete or change any target device setting in &lpi2c1,
  * please synchronize the changes to the &i3c1 bus in imx93-11x11-evk-i3c.dts.
  */
-&lpi2c1 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-	clock-frequency = <400000>;
-	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&pinctrl_lpi2c1>;
-	pinctrl-1 = <&pinctrl_lpi2c1>;
-	status = "okay";
-
-	adv7535: hdmi@3d {
-		compatible = "adi,adv7535";
-		reg = <0x3d>;
-		adi,addr-cec = <0x3b>;
-		adi,dsi-lanes = <4>;
-		status = "okay";
-
-		port {
-			adv7535_to_dsi: endpoint {
-				remote-endpoint = <&dsi_to_adv7535>;
-			};
-		};
-	};
-
-	lsm6dsm@6a {
-		compatible = "st,lsm6dso";
-		reg = <0x6a>;
-	};
-};
-
 &lpi2c2 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -536,14 +497,6 @@
 		fsl,pins = <
 			MX93_PAD_GPIO_IO25__GPIO2_IO25  0x31e
 			MX93_PAD_GPIO_IO27__GPIO2_IO27	0x31e
-		>;
-	};
-
-
-	pinctrl_lpi2c1: lpi2c1grp {
-		fsl,pins = <
-			MX93_PAD_I2C1_SCL__LPI2C1_SCL			0x40000b9e
-			MX93_PAD_I2C1_SDA__LPI2C1_SDA			0x40000b9e
 		>;
 	};
 
