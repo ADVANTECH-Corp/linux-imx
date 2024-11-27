@@ -1,0 +1,42 @@
+#include "imx95-aom3511-a1.dts"
+
+/ {
+	usdhc2_pwrseq: usdhc2_pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		post-power-on-delay-ms = <80>;
+		reset-gpios =	<&gpio_exp3 4 GPIO_ACTIVE_LOW>;
+	};
+};
+
+&gpio_exp3 {
+
+	W_DISABLE1 {
+		gpio-hog;
+		gpios = <0 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "W_DISABLE1";
+	};
+
+	W_DISABLE2 {
+		gpio-hog;
+		gpios = <1 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "W_DISABLE2";
+	};
+};
+
+&usdhc2 {
+	/delete-property/cd-gpios;
+	/delete-property/vmmc-supply;
+	mmc-pwrseq = <&usdhc2_pwrseq>;
+};
+
+&lpuart5 {
+	/delete-property/linux,rs485-enabled-at-boot-time;
+	/delete-property/rs485-rx-during-tx;
+
+	bluetooth {
+		compatible = "nxp,88w8987-bt";
+		fw-init-baudrate = <3000000>;
+	};
+};
