@@ -29,6 +29,10 @@
 #include <linux/of_irq.h>
 #include <linux/spinlock.h>
 #include <dt-bindings/input/gpio-keys.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/jiffies.h>
+#include <linux/reboot.h>
+#endif
 
 struct gpio_button_data {
 	const struct gpio_keys_button *button;
@@ -51,6 +55,12 @@ struct gpio_button_data {
 	bool key_pressed;
 	bool suspended;
 	bool debounce_use_hrtimer;
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct delayed_work reboot_work;
+	unsigned int event_num;
+	unsigned int *multi_event;
+	unsigned long press_time; /* in secs */
+#endif
 };
 
 struct gpio_keys_drvdata {
@@ -389,12 +399,51 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 
 static void gpio_keys_debounce_event(struct gpio_button_data *bdata)
 {
+#ifdef CONFIG_ARCH_ADVANTECH
+	int state;
+	int valid = 0;
+
+	state = bdata->debounce_use_hrtimer ?
+			gpiod_get_value(bdata->gpiod) :
+			gpiod_get_value_cansleep(bdata->gpiod);
+	if(state == 0) {
+		if(bdata->press_time > 0) {
+			unsigned long time = (jiffies > bdata->press_time)?(jiffies-bdata->press_time):(0xffffffffffffffff-bdata->press_time+jiffies);
+			bdata->press_time = 0;
+			for(int i=0;i<bdata->event_num;i++) {
+				if((time >= HZ*bdata->multi_event[3*i]) && (time < HZ*bdata->multi_event[3*i+1])) {
+					*bdata->code = bdata->multi_event[3*i+2];
+					valid = 1;
+					break;
+				}
+			}
+			if(valid) {
+				input_event(bdata->input, EV_KEY, *bdata->code, 1);
+				input_event(bdata->input, EV_KEY, *bdata->code, 0);
+				input_sync(bdata->input);
+				if(*bdata->code == KEY_POWER) {
+					mod_delayed_work(system_wq,&bdata->reboot_work,msecs_to_jiffies(100));
+				}
+			}
+		}
+	} else {
+		bdata->press_time = jiffies;
+	}
+#else
 	gpio_keys_gpio_report_event(bdata);
 	input_sync(bdata->input);
+#endif
 
 	if (bdata->button->wakeup)
 		pm_relax(bdata->input->dev.parent);
 }
+
+#ifdef CONFIG_ARCH_ADVANTECH
+static void gpio_keys_reboot_work_func(struct work_struct *work)
+{
+	do_kernel_restart(NULL);
+}
+#endif
 
 static void gpio_keys_gpio_work_func(struct work_struct *work)
 {
@@ -590,6 +639,9 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 		}
 
 		INIT_DELAYED_WORK(&bdata->work, gpio_keys_gpio_work_func);
+#ifdef CONFIG_ARCH_ADVANTECH
+		INIT_DELAYED_WORK(&bdata->reboot_work, gpio_keys_reboot_work_func);
+#endif
 
 		hrtimer_init(&bdata->debounce_timer,
 			     CLOCK_REALTIME, HRTIMER_MODE_REL);
@@ -644,7 +696,13 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 
 	bdata->code = &ddata->keymap[idx];
 	*bdata->code = button->code;
+#ifdef CONFIG_ARCH_ADVANTECH
+	for(int i=0;i<bdata->event_num;i++) {
+		input_set_capability(input, button->type ?: EV_KEY, bdata->multi_event[3*i+2]);
+	}
+#else
 	input_set_capability(input, button->type ?: EV_KEY, *bdata->code);
+#endif
 
 	/*
 	 * Install custom action to cancel release timer and
@@ -860,6 +918,10 @@ static int gpio_keys_probe(struct platform_device *pdev)
 
 	for (i = 0; i < pdata->nbuttons; i++) {
 		const struct gpio_keys_button *button = &pdata->buttons[i];
+#ifdef CONFIG_ARCH_ADVANTECH
+		struct gpio_button_data *bdata = &ddata->data[i];
+		int count = 0;
+#endif
 
 		if (!dev_get_platdata(dev)) {
 			child = device_get_next_child_node(dev, child);
@@ -870,7 +932,16 @@ static int gpio_keys_probe(struct platform_device *pdev)
 				return -EINVAL;
 			}
 		}
-
+#ifdef CONFIG_ARCH_ADVANTECH
+		count = fwnode_property_count_u32(child, "linux,code");
+		if (count>0) {
+			bdata->multi_event = kcalloc(count, sizeof(unsigned int), GFP_KERNEL);
+			if (bdata->multi_event) {
+				fwnode_property_read_u32_array(child, "linux,code", bdata->multi_event, count);
+				bdata->event_num = count/3;
+			}
+		}
+#endif
 		error = gpio_keys_setup_key(pdev, input, ddata,
 					    button, i, child);
 		if (error) {

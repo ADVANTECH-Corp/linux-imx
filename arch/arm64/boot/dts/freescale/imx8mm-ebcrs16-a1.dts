@@ -6,6 +6,7 @@
 /dts-v1/;
 
 #include <dt-bindings/usb/pd.h>
+#include <dt-bindings/leds/common.h>
 #include "imx8mm-ebcrs16-a1.dtsi"
 
 / {
@@ -42,6 +43,49 @@
 		gpio = <&gpio1 12 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 	};
+
+    gpio-keys {
+       compatible = "gpio-keys";
+       status = "okay";
+
+       user-mux {
+           label = "mux_btn";
+           gpios = <&gpio5 22 GPIO_ACTIVE_HIGH>;
+           debounce-interval = <100>; //ms
+           linux,code = < //start  release   event
+							1  	   5		KEY_F11
+							5  	   9		KEY_F12
+							9  	   0xffff	KEY_POWER
+				>;
+       };
+    };
+
+	led-controller {
+        compatible = "pwm-leds-multicolor";
+        status = "okay";
+
+        multi-led {
+            color = <LED_COLOR_ID_RGB>;
+            max-brightness = <255>;
+            label = "multi-led";
+
+			led-red {
+				color = <LED_COLOR_ID_RED>;
+				pwms = <&pwm4 0 1000000 0>;
+			};
+
+			led-green {
+				color = <LED_COLOR_ID_GREEN>;
+				pwms = <&pwm3 0 1000000 0>;
+				default-state = "on";
+			};
+
+			led-blue {
+				color = <LED_COLOR_ID_BLUE>;
+				pwms = <&pwm1 0 1000000 0>;
+			};
+		};
+    };
 };
 
 &flexspi {

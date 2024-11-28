@@ -49,6 +49,12 @@ static ssize_t multi_intensity_store(struct device *dev,
 			ret = -EINVAL;
 			goto err_out;
 		}
+#ifdef CONFIG_ARCH_ADVANTECH
+		if(intensity_value[i] > led_cdev->max_brightness) {
+			ret = -EINVAL;
+			goto err_out;
+		}
+#endif
 		offset += nrchars;
 	}
 

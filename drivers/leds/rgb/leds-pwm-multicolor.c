@@ -15,6 +15,9 @@
 #include <linux/platform_device.h>
 #include <linux/property.h>
 #include <linux/pwm.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include "../leds.h"
+#endif
 
 struct pwm_led {
 	struct pwm_device *pwm;
@@ -81,6 +84,12 @@ static int iterate_subleds(struct device *dev, struct pwm_mc_led *priv,
 		}
 		pwm_init_state(pwmled->pwm, &pwmled->state);
 		pwmled->active_low = fwnode_property_read_bool(fwnode, "active-low");
+#ifdef CONFIG_ARCH_ADVANTECH
+		if(LEDS_DEFSTATE_ON == led_init_default_state_get(fwnode)) {
+			subled[priv->mc_cdev.num_colors].brightness = priv->mc_cdev.led_cdev.max_brightness;
+			subled[priv->mc_cdev.num_colors].intensity = priv->mc_cdev.led_cdev.max_brightness;
+		}
+#endif
 
 		ret = fwnode_property_read_u32(fwnode, "color", &color);
 		if (ret) {
@@ -139,6 +148,9 @@ static int led_pwm_mc_probe(struct platform_device *pdev)
 				 &cdev->max_brightness);
 	cdev->flags = LED_CORE_SUSPENDRESUME;
 	cdev->brightness_set_blocking = led_pwm_mc_set;
+#ifdef CONFIG_ARCH_ADVANTECH
+	cdev->brightness = cdev->max_brightness;
+#endif
 
 	ret = iterate_subleds(&pdev->dev, priv, mcnode);
 	if (ret)
