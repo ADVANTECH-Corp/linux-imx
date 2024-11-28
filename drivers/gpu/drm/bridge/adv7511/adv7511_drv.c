@@ -12,6 +12,9 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_graph.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/of_gpio.h>
+#endif
 #include <linux/slab.h>
 
 #include <media/cec.h>
@@ -1248,6 +1251,11 @@ static int adv7511_probe(struct i2c_client *i2c)
 	unsigned int val;
 	int ret;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct gpio_desc *dsi_vcc_enable;
+	struct gpio_desc *bklt_vcc_enable;
+#endif
+
 	if (!dev->of_node)
 		return -EINVAL;
 
@@ -1306,6 +1314,25 @@ static int adv7511_probe(struct i2c_client *i2c)
 		usleep_range(5000, 6000);
 		gpiod_set_value_cansleep(adv7511->gpio_pd, 0);
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+
+	dsi_vcc_enable = devm_gpiod_get(dev, "dsi-vcc-enable", GPIOD_OUT_LOW);
+	if (!IS_ERR(dsi_vcc_enable)) {
+		gpiod_direction_output(dsi_vcc_enable, 0);
+	} else {
+		dev_err(dev, "Failed to get dsi-vcc-enable gpio\n");
+	}
+
+	bklt_vcc_enable = devm_gpiod_get(dev, "bklt-vcc-enable", GPIOD_OUT_LOW);
+	if (!IS_ERR(bklt_vcc_enable)) {
+		gpiod_direction_output(bklt_vcc_enable, 0);
+	} else {
+		dev_err(dev, "Failed to get bklt-vcc-enable gpio\n");
+	}
+	mdelay(50);
+
+#endif
 
 	adv7511->regmap = devm_regmap_init_i2c(i2c, &adv7511_regmap_config);
 	if (IS_ERR(adv7511->regmap)) {
