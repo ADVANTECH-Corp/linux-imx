@@ -157,6 +157,12 @@ struct panel_simple {
 	enum drm_panel_orientation orientation;
 };
 
+#if defined(CONFIG_ARCH_ADVANTECH)
+bool blank_flag = false;
+extern void enable_ldb_bkl_vcc(void);
+extern void enable_ldb_bkl_pwm(void);
+#endif
+
 static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
 {
 	return container_of(panel, struct panel_simple, base);
@@ -382,6 +388,14 @@ static int panel_simple_enable(struct drm_panel *panel)
 
 	if (p->desc->delay.enable)
 		msleep(p->desc->delay.enable);
+
+#if defined(CONFIG_ARCH_ADVANTECH)
+	if (!blank_flag) {
+		enable_ldb_bkl_vcc();
+		enable_ldb_bkl_pwm();
+		blank_flag = true;
+	}
+#endif
 
 	p->enabled = true;
 
@@ -1221,6 +1235,60 @@ static const struct panel_desc auo_t215hvn01 = {
 	.bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
 	.connector_type = DRM_MODE_CONNECTOR_LVDS,
 };
+
+#ifdef CONFIG_ARCH_ADVANTECH
+static const struct display_timing auo_g070vw01_v0_timings = {
+        .pixelclock = { 29500000, 29500000, 29500000 },
+        .hactive = { 800, 800, 800 },
+        .hfront_porch = { 24, 24, 24 },
+        .hback_porch = { 96, 96, 96 },
+        .hsync_len = { 72, 72, 72 },
+        .vactive = { 480, 480, 480 },
+        .vfront_porch = { 10, 10, 10 },
+        .vback_porch = { 3, 3, 3 },
+        .vsync_len = { 7, 7, 7 },
+        .flags = DISPLAY_FLAGS_DE_HIGH,
+};
+
+static const struct panel_desc auo_g070vw01_v0 = {
+        .timings = &auo_g070vw01_v0_timings,
+        .num_timings = 1,
+        .bpc = 8,
+        .size = {
+                .width = 152,
+                .height = 91,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
+        .bus_flags = DRM_BUS_FLAG_DE_HIGH,
+        .connector_type = DRM_MODE_CONNECTOR_LVDS,
+};
+
+static const struct display_timing auo_g215hvn01_0_timings = {
+        .pixelclock = { 170000000, 170000000, 170000000 },
+        .hactive = { 1920, 1920, 1920 },
+        .hfront_porch = { 30, 30, 30 },
+        .hback_porch = { 90, 90, 90 },
+        .hsync_len = { 60, 60, 60 },
+        .vactive = { 1080, 1080, 1080 },
+        .vfront_porch = { 38, 38, 38 },
+        .vback_porch = { 5, 5, 5 },
+        .vsync_len = { 7, 7, 7 },
+        .flags = DISPLAY_FLAGS_DE_HIGH,
+};
+
+static const struct panel_desc auo_g215hvn01_0 = {
+        .timings = &auo_g215hvn01_0_timings,
+        .num_timings = 1,
+        .bpc = 8,
+        .size = {
+                .width = 476,
+                .height = 268,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
+        .bus_flags = DRM_BUS_FLAG_DE_HIGH,
+        .connector_type = DRM_MODE_CONNECTOR_LVDS,
+};
+#endif
 
 static const struct drm_display_mode avic_tm070ddh03_mode = {
 	.clock = 51200,
@@ -2407,6 +2475,9 @@ static const struct panel_desc innolux_g121x1_l03 = {
 		.unprepare = 200,
 		.disable = 400,
 	},
+	.bus_format = MEDIA_BUS_FMT_RGB666_1X7X3_SPWG,
+	.bus_flags = DRM_BUS_FLAG_DE_HIGH,
+	.connector_type = DRM_MODE_CONNECTOR_LVDS,
 };
 
 static const struct display_timing innolux_g156hce_l01_timings = {
@@ -4241,6 +4312,14 @@ static const struct of_device_id platform_of_match[] = {
 		.compatible = "auo,t215hvn01",
 		.data = &auo_t215hvn01,
 	}, {
+#ifdef CONFIG_ARCH_ADVANTECH
+		.compatible = "auo,g070vw01_v0",
+		.data = &auo_g070vw01_v0,
+	}, {
+		.compatible = "auo,g215hvn01_0",
+		.data = &auo_g215hvn01_0,
+	}, {
+#endif
 		.compatible = "avic,tm070ddh03",
 		.data = &avic_tm070ddh03,
 	}, {
@@ -4852,11 +4931,46 @@ static const struct panel_desc_dsi osd101t2045_53ts = {
 	.lanes = 4,
 };
 
+#if defined(CONFIG_DRM_PANEL_AUO_G101UAN02)
+static const struct drm_display_mode auo_g101uan02_mode = {
+	.clock = 148500,
+	.hdisplay = 1920,
+	.hsync_start = 1920 + 60,
+	.hsync_end = 1920 + 60 + 18,
+	.htotal = 1920 + 60 + 18 + 60,
+	.vdisplay = 1200,
+	.vsync_start = 1200 + 4,
+	.vsync_end = 1200 + 4 + 4,
+	.vtotal = 1200 + 4 + 4 + 4,
+};
+
+static const struct panel_desc_dsi auo_g101uan02 = {
+	.desc = {
+		.modes = &auo_g101uan02_mode,
+		.num_modes = 1,
+		.bpc = 8,
+		.size = {
+			.width = 217,
+			.height = 136,
+		},
+		.connector_type = DRM_MODE_CONNECTOR_DSI,
+	},
+	.flags = MIPI_DSI_MODE_VIDEO,
+	.format = MIPI_DSI_FMT_RGB888,
+	.lanes = 4,
+};
+#endif
+
 static const struct of_device_id dsi_of_match[] = {
 	{
 		.compatible = "auo,b080uan01",
 		.data = &auo_b080uan01
 	}, {
+#if defined(CONFIG_DRM_PANEL_AUO_G101UAN02)
+		.compatible = "auo,g101uan02",
+		.data = &auo_g101uan02
+	}, {
+#endif
 		.compatible = "boe,tv080wum-nl0",
 		.data = &boe_tv080wum_nl0
 	}, {
@@ -4884,10 +4998,35 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 {
 	const struct panel_desc_dsi *desc;
 	int err;
+#if defined(CONFIG_ARCH_ADVANTECH)
+	struct gpio_desc *gpio_dsi_vcc_enable_desc = NULL;
+	struct gpio_desc *gpio_bklt_vcc_enable_desc = NULL;
+	struct gpio_desc *gpio_dsi_bkl_enable_desc = NULL;
+#endif
 
 	desc = of_device_get_match_data(&dsi->dev);
 	if (!desc)
 		return -ENODEV;
+
+#if defined(CONFIG_ARCH_ADVANTECH)
+	gpio_dsi_vcc_enable_desc = devm_gpiod_get_optional(&dsi->dev, "dsi-vcc-enable", GPIOD_OUT_LOW);
+	if (gpio_dsi_vcc_enable_desc != NULL)
+	{
+		gpiod_set_value_cansleep(gpio_dsi_vcc_enable_desc, 1);
+	}
+
+	gpio_bklt_vcc_enable_desc = devm_gpiod_get_optional(&dsi->dev, "bklt-vcc-enable", GPIOD_OUT_LOW);
+	if (gpio_bklt_vcc_enable_desc != NULL)
+	{
+		gpiod_set_value_cansleep(gpio_bklt_vcc_enable_desc, 1);
+	}
+
+	gpio_dsi_bkl_enable_desc = devm_gpiod_get_optional(&dsi->dev, "dsi-bkl-enable", GPIOD_OUT_LOW);
+	if (gpio_dsi_bkl_enable_desc != NULL)
+	{
+		gpiod_set_value_cansleep(gpio_dsi_bkl_enable_desc, 1);
+	}
+#endif
 
 	err = panel_simple_probe(&dsi->dev, &desc->desc);
 	if (err < 0)
