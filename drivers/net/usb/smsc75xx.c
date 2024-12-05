@@ -879,6 +879,11 @@ static int smsc75xx_phy_initialize(struct usbnet *dev)
 		ADVERTISE_PAUSE_ASYM);
 	smsc75xx_mdio_write(dev->net, dev->mii.phy_id, MII_CTRL1000,
 		ADVERTISE_1000FULL);
+#ifdef CONFIG_ARCH_ADVANTECH
+	ret = smsc75xx_mdio_read(dev->net, dev->mii.phy_id, 0x11);
+	ret |= 1<<7;
+	smsc75xx_mdio_write(dev->net, dev->mii.phy_id, 0x11, ret);
+#endif
 
 	/* read and write to clear phy interrupt status */
 	ret = smsc75xx_mdio_read(dev->net, dev->mii.phy_id, PHY_INT_SRC);
