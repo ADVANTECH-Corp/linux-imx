@@ -18,6 +18,14 @@
 	};
 };
 
+&lt9611uxc {
+	status = "disabled";
+};
+
+&mipi_dsi {
+	status = "disabled";
+};
+
 &display_pixel_link {
 	status = "okay";
 };

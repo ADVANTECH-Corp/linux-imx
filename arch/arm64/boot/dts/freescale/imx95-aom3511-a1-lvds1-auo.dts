@@ -18,6 +18,14 @@
 	};
 };
 
+&lt9611uxc {
+	status = "disabled";
+};
+
+&mipi_dsi {
+	status = "disabled";
+};
+
 &display_pixel_link {
 	status = "okay";
 };
@@ -67,6 +75,11 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	status = "okay";
+
+	channel@0 {
+		reg = <0>;
+		status = "disabled";
+	};
 
 	channel@1 {
 		reg = <1>;
