@@ -91,8 +91,10 @@
 };
 
 &lvds_backlight0 {
-	lvds-vcc-enable-gpio = <&gpio_exp2 6 GPIO_ACTIVE_HIGH>; /* LCD0_VDD_EN */
-	lvds-bkl-enable-gpio = <&gpio_exp1 8 GPIO_ACTIVE_HIGH>; /* LCD0_BKLT_EN */
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_backlight0>;
+	lvds-vcc-enable-gpio = <&gpio2 15 GPIO_ACTIVE_HIGH>;	/* LCD0_VDD_EN */
+	lvds-bkl-enable-gpio = <&gpio_exp1 8 GPIO_ACTIVE_HIGH>;	/* LCD0_BKLT_EN */
 	lvds-vcc-delay-time = <10>;
 	status = "okay";
 };
@@ -108,3 +110,10 @@
 	};
 };
 
+&scmi_iomuxc {
+	pinctrl_backlight0: backlight0grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO15__GPIO2_IO_BIT15	0x51e
+		>;
+	};
+};
