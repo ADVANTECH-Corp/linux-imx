@@ -24,24 +24,19 @@
         rtc1 = &snvs_rtc;
 	};
 
-	reg_sd1_vmmc: sd1_regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "WLAN_EN";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio2 10 GPIO_ACTIVE_HIGH>;
-		off-on-delay-us = <20000>;
-		startup-delay-us = <100>;
-		enable-active-high;
-	};
+	// reg_usb_otg1_vbus: regulator-vbus {
+	// 	compatible = "regulator-fixed";
+	// 	regulator-name = "usb_otg1_vbus";
+	// 	regulator-min-microvolt = <5000000>;
+	// 	regulator-max-microvolt = <5000000>;
+	// 	gpio = <&gpio1 12 GPIO_ACTIVE_HIGH>;
+	// 	enable-active-high;
+	// };
 
-	reg_usb_otg1_vbus: regulator-vbus {
-		compatible = "regulator-fixed";
-		regulator-name = "usb_otg1_vbus";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		gpio = <&gpio1 12 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
+	usdhc1_pwrseq: usdhc1_pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		reset-gpios = <&gpio2 7 GPIO_ACTIVE_LOW>;
+		post-power-on-delay-ms = <100>;
 	};
 
     gpio-keys {
@@ -50,7 +45,7 @@
 
        user-mux {
            label = "mux_btn";
-           gpios = <&gpio5 22 GPIO_ACTIVE_HIGH>;
+           gpios = <&gpio4 30 GPIO_ACTIVE_HIGH>;
            debounce-interval = <100>; //ms
            linux,code = < //start  release   event
 							1  	   5		KEY_F11
@@ -86,6 +81,18 @@
 			};
 		};
     };
+
+	misc-adv-gpio {
+		compatible = "misc-adv-gpio";
+		pinctrl-names = "default";
+		pinctrl-0 = <&adv_gpio_pinmux>;
+		status = "okay";
+		minipcie-pwr-gpio = <&gpio3 21 GPIO_ACTIVE_HIGH>;
+		minipcie-reset-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;
+		en-gpios = <&gpio1 0 GPIO_ACTIVE_LOW>,<&gpio3 23 GPIO_ACTIVE_LOW>,<&gpio3 22 GPIO_ACTIVE_LOW>;
+
+		timing-interval = <300>;
+	};
 };
 
 &flexspi {
@@ -106,7 +113,7 @@
 &uart4 { /* M4 debug */
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart4>;
-	status = "disabled";
+	status = "okay";
 };
 
 &usbotg2 {
@@ -119,12 +126,24 @@
 	pinctrl-0 = <&pinctrl_usdhc1>, <&pinctrl_usdhc1_gpio>;
 	pinctrl-1 = <&pinctrl_usdhc1_100mhz>, <&pinctrl_usdhc1_gpio>;
 	pinctrl-2 = <&pinctrl_usdhc1_200mhz>, <&pinctrl_usdhc1_gpio>;
-	bus-width = <2>;
-	vmmc-supply = <&reg_sd1_vmmc>;
+	// bus-width = <2>;
 	pm-ignore-notify;
 	keep-power-in-suspend;
 	non-removable;
+	fsl,sdio-async-interrupt-enabled;
+	wakeup-source;
+	mmc-pwrseq = <&usdhc1_pwrseq>;
+	keep-power-in-suspend;
+	// m2-pwr-en = <&gpio4 10 GPIO_ACTIVE_HIGH>;
+	wake-in = <&gpio4 10 GPIO_ACTIVE_HIGH>;
 	status = "okay";
+
+	wifi_wake_host {
+		compatible = "nxp,wifi-wake-host";
+		interrupt-parent = <&gpio2>;
+		interrupts = <6 IRQ_TYPE_LEVEL_LOW>;
+		interrupt-names = "host-wake";
+	};
 };
 
 &usdhc3 {
@@ -151,17 +170,15 @@
 };
 
 &ecspi3 {
-    cs-gpios = <&gpio5 25 0>, <&gpio3 22 0>;
+    cs-gpios = <&gpio5 25 0>;
     pinctrl-names = "default";
     pinctrl-0 = <&pinctrl_ecspi3>;
     status = "okay";
 
-    flash2: m25p80@0 {
-        #address-cells = <1>;
-        #size-cells = <0>;
-        compatible = "micron,n25qba16";
-        spi-max-frequency = <20000000>;
-        reg = <0>;
+    spidev@0 {
+		compatible = "rohm,dh2228fv";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
     };
 };
 
@@ -180,18 +197,21 @@
 &iomuxc {
     pinctrl_hog: hoggrp {
             fsl,pins = <
-		MX8MM_IOMUXC_GPIO1_IO05_GPIO1_IO5		0x19	/* WDT_TIME_OUT */
 		MX8MM_IOMUXC_SPDIF_TX_GPIO5_IO3			0x19	/* GPIO11 */
 		MX8MM_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5		0x19	/* GPIO5 */
 		MX8MM_IOMUXC_SAI3_RXFS_GPIO4_IO28		0x19	/* RESET_OUT */	
             >;
     };
 
-    pinctrl_csi1_rst: csi1_rst_grp {
-            fsl,pins = <
-		MX8MM_IOMUXC_GPIO1_IO08_GPIO1_IO8		0x19	/* CAM1_RST */	
-            >;
-    };
+	adv_gpio_pinmux: advgpio {
+		fsl,pins = <
+			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21		0x19	/* W_DISABLE */
+			MX8MM_IOMUXC_SAI5_RXD1_GPIO3_IO22		0x19	/* LAN_SW_REST */
+			MX8MM_IOMUXC_SAI5_RXD2_GPIO3_IO23		0x19	/* LAN_SW_PWR_EN */
+			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0		0x19	/* Pcie  ENABLE_LTE */
+			MX8MM_IOMUXC_GPIO1_IO01_GPIO1_IO1		0x19	/* PCIE_DIS_B */
+		>;
+	};
 
 	pinctrl_i2c4: i2c4grp {
 		fsl,pins = <
@@ -228,12 +248,6 @@
 		>;
 	};
 
-    pinctrl_sai1_mclk: sai1grp_mclk {
-            fsl,pins = <
-		MX8MM_IOMUXC_SAI1_MCLK_SAI1_MCLK	0xd6	/* SAI1_MCLK */
-            >;
-    };
-
 	pinctrl_sai6: sai6grp {
 		fsl,pins = <
 			MX8MM_IOMUXC_SAI1_RXD6_SAI6_TX_SYNC	0xd6	/* SAI6_LRCK */
@@ -247,6 +261,8 @@
 		fsl,pins = <
 			MX8MM_IOMUXC_UART4_RXD_UART4_DCE_RX	0x140
 			MX8MM_IOMUXC_UART4_TXD_UART4_DCE_TX	0x140
+			MX8MM_IOMUXC_ECSPI2_SS0_UART4_DCE_RTS_B		0x140
+			MX8MM_IOMUXC_ECSPI2_MISO_UART4_DCE_CTS_B		0x140
 		>;
 	};
 
@@ -315,21 +331,11 @@
             >;
     };
 
-    pinctrl_usbotg: usbotggrp {
-            fsl,pins = <
-		MX8MM_IOMUXC_GPIO1_IO12_GPIO1_IO12		0x19	/* USB1_OTG_EN */
-            >;
-    };
-
-	pinctrl_ecspi2: ecspi2grp {
-                fsl,pins = <
-			MX8MM_IOMUXC_ECSPI2_SCLK_ECSPI2_SCLK		0x82	/* ECSPI2_SCLK */
-			MX8MM_IOMUXC_ECSPI2_MOSI_ECSPI2_MOSI		0x82	/* ECSPI2_MOSI */
-			MX8MM_IOMUXC_ECSPI2_MISO_ECSPI2_MISO		0x82	/* ECSPI2_MISO */
-			MX8MM_IOMUXC_ECSPI2_SS0_GPIO5_IO13		0x19	/* ECSPI2_SS0 */
-			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21		0x19	/* ECSPI2_SS1 */
-                >;
-        };
+    // pinctrl_usbotg: usbotggrp {
+    //         fsl,pins = <
+	// 	MX8MM_IOMUXC_GPIO1_IO12_GPIO1_IO12		0x19	/* USB1_OTG_EN */
+    //         >;
+    // };
 
 	pinctrl_ecspi3: ecspi3grp {
                 fsl,pins = <
@@ -337,7 +343,7 @@
 			MX8MM_IOMUXC_UART1_TXD_ECSPI3_MOSI		0x82	/* ECSPI3_MOSI */
 			MX8MM_IOMUXC_UART2_RXD_ECSPI3_MISO		0x82	/* ECSPI3_MISO */
 			MX8MM_IOMUXC_UART2_TXD_GPIO5_IO25		0x19	/* ECSPI3_SS0 */
-			MX8MM_IOMUXC_SAI5_RXD1_GPIO3_IO22		0x19	/* ECSPI3_SS1 */
+			MX8MM_IOMUXC_ECSPI1_SCLK_GPIO5_IO6		0x19	/* INT */
                 >;
         };
 
@@ -352,20 +358,6 @@
                     MX8MM_IOMUXC_GPIO1_IO15_GPIO1_IO15		0x19    /* WDOG_TRIG */
                     >;
     };
-
-    pinctrl_wlan: wlangrp {
-            fsl,pins = <
-                    MX8MM_IOMUXC_SD1_DATA7_GPIO2_IO9                0x111	/* WL_WAKE_HOST */
-		MX8MM_IOMUXC_SD1_DATA6_GPIO2_IO8		0x111	/* BT_WAKE_HOST */
-		MX8MM_IOMUXC_SAI5_RXC_GPIO3_IO20		0x19	/* WL_PRESENT */
-            >;
-    };
-	
-	pinctrl_dsi2dp_irq: dsi2dpgrp {
-		fsl,pins = <
-			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0         0x159	/* DSI2DP IRQ */
-		>;
-	};
 
 	pinctrl_pwm2: pwm2grp {
                 fsl,pins = <
