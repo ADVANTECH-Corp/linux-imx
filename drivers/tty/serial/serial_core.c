@@ -2620,7 +2620,9 @@ uart_configure_port(struct uart_driver *drv, struct uart_state *state,
 		 */
 		spin_lock_irqsave(&port->lock, flags);
 		port->mctrl &= TIOCM_DTR;
+#ifndef CONFIG_ARCH_ADVANTECH
 		if (!(port->rs485.flags & SER_RS485_ENABLED))
+#endif
 			port->ops->set_mctrl(port, port->mctrl);
 		spin_unlock_irqrestore(&port->lock, flags);
 
