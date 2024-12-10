@@ -479,8 +479,8 @@
                 reg = <0x29>;
                 pinctrl-names = "default";
                 pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
-                wdt-en = <&gpio3 19 0>;
-                wdt-ping = <&gpio4 20 0>;
+                wdt-en-gpio = <&gpio3 19 GPIO_ACTIVE_HIGH>;
+                wdt-ping-gpio = <&gpio4 20 GPIO_ACTIVE_HIGH>;
                 status = "okay";
         };
 };

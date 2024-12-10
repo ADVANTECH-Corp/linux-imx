@@ -282,13 +282,14 @@ static const struct watchdog_ops adv_wdt_fops = {
 
 static int adv_wdt_i2c_probe(struct i2c_client *client)
 {
-    struct device_node *np = client->dev.of_node;
-    struct adv_wdt_device *wdev;
-    int ret;
-    unsigned int tmp_version = 0;
-    int gpio_flags = 0;
+	struct device_node *np = client->dev.of_node;
+	struct adv_wdt_device *wdev;
+	int ret;
+	unsigned int tmp_version;
+	struct gpio_desc *gpio_wdt_en_desc;
+	struct gpio_desc *gpio_wdt_ping_desc;
 
-    	if (!np)
+	if (!np)
 	{
 		return -ENODEV;
 	}
@@ -303,41 +304,26 @@ static int adv_wdt_i2c_probe(struct i2c_client *client)
 		return -ENOMEM;
 
 	//Setting GPIO
-    wdev->gpio_wdt_en = of_get_named_gpio(np, "wdt-en", 0);
-    if (!gpio_is_valid(wdev->gpio_wdt_en)) {
-        dev_err(&client->dev, "Invalid wdt-en GPIO\n");
-        return -ENODEV;
-    }
-    
-    wdev->wdt_en_off = !(gpio_flags & GPIOF_ACTIVE_LOW);
-    
-    ret = devm_gpio_request_one(&client->dev, wdev->gpio_wdt_en,
-                GPIOF_OUT_INIT_LOW, "adv_wdt.wdt_en");
-    if (ret < 0) {
-        dev_err(&client->dev, "request wdt-en gpio failed: %d\n", ret);
-        return ret;
-    }
-    
-    gpio_direction_output(wdev->gpio_wdt_en, wdev->wdt_en_off);
+	gpio_wdt_en_desc = devm_gpiod_get(&client->dev, "wdt-en", GPIOD_OUT_LOW);
+	if (IS_ERR(gpio_wdt_en_desc)) {
+		dev_err(&client->dev, "Failed to get GPIO wdt-en (err=%d)\n", PTR_ERR(gpio_wdt_en_desc));
+		return PTR_ERR(gpio_wdt_en_desc);
+	}
+	wdev->gpio_wdt_en = desc_to_gpio(gpio_wdt_en_desc);
+	wdev->wdt_en_off = !gpiod_is_active_low(gpio_wdt_en_desc);
+	gpio_direction_output(wdev->gpio_wdt_en, !wdev->wdt_en_off);
 
-    // Setting GPIO WDT_PING
-    wdev->gpio_wdt_ping = of_get_named_gpio(np, "wdt-ping", 0);
-    if (!gpio_is_valid(wdev->gpio_wdt_ping)) {
-        dev_err(&client->dev, "Invalid wdt-ping GPIO\n");
-        return -ENODEV;
-    }
+	gpio_wdt_ping_desc = devm_gpiod_get(&client->dev, "wdt-ping", GPIOD_OUT_LOW);
+	if (IS_ERR(gpio_wdt_ping_desc)) {
+		dev_err(&client->dev, "Failed to get GPIO wdt-ping\n");
+		return PTR_ERR(gpio_wdt_ping_desc);
+	}
+	wdev->gpio_wdt_ping = desc_to_gpio(gpio_wdt_ping_desc);
+	wdev->wdt_ping_status = gpiod_is_active_low(gpio_wdt_ping_desc);
 
-    ret = devm_gpio_request_one(&client->dev, wdev->gpio_wdt_ping, 
-                GPIOF_OUT_INIT_LOW, "adv_wdt.wdt_ping");
-    if (ret < 0) {
-        dev_err(&client->dev, "request wdt-ping gpio failed: %d\n", ret);
-        return ret;
-    }
-
-    wdev->wdt_ping_status = !(gpio_flags & GPIOF_ACTIVE_LOW);
-    gpio_direction_output(wdev->gpio_wdt_ping, !wdev->wdt_ping_status);
-    msleep(10);
-    gpio_direction_output(wdev->gpio_wdt_ping, wdev->wdt_ping_status);
+	gpio_direction_output(wdev->gpio_wdt_ping, !wdev->wdt_ping_status);
+	msleep(10);
+	gpio_direction_output(wdev->gpio_wdt_ping, wdev->wdt_ping_status);
 
 	wdev->wdog.timeout = clamp_t(unsigned, timeout, 1, ADV_WDT_MAX_TIME);
 	if (wdev->wdog.timeout != timeout)
