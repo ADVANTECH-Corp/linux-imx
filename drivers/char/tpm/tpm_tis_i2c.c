@@ -35,8 +35,8 @@
 #define GUARD_TIME_DEFAULT_MAX 300
 
 /* Guard Time of 250µs after I2C slave NACK */
-#define GUARD_TIME_ERR_MIN 250
-#define GUARD_TIME_ERR_MAX 300
+#define GUARD_TIME_ERR_MIN 40
+#define GUARD_TIME_ERR_MAX 50
 
 /* Guard Time bit masks; SR is repeated start, RW is read then write, etc. */
 #define TPM_GUARD_TIME_SR_MASK 0x40000000
@@ -330,7 +330,7 @@ static const struct tpm_tis_phy_ops tpm_i2c_phy_ops = {
 static int tpm_tis_i2c_probe(struct i2c_client *dev)
 {
 	struct tpm_tis_i2c_phy *phy;
-	const u8 crc_enable = 1;
+	const u8 crc_enable = 0;
 	const u8 locality = 0;
 	int ret;
 
@@ -382,7 +382,7 @@ MODULE_DEVICE_TABLE(i2c, tpm_tis_i2c_id);
 
 #ifdef CONFIG_OF
 static const struct of_device_id of_tis_i2c_match[] = {
-	{ .compatible = "infineon,slb9673", },
+	{ .compatible = "st,st33htpm-i2c","infineon,slb9673", },
 	{}
 };
 MODULE_DEVICE_TABLE(of, of_tis_i2c_match);
