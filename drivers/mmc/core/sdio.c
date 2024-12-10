@@ -738,7 +738,17 @@ try_again:
 	 * to make sure which speed mode should work.
 	 */
 	if (rocr & ocr & R4_18V_PRESENT) {
+#ifndef CONFIG_ARCH_ADVANTECH
 		err = mmc_set_uhs_voltage(host, ocr_card);
+#else
+		if (host->index == 0) {
+			pr_info("mmc_sdio_init_card: Skipping 1.8V setting for Index: %d!\n",host->index);
+			err = 0;
+		} else {
+			pr_err("mmc_sdio_init_card: Setting 1.8V for Index: %d!\n",host->index);
+			err = mmc_set_uhs_voltage(host, ocr_card);
+		}
+#endif
 		if (err == -EAGAIN) {
 			mmc_sdio_pre_init(host, ocr_card, card);
 			retries--;

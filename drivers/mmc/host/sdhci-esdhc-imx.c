@@ -30,6 +30,7 @@
 #include "sdhci-pltfm.h"
 #include "sdhci-esdhc.h"
 #include "cqhci.h"
+#include <linux/of_gpio.h>
 
 #define ESDHC_SYS_CTRL_RESET_TUNING	(1 << 28)
 #define ESDHC_SYS_CTRL_RST_FIFO		(1 << 22)
@@ -1761,8 +1762,11 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
 {
 	struct device_node *np = pdev->dev.of_node;
 	struct esdhc_platform_data *boarddata = &imx_data->boarddata;
+#ifndef CONFIG_ARCH_ADVANTECH
 	int ret;
-
+#else
+	int ret,m2_power_en_gpio;
+#endif
 	if (of_property_read_bool(np, "fsl,wp-controller"))
 		boarddata->wp_type = ESDHC_WP_CONTROLLER;
 
@@ -1789,6 +1793,26 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
 
 	if (of_property_read_u32(np, "fsl,delay-line", &boarddata->delay_line))
 		boarddata->delay_line = 0;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	m2_power_en_gpio = of_get_named_gpio(np, "m2-pwr-en", 0);
+
+	if (gpio_is_valid(m2_power_en_gpio)) {
+		ret = devm_gpio_request_one(&pdev->dev,
+					    m2_power_en_gpio,
+					    GPIOF_OUT_INIT_HIGH,
+					    "m2-pwr-en");
+	}
+
+	m2_power_en_gpio = of_get_named_gpio(np, "wake-in", 0);
+
+	if (gpio_is_valid(m2_power_en_gpio)) {
+		ret = devm_gpio_request_one(&pdev->dev,
+					    m2_power_en_gpio,
+					    GPIOF_OUT_INIT_HIGH,
+					    "wake-in");
+	}
+#endif
 
 	mmc_of_parse_voltage(host->mmc, &host->ocr_mask);
 
