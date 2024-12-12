@@ -442,6 +442,9 @@ dtb-$(CONFIG_SOC_IMX6UL) += \
 	imx6ulz-14x14-evk-reve-emmc.dtb \
 	imx6ulz-14x14-evk-reve-gpmi-weim.dtb
 
+dtb-$(CONFIG_ARCH_ADVANTECH) += \
+	imx6q-rsb3430-a1.dtb
+
 dtb-$(CONFIG_SOC_IMX7D) += \
 	imx7d-cl-som-imx7.dtb \
 	imx7d-colibri-aster.dtb \
