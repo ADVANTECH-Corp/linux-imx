@@ -48,7 +48,11 @@ static const struct reg_default sgtl5000_reg_defaults[] = {
 	{ SGTL5000_CHIP_PAD_STRENGTH,		0x015f },
 	{ SGTL5000_CHIP_ANA_ADC_CTRL,		0x0000 },
 	{ SGTL5000_CHIP_ANA_HP_CTRL,		0x1818 },
+#ifdef CONFIG_ARCH_ADVANTECH
+	{ SGTL5000_CHIP_ANA_CTRL,		0x0011 },
+#else
 	{ SGTL5000_CHIP_ANA_CTRL,		0x0111 },
+#endif
 	{ SGTL5000_CHIP_REF_CTRL,		0x0000 },
 	{ SGTL5000_CHIP_MIC_CTRL,		0x0000 },
 	{ SGTL5000_CHIP_LINE_OUT_CTRL,		0x0000 },
@@ -741,7 +745,9 @@ static const struct snd_kcontrol_new sgtl5000_snd_controls[] = {
 			SGTL5000_LINE_OUT_VOL_RIGHT_SHIFT,
 			0x1f, 1,
 			lineout_volume),
+#ifndef CONFIG_ARCH_ADVANTECH
 	SOC_SINGLE("Lineout Playback Switch", SGTL5000_CHIP_ANA_CTRL, 8, 1, 1),
+#endif
 
 	SOC_SINGLE_TLV("DAP Main channel", SGTL5000_DAP_MAIN_CHAN,
 	0, 0xffff, 0, dap_volume),
@@ -1266,7 +1272,7 @@ static bool sgtl5000_readable(struct device *dev, unsigned int reg)
  * This precalculated table contains all (vag_val * 100 / lo_calcntrl) results
  * to select an appropriate lo_vol_* in SGTL5000_CHIP_LINE_OUT_VOL
  * The calculatation was done for all possible register values which
- * is the array index and the following formula: 10^((idx−15)/40) * 100
+ * is the array index and the following formula: 10^((idx-15)/40) * 100
  */
 static const u8 vol_quot_table[] = {
 	42, 45, 47, 50, 53, 56, 60, 63,
@@ -1300,6 +1306,13 @@ static int sgtl5000_set_power_regs(struct snd_soc_component *component)
 	size_t i;
 	struct sgtl5000_priv *sgtl5000 = snd_soc_component_get_drvdata(component);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_machine_is_compatible("fsl,imx8mq") || of_machine_is_compatible("fsl,imx8mm") ||
+		of_machine_is_compatible("fsl,imx8mp") || of_machine_is_compatible("fsl,imx8qxp")) {
+		dev_info(component->dev, "skip setting power regulators\n");
+		return 0;
+	}
+#endif
 	vdda  = regulator_get_voltage(sgtl5000->supplies[VDDA].consumer);
 	vddio = regulator_get_voltage(sgtl5000->supplies[VDDIO].consumer);
 	vddd  = (sgtl5000->num_supplies > VDDD)
