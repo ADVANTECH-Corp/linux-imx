@@ -288,10 +288,10 @@
 
 &usbotg1 {
 	pinctrl-names = "default";
-	// pinctrl-0 = <&pinctrl_usbotg>;
+	pinctrl-0 = <&pinctrl_usbotg>;
 	dr_mode = "otg";
 	extcon = <0>;
-	// vbus-supply = <&reg_usb_otg1_vbus>;
+	vbus-supply = <&reg_usb_otg1_vbus>;
 	samsung,picophy-pre-emp-curr-control = <3>;
 	samsung,picophy-dc-vol-level-adjust = <7>;
 	status = "okay";
