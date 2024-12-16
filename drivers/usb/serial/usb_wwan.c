@@ -14,6 +14,8 @@
   with GSM modems. Issues:
   - data loss -- one single Receive URB is not nearly enough
   - controlling the baud rate doesn't make sense
+
+  Based on version modification, the author is Quectel <fae-support@quectel.com>
 */
 
 #define DRIVER_AUTHOR "Matthias Urlichs <smurf@smurf.noris.de>"
@@ -432,6 +434,23 @@ static struct urb *usb_wwan_setup_urb(struct usb_serial_port *port,
 	usb_fill_bulk_urb(urb, serial->dev,
 			  usb_sndbulkpipe(serial->dev, endpoint) | dir,
 			  buf, len, callback, ctx);
+
+#if 1 //Added by Quectel for Zero Packet
+	if (dir == USB_DIR_OUT) {
+		if (serial->dev->descriptor.idVendor == cpu_to_le16(0x05C6) && serial->dev->descriptor.idProduct == cpu_to_le16(0x9090))
+			urb->transfer_flags |= URB_ZERO_PACKET;
+		if (serial->dev->descriptor.idVendor == cpu_to_le16(0x05C6) && serial->dev->descriptor.idProduct == cpu_to_le16(0x9003))
+			urb->transfer_flags |= URB_ZERO_PACKET;
+		if (serial->dev->descriptor.idVendor == cpu_to_le16(0x05C6) && serial->dev->descriptor.idProduct == cpu_to_le16(0x9215))
+			urb->transfer_flags |= URB_ZERO_PACKET;
+        if (serial->dev->descriptor.idVendor == cpu_to_le16(0x05C6) && serial->dev->descriptor.idProduct == cpu_to_le16(0x9091))
+			urb->transfer_flags |= URB_ZERO_PACKET;
+        if (serial->dev->descriptor.idVendor == cpu_to_le16(0x05C6) && serial->dev->descriptor.idProduct == cpu_to_le16(0x90DB))
+			urb->transfer_flags |= URB_ZERO_PACKET;
+		if (serial->dev->descriptor.idVendor == cpu_to_le16(0x2C7C))
+			urb->transfer_flags |= URB_ZERO_PACKET;
+	}
+#endif
 
 	if (intfdata->use_zlp && dir == USB_DIR_OUT)
 		urb->transfer_flags |= URB_ZERO_PACKET;
