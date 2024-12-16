@@ -1304,6 +1304,37 @@ static const struct panel_desc auo_g070vw01_v0 = {
         .bus_flags = DRM_BUS_FLAG_DE_HIGH,
         .connector_type = DRM_MODE_CONNECTOR_LVDS,
 };
+
+static const struct drm_display_mode idk_2112p_k2xga1_mode = {
+        .clock = 64900,
+        .hdisplay = 1024,
+        .hsync_start = 1024 + 140,
+        .hsync_end = 1024 + 140 + 40,
+        .htotal = 1024 + 140 + 40 + 140,
+        .vdisplay = 768,
+        .vsync_start = 768 + 15,
+        .vsync_end = 768 + 15 + 8,
+        .vtotal = 768 + 15 + 8 + 15,
+        .flags = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
+};
+
+static const struct panel_desc idk_2112p_k2xga1 = {
+	.modes = &idk_2112p_k2xga1_mode,
+	.num_modes = 1,
+	.bpc = 8,
+	.size = {
+		.width = 246,
+		.height = 185,
+	},
+	.delay = {
+		.enable = 200,
+		.unprepare = 200,
+		.disable = 400,
+	},
+	.bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
+	.bus_flags = DRM_BUS_FLAG_DE_HIGH,
+	.connector_type = DRM_MODE_CONNECTOR_LVDS,
+};
 #endif
 
 static const struct drm_display_mode boe_hv070wsa_mode = {
@@ -4157,6 +4188,9 @@ static const struct of_device_id platform_of_match[] = {
 #ifdef CONFIG_ARCH_ADVANTECH
 		.compatible = "auo,g070vw01_v0",
 		.data = &auo_g070vw01_v0,
+	}, {
+		.compatible = "idk,2112p-k2xga1",
+		.data = &idk_2112p_k2xga1,
 	}, {
 #endif
 		.compatible = "boe,hv070wsa-100",
