@@ -689,6 +689,7 @@
 
 	bluetooth {
 		compatible = "nxp,88w8987-bt";
+		fw-init-baudrate = <3000000>; /* For AIW-167 */
 	};
 };
 
