@@ -25,7 +25,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_lpspi7>;
 	pinctrl-1 = <&pinctrl_lpspi7>;
-	cs-gpios = <&gpio2 4 GPIO_ACTIVE_LOW>, <&gpio_exp1 11 GPIO_ACTIVE_LOW>;
+	cs-gpios = <&gpio_exp4 14 GPIO_ACTIVE_LOW>, <&gpio_exp1 11 GPIO_ACTIVE_LOW>;
 	status = "okay";
 
 	ad7124_0: ad7124@0 {
@@ -34,7 +34,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_ad7124>;
 		interrupt-parent = <&gpio2>;
-		interrupts = <26 IRQ_TYPE_EDGE_FALLING>;
+		interrupts = <4 IRQ_TYPE_EDGE_FALLING>;
 		spi-cpha;
 		spi-cpol;
 		spi-max-frequency = <5000000>;
@@ -47,13 +47,13 @@
 
 		channel@0 {
 			reg = <0>;
-			diff-channels = <0 1>;
+			diff-channels = <2 3>;
 			adi,reference-select = <0>;
 		};
 
 		channel@1 {
 			reg = <1>;
-			diff-channels = <2 3>;
+			diff-channels = <4 5>;
 			adi,reference-select = <0>;
 		};
 	};
@@ -64,7 +64,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_ad7124_1>;
 		interrupt-parent = <&gpio2>;
-		interrupts = <13 IRQ_TYPE_EDGE_FALLING>;
+		interrupts = <0 IRQ_TYPE_EDGE_FALLING>;
 		spi-cpha;
 		spi-cpol;
 		spi-max-frequency = <5000000>;
@@ -77,13 +77,13 @@
 
 		channel@0 {
 			reg = <0>;
-			diff-channels = <0 1>;
+			diff-channels = <2 3>;
 			adi,reference-select = <0>;
 		};
 
 		channel@1 {
 			reg = <1>;
-			diff-channels = <2 3>;
+			diff-channels = <4 5>;
 			adi,reference-select = <0>;
 		};
 	};
@@ -93,7 +93,6 @@
 
 	pinctrl_lpspi7: lpspi7grp {
 		fsl,pins = <
-			MX93_PAD_GPIO_IO04__GPIO2_IO04		0x3fe
 			MX93_PAD_GPIO_IO05__LPSPI7_SIN		0x3fe
 			MX93_PAD_GPIO_IO06__LPSPI7_SOUT		0x3fe
 			MX93_PAD_GPIO_IO07__LPSPI7_SCK		0x3fe
@@ -102,13 +101,13 @@
 
 	pinctrl_ad7124: ad7124grp {
 		fsl,pins = <
-			MX93_PAD_GPIO_IO26__GPIO2_IO26		0x3fe
+			MX93_PAD_GPIO_IO04__GPIO2_IO04		0x3fe
 		>;
 	};
 
 	pinctrl_ad7124_1: ad7124grp1 {
 		fsl,pins = <
-			MX93_PAD_GPIO_IO13__GPIO2_IO13		0x3fe
+			MX93_PAD_GPIO_IO00__GPIO2_IO00		0x3fe
 		>;
 	};
 };
