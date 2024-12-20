@@ -542,6 +542,11 @@
 		status = "okay";
 	};
 
+	eeprom1: 24c64@50 {
+		compatible = "st,24c64";
+		reg = <0x50>;
+	};
+
 };
 
 &lpi2c3 {
@@ -594,6 +599,11 @@
 				remote-endpoint = <&dsi_to_adv7535>;
 			};
 		};
+	};
+
+	eeprom2: 24c64@50 {
+		compatible = "st,24c64";
+		reg = <0x50>;
 	};
 
 	gpio_exp5: tca9538@73 {
