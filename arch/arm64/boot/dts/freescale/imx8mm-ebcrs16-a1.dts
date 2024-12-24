@@ -82,6 +82,17 @@
 		};
     };
 
+	rtl8367c:rtl8367c {
+		compatible = "realtek,rtl8367c";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_switch>;
+		gpio-sck = <&gpio1 16 GPIO_ACTIVE_HIGH>;
+		gpio-sda = <&gpio1 17 GPIO_ACTIVE_HIGH>;
+		power-gpio = <&gpio3 23 GPIO_ACTIVE_HIGH>;
+		reset-gpio = <&gpio3 22 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+
 	misc-adv-gpio {
 		compatible = "misc-adv-gpio";
 		pinctrl-names = "default";
@@ -89,7 +100,7 @@
 		status = "okay";
 		minipcie-pwr-gpio = <&gpio3 21 GPIO_ACTIVE_HIGH>;
 		minipcie-reset-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;
-		en-gpios = <&gpio1 0 GPIO_ACTIVE_LOW>,<&gpio3 23 GPIO_ACTIVE_LOW>,<&gpio3 22 GPIO_ACTIVE_LOW>;
+		en-gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;
 
 		timing-interval = <300>;
 	};
@@ -207,11 +218,18 @@
             >;
     };
 
+	pinctrl_switch: switch {
+		fsl,pins = <
+			MX8MM_IOMUXC_ENET_MDC_GPIO1_IO16	0x19	/* SCL */
+			MX8MM_IOMUXC_ENET_MDIO_GPIO1_IO17	0x19	/* SDA */
+			MX8MM_IOMUXC_SAI5_RXD1_GPIO3_IO22	0x19	/* LAN_SW_REST */
+			MX8MM_IOMUXC_SAI5_RXD2_GPIO3_IO23	0x19	/* LAN_SW_PWR_EN */
+		>;
+	};
+
 	adv_gpio_pinmux: advgpio {
 		fsl,pins = <
 			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21		0x19	/* W_DISABLE */
-			MX8MM_IOMUXC_SAI5_RXD1_GPIO3_IO22		0x19	/* LAN_SW_REST */
-			MX8MM_IOMUXC_SAI5_RXD2_GPIO3_IO23		0x19	/* LAN_SW_PWR_EN */
 			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0		0x19	/* Pcie  ENABLE_LTE */
 			MX8MM_IOMUXC_GPIO1_IO01_GPIO1_IO1		0x19	/* PCIE_DIS_B */
 		>;
