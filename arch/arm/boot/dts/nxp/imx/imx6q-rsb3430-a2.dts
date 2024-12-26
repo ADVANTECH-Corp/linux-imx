@@ -25,17 +25,16 @@
 		board-cpu = "DualQuad";
 	};
 
-	regulators {
-		reg_usb_otg_vbus: usb_otg_vbus {
-				compatible = "regulator-fixed";
-				regulator-name = "usb_otg_vbus";
-				regulator-min-microvolt = <5000000>;
-				regulator-max-microvolt = <5000000>;
-				gpio = <&gpio4 15  GPIO_ACTIVE_HIGH>;
-				enable-active-high;
-		};
+	reg_usb_otg_vbus: usb_otg_vbus {
+		compatible = "regulator-fixed";
+		regulator-name = "usb_otg_vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio4 15  GPIO_ACTIVE_HIGH>;
+		enable-active-high;
 
 	};
+
 	usdhc3_pwrseq: usdhc3_pwrseq {
                 compatible = "mmc-pwrseq-simple";
                 reset-gpios = 	<&gpio7 8 GPIO_ACTIVE_LOW>; /* SD3_RESET# */
