@@ -64,17 +64,40 @@
 		gpio-sck = <&gpio4 31 GPIO_ACTIVE_HIGH>;
 		realtek,extif0 = <1 0 1 1 1 1 1 1 2>;
 	};
+
+	lvds_panel: lvds_panel {
+		compatible = "auo,g070vw01_v0";
+		backlight = <&bkl>;
+
+		port {
+			panel_lvds_in: endpoint {
+				remote-endpoint = <&lvds_out>;
+			};
+		};
+	};
+
 };
 
 &audio_sgtl5000 {
 	audio-codec = <&codec>;
 };
 
+&ldb {
+	lvds-channel@0 {
+		port@1 {
+			reg = <1>;
+			lvds_out: endpoint {
+				remote-endpoint = <&panel_lvds_in>;
+			};
+		};
+	};
+};
+
 &bkl {
 	pinctrl-0 = <&pinctrl_lvds_bkl_2 &pinctrl_lvds_vcc_1 &pinctrl_bklt_vcc_1>;
-	lvds-bkl-enable = <&gpio1 20 GPIO_ACTIVE_LOW>;
-	lvds-vcc-enable = <&gpio4 7 GPIO_ACTIVE_HIGH>;
-	bklt-vcc-enable = <&gpio4 6 GPIO_ACTIVE_HIGH>;
+	lvds-bkl-enable-gpio = <&gpio1 20 GPIO_ACTIVE_LOW>;
+	lvds-vcc-enable-gpio = <&gpio4 7 GPIO_ACTIVE_HIGH>;
+	bklt-vcc-enable-gpio = <&gpio4 6 GPIO_ACTIVE_HIGH>;
 	pwms = <&pwm4 0 5000000 0>;
 	//pwm-names = "LCD_BKLT_PWM";
 	status = "okay";
