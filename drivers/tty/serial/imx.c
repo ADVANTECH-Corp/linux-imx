@@ -1983,7 +1983,11 @@ static int imx_uart_ioctl(struct uart_port *port, unsigned int cmd, unsigned lon
 {
        struct serial_rs485 rs485conf;
        struct imx_port *sport = (struct imx_port *)port;
-	   struct ktermios *termios;
+       struct tty_struct *tty;
+       struct ktermios *termios;
+
+		tty = port->state->port.tty;
+		termios = &tty->termios;
 
        switch (cmd) {
                case TIOCSRS485:

@@ -65,17 +65,16 @@ static int misc_adv_gpio_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
     struct device_node *np;
     // enum of_gpio_flags flags;
-    int  minipcie_pwr_gpio;
-	int  lan2_reset_gpio;
-	bool  minipcie_pwr_active;
-	bool  lan2_reset_active;
+    // int  minipcie_pwr_gpio;
+	// int  lan2_reset_gpio;
+	// bool  minipcie_pwr_active;
+	// bool  lan2_reset_active;
 
-    int num_en_gpios=0, num_reset_gpios=0;
+    int  num_reset_gpios=0;
     int num_input_gpios, num_output_gpios;
-    int i, gpio, err;
+    int i, gpio, err,en_gpios,ret,gpio_count,num_gpio_elements;
     bool active;
     int  reset_delay = 50;
-
 
 u32  flags;
 const __be32 *prop;
@@ -88,6 +87,7 @@ if (prop)
 prop = of_get_property(np, "output-gpios", NULL);
 if (prop)
     num_output_gpios = of_property_count_elems_of_size(np, "output-gpios", sizeof(*prop) / sizeof(u32));
+
 
 // 读取设备树中的其他属性
 if (of_property_read_u32(np, "reset-delay", &reset_delay))
@@ -126,22 +126,26 @@ for (i = 0; i < num_output_gpios; i++) {
 }
 
 // en-gpios
-for (i = 0; i < num_en_gpios; i++)
+/* */
+num_gpio_elements = of_property_count_u32_elems(np, "en-gpios");
+if (num_gpio_elements < 0) {
+        printk("[adv ] File=%s, Func=%s, Line=%d, Failed to count en-gpio1 elements \n",__FILE__,__FUNCTION__,__LINE__);
+}
+
+gpio_count = num_gpio_elements / 3;
+if (num_gpio_elements % 3 != 0) {
+        printk("[adv ] File=%s, Func=%s, Line=%d, Invalid en-gpios format: not divisible by 3 \n",__FILE__,__FUNCTION__,__LINE__);
+}
+
+for (i = 0; i < gpio_count; i++)
 {
-    gpio = of_get_named_gpio(np, "en-gpios", i);  // 获取 GPIO 编号
-    if (gpio_is_valid(gpio))
-    {
-        // 检查设备树中是否定义了活动低电平标志
-        if (!of_property_read_u32(np, "en-gpios-flags", &flags)) {
-            active = !(flags & GPIOF_ACTIVE_LOW);  // 判断是否是活动低电平
-        } else {
-            active = true; // 默认活动为高电平
-        }
-        
-        err = handle_gpio_request_and_set_output(gpio, active, "adv_en_gpios");
-        if (!err)
-            gpio_free(gpio);
-    }
+	en_gpios = of_get_named_gpio(np, "en-gpios", i);
+	if (gpio_is_valid(en_gpios)) {
+		ret = devm_gpio_request_one(&pdev->dev,
+					    en_gpios,
+					    GPIOF_OUT_INIT_HIGH,
+					    "en-gpios");
+	}
 }
 
 // reset-gpios
@@ -174,7 +178,7 @@ for (i = 0; i < num_reset_gpios; i++)
         } else {
             active = true; // 默认活动为高电平
         }
-        
+
         gpio_direction_output(gpio, active ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH);
         gpio_free(gpio);
     }
@@ -182,45 +186,43 @@ for (i = 0; i < num_reset_gpios; i++)
 
 mdelay(10);
 
-minipcie_reset_gpio = of_get_named_gpio(np, "minipcie-reset-gpio", 0);  // 获取 GPIO 编号
-if (gpio_is_valid(minipcie_reset_gpio))
-{
-
-    if (!of_property_read_u32(np, "minipcie-reset-gpio-flags", &flags)) {
-        minipcie_reset_active = !(flags & GPIOF_ACTIVE_LOW);
-    } else {
-        minipcie_reset_active = true; // 默认活动为高电平
-    }
-    
-    err = handle_gpio_request_and_set_output(minipcie_reset_gpio, minipcie_reset_active, "minipcie 4g reset gpio");
+// minipcie reset pin
+minipcie_reset_gpio = of_get_named_gpio(np, "minipcie-reset-gpio", 0);
+if (minipcie_reset_gpio < 0) {
+    pr_err("Failed to get minipcie-reset-gpio\n");
+    return minipcie_reset_gpio;  // 错误处理，返回错误代码
 }
 
-lan2_reset_gpio = of_get_named_gpio(np, "lan2-reset-gpio", 0);  // 获取 GPIO 编号
-if (gpio_is_valid(lan2_reset_gpio))
-{
+// 获取设备树属性中的 gpio_flags，并检查是否为低电平有效
+const void *gpio_flags = of_get_property(np, "gpio_flags", NULL);
+minipcie_reset_active = 0;  // 默认标志为 0
 
-    if (!of_property_read_u32(np, "lan2-reset-gpio-flags",&flags)) {
-        lan2_reset_active = !(flags & GPIOF_ACTIVE_LOW);
-    } else {
-        lan2_reset_active = true; // 默认活动为高电平
-    }
-
-    err = handle_gpio_request_and_set_output(lan2_reset_gpio, lan2_reset_active, "lan2 reset gpio");
+if (gpio_flags) {
+    // 假设 gpio_flags 存储的是整数值，进行转换和检查
+    minipcie_reset_active = (*(unsigned int *)gpio_flags & GPIOF_ACTIVE_LOW) != 0;
 }
 
-minipcie_pwr_gpio = of_get_named_gpio(np, "minipcie-pwr-gpio", 0);  // 获取 GPIO 编号
-if (gpio_is_valid(minipcie_pwr_gpio))
-{
-
-    if (!of_property_read_u32(np, "minipcie-pwr-gpio-flags", &flags)) {
-        minipcie_pwr_active = !(flags & GPIOF_ACTIVE_LOW);
+// 请求 GPIO 引脚
+if (gpio_is_valid(minipcie_reset_gpio)) {
+    if (minipcie_reset_active) {
+        gpio_request_one(minipcie_reset_gpio, GPIOF_OUT_INIT_HIGH, "minipcie 4g reset gpio");
     } else {
-        minipcie_pwr_active = true; // 默认活动为高电平
+        gpio_request_one(minipcie_reset_gpio, GPIOF_OUT_INIT_LOW, "minipcie 4g reset gpio");
     }
-
-    err = handle_gpio_request_and_set_output(minipcie_pwr_gpio, minipcie_pwr_active, "minipcie pwr gpio");
-    gpio_free(minipcie_pwr_gpio);
 }
+
+// lan2_reset_gpio = of_get_named_gpio(np, "lan2-reset-gpio", 0);  // 获取 GPIO 编号
+// if (gpio_is_valid(lan2_reset_gpio))
+// {
+
+//     if (!of_property_read_u32(np, "lan2-reset-gpio-flags",&flags)) {
+//         lan2_reset_active = !(flags & GPIOF_ACTIVE_LOW);
+//     } else {
+//         lan2_reset_active = true; // 默认活动为高电平
+//     }
+
+//     err = handle_gpio_request_and_set_output(lan2_reset_gpio, lan2_reset_active, "lan2 reset gpio");
+// }
 
 if (timing_interval)
     mdelay(timing_interval);
@@ -232,11 +234,11 @@ if (gpio_is_valid(minipcie_reset_gpio))
     device_create_file(dev, &dev_attr_minipcie_reset);
 }
 
-if (gpio_is_valid(lan2_reset_gpio))
-{
-    gpio_direction_output(lan2_reset_gpio, !lan2_reset_active);
-    gpio_free(lan2_reset_gpio);
-}
+// if (gpio_is_valid(lan2_reset_gpio))
+// {
+//     gpio_direction_output(lan2_reset_gpio, !lan2_reset_active);
+//     gpio_free(lan2_reset_gpio);
+// }
 	return 0;
 }
 

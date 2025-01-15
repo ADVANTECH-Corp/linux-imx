@@ -98,10 +98,9 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&adv_gpio_pinmux>;
 		status = "okay";
-		minipcie-pwr-gpio = <&gpio3 21 GPIO_ACTIVE_HIGH>;
+		// minipcie-pwr-gpio = <&gpio3 21 GPIO_ACTIVE_HIGH>;
 		minipcie-reset-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;
-		en-gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;
-
+		en-gpios =<&gpio3 21 GPIO_ACTIVE_HIGH>, <&gpio1 0 GPIO_ACTIVE_LOW>,<&gpio1 14 GPIO_ACTIVE_LOW>,<&gpio5 1 GPIO_ACTIVE_LOW>;
 		timing-interval = <300>;
 	};
 };
@@ -152,7 +151,7 @@
 	wakeup-source;
 	mmc-pwrseq = <&usdhc1_pwrseq>;
 	keep-power-in-suspend;
-	// m2-pwr-en = <&gpio4 10 GPIO_ACTIVE_HIGH>;
+	m2-pwr-en = <&gpio4 10 GPIO_ACTIVE_HIGH>;
 	wake-in = <&gpio4 10 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
@@ -220,9 +219,7 @@
 
 &iomuxc {
     pinctrl_hog: hoggrp {
-            fsl,pins = <
-		MX8MM_IOMUXC_SAI3_TXD_GPIO5_IO1		0x19	/* USBLAN_Z_RESET */
-            >;
+
     };
 
 	pinctrl_switch: switch {
@@ -239,6 +236,8 @@
 			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21		0x19	/* W_DISABLE */
 			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0		0x19	/* Pcie  ENABLE_LTE */
 			MX8MM_IOMUXC_GPIO1_IO01_GPIO1_IO1		0x19	/* PCIE_DIS_B */
+			MX8MM_IOMUXC_SAI3_TXD_GPIO5_IO1		0x19	/* USBLAN_Z_RESET */
+			MX8MM_IOMUXC_GPIO1_IO14_GPIO1_IO14		0x19	/* USBLAN_PWR_EN */
 		>;
 	};
 

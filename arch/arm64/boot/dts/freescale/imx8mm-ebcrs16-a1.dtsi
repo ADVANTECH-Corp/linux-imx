@@ -221,14 +221,14 @@
 		status = "okay";
 	};
 
-	st33htpi: st33htpi@2e {
-		compatible = "st,st33htpm-i2c";
-		reg = <0x2e>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_tpm>;
-		interrupt-parent = <&gpio3>;
-		interrupts = <25 IRQ_TYPE_LEVEL_HIGH>;
-	};
+	// st33htpi: st33htpi@2e {
+	// 	compatible = "st,st33htpm-i2c";
+	// 	reg = <0x2e>;
+	// 	pinctrl-names = "default";
+	// 	pinctrl-0 = <&pinctrl_tpm>;
+	// 	interrupt-parent = <&gpio3>;
+	// 	interrupts = <25 IRQ_TYPE_LEVEL_HIGH>;
+	// };
 };
 
 &i2c3 {
@@ -305,7 +305,7 @@
 	pinctrl-1 = <&pinctrl_usdhc2_100mhz>, <&pinctrl_usdhc2_gpio>;
 	pinctrl-2 = <&pinctrl_usdhc2_200mhz>, <&pinctrl_usdhc2_gpio>;
 	cd-gpios = <&gpio2 12 GPIO_ACTIVE_LOW>;
-	wp-gpios = <&gpio2 20 GPIO_ACTIVE_HIGH>;
+	// wp-gpios = <&gpio2 20 GPIO_ACTIVE_HIGH>;
 	bus-width = <4>;
 	vmmc-supply = <&reg_usdhc2_vmmc>;
 	status = "okay";
