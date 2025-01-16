@@ -322,7 +322,7 @@ static int adv_wdt_i2c_probe(struct i2c_client *client)
 	wdev->wdt_ping_status = gpiod_is_active_low(gpio_wdt_ping_desc);
 
 	gpio_direction_output(wdev->gpio_wdt_ping, !wdev->wdt_ping_status);
-	msleep(10);
+	msleep(50);
 	gpio_direction_output(wdev->gpio_wdt_ping, wdev->wdt_ping_status);
 
 	wdev->wdog.timeout = clamp_t(unsigned, timeout, 1, ADV_WDT_MAX_TIME);
