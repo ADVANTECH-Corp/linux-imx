@@ -19,12 +19,6 @@
 		reg = <0x0 0x40000000 0 0x80000000>;
 	};
 
-	pcie0_refclk: pcie0-refclk {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-frequency = <100000000>;
-	};
-
 	reg_usdhc2_vmmc: regulator-usdhc2 {
 		compatible = "regulator-fixed";
 		pinctrl-names = "default";
@@ -62,30 +56,12 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_fec1>;
 	phy-mode = "rgmii-id";
-	phy-handle = <&ethphy0>;
 	fsl,magic-packet;
 	status = "okay";
 
-	mdio {
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		ethphy0: ethernet-phy@0 {
-			compatible = "ethernet-phy-ieee802.3-c22";
-			reg = <0>;
-			reset-gpios = <&gpio4 22 GPIO_ACTIVE_LOW>;
-			reset-assert-us = <10000>;
-			reset-deassert-us = <80000>;
-			realtek,aldps-enable;
-			realtek,clkout-disable;
-			qca,disable-smarteee;
-			vddio-supply = <&vddio>;
-
-			vddio: vddio-regulator {
-				regulator-min-microvolt = <1800000>;
-				regulator-max-microvolt = <1800000>;
-			};
-		};
+	fixed-link {
+		speed = <1000>;
+		full-duplex;
 	};
 };
 
@@ -244,20 +220,12 @@
         compatible = "fsl,adv-wdt-i2c";
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
-        status = "okay";
+        reg = <0x29>;
+        fix-first-comm-issue;
         wdt-en = <&gpio1 9 0>;
         wdt-ping = <&gpio1 15 0>;
-        reg = <0x29>;
+        status = "okay";
     };
-};
-
-&sai6 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_sai6>;
-	assigned-clocks = <&clk IMX8MM_CLK_SAI6>;
-	assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
-	assigned-clock-rates = <24576000>;
-	status = "okay";
 };
 
 &snvs_pwrkey {
@@ -286,17 +254,6 @@
 	status = "okay";
 };
 
-&usbotg1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usbotg>;
-	dr_mode = "otg";
-	extcon = <0>;
-	vbus-supply = <&reg_usb_otg1_vbus>;
-	samsung,picophy-pre-emp-curr-control = <3>;
-	samsung,picophy-dc-vol-level-adjust = <7>;
-	status = "okay";
-};
-
 &usdhc2 {
 	assigned-clocks = <&clk IMX8MM_CLK_USDHC2>;
 	assigned-clock-rates = <200000000>;
@@ -321,8 +278,6 @@
 &iomuxc {
 	pinctrl_fec1: fec1grp {
 		fsl,pins = <
-			MX8MM_IOMUXC_ENET_MDC_ENET1_MDC			0x3
-			MX8MM_IOMUXC_ENET_MDIO_ENET1_MDIO		0x3
 			MX8MM_IOMUXC_ENET_TD3_ENET1_RGMII_TD3		0x1f
 			MX8MM_IOMUXC_ENET_TD2_ENET1_RGMII_TD2		0x1f
 			MX8MM_IOMUXC_ENET_TD1_ENET1_RGMII_TD1		0x1f
@@ -401,6 +356,7 @@
 
 			MX8MM_IOMUXC_SAI1_TXFS_GPIO4_IO10		0x41	/*WLAN_WAKE_IN*/
 			MX8MM_IOMUXC_SAI1_TXC_GPIO4_IO11		0x41	/*WLAN_WAKE_OUT*/
+			MX8MM_IOMUXC_SAI5_RXC_GPIO3_IO20		0x41	/*WIFI_PWR_EN*/
 
 			MX8MM_IOMUXC_SD1_DATA6_GPIO2_IO8		0x41	/*15.4_RST*/
 			MX8MM_IOMUXC_SD1_DATA7_GPIO2_IO9		0x41	/*BT_RST*/
