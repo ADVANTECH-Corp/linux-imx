@@ -137,33 +137,37 @@ static int  rtl8367c_probe(struct platform_device *pdev)
 		printk("rtk_switch_init fail!\n");
 		return -ENODEV;
 	}
-	retVal=RT_MAPPER->port_phyEnableAll_set(ENABLED);
-
-	rtk_led_groupConfig_set(LED_GROUP_0,LED_CONFIG_LINK_ACT);
+	retVal=rtk_port_phyEnableAll_set(ENABLED);
 	if(retVal != RT_ERR_OK)
 	{  
-		printk("dal_rtl8367c_led_groupConfig_set fail\n");
+		printk("rtk_port_phyEnableAll_set fail\n");
 		return -EINVAL;
 	}
-	rtk_led_groupConfig_set(LED_GROUP_1,LED_CONFIG_SPD1000);
+	retVal=rtk_led_groupConfig_set(LED_GROUP_0,LED_CONFIG_LINK_ACT);
 	if(retVal != RT_ERR_OK)
-	{
-		printk("dal_rtl8367c_led_groupConfig_set fail\n");
+	{  
+		printk("rtk_led_groupConfig_set LED_GROUP_0 fail\n");
 		return -EINVAL;
 	}
-	rtk_led_groupConfig_set(LED_GROUP_2,LED_CONFIG_SPD100);
+	retVal=rtk_led_groupConfig_set(LED_GROUP_1,LED_CONFIG_SPD100);
 	if(retVal != RT_ERR_OK)
 	{
-		printk("dal_rtl8367c_led_groupConfig_set fail\n");
+		printk("rtk_led_groupConfig_set LED_GROUP_1 fail\n");
+		return -EINVAL;
+	}
+	retVal=rtk_led_groupConfig_set(LED_GROUP_2,LED_CONFIG_SPD10);
+	if(retVal != RT_ERR_OK)
+	{
+		printk("rtk_led_groupConfig_set LED_GROUP_2 fail\n");
 		return -EINVAL;
 	} 
-	rtk_led_serialMode_set(LED_ACTIVE_HIGH);
+	retVal=rtk_led_serialMode_set(LED_ACTIVE_HIGH);
 	if(retVal != RT_ERR_OK)
 	{
 		printk("rtk_led_serialMode_set fail\n"); 
 		return -EINVAL;
 	}     
-	imx_mac_ability.forcemode 	= MAC_FORCE;
+	imx_mac_ability.forcemode 	= PORT_MAC_FORCE;
 	imx_mac_ability.speed 		= PORT_SPEED_1000M;
 	imx_mac_ability.duplex 		= PORT_FULL_DUPLEX;
 	imx_mac_ability.link 		= PORT_LINKUP;
@@ -177,15 +181,28 @@ static int  rtl8367c_probe(struct platform_device *pdev)
 
 	txdelay=1;
 	rxdelay=4;
-	rtk_port_rgmiiDelayExt_set(EXT_PORT0,txdelay,rxdelay);
+	retVal=rtk_port_rgmiiDelayExt_set(EXT_PORT0,txdelay,rxdelay);
 	if(retVal != RT_ERR_OK)
 		printk("rtk_port_rgmiiDelayExt_set fail\n");
-
-	retVal=rtk_port_phyComboPortMedia_set(UTP_PORT4,PORT_MEDIA_FIBER);
-	if(retVal != RT_ERR_OK)
-		printk("rtk_port_phyComboPortMedia_set fail\n");
 	else
 		printk("switch booting ok\n");
+	for(int i=0;i<4;i++)
+	{
+		rtk_port_phy_ability_t phy_abi;
+		memset(&phy_abi,0x00,sizeof(rtk_port_phy_ability_t));
+		printk("yanwei,port:%d\n",i);
+		rtk_port_phyAutoNegoAbility_get(i,&phy_abi);
+		printk("yanwei,neg:%d,f10:%d,h10:%d,f100:%d,h100:%d,f1000:%d,FC:%d,AsyFC:%d\n",
+		phy_abi.AutoNegotiation,phy_abi.Half_10,phy_abi.Full_10,phy_abi.Half_100,phy_abi.Full_100,
+		phy_abi.Full_1000,phy_abi.FC,phy_abi.AsyFC);
+		memset(&phy_abi,0x00,sizeof(rtk_port_phy_ability_t));
+		rtk_port_phyForceModeAbility_get(i,&phy_abi);
+		printk("yanwei,neg:%d,f10:%d,h10:%d,f100:%d,h100:%d,f1000:%d,FC:%d,AsyFC:%d\n",
+		phy_abi.AutoNegotiation,phy_abi.Half_10,phy_abi.Full_10,phy_abi.Half_100,phy_abi.Full_100,
+		phy_abi.Full_1000,phy_abi.FC,phy_abi.AsyFC);
+		phy_abi.Full_1000 = 0;
+		rtk_port_phyForceModeAbility_set(i,&phy_abi);
+}
 
 /*
 	//vlan init
