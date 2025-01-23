@@ -56,10 +56,34 @@ static void asix_status(struct usbnet *dev, struct urb *urb)
 	}
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static unsigned char g_mac_addr[ETH_ALEN]={0};
+
+static int __init setup_usblan_addr(char *buf)
+{
+	int i=0;
+
+	if (!buf)
+		return -EINVAL;
+
+	for(i=0;i<ETH_ALEN;i++)
+		g_mac_addr[i] = simple_strtol(buf+i*3, NULL, 16);
+
+	return 0;
+}
+
+early_param("usblan_addr",setup_usblan_addr);
+#endif
+
 static void asix_set_netdev_dev_addr(struct usbnet *dev, u8 *addr)
 {
+#ifndef CONFIG_ARCH_ADVANTECH
 	if (is_valid_ether_addr(addr)) {
 		eth_hw_addr_set(dev->net, addr);
+#else
+	if (is_valid_ether_addr(g_mac_addr)){
+		memcpy((unsigned char *)dev->net->dev_addr,g_mac_addr,ETH_ALEN);
+#endif
 	} else {
 		netdev_info(dev->net, "invalid hw address, using random\n");
 		eth_hw_addr_random(dev->net);
