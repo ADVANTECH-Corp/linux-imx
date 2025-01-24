@@ -67,7 +67,7 @@ static int __init setup_usblan_addr(char *buf)
 		return -EINVAL;
 
 	for(i=0;i<ETH_ALEN;i++)
-		g_mac_addr[i] = simple_strtol(buf+i*3, NULL, 16);
+		g_mac_addr[i] = simple_strtol(buf+i*5, NULL, 16);
 
 	return 0;
 }
