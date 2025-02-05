@@ -15,12 +15,61 @@
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
 #include <linux/delay.h>
+#include <linux/uaccess.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 
 #include "rtk_switch.h"
 #include "rtk_error.h"
 #include "dal/dal_mgmt.h"
 #include "dal/rtl8367c/rtl8367c_asicdrv_port.h"
 
+static int testmode[2]={-1,-1};
+static ssize_t proc_rtl8367_mode_write(struct file *file,
+        const char __user *buffer, size_t count, loff_t *pos)
+{
+	char *buf=NULL;
+	int port;
+	int mode;
+
+	buf=kmalloc(count,GFP_KERNEL);
+	if(buf){
+		copy_from_user(buf,buffer,count);
+		port = simple_strtol(buf, NULL, 10);
+		mode = simple_strtol(buf+2, NULL, 10);
+		kfree(buf);
+
+		if(((port >= 0) && (port < 4)) && 
+		((mode >= 0) && (mode <= 4))){
+			if(RT_ERR_OK == rtk_port_phyTestMode_set(port,mode)){
+				testmode[0] = port;
+				testmode[1] = mode;
+			}
+		}
+	}
+
+	return count;
+}
+
+static int proc_rtl8367_mode_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "port:%d mode:%d\n", testmode[0],testmode[1]);
+
+	return 0;
+}
+
+static int proc_rtl8367_mode_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, proc_rtl8367_mode_show, NULL);
+}
+
+static const struct proc_ops proc_rtl8367_mode_fops = {
+	.proc_open           = proc_rtl8367_mode_open,
+	.proc_read           = seq_read,
+	.proc_write          = proc_rtl8367_mode_write,
+	.proc_lseek         = seq_lseek,
+	.proc_release        = seq_release,
+};
 
 extern void adv_set_smi_gpio(unsigned scl,unsigned sda);
 
@@ -114,28 +163,30 @@ static int  rtl8367c_probe(struct platform_device *pdev)
 	txdelay=1;
 	rxdelay=4;
 	retVal=rtk_port_rgmiiDelayExt_set(EXT_PORT0,txdelay,rxdelay);
-	if(retVal != RT_ERR_OK)
+	if(retVal != RT_ERR_OK) {
 		printk("rtk_port_rgmiiDelayExt_set fail\n");
-	else
-		printk("switch booting ok\n");
+		return -EINVAL;
+	}
+
 	for(int i=0;i<4;i++)
 	{
 		rtk_port_phy_ability_t phy_abi;
 		memset(&phy_abi,0x00,sizeof(rtk_port_phy_ability_t));
-		printk("yanwei,port:%d\n",i);
-		rtk_port_phyAutoNegoAbility_get(i,&phy_abi);
-		printk("yanwei,neg:%d,f10:%d,h10:%d,f100:%d,h100:%d,f1000:%d,FC:%d,AsyFC:%d\n",
-		phy_abi.AutoNegotiation,phy_abi.Half_10,phy_abi.Full_10,phy_abi.Half_100,phy_abi.Full_100,
-		phy_abi.Full_1000,phy_abi.FC,phy_abi.AsyFC);
-		memset(&phy_abi,0x00,sizeof(rtk_port_phy_ability_t));
-		rtk_port_phyForceModeAbility_get(i,&phy_abi);
-		printk("yanwei,neg:%d,f10:%d,h10:%d,f100:%d,h100:%d,f1000:%d,FC:%d,AsyFC:%d\n",
-		phy_abi.AutoNegotiation,phy_abi.Half_10,phy_abi.Full_10,phy_abi.Half_100,phy_abi.Full_100,
-		phy_abi.Full_1000,phy_abi.FC,phy_abi.AsyFC);
+		retVal=rtk_port_phyForceModeAbility_get(i,&phy_abi);
+		if(retVal != RT_ERR_OK) {
+			printk("rtk_port_phyForceModeAbility_get fail\n");
+			return -EINVAL;
+		}
 		phy_abi.Full_1000 = 0;
-		rtk_port_phyForceModeAbility_set(i,&phy_abi);
-}
+		retVal=rtk_port_phyForceModeAbility_set(i,&phy_abi);
+		if(retVal != RT_ERR_OK) {
+			printk("rtk_port_phyForceModeAbility_get fail\n");
+			return -EINVAL;
+		}
+	}
+	proc_create("rtl8367_mode", 0644, NULL, &proc_rtl8367_mode_fops);
 
+	printk("rtl8367 booting ok\n");
 /*
 	//vlan init
 	rtk_vlan_init();
