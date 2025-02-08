@@ -103,7 +103,7 @@ static int adv_wdt_i2c_write_reg(struct i2c_client *client, u8 reg, void *buf, s
 	do {
 		err = i2c_transfer(client->adapter, msg, 1);
 		if (err == 1) {
-			msleep(100);
+			//msleep(100);
 			return 0;
 		}
 
@@ -161,6 +161,7 @@ static int adv_wdt_i2c_fix_first_comm_issue(struct i2c_client *client, unsigned 
 	msleep(100);
 	val = 0;
 	ret = adv_wdt_i2c_write_reg(client, REG_WDT_WATCHDOG_TIME_OUT, &val, 2);
+	msleep(100);
 	return 0;
 }
 
@@ -243,14 +244,16 @@ static int adv_wdt_restart(struct watchdog_device *wdog, unsigned long action,
 {
 	struct i2c_client *client = to_i2c_client(wdog->parent);
 	struct adv_wdt_device *wdev = i2c_get_clientdata(client);
+	unsigned int timeout;
 
 	/* set timeout to 1 sec here and expect WDT_EN in restart handler */
 	gpio_set_value(wdev->gpio_wdt_en, wdev->wdt_en_off);
-	adv_wdt_i2c_set_timeout(client, 1);
-	adv_wdt_ping(wdog);
+	timeout = WDOG_SEC_TO_COUNT(1);
+	adv_wdt_i2c_write_reg(client, REG_WDT_WATCHDOG_TIME_OUT, &timeout, sizeof(timeout));
+	//adv_wdt_ping(wdog);
 
 	/* wait for reset to assert... */
-	mdelay(2000);
+	while(1);
 
 	return 0;
 }
