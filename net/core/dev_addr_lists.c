@@ -516,7 +516,9 @@ void dev_addr_check(struct net_device *dev)
 	netdev_warn(dev, "Current addr:  %*ph\n", MAX_ADDR_LEN, dev->dev_addr);
 	netdev_warn(dev, "Expected addr: %*ph\n",
 		    MAX_ADDR_LEN, dev->dev_addr_shadow);
+#ifndef CONFIG_ARCH_ADVANTECH
 	netdev_WARN(dev, "Incorrect netdev->dev_addr\n");
+#endif
 }
 
 /**
