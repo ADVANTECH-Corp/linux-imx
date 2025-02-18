@@ -1800,17 +1800,23 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
 	if (gpio_is_valid(m2_power_en_gpio)) {
 		ret = devm_gpio_request_one(&pdev->dev,
 					    m2_power_en_gpio,
-					    GPIOF_OUT_INIT_HIGH,
+					    GPIOF_OUT_INIT_LOW,
 					    "m2-pwr-en");
+
+					    mdelay(5);
+					    gpio_direction_output(m2_power_en_gpio, 1);
 	}
 
-	m2_power_en_gpio = of_get_named_gpio(np, "wake-in", 0);
+	m2_power_en_gpio = of_get_named_gpio(np, "wifi-pdn", 0);
 
 	if (gpio_is_valid(m2_power_en_gpio)) {
 		ret = devm_gpio_request_one(&pdev->dev,
 					    m2_power_en_gpio,
-					    GPIOF_OUT_INIT_HIGH,
-					    "wake-in");
+					    GPIOF_OUT_INIT_LOW,
+					    "wifi-pdn");
+
+					    mdelay(5);
+					    gpio_direction_output(m2_power_en_gpio, 1);
 	}
 #endif
 

@@ -163,7 +163,7 @@
 	mmc-pwrseq = <&usdhc1_pwrseq>;
 	keep-power-in-suspend;
 	m2-pwr-en = <&gpio3 20 GPIO_ACTIVE_HIGH>;
-	// wake-in = <&gpio4 10 GPIO_ACTIVE_HIGH>;
+	wifi-pdn = <&gpio3 19 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
 	wifi_wake_host {
