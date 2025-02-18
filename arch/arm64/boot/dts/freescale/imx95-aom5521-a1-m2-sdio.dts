@@ -1,4 +1,4 @@
-#include "imx95-aom3511-a1.dts"
+#include "imx95-aom5521-a1.dts"
 
 / {
 	usdhc2_pwrseq: usdhc2_pwrseq {

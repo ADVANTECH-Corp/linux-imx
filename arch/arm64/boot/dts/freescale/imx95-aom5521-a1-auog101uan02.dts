@@ -3,7 +3,7 @@
  * Copyright 2024 NXP
  */
 
-#include "imx95-aom3511-a1.dts"
+#include "imx95-aom5521-a1.dts"
 
 &display_pixel_link {
 	status = "okay";
