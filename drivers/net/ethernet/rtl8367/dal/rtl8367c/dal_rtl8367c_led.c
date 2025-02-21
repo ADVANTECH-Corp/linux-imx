@@ -156,20 +156,6 @@ rtk_api_ret_t dal_rtl8367c_led_operation_set(rtk_led_operation_t mode)
     if ((retVal = rtl8367c_setAsicLedOperationMode(regData)) != RT_ERR_OK)
         return retVal;
 
-    switch (rtk_switch_chipType_get())
-    {
-        case CHIP_RTL8367C:
-            if (mode == LED_OP_SERIAL)
-            {
-                if((retVal = rtl8367c_setAsicRegBit(RTL8367C_REG_REG_TO_ECO4, 15, 1))!=  RT_ERR_OK)
-                    return retVal;
-            }
-            break;
-        default:
-            /* Do nothing */
-            break;
-    }
-
     return RT_ERR_OK;
 }
 

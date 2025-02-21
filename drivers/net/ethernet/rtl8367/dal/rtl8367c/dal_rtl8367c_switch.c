@@ -70,17 +70,6 @@ static rtk_api_ret_t _dal_switch_init_8367c(void)
     rtk_uint32 retVal;
     rtk_uint32 regData;
     rtk_uint32 regValue;
-    rtk_uint32 counter = 0;
-    rtk_uint32 i;
-    rtk_uint32 patchData1[][2] = {   
-    {0xa436, 0x8028}, {0xa438, 0x6701}, {0xa436, 0xB820}, {0xa438, 0x0090}, {0xa436, 0xA012}, {0xa438, 0x0000}, {0xa436, 0xA014}, {0xa438, 0x2C04},
-    {0xa438, 0x2C06}, {0xa438, 0x2C1E}, {0xa438, 0x2C21}, {0xa438, 0xC114}, {0xa438, 0x25F1}, {0xa438, 0x41AC}, {0xa438, 0xD709}, {0xa438, 0x3001},
-    {0xa438, 0x54A8}, {0xa438, 0xD700}, {0xa438, 0x3108}, {0xa438, 0x14A8}, {0xa438, 0x33C7}, {0xa438, 0x74A8}, {0xa438, 0x3129}, {0xa438, 0x052E},
-    {0xa438, 0xB401}, {0xa438, 0x24CB}, {0xa438, 0xD709}, {0xa438, 0x3001}, {0xa438, 0x54CB}, {0xa438, 0xD700}, {0xa438, 0x3108}, {0xa438, 0x14CB},
-    {0xa438, 0x33C7}, {0xa438, 0x14CB}, {0xa438, 0x3129}, {0xa438, 0x052E}, {0xa438, 0x24A7}, {0xa438, 0xD302}, {0xa438, 0xD076}, {0xa438, 0x2518},
-    {0xa438, 0x410E}, {0xa438, 0x15D0}, {0xa438, 0x1621}, {0xa438, 0xD501}, {0xa438, 0xA103}, {0xa438, 0x8203}, {0xa438, 0xD500}, {0xa438, 0x206C},
-    {0xa438, 0x1627}, {0xa438, 0xD501}, {0xa438, 0x8103}, {0xa438, 0xA203}, {0xa438, 0xD500}, {0xa438, 0x206C}, {0xa436, 0xA006}, {0xa438, 0x0067},
-    {0xa436, 0xA004}, {0xa438, 0x0517}, {0xa436, 0xA002}, {0xa438, 0x0494}, {0xa436, 0xA000}, {0xa438, 0xF5F0}, {0xa436, 0xB820}, {0xa438, 0x0000}};	
 
     if( (retVal = rtl8367c_setAsicReg(0x13c2, 0x0249)) != RT_ERR_OK)
         return retVal;
@@ -95,49 +84,6 @@ static rtk_api_ret_t _dal_switch_init_8367c(void)
     {
         if(rtk_switch_isUtpPort(port) == RT_ERR_OK)
         {
-            if ((retVal = rtl8367c_getAsicPHYOCPReg(port, 0xa46a, &regData)) != RT_ERR_OK)
-                return retVal;
-
-            if ((regData & 0x0700) != 0x0200)
-            {
-                if ((retVal = rtl8367c_setAsicPHYOCPReg(port, 0xb820, 0x0010)) != RT_ERR_OK)
-                    return retVal;
-                
-                counter = 0;
-                do 
-                {
-                    if ((retVal = rtl8367c_getAsicPHYOCPReg(port, 0xb800, &regData)) != RT_ERR_OK)
-                        return retVal;
-
-                    if ((regData & 0x40) != 0 )
-                        break;
-                    
-                    counter++;
-                } while (counter < 200);   //Wait for patch ready = 1...
-
-                if ((regData & 0x40) == 0 )
-                    return RT_ERR_BUSYWAIT_TIMEOUT;
-            }
-
-            for(i = 0; i < sizeof(patchData1) / (sizeof(rtk_uint32) * 2); i++)
-            {
-                if((retVal = rtl8367c_setAsicPHYOCPReg(port, patchData1[i][0], patchData1[i][1])) != RT_ERR_OK)
-                    return retVal;
-            }
-
-            if ((retVal = rtl8367c_getAsicPHYOCPReg(port, 0xa432, &regData)) != RT_ERR_OK)
-                return retVal;
-
-            regData = regData & 0xFFBF;
-            if ((retVal = rtl8367c_setAsicPHYOCPReg(port, 0xa432, regData)) != RT_ERR_OK)
-                return retVal;  
-        }
-    }
-
-    RTK_SCAN_ALL_LOG_PORT(port)
-    {
-         if(rtk_switch_isUtpPort(port) == RT_ERR_OK)
-         {
              if((retVal = rtl8367c_setAsicRegBit(RTL8367C_REG_PORT0_EEECFG + (0x20 * port), RTL8367C_PORT0_EEECFG_EEE_100M_OFFSET, 1)) != RT_ERR_OK)
                  return retVal;
 

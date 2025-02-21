@@ -2034,40 +2034,11 @@ ret_t rtl8367c_getAsicPortForceLink(rtk_uint32 port, rtl8367c_port_ability_t *pP
 ret_t rtl8367c_getAsicPortStatus(rtk_uint32 port, rtl8367c_port_status_t *pPortStatus)
 {
     ret_t retVal;
-    rtk_uint32 regData, regValue;
+    rtk_uint32 regData;
 
     /* Invalid input parameter */
     if(port >= RTL8367C_PORTNO)
         return RT_ERR_PORT_ID;
-
-    
-    if((retVal = rtl8367c_setAsicReg(0x13C2, 0x0249)) != RT_ERR_OK)
-        return retVal;
-    /*get chip ID */
-    if((retVal = rtl8367c_getAsicReg(0x1300, &regValue)) != RT_ERR_OK)
-        return retVal;
-
-    if((retVal = rtl8367c_setAsicReg(0x13C2, 0x0000)) != RT_ERR_OK)
-        return retVal;
-
-
-    if(regValue == 0x6871 && (port ==  8 || port == 9) )
-    {
-        retVal = rtl8367c_getAsicReg(0x1e38, &regData);
-        pPortStatus->link   = (regData >> ((port-8)*1)) & 0x1;
-        pPortStatus->speed  = (regData >> (8+(port-8)*4)) & 0xf;
-        pPortStatus->duplex = (regData >>(4+(port-8)*1)) & 0x1;    
-        //media  = (regData >> (2+(port-8)*1)) & 0x1;
-        //eee_en = (regData >> (6+(port-8)*1)) & 0x1;
-
-        retVal = rtl8367c_getAsicReg(0x1e39, &regData);
-        pPortStatus->txpause  = (regData >>  (port-8)) & 0x1;
-        pPortStatus->rxpause  = (regData >>  (2+(port-8))) & 0x1;          
-        pPortStatus->mstmode  = (regData >>  (4+(port-8))) & 0x1;
-        pPortStatus->mstfault = (regData >> (6+(port-8))) & 0x1;
-    }
-    else
-    {
 
         retVal = rtl8367c_getAsicReg(RTL8367C_REG_PORT0_STATUS+port,&regData);
         if(retVal != RT_ERR_OK)
@@ -2083,7 +2054,6 @@ ret_t rtl8367c_getAsicPortStatus(rtk_uint32 port, rtl8367c_port_status_t *pPortS
         pPortStatus->link     = (regData >> 4) & 0x0001;
         pPortStatus->duplex   = (regData >> 2) & 0x0001;
         pPortStatus->speed    = regData  & 0x0003;
-    }
 
     return RT_ERR_OK;
 }
@@ -3026,6 +2996,7 @@ ret_t rtl8367c_setAsicPortForceLinkExt(rtk_uint32 id, rtl8367c_port_ability_t *p
                 return retVal;
         }
     }
+#if 0
     else if(4 == type)
     {
         regAddr = 0x1311 + ((id - 1) * 0xb3);
@@ -3047,6 +3018,7 @@ ret_t rtl8367c_setAsicPortForceLinkExt(rtk_uint32 id, rtl8367c_port_ability_t *p
         if((retVal = rtl8367c_setAsicRegBit(regAddr, 8, pPortAbility->rxpause)) != RT_ERR_OK)
             return retVal;
     }
+#endif
 
     return RT_ERR_OK;
 }
@@ -3068,7 +3040,9 @@ ret_t rtl8367c_setAsicPortForceLinkExt(rtk_uint32 id, rtl8367c_port_ability_t *p
  */
 ret_t rtl8367c_getAsicPortForceLinkExt(rtk_uint32 id, rtl8367c_port_ability_t *pPortAbility)
 {
-    rtk_uint32  reg_data, regValue, type, regAddr;
+    rtk_uint32  reg_data, regValue, type;
+    rtk_uint32  sgmiiSel;
+    rtk_uint32  hsgmiiSel;
     rtk_uint32  Mode;
     ret_t       retVal;
 
@@ -3113,10 +3087,13 @@ ret_t rtl8367c_getAsicPortForceLinkExt(rtk_uint32 id, rtl8367c_port_ability_t *p
     {
         if(1 == id)
         {
-            if ((retVal = rtl8367c_getAsicPortExtMode(id, &Mode)) != RT_ERR_OK)
+            if((retVal = rtl8367c_getAsicRegBit(RTL8367C_REG_SDS_MISC, RTL8367C_CFG_MAC8_SEL_SGMII_OFFSET, &sgmiiSel)) != RT_ERR_OK)
                 return retVal;
 
-            if( (Mode == EXT_SGMII) || (Mode == EXT_HSGMII) || (Mode == EXT_FIBER_2P5G))
+            if((retVal = rtl8367c_getAsicRegBit(RTL8367C_REG_SDS_MISC, RTL8367C_CFG_MAC8_SEL_HSGMII_OFFSET, &hsgmiiSel)) != RT_ERR_OK)
+                return retVal;
+
+            if( (sgmiiSel == 1) || (hsgmiiSel == 1) )
             {
                 memset(pPortAbility, 0x00, sizeof(rtl8367c_port_ability_t));
                 pPortAbility->forcemode = 1;
@@ -3296,19 +3273,6 @@ ret_t rtl8367c_getAsicPortForceLinkExt(rtk_uint32 id, rtl8367c_port_ability_t *p
                 pPortAbility->txpause = (reg_data >> 6) & 1;
             }
         }
-    }
-    else if(4 == type)
-    {
-        regAddr = 0x1311 + ((id - 1) * 0xb3);
-        if ((retVal = rtl8367c_getAsicReg(regAddr, &reg_data))!=RT_ERR_OK)
-            return retVal;
-
-        pPortAbility->forcemode = (reg_data >> 0) & 1;
-        pPortAbility->duplex = (reg_data >> 2) & 1;
-        pPortAbility->link = (reg_data >> 1) & 1;
-        pPortAbility->speed = (reg_data >> 3) & 0xF;
-        pPortAbility->rxpause = (reg_data >> 8) & 1;
-        pPortAbility->txpause = (reg_data >> 7) & 1;
     }
     return RT_ERR_OK;
 }
@@ -3617,21 +3581,6 @@ ret_t rtl8367c_setAsicPortExtMode(rtk_uint32 id, rtk_uint32 mode)
             }
         }
 
-        if(mode == EXT_FIBER_2P5G)
-        {
-            for(i = 0; i <= 8; i++)
-            {
-                if( (retVal = rtl8367c_setAsicReg(RTL8367C_REG_SDS_INDACS_DATA, redDataFiber2P5G[i][0])) != RT_ERR_OK)
-                    return retVal;
-
-                if( (retVal = rtl8367c_setAsicReg(RTL8367C_REG_SDS_INDACS_ADR, redDataFiber2P5G[i][1])) != RT_ERR_OK)
-                    return retVal;
-
-                if( (retVal = rtl8367c_setAsicReg(RTL8367C_REG_SDS_INDACS_CMD, 0x00C0)) != RT_ERR_OK)
-                    return retVal;
-            }
-        }
-
         /* Only one ext port should care SGMII setting */
         if(id == 1)
         {
@@ -3644,7 +3593,7 @@ ret_t rtl8367c_setAsicPortExtMode(rtk_uint32 id, rtk_uint32 mode)
                 if( (retVal = rtl8367c_setAsicRegBit(RTL8367C_REG_SDS_MISC, RTL8367C_CFG_MAC8_SEL_HSGMII_OFFSET, 0)) != RT_ERR_OK)
                     return retVal;
             }
-            else if((mode == EXT_HSGMII) || (mode == EXT_FIBER_2P5G))
+            else if(mode == EXT_HSGMII)
             {
                 if( (retVal = rtl8367c_setAsicRegBit(RTL8367C_REG_SDS_MISC, RTL8367C_CFG_MAC8_SEL_SGMII_OFFSET, 0)) != RT_ERR_OK)
                     return retVal;
@@ -3678,7 +3627,7 @@ ret_t rtl8367c_setAsicPortExtMode(rtk_uint32 id, rtk_uint32 mode)
         }
 
         /* Serdes not reset */
-        if( (mode == EXT_SGMII) || (mode == EXT_HSGMII) || (mode == EXT_FIBER_2P5G))
+        if( (mode == EXT_SGMII) || (mode == EXT_HSGMII) )
         {
             if( (retVal = rtl8367c_setAsicReg(RTL8367C_REG_SDS_INDACS_DATA, 0x7106)) != RT_ERR_OK)
                 return retVal;
@@ -3690,7 +3639,7 @@ ret_t rtl8367c_setAsicPortExtMode(rtk_uint32 id, rtk_uint32 mode)
                 return retVal;
         }
 
-        if( (mode == EXT_SGMII) || (mode == EXT_HSGMII) || (mode == EXT_FIBER_2P5G))
+        if( (mode == EXT_SGMII) || (mode == EXT_HSGMII) )
         {
             if ((retVal = rtl8367c_setAsicRegBit(RTL8367C_REG_CHIP_RESET, RTL8367C_DW8051_RST_OFFSET, 1)) != RT_ERR_OK)
                 return retVal;
@@ -4973,50 +4922,6 @@ ret_t rtl8367c_setAsicPortExtMode(rtk_uint32 id, rtk_uint32 mode)
         }
 
     }
-    else if (4 == type)
-    {
-        rtk_uint8 modeInReg[] = {0, 0, 0, 0, 0, 0, 0, 0,  0, 2, 0x12, 7, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0x16};
-
-        if(id == 1) //port8 sds1
-        {
-            if ((retVal = rtl8367c_setAsicRegBits(0x1d92, 0x1f00, 0x1f)) != RT_ERR_OK)
-                return retVal;   
-            
-            if(mode == EXT_100FX)
-            {
-                if( (retVal = rtl8367c_setAsicSdsReg(1, 0, 2, 0x2100)) != RT_ERR_OK) //disable nway
-                    return retVal;
-            }
-            else
-            {
-                if( (retVal = rtl8367c_setAsicSdsReg(1, 0, 2, 0x1140)) != RT_ERR_OK)//enable nway
-                    return retVal;
-            }
-
-            if ((retVal = rtl8367c_setAsicRegBits(0x1d92, 0x1f00, modeInReg[mode])) != RT_ERR_OK)
-                return retVal;    
-        }
-        else //port9 sds0
-        {
-            if ((retVal = rtl8367c_setAsicRegBits(0x1d92, 0x1f, 0x1f)) != RT_ERR_OK)
-                return retVal;  
-            if(mode == EXT_100FX)
-            {
-                if( (retVal = rtl8367c_setAsicSdsReg(0, 0, 2, 0x2100)) != RT_ERR_OK) //disable nway
-                    return retVal;
-            }
-            else
-            {
-                if( (retVal = rtl8367c_setAsicSdsReg(0, 0, 2, 0x1140)) != RT_ERR_OK) //enable nway
-                    return retVal;
-            }
-            
-            //set mode
-            if ((retVal = rtl8367c_setAsicRegBits(0x1d92, 0x1f, modeInReg[mode])) != RT_ERR_OK)
-                return retVal; 
-        }                    
- 
-    }
     return RT_ERR_OK;
 }
 /* Function Name:
@@ -5039,7 +4944,6 @@ ret_t rtl8367c_getAsicPortExtMode(rtk_uint32 id, rtk_uint32 *pMode)
 {
     ret_t   retVal;
     rtk_uint32 regData, regValue, type;
-    rtk_uint32 sgmiiSel, hsgmiiSel;
 
     if(id >= RTL8367C_EXTNO)
         return RT_ERR_OUT_OF_RANGE;
@@ -5081,33 +4985,7 @@ ret_t rtl8367c_getAsicPortExtMode(rtk_uint32 id, rtk_uint32 *pMode)
     if (1 == type)
     {
         if(0 == id || 1 == id)
-        {
-            if ((retVal = rtl8367c_getAsicRegBit(RTL8367C_REG_SDS_MISC, RTL8367C_CFG_MAC8_SEL_SGMII_OFFSET, &sgmiiSel)) != RT_ERR_OK)
-                return retVal;
-
-            if( (retVal = rtl8367c_getAsicRegBit(RTL8367C_REG_SDS_MISC, RTL8367C_CFG_MAC8_SEL_HSGMII_OFFSET, &hsgmiiSel)) != RT_ERR_OK)
-                return retVal;
-
-            if ((sgmiiSel == 1) && (hsgmiiSel == 0))
-            {
-                *pMode = EXT_SGMII;
-                return RT_ERR_OK;
-            }
-            else if ((sgmiiSel == 0) && (hsgmiiSel == 1))
-            {
-                if ((retVal = rtl8367c_getAsicRegBits(RTL8367C_REG_DIGITAL_INTERFACE_SELECT, RTL8367C_SELECT_GMII_0_MASK << (id * RTL8367C_SELECT_GMII_1_OFFSET), &regData)) != RT_ERR_OK)
-                    return retVal;
-                
-                if (regData == EXT_HSGMII)
-                    *pMode = EXT_HSGMII;
-                else
-                    *pMode = EXT_FIBER_2P5G;
-
-                return RT_ERR_OK;
-            }
-            else
-                return rtl8367c_getAsicRegBits(RTL8367C_REG_DIGITAL_INTERFACE_SELECT, RTL8367C_SELECT_GMII_0_MASK << (id * RTL8367C_SELECT_GMII_1_OFFSET), pMode);
-        }
+           return rtl8367c_getAsicRegBits(RTL8367C_REG_DIGITAL_INTERFACE_SELECT, RTL8367C_SELECT_GMII_0_MASK << (id * RTL8367C_SELECT_GMII_1_OFFSET), pMode);
         else
            return rtl8367c_getAsicRegBits(RTL8367C_REG_DIGITAL_INTERFACE_SELECT_1, RTL8367C_SELECT_GMII_2_MASK, pMode);
     }
@@ -5291,21 +5169,6 @@ ret_t rtl8367c_getAsicPortExtMode(rtk_uint32 id, rtk_uint32 *pMode)
                 return RT_ERR_OK;
             }
         }
-    }
-    else if (4 == type)
-    {
-        rtk_uint8 modeReg[] = {0, 0, 9, 0, 12, 13, 0, 11, 0,0,0,0,0,0,0,0,0,0,10,0,0,0,21};
-        if(id == 1) //port8 sds1
-        {
-            if ((retVal = rtl8367c_getAsicRegBits(0x1d92, 0x1f00, &regData)) != RT_ERR_OK)
-                return retVal;                  
-        }
-        else //port9 sds0
-        {
-            if ((retVal = rtl8367c_getAsicRegBits(0x1d92, 0x1f, &regData)) != RT_ERR_OK)
-                return retVal;           
-        }                    
-        *pMode = modeReg[regData];
     }
 
     return RT_ERR_OK;
@@ -5780,113 +5643,6 @@ ret_t rtl8367c_getAsicPortRTCTResult(rtk_uint32 port, rtl8367c_port_rtct_result_
                 return retVal;
 
             pResult->channelDLen = (regData / 2);
-        }
-        else
-            finish = 0;
-
-    }
-    else if(regData == 0x6871)
-    {
-        if((retVal = rtl8367c_getAsicPHYOCPReg(port, 0xa422, &regData)) != RT_ERR_OK)
-            return retVal;
-
-        if((regData & 0x8000) == 0x8000)
-        {
-            /* Channel A */
-            if((retVal = rtl8367c_setAsicPHYOCPReg(port, 0xa436, 0x802a)) != RT_ERR_OK)
-                return retVal;
-
-            if((retVal = rtl8367c_getAsicPHYOCPReg(port, 0xa438, &regData)) != RT_ERR_OK)
-                return retVal;
-
-            pResult->channelAOpen       = (regData == 0x0048) ? 1 : 0;
-            pResult->channelAShort      = (regData == 0x0050) ? 1 : 0;
-            pResult->channelAMismatch   = ((regData == 0x0042) || (regData == 0x0044)) ? 1 : 0;
-            pResult->channelALinedriver = (regData == 0x0041) ? 1 : 0;
-
-            /* Channel B */
-            if((retVal = rtl8367c_setAsicPHYOCPReg(port, 0xa436, 0x802e)) != RT_ERR_OK)
-                return retVal;
-
-            if((retVal = rtl8367c_getAsicPHYOCPReg(port, 0xa438, &regData)) != RT_ERR_OK)
-                return retVal;
-
-            pResult->channelBOpen       = (regData == 0x0048) ? 1 : 0;
-            pResult->channelBShort      = (regData == 0x0050) ? 1 : 0;
-            pResult->channelBMismatch   = ((regData == 0x0042) || (regData == 0x0044)) ? 1 : 0;
-            pResult->channelBLinedriver = (regData == 0x0041) ? 1 : 0;
-
-            /* Channel C */
-            if((retVal = rtl8367c_setAsicPHYOCPReg(port, 0xa436, 0x8032)) != RT_ERR_OK)
-                return retVal;
-
-            if((retVal = rtl8367c_getAsicPHYOCPReg(port, 0xa438, &regData)) != RT_ERR_OK)
-                return retVal;
-
-            pResult->channelCOpen       = (regData == 0x0048) ? 1 : 0;
-            pResult->channelCShort      = (regData == 0x0050) ? 1 : 0;
-            pResult->channelCMismatch   = ((regData == 0x0042) || (regData == 0x0044)) ? 1 : 0;
-            pResult->channelCLinedriver = (regData == 0x0041) ? 1 : 0;
-
-            /* Channel D */
-            if((retVal = rtl8367c_setAsicPHYOCPReg(port, 0xa436, 0x8036)) != RT_ERR_OK)
-                return retVal;
-
-            if((retVal = rtl8367c_getAsicPHYOCPReg(port, 0xa438, &regData)) != RT_ERR_OK)
-                return retVal;
-
-            pResult->channelDOpen       = (regData == 0x0048) ? 1 : 0;
-            pResult->channelDShort      = (regData == 0x0050) ? 1 : 0;
-            pResult->channelDMismatch   = ((regData == 0x0042) || (regData == 0x0044)) ? 1 : 0;
-            pResult->channelDLinedriver = (regData == 0x0041) ? 1 : 0;
-
-            /* Channel A Length */
-            if((retVal = rtl8367c_setAsicPHYOCPReg(port, 0xa436, 0x802c)) != RT_ERR_OK)
-                return retVal;
-
-            if((retVal = rtl8367c_getAsicPHYOCPReg(port, 0xa438, &regData)) != RT_ERR_OK)
-                return retVal;
-            
-            if(regData < 0x1cc)
-                pResult->channelALen = 0;
-            else
-                pResult->channelALen = (regData - 0x1cc) * 400 / 778;
-
-            /* Channel B Length */
-            if((retVal = rtl8367c_setAsicPHYOCPReg(port, 0xa436, 0x8030)) != RT_ERR_OK)
-                return retVal;
-
-            if((retVal = rtl8367c_getAsicPHYOCPReg(port, 0xa438, &regData)) != RT_ERR_OK)
-                return retVal;
-            
-            if(regData < 0x1cc)
-                pResult->channelBLen = 0;
-            else
-                pResult->channelBLen = (regData - 0x1cc) * 400 / 778;
-
-            /* Channel C Length */
-            if((retVal = rtl8367c_setAsicPHYOCPReg(port, 0xa436, 0x8034)) != RT_ERR_OK)
-                return retVal;
-
-            if((retVal = rtl8367c_getAsicPHYOCPReg(port, 0xa438, &regData)) != RT_ERR_OK)
-                return retVal;
-            
-            if(regData < 0x1cc)
-                pResult->channelCLen = 0;
-            else
-                pResult->channelCLen = (regData - 0x1cc) * 400 / 778;
-
-            /* Channel D Length */
-            if((retVal = rtl8367c_setAsicPHYOCPReg(port, 0xa436, 0x8038)) != RT_ERR_OK)
-                return retVal;
-
-            if((retVal = rtl8367c_getAsicPHYOCPReg(port, 0xa438, &regData)) != RT_ERR_OK)
-                return retVal;
-
-            if(regData < 0x1cc)
-                pResult->channelDLen = 0;
-            else
-                pResult->channelDLen = (regData - 0x1cc) * 400 / 778;
         }
         else
             finish = 0;
@@ -6897,7 +6653,7 @@ ret_t rtl8367c_cfgHsgWorkAroundfor70c(rtk_uint32 port)
 	rtl8367c_getAsicReg(sdsModeAddr, &sdsMode);
 	sdsMode8 = sdsMode & 0xE0FF;
 	sdsMode9 = sdsMode & 0xFFE0;
-    
+
     if(port == 8)
     {
 	    if((linkSts1 & 0x1) && (p8Flag != 1))//port8 link on & last time link down
