@@ -18,7 +18,7 @@
 
 	board {
 		compatible = "proc-board";
-		board-type = "ROM-2820 A1";
+		board-type = "AFE-E420 A1";
 		board-cpu = "IMX93";
 		};
 
