@@ -130,13 +130,13 @@ static int  rtl8367c_probe(struct platform_device *pdev)
 		printk("rtk_led_groupConfig_set LED_GROUP_0 fail\n");
 		return -EINVAL;
 	}
-	retVal=rtk_led_groupConfig_set(LED_GROUP_1,LED_CONFIG_SPD100);
+	retVal=rtk_led_groupConfig_set(LED_GROUP_1,LED_CONFIG_LEDOFF);
 	if(retVal != RT_ERR_OK)
 	{
 		printk("rtk_led_groupConfig_set LED_GROUP_1 fail\n");
 		return -EINVAL;
 	}
-	retVal=rtk_led_groupConfig_set(LED_GROUP_2,LED_CONFIG_SPD10);
+	retVal=rtk_led_groupConfig_set(LED_GROUP_2,LED_CONFIG_SPD100);
 	if(retVal != RT_ERR_OK)
 	{
 		printk("rtk_led_groupConfig_set LED_GROUP_2 fail\n");
@@ -148,6 +148,7 @@ static int  rtl8367c_probe(struct platform_device *pdev)
 		printk("rtk_led_serialMode_set fail\n"); 
 		return -EINVAL;
 	}     
+
 	imx_mac_ability.forcemode 	= PORT_MAC_FORCE;
 	imx_mac_ability.speed 		= PORT_SPEED_1000M;
 	imx_mac_ability.duplex 		= PORT_FULL_DUPLEX;
@@ -172,18 +173,22 @@ static int  rtl8367c_probe(struct platform_device *pdev)
 	{
 		rtk_port_phy_ability_t phy_abi;
 		memset(&phy_abi,0x00,sizeof(rtk_port_phy_ability_t));
-		retVal=rtk_port_phyForceModeAbility_get(i,&phy_abi);
+		printk("[adv ] ,port:%d\n",i);
+		retVal=rtk_port_phyAutoNegoAbility_get(i,&phy_abi);
 		if(retVal != RT_ERR_OK) {
 			printk("rtk_port_phyForceModeAbility_get fail\n");
 			return -EINVAL;
 		}
+
 		phy_abi.Full_1000 = 0;
-		retVal=rtk_port_phyForceModeAbility_set(i,&phy_abi);
+		retVal=rtk_port_phyAutoNegoAbility_set(i,&phy_abi);
 		if(retVal != RT_ERR_OK) {
 			printk("rtk_port_phyForceModeAbility_get fail\n");
 			return -EINVAL;
 		}
 	}
+
+
 	proc_create("rtl8367_mode", 0644, NULL, &proc_rtl8367_mode_fops);
 
 	printk("rtl8367 booting ok\n");
