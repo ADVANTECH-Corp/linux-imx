@@ -351,12 +351,6 @@
 		>;
 	};
 
-    pinctrl_tpm: tpm_grp {
-            fsl,pins = <
-		MX8MM_IOMUXC_ECSPI1_MOSI_GPIO5_IO7		0x159	/* TPM_IRQ */
-            >;
-    };
-
     pinctrl_usbotg: usbotggrp {
             fsl,pins = <
 		MX8MM_IOMUXC_GPIO1_IO12_GPIO1_IO12		0x19	/* USB1_OTG_EN */

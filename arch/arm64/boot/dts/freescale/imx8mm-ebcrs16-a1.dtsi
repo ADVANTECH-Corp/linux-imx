@@ -322,7 +322,7 @@
 
 	pinctrl_tpm: tpm_grp {
 		fsl,pins = <
-			MX8MM_IOMUXC_SAI5_MCLK_GPIO3_IO25      0x19    /* TPM_IRQ#_1V8 */
+			MX8MM_IOMUXC_SAI5_MCLK_GPIO3_IO25      0x159    /* TPM_IRQ#_1V8 */
 		>;
 	};
 
