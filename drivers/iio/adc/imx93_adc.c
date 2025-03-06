@@ -39,6 +39,10 @@
 #define IMX93_ADC_PCDR7		0x11c
 #define IMX93_ADC_CALSTAT	0x39C
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#define IMX93_ADC_CALCFG0	0x3A0
+#endif
+
 #define IMX93_ADC_MCR_MODE_MASK			BIT(29)
 #define IMX93_ADC_MCR_NSTART_MASK		BIT(24)
 #define IMX93_ADC_MCR_CALSTART_MASK		BIT(14)
@@ -148,6 +152,20 @@ static int imx93_adc_calibration(struct imx93_adc *adc)
 	mcr &= ~FIELD_PREP(IMX93_ADC_MCR_PWDN_MASK, 1);
 	writel(mcr, adc->regs + IMX93_ADC_MCR);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	/* Not sure which value is proper count, start from zero. */
+	u8 bndflcnt = 0;
+recalibration:
+	mcr = readl(adc->regs + IMX93_ADC_CALCFG0);
+	dev_info(adc->dev, "IMX93_ADC_CALCFG0=0x%x - previous\n", mcr);
+	mcr &= ~(0xF << 8);
+	mcr |= (bndflcnt << 8);
+	writel(mcr, adc->regs + IMX93_ADC_CALCFG0);
+	mcr = readl(adc->regs + IMX93_ADC_CALCFG0);
+	dev_info(adc->dev, "IMX93_ADC_CALCFG0=0x%x, bndflcnt=%d\n", mcr, bndflcnt);
+	bndflcnt++;
+#endif
+
 	/*
 	 * we use the default TSAMP/NRSMPL/AVGEN in MCR,
 	 * can add the setting of these bit if need
@@ -170,7 +188,14 @@ static int imx93_adc_calibration(struct imx93_adc *adc)
 	msr = readl(adc->regs + IMX93_ADC_MSR);
 	if (msr & IMX93_ADC_MSR_CALFAIL_MASK) {
 		dev_warn(adc->dev, "ADC calibration failed!\n");
+#ifndef CONFIG_ARCH_ADVANTECH
 		return -EAGAIN;
+#else
+		goto recalibration;
+	}
+	else {
+		dev_info(adc->dev, "ADC calibration success!\n");
+#endif
 	}
 
 	return 0;
