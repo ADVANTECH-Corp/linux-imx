@@ -149,6 +149,14 @@ static int  rtl8367c_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}     
 
+	txdelay=1;
+	rxdelay=4;
+	retVal=rtk_port_rgmiiDelayExt_set(EXT_PORT0,txdelay,rxdelay);
+	if(retVal != RT_ERR_OK) {
+		printk("rtk_port_rgmiiDelayExt_set fail\n");
+		return -EINVAL;
+	}
+
 	imx_mac_ability.forcemode 	= PORT_MAC_FORCE;
 	imx_mac_ability.speed 		= PORT_SPEED_1000M;
 	imx_mac_ability.duplex 		= PORT_FULL_DUPLEX;
@@ -159,21 +167,12 @@ static int  rtl8367c_probe(struct platform_device *pdev)
 
 	retVal=rtk_port_macForceLinkExt_set(EXT_PORT0,MODE_EXT_RGMII,&imx_mac_ability);
 	if(retVal != RT_ERR_OK)
-		printk("rtk_port_macForceLinkExt_set fail\n");
-
-	txdelay=1;
-	rxdelay=4;
-	retVal=rtk_port_rgmiiDelayExt_set(EXT_PORT0,txdelay,rxdelay);
-	if(retVal != RT_ERR_OK) {
-		printk("rtk_port_rgmiiDelayExt_set fail\n");
-		return -EINVAL;
-	}
+		printk("rtk_port_macForceLinkExt_set ,EXT_PORT0 fail\n");
 
 	for(int i=0;i<4;i++)
 	{
 		rtk_port_phy_ability_t phy_abi;
 		memset(&phy_abi,0x00,sizeof(rtk_port_phy_ability_t));
-		printk("[adv ] ,port:%d\n",i);
 		retVal=rtk_port_phyAutoNegoAbility_get(i,&phy_abi);
 		if(retVal != RT_ERR_OK) {
 			printk("rtk_port_phyForceModeAbility_get fail\n");
