@@ -373,6 +373,21 @@
 	status = "okay";
 };
 
+&lpi2c6 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&pinctrl_lpi2c6>;
+	pinctrl-1 = <&pinctrl_lpi2c6>;
+	status = "okay";
+
+	eeprom0: 24c32@50 {
+		compatible = "st,24c32";
+		reg = <0x50>;
+	};
+};
+
 &lpi2c7 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -382,11 +397,9 @@
 	pinctrl-1 = <&pinctrl_lpi2c7>;
 	status = "okay";
 
-	pcal6408: gpio@21 {
-		compatible = "nxp,pcal9554b";
-		reg = <0x21>;
-		gpio-controller;
-		#gpio-cells = <2>;
+	eeprom1: 24c32@50 {
+		compatible = "st,24c32";
+		reg = <0x50>;
 	};
 };
 
@@ -602,6 +615,13 @@
 		fsl,pins = <
 			MX8ULP_PAD_PTF22__LPUART7_TX	0x3
 			MX8ULP_PAD_PTF23__LPUART7_RX	0x3
+		>;
+	};
+
+	pinctrl_lpi2c6: lpi2c6grp {
+		fsl,pins = <
+			MX8ULP_PAD_PTE8__LPI2C6_SCL    0x20
+			MX8ULP_PAD_PTE9__LPI2C6_SDA    0x20
 		>;
 	};
 
