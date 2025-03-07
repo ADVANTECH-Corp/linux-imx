@@ -50,6 +50,14 @@
 		};
 	};
 
+	reg_1p8v: regulator-1p8v {
+		compatible = "regulator-fixed";
+		regulator-name = "1P8V";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-always-on;
+	};
+
 	reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
@@ -405,15 +413,6 @@
 	status = "okay";
 };
 
-&spdif {
-	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&pinctrl_spdif>;
-	pinctrl-1 = <&pinctrl_spdif>;
-	assigned-clocks = <&cgc2 IMX8ULP_CLK_SPDIF_SEL>;
-	assigned-clock-parents = <&cgc1 IMX8ULP_CLK_SPLL3_PFD1_DIV1>;
-	status = "okay";
-};
-
 &tpm_rpchip_0 {
 	status = "okay";
 };
@@ -432,7 +431,6 @@
 
 &usbphy1 {
 	status = "okay";
-	fsl,tx-d-cal = <110>;
 };
 
 &usbmisc1 {
@@ -453,7 +451,6 @@
 
 &usbphy2 {
 	status = "okay";
-	fsl,tx-d-cal = <110>;
 };
 
 &usbmisc2 {
@@ -621,7 +618,7 @@
 
 	pinctrl_otgid2: usb2grp {
 		fsl,pins = <
-			MX8ULP_PAD_PTD23__USB1_ID	0x10003
+			MX8ULP_PAD_PTF0__USB1_ID	0x10003
 			MX8ULP_PAD_PTF6__USB1_OC	0x10003
 		>;
 	};
@@ -632,12 +629,6 @@
 			MX8ULP_PAD_PTF27__I2S5_TX_FS    0x43
 			MX8ULP_PAD_PTF28__I2S5_TXD0     0x43
 			MX8ULP_PAD_PTF24__I2S5_RXD3 	0x43
-		>;
-	};
-
-	pinctrl_spdif: spdifgrp {
-		fsl,pins = <
-			MX8ULP_PAD_PTF25__SPDIF_OUT1    0x43
 		>;
 	};
 
