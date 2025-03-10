@@ -86,12 +86,3 @@
 	status = "okay";
 };
 
-&iomuxc {
-
-	pinctrl_tpm3: tpm3grp {
-                fsl,pins = <
-			MX93_PAD_GPIO_IO24__TPM3_CH3		0x59e
-                >;
-        };
-
-};
