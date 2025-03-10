@@ -3,7 +3,7 @@
  * Copyright 2022 NXP
  */
 
-#include "imx93-afee320-a1.dts"
+#include "imx93-afee420-a1.dts"
 
 &lpuart1 { /* console */
 	/delete-property/linux,rs485-enabled-at-boot-time;

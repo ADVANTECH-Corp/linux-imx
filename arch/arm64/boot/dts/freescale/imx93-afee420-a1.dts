@@ -13,7 +13,7 @@
 };
 
 / {
-	model = "NXP i.MX93 AFEE320A1 board";
+	model = "NXP i.MX93 AFEE420A1 board";
 	compatible = "fsl,imx93-11x11-evk", "fsl,imx93";
 
 	board {
