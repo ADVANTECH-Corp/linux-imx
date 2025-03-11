@@ -168,45 +168,18 @@
 		compatible = "linux,bt-sco";
 	};
 
-	sound-bt-sco {
-		compatible = "simple-audio-card";
-		simple-audio-card,name = "bt-sco-audio";
-		simple-audio-card,format = "dsp_a";
-		simple-audio-card,bitclock-inversion;
-		simple-audio-card,frame-master = <&btcpu>;
-		simple-audio-card,bitclock-master = <&btcpu>;
-
-		btcpu: simple-audio-card,cpu {
-			sound-dai = <&sai5>;
-			dai-tdm-slot-num = <2>;
-			dai-tdm-slot-width = <16>;
-		};
-
-		simple-audio-card,codec {
-			sound-dai = <&bt_sco_codec 1>;
-		};
-	};
-
-	sound-spdif {
-		compatible = "fsl,imx-audio-spdif";
-		model = "imx-spdif";
-		spdif-controller = <&spdif>;
-		spdif-out;
-		fsl,constraint-rate = <16000>, <32000>, <48000>,
-				      <64000>, <96000>, <192000>;
-	};
-
-	rpmsg_audio: rpmsg-audio {
-		compatible = "fsl,imx8ulp-rpmsg-audio";
-		model = "wm8960-audio";
-		fsl,rpmsg-out;
-		fsl,rpmsg-in;
-		audio-codec = <&wm8960>;
-		memory-region = <&audio_reserved>;
+	sound {
+		compatible = "fsl,sgtl5000",
+				"fsl,imx-audio-sgtl5000";
+		model = "sgtl5000";
+		codec-master;
+		ssi-controller = <&sai7>;
+		audio-codec = <&acodec>;
 		audio-routing =
-			"LINPUT1", "MICB",
-			"LINPUT3", "MICB";
-		status = "okay";
+			"MIC_IN", "Mic Jack",
+			"Mic Jack", "Mic Bias",
+			"Headphone Jack", "HP_OUT";
+		no-audmux;
 	};
 
 	rpmsg_micfil: rpmsg_micfil {
@@ -383,20 +356,30 @@
 	pinctrl-1 = <&pinctrl_lpi2c7>;
 	status = "okay";
 
+	acodec: sgtl5000@a {
+		#sound-dai-cells = <0>;
+		compatible = "fsl,sgtl5000";
+		reg = <0xa>;
+		VDDA-supply = <&reg_1p8v>;
+		VDDIO-supply = <&reg_1p8v>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_sai7_mclk>;
+		clocks = <&cgc1 IMX8ULP_CLK_SPLL3_PFD1_DIV1>;
+		clock-names = "mclk";
+	};
 	eeprom1: 24c32@50 {
 		compatible = "st,24c32";
 		reg = <0x50>;
 	};
 };
 
-&sai5 {
+&sai7 {
 	#sound-dai-cells = <0>;
 	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&pinctrl_sai5>;
-	pinctrl-1 = <&pinctrl_sai5>;
-	assigned-clocks = <&cgc1 IMX8ULP_CLK_SAI5_SEL>;
+	pinctrl-0 = <&pinctrl_sai7>;
+	pinctrl-1 = <&pinctrl_sai7>;
+	assigned-clocks = <&cgc2 IMX8ULP_CLK_SAI7_SEL>;
 	assigned-clock-parents = <&cgc1 IMX8ULP_CLK_SPLL3_PFD1_DIV1>;
-	fsl,dataline = <1 0x08 0x01>;
 	status = "okay";
 };
 
@@ -615,12 +598,18 @@
 		>;
 	};
 
-	pinctrl_sai5: sai5grp {
+	pinctrl_sai7: sai7grp {
 		fsl,pins = <
-			MX8ULP_PAD_PTF26__I2S5_TX_BCLK  0x43
-			MX8ULP_PAD_PTF27__I2S5_TX_FS    0x43
-			MX8ULP_PAD_PTF28__I2S5_TXD0     0x43
-			MX8ULP_PAD_PTF24__I2S5_RXD3 	0x43
+			MX8ULP_PAD_PTD15__I2S7_TX_BCLK	0x43
+			MX8ULP_PAD_PTD16__I2S7_TX_FS	0x43
+			MX8ULP_PAD_PTD17__I2S7_TXD0	0x43
+			MX8ULP_PAD_PTD14__I2S7_RXD0	0x43
+		>;
+	};
+
+	pinctrl_sai7_mclk: sai7grp_mclk {
+		fsl,pins = <
+			MX8ULP_PAD_PTD18__I2S7_MCLK	0x43
 		>;
 	};
 
