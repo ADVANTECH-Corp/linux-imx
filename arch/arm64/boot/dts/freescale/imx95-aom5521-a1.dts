@@ -24,6 +24,10 @@
 		ethernet2 = &enetc_port2;
 		rtc0 = &rx8900;
 		rtc1 = &scmi_bbm;
+		mtd0 = &flash0;
+		mtd1 = &flash4;
+		mtd2 = &flash1;
+		mtd3 = &flash2;
 	};
 
 	chosen {
