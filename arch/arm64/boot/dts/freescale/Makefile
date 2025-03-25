@@ -698,7 +698,9 @@ dtb-$(CONFIG_ARCH_MXC) += imx95-19x19-verdin-rm692c9.dtb
 
 dtb-$(CONFIG_ARCH_MXC) += imx95-aom5521-a1.dtb imx95-aom5521-a1-m2-sdio.dtb \
 			  imx95-aom5521-a1-lvds0-auo.dtb imx95-aom5521-a1-lvds1-auo.dtb imx95-aom5521-a1-lvds-dual.dtb \
-			  imx95-aom5521-a1-auog101uan02.dtb
+			  imx95-aom5521-a1-auog101uan02.dtb \
+			  imx95-aom5521-a1-lvds0-auog070vw01-v1.dtb \
+			  imx95-aom5521-a1-lvds1-auog070vw01-v1.dtb
 
 dtb-$(CONFIG_ARCH_S32) += s32g274a-evb.dtb
 dtb-$(CONFIG_ARCH_S32) += s32g274a-rdb2.dtb
