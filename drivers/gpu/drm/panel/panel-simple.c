@@ -1263,6 +1263,32 @@ static const struct panel_desc auo_g070vw01_v0 = {
         .connector_type = DRM_MODE_CONNECTOR_LVDS,
 };
 
+static const struct display_timing auo_g070vw01_v1_timings = {
+	.pixelclock = { 33260000, 33260000, 33260000 },
+	.hactive = { 800, 800, 800 },
+	.hfront_porch = { 40, 40, 40 },
+	.hback_porch = { 88, 88, 88 },
+	.hsync_len = { 128, 128, 128 },
+	.vactive = { 480, 480, 480 },
+	.vfront_porch = { 10, 10, 10 },
+	.vback_porch = { 33, 33, 33 },
+	.vsync_len = { 2, 2, 2 },
+	.flags = DISPLAY_FLAGS_DE_HIGH,
+};
+
+static const struct panel_desc auo_g070vw01_v1 = {
+	.timings = &auo_g070vw01_v1_timings,
+	.num_timings = 1,
+	.bpc = 8,
+	.size = {
+		.width = 152,
+		.height = 91,
+	},
+	.bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_JEIDA,
+	.bus_flags = DRM_BUS_FLAG_DE_HIGH,
+	.connector_type = DRM_MODE_CONNECTOR_LVDS,
+};
+
 static const struct display_timing auo_g215hvn01_0_timings = {
         .pixelclock = { 170000000, 170000000, 170000000 },
         .hactive = { 1920, 1920, 1920 },
@@ -4315,6 +4341,9 @@ static const struct of_device_id platform_of_match[] = {
 #ifdef CONFIG_ARCH_ADVANTECH
 		.compatible = "auo,g070vw01_v0",
 		.data = &auo_g070vw01_v0,
+	}, {
+		.compatible = "auo,g070vw01_v1",
+		.data = &auo_g070vw01_v1,
 	}, {
 		.compatible = "auo,g215hvn01_0",
 		.data = &auo_g215hvn01_0,
