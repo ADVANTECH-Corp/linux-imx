@@ -34,7 +34,7 @@
 #define REG_CHIPID1				0x8101
 #define REG_CHIPID1_VALUE			0x01
 #define REG_CHIPID2				0x8102
-#define REG_CHIPID2_VALUE			0xe3
+#define REG_CHIPID2_VALUE			0xe4
 
 #define REG_DSI_LANE				0xd000
 /* DSI lane count - 0 means 4 lanes ; 1, 2, 3 means 1, 2, 3 lanes. */
@@ -98,10 +98,14 @@ static struct lt9211 *bridge_to_lt9211(struct drm_bridge *bridge)
 	return container_of(bridge, struct lt9211, bridge);
 }
 
+static int lt9211_host_attach(struct lt9211 *ctx);
+
 static int lt9211_attach(struct drm_bridge *bridge,
 			 enum drm_bridge_attach_flags flags)
 {
 	struct lt9211 *ctx = bridge_to_lt9211(bridge);
+
+	lt9211_host_attach(ctx);
 
 	return drm_bridge_attach(bridge->encoder, ctx->panel_bridge,
 				 &ctx->bridge, flags);
@@ -307,24 +311,52 @@ static int lt9211_configure_timing(struct lt9211 *ctx,
 static int lt9211_configure_plls(struct lt9211 *ctx,
 				 const struct drm_display_mode *mode)
 {
-	const struct reg_sequence lt9211_pcr_seq[] = {
-		{ 0xd026, 0x17 },
-		{ 0xd027, 0xc3 },
+	const struct reg_sequence lt9211_pcr_seq1[] = {
+		{ 0xd00c, 0x60 },
+		{ 0xd01c, 0x60 },
+		{ 0xd024, 0x70 },
+//		{ 0xd026, 0x17 },
+//		{ 0xd027, 0xc3 },
 		{ 0xd02d, 0x30 },
-		{ 0xd031, 0x10 },
-		{ 0xd023, 0x20 },
+//		{ 0xd031, 0x10 },
+		{ 0xd031, 0x0a },
+		{ 0xd025, 0xf0 },
+		{ 0xd02a, 0x30 },
+		{ 0xd021, 0x4f },
+		{ 0xd022, 0x00 },
+		{ 0xd01e, 0x01 },
+//		{ 0xd023, 0x20 },
+		{ 0xd023, 0x80 },
+		{ 0xd00a, 0x02 },
 		{ 0xd038, 0x02 },
-		{ 0xd039, 0x10 },
-		{ 0xd03a, 0x20 },
-		{ 0xd03b, 0x60 },
+//		{ 0xd039, 0x10 },
+		{ 0xd039, 0x04 },
+//		{ 0xd03a, 0x20 },
+		{ 0xd03a, 0x08 },
+//		{ 0xd03b, 0x60 },
+		{ 0xd03b, 0x10 },
 		{ 0xd03f, 0x04 },
 		{ 0xd040, 0x08 },
 		{ 0xd041, 0x10 },
-		{ 0x810b, 0xee },
-		{ 0x810b, 0xfe },
+		{ 0xd042, 0x20 },
+		{ 0xd02b, 0xa0 },
+//		{ 0x810b, 0xee },
+//		{ 0x810b, 0xfe },
+	};
+
+	const struct reg_sequence lt9211_pcr_seq2[] = {
+		{ 0xd027, 0x0f },
+		{ 0x8120, 0xbf },
+		{ 0x8120, 0xff }
+	};
+
+	const struct reg_sequence lt9211_pcr_seq3[] = {
+		{ 0x810b, 0x6f },
+		{ 0x810b, 0xff }
 	};
 
 	unsigned int pval;
+	unsigned int qval;
 	int ret;
 
 	/* DeSSC PLL reference clock is 25 MHz XTal. */
@@ -351,14 +383,45 @@ static int lt9211_configure_plls(struct lt9211 *ctx,
 	/* Wait for the DeSSC PLL to stabilize. */
 	msleep(100);
 
-	ret = regmap_multi_reg_write(ctx->regmap, lt9211_pcr_seq,
-				     ARRAY_SIZE(lt9211_pcr_seq));
+	ret = regmap_multi_reg_write(ctx->regmap, lt9211_pcr_seq1,
+				     ARRAY_SIZE(lt9211_pcr_seq1));
 	if (ret)
 		return ret;
 
+	msleep(100);
+
+	ret = regmap_read(ctx->regmap, 0xd026, &qval);
+	if (ret)
+		return ret;
+
+	qval &= 0x7f;
+
+	ret = regmap_write(ctx->regmap, 0xd026, qval);
+	if (ret)
+		return ret;
+
+	ret = regmap_multi_reg_write(ctx->regmap, lt9211_pcr_seq2,
+								 ARRAY_SIZE(lt9211_pcr_seq2));
+	if (ret)
+		return ret;
+
+	msleep(5);
+
+	ret = regmap_multi_reg_write(ctx->regmap, lt9211_pcr_seq3,
+								 ARRAY_SIZE(lt9211_pcr_seq3));
+	if (ret)
+		return ret;
+
+	msleep(120);
+
 	/* PCR stability test takes seconds. */
 	ret = regmap_read_poll_timeout(ctx->regmap, 0xd087, pval, pval & 0x8,
-				       20000, 10000000);
+				       200000, 10000000);
+
+	regmap_read(ctx->regmap, 0xd094, &qval);
+
+	pr_info("lt9211: PCR stable %x\n",(qval&0x7F));
+
 	if (ret)
 		dev_err(ctx->dev, "PCR unstable, ret=%i\n", ret);
 
@@ -686,7 +749,8 @@ static int lt9211_host_attach(struct lt9211 *ctx)
 	int ret;
 
 	endpoint = of_graph_get_endpoint_by_regs(dev->of_node, 0, -1);
-	dsi_lanes = drm_of_get_data_lanes_count(endpoint, 1, 4);
+//	dsi_lanes = drm_of_get_data_lanes_count(endpoint, 1, 4);
+	dsi_lanes = 4;
 	host_node = of_graph_get_remote_port_parent(endpoint);
 	host = of_find_mipi_dsi_host_by_node(host_node);
 	of_node_put(host_node);
@@ -758,11 +822,11 @@ static int lt9211_probe(struct i2c_client *client)
 	ctx->bridge.funcs = &lt9211_funcs;
 	ctx->bridge.of_node = dev->of_node;
 	drm_bridge_add(&ctx->bridge);
-
+/*
 	ret = lt9211_host_attach(ctx);
 	if (ret)
 		drm_bridge_remove(&ctx->bridge);
-
+*/
 	return ret;
 }
 
