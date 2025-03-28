@@ -11,7 +11,7 @@
 #include <dt-bindings/display/dt-media-bus-format.h>
 
 / {
-	model = "NXP i.MX8ULP EVK";
+	model = "NXP i.MX8ULP ROM2620-A1";
 	compatible = "fsl,imx8ulp-evk", "fsl,imx8ulp";
 
 	chosen {
@@ -165,12 +165,6 @@
 			reg = <0 0xa8400000 0 0x100000>;
 			no-map;
 		};
-
-		audio_reserved: audio@a8500000 {
-			compatible = "shared-dma-pool";
-			no-map;
-			reg = <0 0xa8500000 0 0x100000>;
-		};
 	};
 
 	clock_ext_rmii: clock-ext-rmii {
@@ -315,19 +309,6 @@
 		#gpio-cells = <2>;
 	};
 
-	mpl3115@60 {
-		compatible = "fsl,mpl3115";
-		reg = <0x60>;
-	};
-
-	wm8960: wm8960@1a {
-		compatible = "wlf,wm8960,lpa";
-		reg = <0x1a>;
-		wlf,shared-lrclk;
-		clocks = <&wm8960_mclk>;
-		clock-names = "mclk";
-	};
-
 	ov5640_mipi: ov5640_mipi@3c {
 		compatible = "ovti,ov5640";
 		reg = <0x3c>;
@@ -402,6 +383,8 @@
 		vccio-supply = <&lt9211_1v8>;
 		reset-gpios = <&gpiof 7 GPIO_ACTIVE_HIGH>;
 		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
 			port@0 {
 				reg = <0>;
 				dsi_in: endpoint {
