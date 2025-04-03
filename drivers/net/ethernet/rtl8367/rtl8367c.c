@@ -158,7 +158,7 @@ static int  rtl8367c_probe(struct platform_device *pdev)
 	}
 
 	imx_mac_ability.forcemode 	= PORT_MAC_FORCE;
-	imx_mac_ability.speed 		= PORT_SPEED_1000M;
+	imx_mac_ability.speed 		= PORT_SPEED_100M;
 	imx_mac_ability.duplex 		= PORT_FULL_DUPLEX;
 	imx_mac_ability.link 		= PORT_LINKUP;
 	imx_mac_ability.nway 		= DISABLED;
@@ -168,6 +168,10 @@ static int  rtl8367c_probe(struct platform_device *pdev)
 	retVal=rtk_port_macForceLinkExt_set(EXT_PORT0,MODE_EXT_RGMII,&imx_mac_ability);
 	if(retVal != RT_ERR_OK)
 		printk("rtk_port_macForceLinkExt_set ,EXT_PORT0 fail\n");
+
+		retVal=rtk_port_macForceLinkExt_set(EXT_PORT1,MODE_EXT_DISABLE,&imx_mac_ability);
+		if(retVal != RT_ERR_OK)
+			printk("rtk_port_macForceLinkExt_set ,EXT_PORT1 fail\n");
 
 	for(int i=0;i<4;i++)
 	{
