@@ -1354,7 +1354,7 @@ void axusbnet_disconnect(struct usb_interface *intf)
 	unregister_netdev(net);
 
 	/* we don't hold rtnl here ... */
-	flush_scheduled_work();
+	// flush_scheduled_work();
 
 	if (dev->driver_info->unbind)
 		dev->driver_info->unbind(dev, intf);
