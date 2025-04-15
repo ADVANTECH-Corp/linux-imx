@@ -99,9 +99,8 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&adv_gpio_pinmux>;
 		status = "okay";
-		// minipcie-pwr-gpio = <&gpio3 21 GPIO_ACTIVE_HIGH>;
 		minipcie-reset-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;
-		en-gpios =<&gpio3 21 GPIO_ACTIVE_HIGH>, <&gpio1 0 GPIO_ACTIVE_LOW>,<&gpio1 14 GPIO_ACTIVE_LOW>,<&gpio5 1 GPIO_ACTIVE_LOW>;
+		en-gpios =<&gpio3 21 GPIO_ACTIVE_HIGH>, <&gpio1 0 GPIO_ACTIVE_HIGH>,<&gpio1 14 GPIO_ACTIVE_HIGH>,<&gpio5 1 GPIO_ACTIVE_HIGH>,<&gpio4 24 GPIO_ACTIVE_LOW>,<&gpio5 8 GPIO_ACTIVE_LOW>;
 		timing-interval = <300>;
 	};
 };
