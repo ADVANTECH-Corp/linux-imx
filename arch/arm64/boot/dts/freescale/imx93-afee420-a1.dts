@@ -35,6 +35,24 @@
 		stdout-path = &lpuart1;
 	};
 
+	thermal-zones {
+		cpu-thermal {
+			trips {
+				cpu_alert: cpu-alert {
+					temperature = <125000>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+
+				cpu_crit: cpu-crit {
+					temperature = <125000>;
+					hysteresis = <2000>;
+					type = "critical";
+				};
+			};
+		};
+	};
+
 	soc@0 {
                 compatible = "simple-bus";
                 #address-cells = <1>;
