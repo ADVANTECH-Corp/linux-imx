@@ -25,3 +25,5 @@ obj-$(CONFIG_WLAN_VENDOR_ZYDAS) += zydas/
 
 obj-$(CONFIG_WLAN) += legacy/
 obj-$(CONFIG_WLAN) += virtual/
+
+obj-$(CONFIG_MXM6X16505_PCIEUART) += adv_wifi/

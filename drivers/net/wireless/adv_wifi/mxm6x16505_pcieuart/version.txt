@@ -1,0 +1,6 @@
+Tag: lf-6.6.52-2.2.0
+Package version: mxm6x18505.p4
+Driver version: MM6X16505.p4-GPL
+Firmware version: 16.92.21.p137.4
+md5sum: e65407dd78fa592a38b8e1643e3257aa
+

@@ -132,6 +132,8 @@ struct imx6_pcie {
 	#ifdef CONFIG_ARCH_ADVANTECH
         int                     power_on_gpio;
         int                     power_on_gpio2;
+        int                     m2_power_en_gpio;
+        int                     m2_w_disable;
 	#endif
 	int			reset_gpio;
 	int			host_wake_irq;
@@ -1911,6 +1913,35 @@ static int imx6_pcie_probe(struct platform_device *pdev)
         } else if (imx6_pcie->power_on_gpio2 == -EPROBE_DEFER) {
                 return imx6_pcie->power_on_gpio2;
         }
+
+	imx6_pcie->m2_w_disable = of_get_named_gpio(node, "disable-gpio", 0);
+        if (gpio_is_valid(imx6_pcie->m2_w_disable)) {
+                ret = devm_gpio_request_one(&pdev->dev,
+                                            imx6_pcie->m2_w_disable,
+                                            GPIOF_OUT_INIT_HIGH,
+                                            "m2-w-disable");
+                if (ret) {
+                        dev_err(&pdev->dev, "unable to get m2-w-disbale gpio\n");
+                        return ret;
+                }
+        } else if (imx6_pcie->m2_w_disable == -EPROBE_DEFER) {
+                return imx6_pcie->m2_w_disable;
+        }
+
+	imx6_pcie->m2_power_en_gpio = of_get_named_gpio(node, "m2-pwr-en", 0);
+        if (gpio_is_valid(imx6_pcie->m2_power_en_gpio)) {
+                ret = devm_gpio_request_one(&pdev->dev,
+                                            imx6_pcie->m2_power_en_gpio,
+                                            GPIOF_OUT_INIT_HIGH,
+                                            "m2-pwr-en");
+                if (ret) {
+                        dev_err(&pdev->dev, "unable to get m2-pwr-en gpio\n");
+                        return ret;
+                }
+        } else if (imx6_pcie->m2_power_en_gpio == -EPROBE_DEFER) {
+                return imx6_pcie->m2_power_en_gpio;
+        }
+
 	#endif
 
 	/* Fetch GPIOs */
