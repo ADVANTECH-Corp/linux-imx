@@ -15,8 +15,8 @@
 	panel@0 {
 		compatible = "auo,g101uan02";
 		reg = <0>;
-		dsi-vcc-enable-gpio = <&gpio1 5 GPIO_ACTIVE_LOW>;	/* LCD1_VDD_EN */
-		bklt-enable-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;	/* LCD1_BKLT_EN */
+		dsi-vcc-enable-gpios = <&gpio1 5 GPIO_ACTIVE_LOW>;	/* LCD1_VDD_EN */
+		bklt-enable-gpios = <&gpio1 1 GPIO_ACTIVE_LOW>;	/* LCD1_BKLT_EN */
 
 		port {
 			panel1_in: endpoint {
