@@ -43,7 +43,7 @@
 &lvds_backlight0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_lvds_vcc_0 &pinctrl_bklt_vcc_0>;
-	lvds-vcc-enable = <&gpio1 6 GPIO_ACTIVE_LOW>;	/* LCD0_VDD_EN */
-	lvds-bkl-enable = <&gpio1 0 GPIO_ACTIVE_LOW>;	/* LCD0_BKLT_EN */
+	lvds-vcc-enable-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;	/* LCD0_VDD_EN */
+	lvds-bkl-enable-gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;	/* LCD0_BKLT_EN */
 	status = "okay";
 };
