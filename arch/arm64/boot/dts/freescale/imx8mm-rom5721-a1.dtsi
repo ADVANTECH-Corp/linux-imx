@@ -275,8 +275,8 @@
                 pinctrl-names = "default";
                 pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
                 status = "okay";
-                wdt-en = <&gpio1 9 0>;
-                wdt-ping = <&gpio1 15 0>;
+                wdt-en-gpio = <&gpio1 9 0>;
+                wdt-ping-gpio = <&gpio1 15 0>;
                 reg = <0x29>;
         };
 	s35390a: s35390a@30 {
@@ -560,11 +560,6 @@
 	status = "disabled";
 };
 
-&pwm1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_backlight>;
-};
-
 &gpu {
 	status = "okay";
 };
@@ -789,14 +784,7 @@
 			MX8MM_IOMUXC_GPIO1_IO04_USDHC2_VSELECT	0x1d0
 		>;
 	};
-
 	pinctrl_wdog: wdoggrp {
-		fsl,pins = <
-			MX8MM_IOMUXC_GPIO1_IO02_WDOG1_WDOG_B	0x166
-		>;
-	};
-
-	pinctrl_backlight: backlightgrp {
 		fsl,pins = <
 			MX8MM_IOMUXC_GPIO1_IO02_WDOG1_WDOG_B		0xc6	/* PMIC_WDOG */
 		>;
