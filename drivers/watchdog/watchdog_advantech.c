@@ -384,14 +384,21 @@ static void adv_wdt_i2c_shutdown(struct i2c_client *client)
 {
 	struct adv_wdt_device *wdev = i2c_get_clientdata(client);
 
-	if (test_bit(ADV_WDT_STATUS_STARTED, &wdev->status)) {
+/*
+   During the reboot process, adv_wdt_stop is triggered before adv_wdt_i2c_shutdown.
+In adv_wdt_i2c_shutdown, the timeout is only set to 1 second if the watchdog is still
+active. However, since the watchdog has already been stopped in adv_wdt_stop, the
+timeout remains at 60 seconds. As a result, it takes approximately 60 seconds for
+the system to actually reboot.
+*/
+//	if (test_bit(ADV_WDT_STATUS_STARTED, &wdev->status)) {
 		/* set timeout to 1 sec here and expect WDT_EN in restart handler */
 		gpio_set_value(wdev->gpio_wdt_en, wdev->wdt_en_off);
 		adv_wdt_i2c_set_timeout(client, 1);
 		adv_wdt_ping(&wdev->wdog);
 
-		pr_warn("Device shutdown: Expect reboot!\n");
-	}
+//		pr_warn("Device shutdown: Expect reboot!\n");
+//	}
 	clear_bit(ADV_WDT_STATUS_STARTED, &wdev->status);
 }
 
