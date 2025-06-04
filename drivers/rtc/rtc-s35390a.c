@@ -148,7 +148,8 @@ initialize:
 static int s35390a_read_status(struct s35390a *s35390a, char *status1)
 {
 	int ret;
-
+	/* For ROM5722 wait 50ms to ensure S35390A status register is stable for reading */
+	msleep(50);
 	ret = s35390a_get_reg(s35390a, S35390A_CMD_STATUS1, status1, 1);
 	if (ret < 0)
 		return ret;
