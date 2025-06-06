@@ -60,11 +60,11 @@
 &backlight0 {
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_bkl>;
-        lvds-vcc-enable = <&gpio4 30 1>;
-        lvds-bkl-enable = <&gpio3 25 1>;
-        lvds-reset=<&gpio1 14 1>;
-        lvds-stby=<&gpio1 12 1>;
-        bklt-vcc-enable = <&gpio4 27 1>;
+        lvds-vcc-enable-gpios = <&gpio4 30 1>;
+        lvds-bkl-enable-gpios = <&gpio3 25 1>;
+        lvds-reset-gpios = <&gpio1 14 1>;
+        lvds-stby-gpios = <&gpio1 12 1>;
+        bklt-vcc-enable-gpios = <&gpio4 27 1>;
         status = "okay";
 };
 
