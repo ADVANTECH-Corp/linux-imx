@@ -370,6 +370,24 @@ static int lt9611uxc_bridge_attach(struct drm_bridge *bridge,
 			return ret;
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	/* Attach primary DSI */
+	lt9611uxc->dsi0 = lt9611uxc_attach_dsi(lt9611uxc, lt9611uxc->dsi0_node);
+	if (IS_ERR(lt9611uxc->dsi0)) {
+		ret = PTR_ERR(lt9611uxc->dsi0);
+		return ret;
+	}
+
+	/* Attach secondary DSI, if specified */
+	if (lt9611uxc->dsi1_node) {
+		lt9611uxc->dsi1 = lt9611uxc_attach_dsi(lt9611uxc, lt9611uxc->dsi1_node);
+		if (IS_ERR(lt9611uxc->dsi1)) {
+			ret = PTR_ERR(lt9611uxc->dsi1);
+			return ret;
+		}
+	}
+#endif
+
 	return 0;
 }
 
@@ -948,6 +966,7 @@ retry:
 
 	drm_bridge_add(&lt9611uxc->bridge);
 
+#ifndef CONFIG_ARCH_ADVANTECH
 	/* Attach primary DSI */
 	lt9611uxc->dsi0 = lt9611uxc_attach_dsi(lt9611uxc, lt9611uxc->dsi0_node);
 	if (IS_ERR(lt9611uxc->dsi0)) {
@@ -963,6 +982,7 @@ retry:
 			goto err_remove_bridge;
 		}
 	}
+#endif
 
 	return lt9611uxc_audio_init(dev, lt9611uxc);
 
