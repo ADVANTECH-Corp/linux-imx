@@ -229,10 +229,10 @@
 &lvds_backlight0 {
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_lcd0>,<&pinctrl_lvds>;
-        lvds-vcc-enable = <&gpio4 30 1>;
-        lvds-bkl-enable = <&gpio4 29 1>;
-	lvds-reset=<&gpio3 23 1>;
-	lvds-stby=<&gpio3 24 1>;
+	lvds-vcc-enable-gpio = <&gpio4 30 1>;
+	lvds-bkl-enable-gpio = <&gpio4 29 1>;
+	lvds-reset-gpio=<&gpio3 23 1>;
+	lvds-stby-gpio=<&gpio3 24 1>;
 	lvds-bkl-delay-time = <10>;
         status = "okay";
 };
