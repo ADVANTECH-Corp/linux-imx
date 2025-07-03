@@ -103,7 +103,7 @@ static int adv_wdt_i2c_write_reg(struct i2c_client *client, u8 reg, void *buf, s
 	do {
 		err = i2c_transfer(client->adapter, msg, 1);
 		if (err == 1) {
-			//msleep(100);
+			msleep(100);
 			return 0;
 		}
 
@@ -161,7 +161,6 @@ static int adv_wdt_i2c_fix_first_comm_issue(struct i2c_client *client, unsigned 
 	msleep(100);
 	val = 0;
 	ret = adv_wdt_i2c_write_reg(client, REG_WDT_WATCHDOG_TIME_OUT, &val, 2);
-	msleep(100);
 	return 0;
 }
 
@@ -244,16 +243,14 @@ static int adv_wdt_restart(struct watchdog_device *wdog, unsigned long action,
 {
 	struct i2c_client *client = to_i2c_client(wdog->parent);
 	struct adv_wdt_device *wdev = i2c_get_clientdata(client);
-	unsigned int timeout;
 
 	/* set timeout to 1 sec here and expect WDT_EN in restart handler */
 	gpio_set_value(wdev->gpio_wdt_en, wdev->wdt_en_off);
-	timeout = WDOG_SEC_TO_COUNT(1);
-	adv_wdt_i2c_write_reg(client, REG_WDT_WATCHDOG_TIME_OUT, &timeout, sizeof(timeout));
-	//adv_wdt_ping(wdog);
+	adv_wdt_i2c_set_timeout(client, 1);
+	adv_wdt_ping(wdog);
 
 	/* wait for reset to assert... */
-	while(1);
+	mdelay(2000);
 
 	return 0;
 }
@@ -289,6 +286,8 @@ static int adv_wdt_i2c_probe(struct i2c_client *client)
 	struct adv_wdt_device *wdev;
 	int ret;
 	unsigned int tmp_version;
+	struct gpio_desc *gpio_wdt_en_desc;
+	struct gpio_desc *gpio_wdt_ping_desc;
 
 	if (!np)
 	{
@@ -305,32 +304,26 @@ static int adv_wdt_i2c_probe(struct i2c_client *client)
 		return -ENOMEM;
 
 	//Setting GPIO
-	wdev->gpio_wdt_en = of_get_named_gpio(np, "wdt-en", 0);
-	if (!gpio_is_valid(wdev->gpio_wdt_en))
-		return -ENODEV;	
-	wdev->wdt_en_off = 1;
-	ret = devm_gpio_request_one(&client->dev, wdev->gpio_wdt_en,
-				GPIOF_OUT_INIT_LOW, "adv_wdt.wdt_en");
-	if (ret < 0) {
-		dev_err(&client->dev, "request gpio failed: %d\n", ret);
-		return ret;
+	gpio_wdt_en_desc = devm_gpiod_get(&client->dev, "wdt-en", GPIOD_OUT_LOW);
+	if (IS_ERR(gpio_wdt_en_desc)) {
+		dev_err(&client->dev, "Failed to get GPIO wdt-en (err=%d)\n", PTR_ERR(gpio_wdt_en_desc));
+		return PTR_ERR(gpio_wdt_en_desc);
 	}
-	gpio_direction_output(wdev->gpio_wdt_en, 0);
+	wdev->gpio_wdt_en = desc_to_gpio(gpio_wdt_en_desc);
+	wdev->wdt_en_off = !gpiod_is_active_low(gpio_wdt_en_desc);
+	gpio_direction_output(wdev->gpio_wdt_en, !wdev->wdt_en_off);
 
-	wdev->gpio_wdt_ping = of_get_named_gpio(np, "wdt-ping", 0);
-	if (!gpio_is_valid(wdev->gpio_wdt_ping))
-		return -ENODEV;	
-
-	ret = devm_gpio_request_one(&client->dev, wdev->gpio_wdt_ping, 
-				GPIOF_OUT_INIT_LOW, "adv_wdt.wdt_ping");
-	if (ret < 0) {
-		dev_err(&client->dev, "request gpio failed: %d\n", ret);
-		return ret;
+	gpio_wdt_ping_desc = devm_gpiod_get(&client->dev, "wdt-ping", GPIOD_OUT_LOW);
+	if (IS_ERR(gpio_wdt_ping_desc)) {
+		dev_err(&client->dev, "Failed to get GPIO wdt-ping\n");
+		return PTR_ERR(gpio_wdt_ping_desc);
 	}
-	wdev->wdt_ping_status=0;
-	gpio_direction_output(wdev->gpio_wdt_ping, 1);
+	wdev->gpio_wdt_ping = desc_to_gpio(gpio_wdt_ping_desc);
+	wdev->wdt_ping_status = gpiod_is_active_low(gpio_wdt_ping_desc);
+
+	gpio_direction_output(wdev->gpio_wdt_ping, !wdev->wdt_ping_status);
 	msleep(10);
-	gpio_direction_output(wdev->gpio_wdt_ping, 0);
+	gpio_direction_output(wdev->gpio_wdt_ping, wdev->wdt_ping_status);
 
 	wdev->wdog.timeout = clamp_t(unsigned, timeout, 1, ADV_WDT_MAX_TIME);
 	if (wdev->wdog.timeout != timeout)
@@ -370,7 +363,7 @@ static int adv_wdt_i2c_probe(struct i2c_client *client)
 	i2c_set_clientdata(client, wdev);
 	watchdog_set_drvdata(&wdev->wdog, wdev);
 	watchdog_set_nowayout(&wdev->wdog, nowayout);
-	watchdog_set_restart_priority(&wdev->wdog, 255);
+	watchdog_set_restart_priority(&wdev->wdog, 128);
 	watchdog_init_timeout(&wdev->wdog, wdev->wdog.timeout, &client->dev);
 	watchdog_stop_ping_on_suspend(&wdev->wdog);
 
@@ -391,14 +384,21 @@ static void adv_wdt_i2c_shutdown(struct i2c_client *client)
 {
 	struct adv_wdt_device *wdev = i2c_get_clientdata(client);
 
-	if (test_bit(ADV_WDT_STATUS_STARTED, &wdev->status)) {
+/*
+   During the reboot process, adv_wdt_stop is triggered before adv_wdt_i2c_shutdown.
+In adv_wdt_i2c_shutdown, the timeout is only set to 1 second if the watchdog is still
+active. However, since the watchdog has already been stopped in adv_wdt_stop, the
+timeout remains at 60 seconds. As a result, it takes approximately 60 seconds for
+the system to actually reboot.
+*/
+//	if (test_bit(ADV_WDT_STATUS_STARTED, &wdev->status)) {
 		/* set timeout to 1 sec here and expect WDT_EN in restart handler */
 		gpio_set_value(wdev->gpio_wdt_en, wdev->wdt_en_off);
 		adv_wdt_i2c_set_timeout(client, 1);
 		adv_wdt_ping(&wdev->wdog);
 
-		pr_warn("Device shutdown: Expect reboot!\n");
-	}
+//		pr_warn("Device shutdown: Expect reboot!\n");
+//	}
 	clear_bit(ADV_WDT_STATUS_STARTED, &wdev->status);
 }
 
