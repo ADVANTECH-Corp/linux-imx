@@ -31,7 +31,7 @@
 		status = "okay";
 		user {
 			label = "user";
-			gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>; /* GPIO_ACTIVE_LOW:1 */
+			gpios = <&gpio1 11 GPIO_ACTIVE_HIGH>; /* GPIO_ACTIVE_LOW:1 */
 			default-state = "off";
 		};
     };
@@ -41,7 +41,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&adv_gpio_pinmux>;
 		status = "okay";
-		en-gpios = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+		en-gpios = <&gpio1 0 GPIO_ACTIVE_HIGH>,<&gpio4 24 GPIO_ACTIVE_LOW>,<&gpio5 8 GPIO_ACTIVE_LOW>;
 		minipcie-reset-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;
 		timing-interval = <300>;
 	};
@@ -155,7 +155,7 @@
 
 	pinctrl_gpio_led: gpio_userkeygrp-1 {
 		fsl,pins = <
-			MX8MM_IOMUXC_GPIO1_IO05_GPIO1_IO5		0x19	/* LED */
+			MX8MM_IOMUXC_GPIO1_IO11_GPIO1_IO11		0x19	/* LED */
 		>;
 	};
 };

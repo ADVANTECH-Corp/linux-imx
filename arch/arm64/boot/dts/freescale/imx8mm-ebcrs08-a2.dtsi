@@ -214,7 +214,7 @@
 
 &i2c2 {
 	clock-frequency = <400000>;
-	pinctrl-names = "default";
+	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl_i2c2>;
 	pinctrl-1 = <&pinctrl_i2c2_gpio>;
 	scl-gpios = <&gpio5 16 GPIO_ACTIVE_HIGH>;
@@ -435,7 +435,7 @@
 			MX8MM_IOMUXC_SAI2_RXC_UART1_DCE_RX     0x140
 			MX8MM_IOMUXC_SAI2_RXFS_UART1_DCE_TX     0x140
 			MX8MM_IOMUXC_SAI2_RXD0_UART1_DCE_RTS_B  0x140
-			MX8MM_IOMUXC_SAI2_TXFS_GPIO4_IO24  0x140
+			MX8MM_IOMUXC_SAI2_TXFS_GPIO4_IO24  0x146
 		>;
 	};
 
