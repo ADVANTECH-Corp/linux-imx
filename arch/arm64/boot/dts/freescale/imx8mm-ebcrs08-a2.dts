@@ -10,7 +10,7 @@
 
 
 / {
-	model = "i.MX8MM RS08";
+	model = "EBC-RS08";
 	compatible = "fsl,imx8mm-evk", "fsl,imx8mm";
 
 	board {
@@ -73,16 +73,6 @@
 	non-removable;
 	cqe-disabled;
 	status = "okay";
-};
-
-&uart1 { /* BT */
-	/delete-property/ dmas;
-	/delete-property/ dma-names;
-};
-
-&uart3 {
-	/delete-property/ dmas;
-	/delete-property/ dma-names;
 };
 
 &iomuxc {

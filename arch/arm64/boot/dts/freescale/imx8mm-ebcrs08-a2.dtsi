@@ -243,6 +243,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
 		status = "okay";
+		fix-first-comm-issue;
 		wdt-en-gpio = <&gpio1 9 0>;
 		wdt-ping-gpio = <&gpio1 15 0>;
 		reg = <0x29>;
@@ -271,10 +272,6 @@
 	rts-gpios = <&gpio5 8 GPIO_ACTIVE_HIGH>;
 	linux,rs485-enabled-at-boot-time;
 	status = "okay";
-};
-
-&usbphynop1 {
-	wakeup-source;
 };
 
 &usbotg1 {
@@ -310,30 +307,10 @@
 	status = "okay";
 };
 
-&vpu_g1 {
-	status = "okay";
-};
-
-&vpu_g2 {
-	status = "okay";
-};
-
-&vpu_h1 {
-	status = "okay";
-};
-
-&vpu_v4l2 {
-	status = "okay";
-};
-
 &wdog1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_wdog>;
 	fsl,ext-reset-output;
-	status = "okay";
-};
-
-&gpu {
 	status = "okay";
 };
 
