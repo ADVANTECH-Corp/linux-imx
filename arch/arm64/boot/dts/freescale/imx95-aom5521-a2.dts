@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2025 Advantech
+ */
+
+#include "imx95-19x19-evk.dts"
+
+/ {
+	model = "Advantech AOM-5521 A2 board";
+};
