@@ -110,6 +110,14 @@
 #define AQR107_OP_IN_PROG_SLEEP		1000
 #define AQR107_OP_IN_PROG_TIMEOUT	100000
 
+static void aqr113c_phy_fixup(struct phy_device *phydev)
+{
+	msleep(200);
+	phy_write_mmd(phydev, MDIO_MMD_VEND1, 0xc430, 0xf);
+	phy_write_mmd(phydev, MDIO_MMD_VEND1, 0xc431, 0x8000);
+	phy_write_mmd(phydev, MDIO_MMD_VEND1, 0xc432, 0x80);
+}
+
 static int aqr107_get_sset_count(struct phy_device *phydev)
 {
 	return AQR107_SGMII_STAT_SZ;
@@ -485,7 +493,9 @@ static int aqr107_read_rate(struct phy_device *phydev)
 		return 0;
 	}
 
+#ifndef CONFIG_ARCH_ADVANTECH
 	aqr107_set_led(phydev, phydev->speed);
+#endif
 
 	val = phy_read_mmd(phydev, MDIO_MMD_VEND1, config_reg);
 	if (val < 0)
@@ -689,6 +699,13 @@ static int aqr107_config_init(struct phy_device *phydev)
 
 	WARN(phydev->interface == PHY_INTERFACE_MODE_XGMII,
 	     "Your devicetree is out of date, please update it. The AQR107 family doesn't support XGMII, maybe you mean USXGMII.\n");
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (phydev->drv != NULL) {
+		if (phydev->drv->phy_id == PHY_ID_AQR113C)
+			aqr113c_phy_fixup(phydev);
+	}
+#endif
 
 	ret = aqr_wait_reset_complete(phydev);
 	if (!ret)
@@ -975,6 +992,12 @@ static int aqr107_probe(struct phy_device *phydev)
 	if (ret)
 		return ret;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (phydev->drv != NULL) {
+		if (phydev->drv->phy_id == PHY_ID_AQR113C)
+			aqr113c_phy_fixup(phydev);
+	}
+#endif
 	return aqr_hwmon_probe(phydev);
 }
 
