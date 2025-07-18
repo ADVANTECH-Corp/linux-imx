@@ -1,3 +1,10 @@
+/ {
+	aliases {
+		mtd2 = &flash1;
+		mtd3 = &flash2;
+	};
+};
+
 &lpspi4 {
 	flash1: w25q64jwssiq@0 {
 		reg = <0>;
