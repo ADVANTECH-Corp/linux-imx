@@ -41,3 +41,4 @@
 #include "imx95-aom5521-a2-wdt-msp430.dtsi"
 #include "imx95-aom5521-a2-sound-sgtl5000.dtsi"
 #include "imx95-aom5521-a2-i2c-eeprom.dtsi"
+#include "imx95-aom5521-a2-st33htpm.dtsi"
