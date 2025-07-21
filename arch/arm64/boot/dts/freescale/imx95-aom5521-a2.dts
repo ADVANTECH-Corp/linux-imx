@@ -36,3 +36,4 @@
 #include "imx95-aom5521-a2-lpspi4-nor-flash.dtsi"
 #include "imx95-aom5521-a2-can.dtsi"
 #include "imx95-aom5521-a2-pcie0.dtsi"
+#include "imx95-aom5521-a2-rtc-rx8900.dtsi"
