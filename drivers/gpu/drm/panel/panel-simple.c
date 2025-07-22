@@ -1341,15 +1341,15 @@ static const struct panel_desc auo_t215hvn01 = {
 
 #ifdef CONFIG_ARCH_ADVANTECH
 static const struct display_timing auo_g070vw01_v0_timings = {
-        .pixelclock = { 29500000, 29500000, 29500000 },
+        .pixelclock = { 33260000, 33260000, 33260000 },
         .hactive = { 800, 800, 800 },
-        .hfront_porch = { 24, 24, 24 },
-        .hback_porch = { 96, 96, 96 },
-        .hsync_len = { 72, 72, 72 },
+        .hfront_porch = { 40, 40, 40 },
+        .hback_porch = { 88, 88, 88 },
+        .hsync_len = { 128, 128, 128 },
         .vactive = { 480, 480, 480 },
         .vfront_porch = { 10, 10, 10 },
-        .vback_porch = { 3, 3, 3 },
-        .vsync_len = { 7, 7, 7 },
+        .vback_porch = { 33, 33, 33 },
+        .vsync_len = { 2, 2, 2 },
         .flags = DISPLAY_FLAGS_DE_HIGH,
 };
 
@@ -1361,7 +1361,7 @@ static const struct panel_desc auo_g070vw01_v0 = {
                 .width = 152,
                 .height = 91,
         },
-        .bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_JEIDA,
         .bus_flags = DRM_BUS_FLAG_DE_HIGH,
         .connector_type = DRM_MODE_CONNECTOR_LVDS,
 };
