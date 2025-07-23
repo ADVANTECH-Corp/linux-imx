@@ -152,6 +152,7 @@ struct imx_lut_data {
 struct imx_pcie {
 	struct dw_pcie		*pci;
 	struct gpio_desc	*reset_gpiod;
+	u32			reset_gpio_delay; /* ms */
 	int			host_wake_irq;
 	bool			link_is_up;
 	bool			enable_ext_refclk;
@@ -959,6 +960,9 @@ static void imx_pcie_assert_core_reset(struct imx_pcie *imx_pcie)
 
 	if (imx_pcie->drvdata->core_reset)
 		imx_pcie->drvdata->core_reset(imx_pcie, true);
+
+	if (imx_pcie->reset_gpio_delay > 0)
+		msleep(imx_pcie->reset_gpio_delay);
 
 	/* Some boards don't have PCIe reset GPIO. */
 	gpiod_set_value_cansleep(imx_pcie->reset_gpiod, 1);
@@ -1821,6 +1825,10 @@ static int imx_pcie_probe(struct platform_device *pdev)
 	/* Limit link speed */
 	pci->max_link_speed = 1;
 	of_property_read_u32(node, "fsl,max-link-speed", &pci->max_link_speed);
+
+	/* GPIO reset delay */
+	imx_pcie->reset_gpio_delay = 0;
+	of_property_read_u32(node, "adv,reset-gpio-delay", &imx_pcie->reset_gpio_delay);
 
 	/*
 	 * CLKREQ# signal is an open drain, active low signal that is
