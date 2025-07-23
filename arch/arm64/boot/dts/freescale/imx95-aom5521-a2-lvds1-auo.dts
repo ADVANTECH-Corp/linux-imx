@@ -43,3 +43,4 @@
 #include "imx95-aom5521-a2-st33htpm.dtsi"
 #include "imx95-aom5521-a2-lvds1-auog070vw01.dtsi"
 #include "imx95-aom5521-a2-gpiokey.dtsi"
+#include "imx95-aom5521-a2-cam-ov5640.dtsi"
