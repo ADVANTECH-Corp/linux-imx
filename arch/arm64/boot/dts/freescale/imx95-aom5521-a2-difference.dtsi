@@ -6,3 +6,8 @@
  * This dtsi file is used to remove unnecessary content
  * from the device tree of the i.MX95 EVK board.
  */
+
+&scmi_misc {
+	/delete-property/ wakeup-sources;
+	status = "disabled";
+};
