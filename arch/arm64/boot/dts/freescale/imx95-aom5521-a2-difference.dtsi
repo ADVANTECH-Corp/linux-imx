@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2025 Advantech RISC
+ * Author: Sean.Chuang <Sean.Chuang@advantech.com.tw>
+ *
+ * This dtsi file is used to remove unnecessary content
+ * from the device tree of the i.MX95 EVK board.
+ */

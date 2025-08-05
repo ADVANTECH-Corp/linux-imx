@@ -8,3 +8,12 @@
 / {
 	model = "Advantech AOM-5521 A2 board";
 };
+
+/*
+ * Step1. Include the difference set dtsi to remove some contents from EVK.
+ */
+#include "imx95-aom5521-a2-difference.dtsi"
+
+/*
+ * Step2. The features of the device tree are added below
+ */
