@@ -34,3 +34,4 @@
 #include "imx95-aom5521-a2-flexspi1-nor-flash.dtsi"
 #include "imx95-aom5521-a2-lpspi4.dtsi"
 #include "imx95-aom5521-a2-lpspi4-nor-flash.dtsi"
+#include "imx95-aom5521-a2-can.dtsi"
