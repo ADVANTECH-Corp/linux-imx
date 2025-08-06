@@ -20,3 +20,4 @@
 #include "imx95-aom5521-a2-usb2.dtsi"
 #include "imx95-aom5521-a2-gpioexp.dtsi"
 #include "imx95-aom5521-a2-gpio.dtsi"
+#include "imx95-aom5521-a2-usbotg.dtsi"
