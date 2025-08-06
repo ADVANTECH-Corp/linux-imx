@@ -1,0 +1,3 @@
+&lpi2c7 {
+	clock-frequency = <400000>; /* Change from 1000k to 400k */
+};
