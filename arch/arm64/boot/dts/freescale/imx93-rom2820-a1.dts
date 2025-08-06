@@ -21,6 +21,12 @@
 		board-type = "ROM-2820 A1";
 		board-cpu = "IMX93";
 		};
+
+	aliases {
+		rtc0 = &rtc0;
+		rtc1 = &bbnsm_rtc;
+	};
+
 	chosen {
 		stdout-path = &lpuart1;
 	};
@@ -524,6 +530,15 @@
 			#pwm-cells = <3>;
 		};
 	};
+
+	rtc0: rx8900@32 {
+		compatible = "epson,rx8900";
+		reg = <0x32>;
+		epson,vdet-disable;
+		trickle-diode-disable;
+		status = "okay";
+	};
+
 };
 
 &lpi2c3 {
