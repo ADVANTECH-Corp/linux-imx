@@ -345,6 +345,22 @@
  */
 
 ///////////////////////////////////////////
+/////////// EVK PCIE0 Related /////////////
+///////////////////////////////////////////
+&reg_pcie0 {
+	/delete-property/ vin-supply;
+};
+
+&pcie0 {
+	/delete-property/ pinctrl-0; /* pinctrl_pcie0 */
+	/delete-property/ pinctrl-names;
+};
+
+/delete-node/ &pinctrl_pcie0;
+/* IMX95_PAD_GPIO_IO32__HSIOMIX_TOP_PCIE1_CLKREQ_B         0x4000031e
+ */
+
+///////////////////////////////////////////
 /////////// EVK PCIE1 Related /////////////
 ///////////////////////////////////////////
 &pcie1 {
