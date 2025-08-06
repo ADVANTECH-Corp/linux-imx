@@ -38,3 +38,4 @@
 #include "imx95-aom5521-a2-pcie0.dtsi"
 #include "imx95-aom5521-a2-rtc-rx8900.dtsi"
 #include "imx95-aom5521-a2-pcie1-m2.dtsi"
+#include "imx95-aom5521-a2-wdt-msp430.dtsi"
