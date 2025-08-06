@@ -17,3 +17,4 @@
 /*
  * Step2. The features of the device tree are added below
  */
+#include "imx95-aom5521-a2-usb2.dtsi"
