@@ -28,3 +28,4 @@
 #include "imx95-aom5521-a2-lpuart5.dtsi"
 #include "imx95-aom5521-a2-lpuart6.dtsi"
 #include "imx95-aom5521-a2-enet.dtsi"
+#include "imx95-aom5521-a2-enet-tg.dtsi"

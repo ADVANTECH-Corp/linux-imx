@@ -1,0 +1,39 @@
+/ {
+	aliases {
+		ethernet2 = &enetc_port2;
+	};
+
+	reg_aqr_stby: regulator-aqr-stby {
+		compatible = "regulator-fixed";
+		regulator-name = "aqr-stby";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	reg_aqr_en: regulator-aqr-en {
+		compatible = "regulator-fixed";
+		regulator-name = "aqr-en";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&reg_aqr_stby>;
+		enable-active-high;
+	};
+};
+
+&enetc_port2 {
+	phy-handle = <&ethphy2>;
+	phy-mode = "10gbase-r";
+	managed = "in-band-status";
+	status = "okay";
+};
+
+&netc_emdio {
+	phy-supply = <&reg_aqr_en>;
+
+	ethphy2: ethernet-phy@8 {
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <8>;
+	};
+};
