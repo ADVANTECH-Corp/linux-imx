@@ -1,0 +1,19 @@
+&lpspi4 {
+	fsl,spi-num-chipselects = <2>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_lpspi4>;
+	cs-gpios = <&gpio5 14 GPIO_ACTIVE_LOW>, <&gpio5 13 GPIO_ACTIVE_LOW>;
+	status = "okay";
+};
+
+&scmi_iomuxc {
+	pinctrl_lpspi4: lpspi4grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO33__GPIO5_IO_BIT13		0x3fe	/* SPI4_CS1 */
+			IMX95_PAD_GPIO_IO34__GPIO5_IO_BIT14		0x3fe	/* SPI4_CS0 */
+			IMX95_PAD_GPIO_IO35__LPSPI4_SIN			0x3fe
+			IMX95_PAD_GPIO_IO36__LPSPI4_SOUT		0x3fe
+			IMX95_PAD_GPIO_IO37__LPSPI4_SCK			0x3fe
+		>;
+	};
+};
