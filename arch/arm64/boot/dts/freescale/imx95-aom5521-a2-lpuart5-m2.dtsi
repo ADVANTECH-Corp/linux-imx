@@ -1,0 +1,21 @@
+#include "imx95-aom5521-a2-lpuart5.dtsi"
+
+&gpio_exp3 {
+
+	W_DISABLE2 {
+		gpio-hog;
+		gpios = <1 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "W_DISABLE2";
+	};
+};
+
+&lpuart5 {
+	/delete-property/ linux,rs485-enabled-at-boot-time;
+	/delete-property/ rs485-rx-during-tx;
+
+	bluetooth {
+		compatible = "nxp,88w8987-bt";
+		fw-init-baudrate = <3000000>;
+	};
+};
