@@ -1,0 +1,19 @@
+&lpuart6 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart6>;
+	fsl,uart-has-rtscts;
+	linux,rs485-enabled-at-boot-time;
+	rs485-rx-during-tx;
+	status = "okay";
+};
+
+&scmi_iomuxc {
+	pinctrl_uart6: uart6grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO04__LPUART6_TX		0x31e
+			IMX95_PAD_GPIO_IO05__LPUART6_RX		0x31e
+			IMX95_PAD_GPIO_IO06__LPUART6_CTS_B	0x31e
+			IMX95_PAD_GPIO_IO07__LPUART6_RTS_B	0x31e
+		>;
+	};
+};

@@ -25,3 +25,5 @@
 #include "imx95-aom5521-a2-lpi2c3.dtsi"
 #include "imx95-aom5521-a2-lpi2c7.dtsi"
 #include "imx95-aom5521-a2-lpi2c8.dtsi"
+#include "imx95-aom5521-a2-lpuart5.dtsi"
+#include "imx95-aom5521-a2-lpuart6.dtsi"

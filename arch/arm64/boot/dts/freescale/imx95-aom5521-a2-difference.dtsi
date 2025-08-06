@@ -361,3 +361,20 @@
 /* IMX95_PAD_CCM_CLKO2__GPIO3_IO_BIT27                     0x31e
  */
 
+///////////////////////////////////////////
+////////// EVK LPUART5 Related ////////////
+///////////////////////////////////////////
+
+&lpuart5 {
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0; /* pinctrl_uart5 */
+	/delete-node/ bluetooth;
+};
+
+/delete-node/ &pinctrl_uart5;
+/* IMX95_PAD_DAP_TDO_TRACESWO__LPUART5_TX                  0x31e
+ * IMX95_PAD_DAP_TDI__LPUART5_RX                           0x31e
+ * IMX95_PAD_DAP_TMS_SWDIO__LPUART5_RTS_B                  0x31e
+ * IMX95_PAD_DAP_TCLK_SWCLK__LPUART5_CTS_B                 0x31e
+ */
+
