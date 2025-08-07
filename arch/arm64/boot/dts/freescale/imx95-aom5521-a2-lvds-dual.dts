@@ -1,0 +1,46 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2025 Advantech
+ */
+
+#include "imx95-19x19-evk.dts"
+
+/ {
+	model = "Advantech AOM-5521 A2 board";
+};
+
+/*
+ * Step1. Include the difference set dtsi to remove some contents from EVK.
+ */
+#include "imx95-aom5521-a2-difference.dtsi"
+
+/*
+ * Step2. The features of the device tree are added below
+ */
+#include "imx95-aom5521-a2-usb2.dtsi"
+#include "imx95-aom5521-a2-gpioexp.dtsi"
+#include "imx95-aom5521-a2-gpio.dtsi"
+#include "imx95-aom5521-a2-usbotg.dtsi"
+#include "imx95-aom5521-a2-lpi2c2.dtsi"
+#include "imx95-aom5521-a2-lpi2c3.dtsi"
+#include "imx95-aom5521-a2-lpi2c7.dtsi"
+#include "imx95-aom5521-a2-lpi2c8.dtsi"
+#include "imx95-aom5521-a2-lpuart5.dtsi"
+#include "imx95-aom5521-a2-lpuart6.dtsi"
+#include "imx95-aom5521-a2-enet.dtsi"
+#include "imx95-aom5521-a2-enet-tg.dtsi"
+#include "imx95-aom5521-a2-flexspi1.dtsi"
+#include "imx95-aom5521-a2-flexspi1-nor-flash.dtsi"
+#include "imx95-aom5521-a2-lpspi4.dtsi"
+#include "imx95-aom5521-a2-lpspi4-nor-flash.dtsi"
+#include "imx95-aom5521-a2-can.dtsi"
+#include "imx95-aom5521-a2-pcie0.dtsi"
+#include "imx95-aom5521-a2-rtc-rx8900.dtsi"
+#include "imx95-aom5521-a2-pcie1-m2.dtsi"
+#include "imx95-aom5521-a2-wdt-msp430.dtsi"
+#include "imx95-aom5521-a2-sound-sgtl5000.dtsi"
+#include "imx95-aom5521-a2-i2c-eeprom.dtsi"
+#include "imx95-aom5521-a2-st33htpm.dtsi"
+#include "imx95-aom5521-a2-lvds-dual-auog215hvn01.dtsi"
+#include "imx95-aom5521-a2-gpiokey.dtsi"
+#include "imx95-aom5521-a2-cam-ov5640.dtsi"
