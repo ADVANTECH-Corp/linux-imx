@@ -486,6 +486,14 @@
 		};
 	};
 
+	gpio_exp1: tca9538@20 {
+               compatible = "nxp,pca6416";
+               reg = <0x20>;
+               gpio-controller;
+               #gpio-cells = <2>;
+               //reset-gpios = <&gpio3 25 GPIO_ACTIVE_LOW>;
+       };
+
 	rtc0: rx8900@32 {
 		compatible = "epson,rx8900";
 		reg = <0x32>;
@@ -514,6 +522,20 @@
         pinctrl-0 = <&pinctrl_lpi2c5>;
         pinctrl-1 = <&pinctrl_lpi2c5>;
         status = "okay";
+
+	gpio_exp2: tca9538@20 {
+		compatible = "nxp,pca6416";
+		reg = <0x20>;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpio_exp3: tca9538@21 {
+		compatible = "nxp,pca6416";
+		reg = <0x21>;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
 };
 
 &lpi2c8 {
