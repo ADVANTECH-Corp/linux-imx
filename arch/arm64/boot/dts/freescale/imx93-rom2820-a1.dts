@@ -384,8 +384,8 @@
 		status = "okay";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_dsi>;
-		dsi-vcc-enable-gpio = <&gpio3 23 GPIO_ACTIVE_LOW>;	/* DISP_BL_EN */
-		bklt-vcc-enable-gpio = <&gpio3 24 GPIO_ACTIVE_LOW>;	/* DSIP_VDD_EN */
+		dsi-vcc-enable-gpios = <&gpio3 23 GPIO_ACTIVE_LOW>;	/* DISP_BL_EN */
+		bklt-vcc-enable-gpios = <&gpio3 24 GPIO_ACTIVE_LOW>;	/* DSIP_VDD_EN */
 
 		port {
 			adv7535_to_dsi: endpoint {
