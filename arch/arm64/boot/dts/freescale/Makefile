@@ -395,6 +395,7 @@ dtb-$(CONFIG_ARCH_MXC) += imx93-14x14-evk.dtb \
 
 dtb-$(CONFIG_ARCH_MXC) += imx93-afee420-a1.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx93-rom2820-a1.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx93-rom2820-a1-lvds.dtb
 
 dtb-$(CONFIG_ARCH_MXC) += imx93-11x11-evk.dtb \
 			  imx93-11x11-evk-inmate.dtb imx93-11x11-evk-root.dtb imx93-11x11-evk-flexio-i2c.dtb \
