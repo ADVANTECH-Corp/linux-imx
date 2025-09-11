@@ -1,0 +1,67 @@
+#include "imx93-rom2820-a1.dts"
+
+/delete-node/ &reg_usdhc2_vmmc;
+
+/ {
+
+	usdhc2_pwrseq: usdhc2_pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		post-power-on-delay-ms = <80>;
+		reset-gpios = <&gpio3 7 GPIO_ACTIVE_LOW>;
+	};
+
+	lpuart5_mod_reset: lpuart5-mod-reset {
+		compatible = "gpio-reset";
+		reset-gpios = <&gpio_exp2 10 GPIO_ACTIVE_LOW>;
+		reset-delay-us = <2000>;
+		reset-post-delay-ms = <40>;
+		#reset-cells = <0>;
+	};
+};
+
+&lpuart5 {
+	/delete-property/linux,rs485-enabled-at-boot-time;
+	/delete-property/rs485-rx-during-tx;
+	/delete-property/rs485-rts-active-low;
+
+	/* BT */
+	resets = <&lpuart5_mod_reset>;
+	fsl,uart-has-rtscts;
+	status = "okay";
+
+	bluetooth {
+                compatible = "nxp,88w8987-bt";
+        };
+};
+
+&usdhc2 {
+	/delete-property/vmmc-supply;
+	/delete-property/cd-gpios;
+	/delete-property/no-sdio;
+	/delete-property/no-mmc;
+
+	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-0 = <&pinctrl_usdhc2>,<&pinctrl_reg_usdhc2_vmmc>;
+	pinctrl-1 = <&pinctrl_usdhc2>,<&pinctrl_reg_usdhc2_vmmc>;
+	pinctrl-2 = <&pinctrl_usdhc2>,<&pinctrl_reg_usdhc2_vmmc>;
+	mmc-pwrseq = <&usdhc2_pwrseq>;
+	pinctrl-assert-gpios = <&gpio_exp2 6 GPIO_ACTIVE_HIGH>;
+	keep-power-in-suspend;
+	non-removable;
+	bus-width = <4>;
+	no-1-8-v;
+	max-frequency = <25000000>;
+	status = "okay";
+};
+
+&lpi2c5 {
+        gpio_exp3: tca9538@21 {
+
+                UR_SEL {
+                        gpio-hog;
+                        gpios = <2 GPIO_ACTIVE_HIGH>;
+                        output-high;
+                        line-name = "UR_SEL";
+                };
+        };
+};

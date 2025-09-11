@@ -537,6 +537,20 @@
 		reg = <0x20>;
 		gpio-controller;
 		#gpio-cells = <2>;
+
+		LTE_PWR_EN {
+			gpio-hog;
+			gpios = <0 GPIO_ACTIVE_HIGH>;
+			output-high;
+			line-name = "LTE_PWR_EN";
+		};
+
+		W_DISABLE1 {
+			gpio-hog;
+			gpios = <9 GPIO_ACTIVE_HIGH>;
+			output-high;
+			line-name = "W_DISABLE1";
+		};
 	};
 
 	gpio_exp3: tca9538@21 {
