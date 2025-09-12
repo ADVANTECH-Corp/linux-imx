@@ -625,15 +625,17 @@
 };
 
 &lpuart5 {
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_uart5>;
-        status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart5>;
+	linux,rs485-enabled-at-boot-time;
+	status = "okay";
 };
 
 &lpuart6 {
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_uart6>;
-        status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart6>;
+	linux,rs485-enabled-at-boot-time;
+	status = "okay";
 };
 
 &media_blk_ctrl {
