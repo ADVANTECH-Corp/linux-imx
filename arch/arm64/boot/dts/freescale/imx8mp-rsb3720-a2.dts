@@ -452,16 +452,16 @@
 		interrupts = <23 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
-	gpio_exp2: tca9538@71 {
+	gpio_exp1: tca9538@70 {
 		compatible = "nxp,pca9538";
-		reg = <0x71>;
+		reg = <0x70>;
 		gpio-controller;
 		#gpio-cells = <2>;
 	};
 
-	gpio_exp1: tca9538@70 {
+	gpio_exp2: tca9538@71 {
 		compatible = "nxp,pca9538";
-		reg = <0x70>;
+		reg = <0x71>;
 		gpio-controller;
 		#gpio-cells = <2>;
 	};
