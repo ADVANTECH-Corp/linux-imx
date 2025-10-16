@@ -1,0 +1,14 @@
+/ {
+	aliases {
+		rtc0 = &rx8900;
+		rtc1 = &scmi_bbm;
+	};
+};
+
+&lpi2c2 {
+	rx8900: rx8900c@32 {
+		compatible = "epson,rx8900";
+		reg = <0x32>;
+		status = "okay";
+	};
+};

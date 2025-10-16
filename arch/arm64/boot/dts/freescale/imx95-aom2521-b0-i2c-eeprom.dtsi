@@ -1,0 +1,20 @@
+&lpi2c2 {
+	eeprom1: 24c64@50 {
+		compatible = "st,24c64";
+		reg = <0x50>;
+	};
+};
+
+&lpi2c4 {
+	eeprom2: 24c64@50 {
+		compatible = "st,24c64";
+		reg = <0x50>;
+	};
+};
+
+&lpi2c7 {
+	eeprom3: 24c64@57 {
+		compatible = "st,24c64";
+		reg = <0x57>;
+	};
+};

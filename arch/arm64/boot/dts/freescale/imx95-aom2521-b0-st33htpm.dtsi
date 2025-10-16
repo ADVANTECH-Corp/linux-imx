@@ -1,0 +1,7 @@
+&lpi2c2 {
+	st33htpi: st33htpi@2e {
+		compatible = "st,st33htpm-i2c";
+		reg = <0x2e>;
+		pinctrl-names = "default";
+	};
+};

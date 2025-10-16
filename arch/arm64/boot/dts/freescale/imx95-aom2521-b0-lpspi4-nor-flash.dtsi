@@ -1,0 +1,24 @@
+/ {
+	aliases {
+		mtd2 = &flash1;
+		mtd3 = &flash2;
+	};
+};
+
+&lpspi4 {
+	flash1: w25q64jwssiq@0 {
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor", "winbond,w25q64";
+		spi-max-frequency = <1000000>;
+	};
+
+	flash2: w25q64jwssiq@1 {
+		reg = <1>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor", "winbond,w25q64";
+		spi-max-frequency = <1000000>;
+	};
+};

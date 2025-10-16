@@ -1,0 +1,3 @@
+&pcie0 {
+	reset-gpio = <&gpio_exp2 12 GPIO_ACTIVE_LOW>; /* PCIE1_RST */
+};

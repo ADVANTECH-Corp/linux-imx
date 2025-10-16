@@ -1,0 +1,415 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2025 Advantech RISC
+ * Author: Sean.Chuang <Sean.Chuang@advantech.com.tw>
+ *
+ * This dtsi file is used to remove unnecessary content
+ * from the device tree of the i.MX95 EVK board.
+ */
+
+/ {
+	aliases {
+		/delete-property/ ethernet0;	/* evk giga lan related (enetc_port0) */
+		/delete-property/ ethernet1;	/* evk 10g lan related (enetc_port2) */
+	};
+
+	/delete-node/ sound-wm8962;		/* evk wm8962 audio codec related */
+	/delete-node/ audio-codec-bt-sco;	/* evk bt-sound related */
+	/delete-node/ sound-bt-sco;		/* evk bt-sound related */
+	/delete-node/ sound-micfil;		/* evk micfil related */
+};
+
+&scmi_misc {
+	/delete-property/ wakeup-sources;
+	status = "disabled";
+};
+
+&cm7 {
+	status = "disabled";
+};
+
+///////////////////////////////////////////
+//////////// EVK ENET Related /////////////
+///////////////////////////////////////////
+/delete-node/ &reg_aqr_stby;
+/delete-node/ &reg_aqr_en;
+/delete-node/ &reg_serdes_en;
+
+&netc_emdio {
+	/delete-property/ phy-supply; /* reg_aqr_en */
+};
+
+&enetc_port0 {
+	status = "disabled";
+	/delete-property/ phy-handle; /* ethphy0 */
+};
+
+&enetc_port2 {
+	status = "disabled";
+	/delete-property/ phy-handle; /* ethphy2 */
+	/delete-property/ serdes-supply; /* reg_serdes_en */
+};
+
+/delete-node/ &ethphy0;
+/delete-node/ &ethphy2;
+
+///////////////////////////////////////////
+///////// EVK Audio WM8962 Related ////////
+///////////////////////////////////////////
+&sai3 {
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0; /* pinctrl_sai3 */
+};
+
+/delete-node/ &wm8962;
+
+/delete-node/ &pinctrl_hp;	/* reference in sound-wm8962 node */
+/* IMX95_PAD_GPIO_IO11__GPIO2_IO_BIT11                     0x31e
+ */
+
+/delete-node/ &pinctrl_sai3;
+/* IMX95_PAD_GPIO_IO17__SAI3_MCLK                          0x31e
+ * IMX95_PAD_GPIO_IO16__SAI3_TX_BCLK                       0x31e
+ * IMX95_PAD_GPIO_IO26__SAI3_TX_SYNC                       0x31e
+ * IMX95_PAD_GPIO_IO20__SAI3_RX_DATA_BIT0                  0x31e
+ * IMX95_PAD_GPIO_IO21__SAI3_TX_DATA_BIT0                  0x31e
+ */
+
+///////////////////////////////////////////
+//////////// EVK TPM3 Related /////////////
+///////////////////////////////////////////
+&tpm3 {
+	status = "disabled";
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0; /* pinctrl_tpm3 */
+};
+
+/delete-node/ &pinctrl_tpm3;
+/* IMX95_PAD_GPIO_IO12__TPM3_CH2                   0x51e
+ */
+
+///////////////////////////////////////////
+//////////// EVK TPM6 Related /////////////
+///////////////////////////////////////////
+
+&fan0 {
+	/delete-property/ pwms; /* <&tpm6 2 4000000 PWM_POLARITY_INVERTED> */
+};
+
+&tpm6 {
+	status = "disabled";
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0; /* pinctrl_tpm6 */
+};
+
+/delete-node/ &pinctrl_tpm6;
+/* IMX95_PAD_GPIO_IO19__TPM6_CH2                   0x51e
+ */
+
+///////////////////////////////////////////
+//////////// EVK SAI2 Related /////////////
+///////////////////////////////////////////
+/delete-node/ &pinctrl_sai2;
+/* IMX95_PAD_ENET2_MDIO__NETCMIX_TOP_SAI2_RX_BCLK                  0x31e
+ * IMX95_PAD_ENET2_MDC__NETCMIX_TOP_SAI2_RX_SYNC                   0x31e
+ * IMX95_PAD_ENET2_TD3__NETCMIX_TOP_SAI2_RX_DATA_BIT0              0x31e
+ * IMX95_PAD_ENET2_TD2__NETCMIX_TOP_SAI2_RX_DATA_BIT1              0x31e
+ * IMX95_PAD_ENET2_TXC__NETCMIX_TOP_SAI2_TX_BCLK                   0x31e
+ * IMX95_PAD_ENET2_TX_CTL__NETCMIX_TOP_SAI2_TX_SYNC                0x31e
+ * IMX95_PAD_ENET2_RX_CTL__NETCMIX_TOP_SAI2_TX_DATA_BIT0           0x31e
+ * IMX95_PAD_ENET2_RXC__NETCMIX_TOP_SAI2_TX_DATA_BIT1              0x31e
+ * IMX95_PAD_ENET2_RD0__NETCMIX_TOP_SAI2_TX_DATA_BIT2              0x31e
+ * IMX95_PAD_ENET2_RD1__NETCMIX_TOP_SAI2_TX_DATA_BIT3              0x31e
+ * IMX95_PAD_ENET2_RD2__NETCMIX_TOP_SAI2_MCLK                      0x31e
+ */
+
+///////////////////////////////////////////
+//////////// EVK TCPC Related /////////////
+///////////////////////////////////////////
+
+/delete-node/ &ptn5110; /* endpoint usb3_drd_sw,usb3_data_ss */
+
+&usb3_phy {
+	/delete-node/ port; /* endpoint usb3_data_ss -> typec_con_ss */
+};
+
+&usb3_dwc3 {
+	/delete-node/ port; /* endpoint usb3_drd_sw -> typec_dr_sw */
+};
+
+/delete-node/ &pinctrl_ptn5110; /* reference in ptn5110 node */
+/* IMX95_PAD_GPIO_IO34__GPIO5_IO_BIT14                     0x31e
+*/
+
+///////////////////////////////////////////
+////////// EVK Flexcan1 Related ///////////
+///////////////////////////////////////////
+/delete-node/ &reg_can1_stby;
+/delete-node/ &reg_can1_en;
+
+&flexcan1 {
+	/delete-property/ xceiver-supply; /* reg_can1_stby */
+};
+
+///////////////////////////////////////////
+////////// EVK Flexcan2 Related ///////////
+///////////////////////////////////////////
+&flexcan2 {
+	status = "disabled";
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0; /* pinctrl_flexcan2 */
+	/delete-property/ xceiver-supply; /* reg_can2_stby */
+};
+
+/delete-node/ &pinctrl_flexcan2;
+/* IMX95_PAD_GPIO_IO25__CAN2_TX                    0x39e
+ * IMX95_PAD_GPIO_IO27__CAN2_RX                    0x39e
+ */
+
+///////////////////////////////////////////
+//////////// EVK I2C3 Related /////////////
+///////////////////////////////////////////
+
+&lpi2c3 {
+	status = "disabled";
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0; /* pinctrl_lpi2c3 */
+	/delete-property/ i2c3-gpio-expander@20;
+	/delete-property/ pca9632@62;
+};
+
+/delete-node/ &pinctrl_lpi2c3;
+/* IMX95_PAD_GPIO_IO00__LPI2C3_SDA                 0x40000b9e
+ * IMX95_PAD_GPIO_IO01__LPI2C3_SCL                 0x40000b9e
+ */
+
+///////////////////////////////////////////
+//////////// EVK I2C6 Related /////////////
+///////////////////////////////////////////
+&lpi2c6 {
+        status = "disabled";
+        /delete-property/ pinctrl-names;
+        /delete-property/ pinctrl-0; /* pinctrl_lpi2c6 */
+        /delete-node/ i2c6-gpio-expander@21;
+};
+
+/delete-node/ &pinctrl_lpi2c6;
+/* IMX95_PAD_GPIO_IO02__LPI2C6_SDA                 0x40000b9e
+ * IMX95_PAD_GPIO_IO03__LPI2C6_SCL                 0x40000b9e
+ */
+
+/delete-node/ &pinctrl_pcal6416; /* reference in i2c6-gpio-expander node */
+/* IMX95_PAD_CCM_CLKO3__GPIO4_IO_BIT28                     0x31e
+ */
+
+///////////////////////////////////////////
+/////////// EVK LPSPI7 Related ////////////
+///////////////////////////////////////////
+
+/delete-node/ &lpspi7;
+/delete-node/ &pinctrl_lpspi7; /* reference in lpspi7 node */
+/* IMX95_PAD_GPIO_IO04__GPIO2_IO_BIT4      0x3fe
+ * IMX95_PAD_GPIO_IO05__LPSPI7_SIN         0x3fe
+ * IMX95_PAD_GPIO_IO06__LPSPI7_SOUT        0x3fe
+ * IMX95_PAD_GPIO_IO07__LPSPI7_SCK         0x3fe
+ */
+
+///////////////////////////////////////////
+////////// EVK Flexspi1 Related ///////////
+///////////////////////////////////////////
+
+/delete-node/ &mt35xu01gbba;
+
+&flexspi1 {
+	status = "disabled";
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0; /* pinctrl_flexspi1 */
+};
+
+/delete-node/ &pinctrl_flexspi1;
+/* IMX95_PAD_XSPI1_SS0_B__FLEXSPI1_A_SS0_B                 0x3fe
+ * IMX95_PAD_XSPI1_SCLK__FLEXSPI1_A_SCLK                   0x3fe
+ * IMX95_PAD_XSPI1_DQS__FLEXSPI1_A_DQS                     0x3fe
+ * IMX95_PAD_XSPI1_DATA0__FLEXSPI1_A_DATA_BIT0             0x3fe
+ * IMX95_PAD_XSPI1_DATA1__FLEXSPI1_A_DATA_BIT1             0x3fe
+ * IMX95_PAD_XSPI1_DATA2__FLEXSPI1_A_DATA_BIT2             0x3fe
+ * IMX95_PAD_XSPI1_DATA3__FLEXSPI1_A_DATA_BIT3             0x3fe
+ * IMX95_PAD_XSPI1_DATA4__FLEXSPI1_A_DATA_BIT4             0x3fe
+ * IMX95_PAD_XSPI1_DATA5__FLEXSPI1_A_DATA_BIT5             0x3fe
+ * IMX95_PAD_XSPI1_DATA6__FLEXSPI1_A_DATA_BIT6             0x3fe
+ * IMX95_PAD_XSPI1_DATA7__FLEXSPI1_A_DATA_BIT7             0x3fe
+ */
+
+/delete-node/ &pinctrl_flexspi1_reset; /* reference in mt35xu01gbba node */
+/* IMX95_PAD_XSPI1_SS1_B__GPIO5_IO_BIT11                   0x3fe
+ */
+
+
+///////////////////////////////////////////
+////////// EVK BT-Sound Related ///////////
+///////////////////////////////////////////
+&sai1 {
+	/* reference in sound-bt-sco node */
+	status = "disabled";
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0; /* pinctrl_sai1 */
+};
+
+/delete-node/ &pinctrl_sai1;
+/* IMX95_PAD_SAI1_RXD0__AONMIX_TOP_SAI1_RX_DATA_BIT0    0x31e
+ * IMX95_PAD_SAI1_TXC__AONMIX_TOP_SAI1_TX_BCLK      0x31e
+ * IMX95_PAD_SAI1_TXFS__AONMIX_TOP_SAI1_TX_SYNC     0x31e
+ * IMX95_PAD_SAI1_TXD0__AONMIX_TOP_SAI1_TX_DATA_BIT0    0x31e
+ */
+
+///////////////////////////////////////////
+/////////// EVK MICFIL Related ////////////
+///////////////////////////////////////////
+&micfil {
+	status = "disabled";
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0; /* pinctrl_pdm */
+};
+
+/delete-node/ &pinctrl_pdm;
+/* IMX95_PAD_PDM_CLK__AONMIX_TOP_PDM_CLK                           0x31e
+ * IMX95_PAD_PDM_BIT_STREAM0__AONMIX_TOP_PDM_BIT_STREAM_BIT0       0x31e
+ */
+
+///////////////////////////////////////////
+//////// EVK I2C1-GPIOEXP Related /////////
+///////////////////////////////////////////
+
+/delete-node/ &pinctrl_i2c1_pcal6408;
+/* IMX95_PAD_PDM_BIT_STREAM1__AONMIX_TOP_GPIO1_IO_BIT10    0x31e
+ */
+
+///////////////////////////////////////////
+//////// EVK I2C2-GPIOEXP Related /////////
+///////////////////////////////////////////
+
+/delete-node/ &pinctrl_i2c2_pcal6524;
+/* IMX95_PAD_GPIO_IO34__GPIO5_IO_BIT14                     0x31e
+ */
+
+///////////////////////////////////////////
+//////// EVK I2C4-GPIOEXP Related /////////
+///////////////////////////////////////////
+
+&reg_audio_pwr {
+	/delete-property/ gpio; /* <&i2c4_gpio_expander_21 1 GPIO_ACTIVE_HIGH> */
+};
+
+&reg_can2_stby {
+	/delete-property/ gpio; /* <&i2c4_gpio_expander_21 3 GPIO_ACTIVE_HIGH> */
+};
+
+&reg_can2_en {
+	/delete-property/ gpio; /* <&i2c4_gpio_expander_21 4 GPIO_ACTIVE_HIGH> */
+};
+
+/delete-node/ &i2c4_gpio_expander_21;
+/delete-node/ &pinctrl_i2c4_pcal6408; /* reference in i2c4_gpio_expander_21 node */
+/* IMX95_PAD_GPIO_IO18__GPIO2_IO_BIT18                     0x31e
+ */
+
+///////////////////////////////////////////
+//////// EVK I2C7-GPIOEXP Related /////////
+///////////////////////////////////////////
+
+/delete-node/ &reg_si5332_stby; /* <&i2c7_pcal6524 13 GPIO_ACTIVE_LOW> */
+
+&reg_m2_pwr {
+	/delete-property/ gpio; /* <&i2c7_pcal6524 20 GPIO_ACTIVE_HIGH> */
+};
+
+&reg_pcie0 {
+	/delete-property/ gpio; /* <&i2c7_pcal6524 6 GPIO_ACTIVE_HIGH> */
+};
+
+&reg_slot_pwr {
+	/delete-property/ gpio; /* <&i2c7_pcal6524 14 GPIO_ACTIVE_HIGH> */
+};
+
+&reg_usb_vbus {
+	/delete-property/ gpio; /* <&i2c7_pcal6524 3 GPIO_ACTIVE_HIGH> */
+};
+
+&pcie0 {
+	/delete-property/ reset-gpio; /* <&i2c7_pcal6524 5 GPIO_ACTIVE_LOW> */
+};
+
+&pcie1 {
+	/delete-property/ reset-gpio; /* <&i2c7_pcal6524 16 GPIO_ACTIVE_LOW> */
+};
+
+/delete-node/ &i2c7_pcal6524;
+/delete-node/ &pinctrl_i2c7_pcal6524; /* reference in i2c7_pcal6524 node */
+/* IMX95_PAD_GPIO_IO36__GPIO5_IO_BIT16                     0x31e
+ */
+
+///////////////////////////////////////////
+/////////// EVK PCIE0 Related /////////////
+///////////////////////////////////////////
+&reg_pcie0 {
+	/delete-property/ vin-supply;
+};
+
+&pcie0 {
+	/delete-property/ pinctrl-0; /* pinctrl_pcie0 */
+	/delete-property/ pinctrl-names;
+};
+
+/delete-node/ &pinctrl_pcie0;
+/* IMX95_PAD_GPIO_IO32__HSIOMIX_TOP_PCIE1_CLKREQ_B         0x4000031e
+ */
+
+///////////////////////////////////////////
+/////////// EVK PCIE1 Related /////////////
+///////////////////////////////////////////
+&pcie1 {
+	/delete-property/ pinctrl-0; /* pinctrl_pcie1 */
+	/delete-property/ pinctrl-names;
+};
+
+&pcie1_ep {
+	/delete-property/ pinctrl-0; /* pinctrl_pcie1 */
+	/delete-property/ pinctrl-names;
+};
+
+/delete-node/ &pinctrl_pcie1;
+/* IMX95_PAD_GPIO_IO35__HSIOMIX_TOP_PCIE2_CLKREQ_B         0x4000031e
+ */
+
+///////////////////////////////////////////
+////////// EVK MIPI-DSI Related ///////////
+///////////////////////////////////////////
+
+/delete-node/ &pinctrl_mipi_dsi_csi;
+/* IMX95_PAD_CCM_CLKO2__GPIO3_IO_BIT27                     0x31e
+ */
+
+///////////////////////////////////////////
+////////// EVK LPUART5 Related ////////////
+///////////////////////////////////////////
+
+&lpuart5 {
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0; /* pinctrl_uart5 */
+	/delete-node/ bluetooth;
+};
+
+/delete-node/ &pinctrl_uart5;
+/* IMX95_PAD_DAP_TDO_TRACESWO__LPUART5_TX                  0x31e
+ * IMX95_PAD_DAP_TDI__LPUART5_RX                           0x31e
+ * IMX95_PAD_DAP_TMS_SWDIO__LPUART5_RTS_B                  0x31e
+ * IMX95_PAD_DAP_TCLK_SWCLK__LPUART5_CTS_B                 0x31e
+ */
+
+///////////////////////////////////////////
+//////////// EVK WDT Related //////////////
+///////////////////////////////////////////
+
+&wdog3 {
+	status = "disabled";
+};

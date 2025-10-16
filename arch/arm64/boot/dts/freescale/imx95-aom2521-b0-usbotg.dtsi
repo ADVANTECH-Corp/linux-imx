@@ -1,0 +1,40 @@
+/ {
+	reg_usb_otg_vbus: regulator-usb-vbus {
+		compatible = "regulator-fixed";
+		regulator-name = "usb_otg_vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio_exp2 13 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	extcon_usb_otg: extcon_usb_otg@1 {
+		compatible = "linux,extcon-usb-gpio";
+		id-gpio = <&gpio4 14 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&usb3_dwc3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usb_otg>;
+	dr_mode = "host";
+	extcon = <&extcon_usb_otg>;
+	vbus-supply = <&reg_usb_otg_vbus>;
+	status = "okay";
+	/delete-property/ hnp-disable;
+	/delete-property/ srp-disable;
+	/delete-property/ adp-disable;
+	/delete-property/ usb-role-switch;
+	/delete-property/ role-switch-default-mode;
+	/delete-property/ snps,dis-u1-entry-quirk;
+	/delete-property/ snps,dis-u2-entry-quirk;
+};
+
+&scmi_iomuxc {
+	pinctrl_usb_otg: usb_otg_grp {
+		fsl,pins = <
+			IMX95_PAD_ENET2_MDC__GPIO4_IO_BIT14		0x31e
+		>;
+	};
+};

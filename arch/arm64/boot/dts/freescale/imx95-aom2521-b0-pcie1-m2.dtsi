@@ -1,0 +1,8 @@
+&reg_slot_pwr {
+	regulator-always-on;
+};
+
+&pcie1 {
+	reset-gpio = <&gpio_exp2 11 GPIO_ACTIVE_LOW>; /* PCIE2_RST */
+	adv,reset-gpio-delay = <100>;
+};
