@@ -19,6 +19,9 @@
 		regulator-max-microvolt = <3300000>;
 		vin-supply = <&reg_aqr_stby>;
 		enable-active-high;
+		gpio = <&gpio4 15 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_serdes_en>;
 	};
 };
 
@@ -36,4 +39,12 @@
 		compatible = "ethernet-phy-ieee802.3-c45";
 		reg = <8>;
 	};
+};
+
+&scmi_iomuxc {
+    pinctrl_serdes_en: serdes_en_grp {
+        fsl,pins = <
+            IMX95_PAD_ENET2_MDIO__GPIO4_IO_BIT15 0x31e
+        >;
+    };
 };

@@ -1,5 +1,5 @@
-#ifndef __DTSI_AOM5521_LPUART5__
-#define __DTSI_AOM5521_LPUART5__
+#ifndef __DTSI_AOM2521_LPUART5__
+#define __DTSI_AOM2521_LPUART5__
 
 &lpuart5 {
 	pinctrl-names = "default";

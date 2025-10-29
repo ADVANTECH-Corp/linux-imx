@@ -1,7 +1,7 @@
 / {
 	lvds_backlight1: lvds_backlight@1 {
 		compatible = "pwm-backlight";
-		pwms = <&tpm4 3 5000000 0>;
+		pwms = <&tpm3 3 5000000 0>;
 		status = "disabled";
 
 		brightness-levels = < 0  1  2  3  4  5  6  7  8  9
@@ -19,9 +19,9 @@
 	};
 };
 
-&tpm4 {
+&tpm3 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_tpm4>;
+	pinctrl-0 = <&pinctrl_tpm3>;
 	status = "okay";
 };
 
@@ -50,8 +50,10 @@
 	panel@0 {
 		compatible = "auo,g101uan02";
 		reg = <0>;
-		dsi-vcc-enable-gpio = <&gpio_exp1 6 GPIO_ACTIVE_HIGH>;  /* LCD1_VDD_EN */
-		dsi-bkl-enable-gpio = <&gpio_exp1 7 GPIO_ACTIVE_HIGH>;  /* LCD1_BKLT_EN */
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_disp_bl_en &pinctrl_disp_vdd_en>;
+		dsi-vcc-enable-gpio = <&gpio2 13 GPIO_ACTIVE_HIGH>;  /* DSIP_VDD_EN */
+		dsi-bkl-enable-gpio = <&gpio5 12 GPIO_ACTIVE_HIGH>;  /* DISP_BL_EN */
 
 		port {
 			panel1_in: endpoint {
@@ -82,9 +84,21 @@
 
 &scmi_iomuxc {
 
-	pinctrl_tpm4: tpm4grp {
+	pinctrl_tpm3: tpm3grp {
 		fsl,pins = <
-			IMX95_PAD_GPIO_IO25__TPM4_CH3		0x51e	/* LCD1_BKLT_PWM */
+			IMX95_PAD_GPIO_IO24__TPM3_CH3		0x51e	/* DISP_BL_PWM */
+		>;
+	};
+
+	pinctrl_disp_vdd_en: disp_vdd_en {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO13__GPIO2_IO_BIT13		0x31e	/* DSIP_VDD_EN */
+		>;
+	};
+
+	pinctrl_disp_bl_en: disp_bl_en {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO32__GPIO5_IO_BIT12		0x31e	/* DISP_BL_E */
 		>;
 	};
 };

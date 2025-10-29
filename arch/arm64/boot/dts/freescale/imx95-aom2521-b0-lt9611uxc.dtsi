@@ -26,13 +26,13 @@
 	};
 };
 
-&lpi2c2 {
+&lpi2c7 {
 	lt9611uxc: lt9611uxc@2b {
 		compatible = "lontium,lt9611uxc";
 		reg = <0x2b>;
 		#sound-dai-cells = <0>;
-		reset-gpios = <&gpio_exp2 5 GPIO_ACTIVE_HIGH>; /* DSI_RST */
-		interrupts-extended = <&gpio_exp2 3 IRQ_TYPE_EDGE_FALLING>; /* DSI_HDMI_INT */
+		reset-gpios = <&gpio_exp2 13 GPIO_ACTIVE_HIGH>; /* DSI_RST */
+		interrupts-extended = <&gpio_exp2 12 IRQ_TYPE_EDGE_FALLING>; /* DSI_HDMI_INT */
 
 		ports {
 			#address-cells = <1>;
