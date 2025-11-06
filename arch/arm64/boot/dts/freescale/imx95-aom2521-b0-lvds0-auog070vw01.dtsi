@@ -1,7 +1,7 @@
 / {
 	lvds_backlight0: lvds_backlight@0 {
 		compatible = "pwm-backlight";
-		pwms = <&tpm3 3 5000000 0>;
+		pwms = <&tpm4 3 5000000 0>;
 		status = "disabled";
 
 		brightness-levels = < 0  1  2  3  4  5  6  7  8  9
@@ -30,9 +30,9 @@
 	};
 };
 
-&tpm3 {
+&tpm4 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_tpm3>;
+	pinctrl-0 = <&pinctrl_tpm4>;
 	status = "okay";
 };
 
@@ -71,8 +71,8 @@
 &lvds_backlight0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_backlight0>;
-	lvds-vcc-enable-gpio = <&gpio2 15 GPIO_ACTIVE_HIGH>;	/* LCD0_VDD_EN */
-	lvds-bkl-enable-gpio = <&gpio_exp1 8 GPIO_ACTIVE_HIGH>;	/* LCD0_BKLT_EN */
+	lvds-vcc-enable-gpio = <&gpio3 24 GPIO_ACTIVE_HIGH>;	/* LVDS_VDD_EN */
+	lvds-bkl-enable-gpio = <&gpio3 25 GPIO_ACTIVE_HIGH>;	/* LVDS_BL_EN */
 	lvds-vcc-delay-time = <10>;
 	status = "okay";
 };
@@ -89,15 +89,16 @@
 };
 
 &scmi_iomuxc {
-	pinctrl_tpm3: tpm3grp {
+	pinctrl_tpm4: tpm4grp {
 		fsl,pins = <
-			IMX95_PAD_GPIO_IO24__TPM3_CH3		0x51e	/* LCD0_BKLT_PWM */
+			IMX95_PAD_GPIO_IO25__TPM4_CH3		0x51e	/* LVDS_BL_PWM */
 		>;
 	};
 
 	pinctrl_backlight0: backlight0grp {
 		fsl,pins = <
-			IMX95_PAD_GPIO_IO15__GPIO2_IO_BIT15	0x51e
+			IMX95_PAD_SD3_DATA2__GPIO3_IO_BIT24	0x51e  /* LVDS_VDD_EN */
+			IMX95_PAD_SD3_DATA3__GPIO3_IO_BIT25     0x51e  /* LVDS_BL_EN  */
 		>;
 	};
 };
