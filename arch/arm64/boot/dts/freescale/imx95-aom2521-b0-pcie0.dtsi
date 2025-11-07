@@ -1,3 +1,26 @@
+/ {
+	reg_pcie0_en: regulator-pcie0-en {
+		compatible = "regulator-fixed";
+		regulator-name = "WLAN_PWR_EN";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio_exp1 0 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-always-on;
+	};
+};
+
 &pcie0 {
-	reset-gpio = <&gpio_exp2 12 GPIO_ACTIVE_LOW>; /* PCIE1_RST */
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pcie0>;
+	reset-gpio = <&gpio5 8 GPIO_ACTIVE_LOW>; /* PCIE_A_PERST */
+	vpcie-supply = <&reg_pcie0_en>;
+};
+
+&scmi_iomuxc {
+	pinctrl_pcie0: pcie0grp {
+		fsl,pins = <
+			IMX95_PAD_XSPI1_DQS__GPIO5_IO_BIT8		0x31e
+		>;
+	};
 };

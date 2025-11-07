@@ -1,8 +1,31 @@
-&reg_slot_pwr {
-	regulator-always-on;
+/ {
+	reg_pcie1_en: regulator-pcie1-en {
+	    compatible = "regulator-fixed";
+	    regulator-name = "VLTE_PWR_EN";
+	    regulator-min-microvolt = <3300000>;
+	    regulator-max-microvolt = <3300000>;
+	    gpio = <&gpio_exp1 6 GPIO_ACTIVE_HIGH>;
+	    enable-active-high;
+	};
+
 };
 
+//&reg_slot_pwr {
+//	regulator-always-on;
+//};
+
 &pcie1 {
-	reset-gpio = <&gpio_exp2 11 GPIO_ACTIVE_LOW>; /* PCIE2_RST */
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pcie1>;
+	reset-gpio = <&gpio2 16 GPIO_ACTIVE_LOW>; /*PCIE_B_PERST  */
+	vpcie-supply = <&reg_pcie1_en>;
 	adv,reset-gpio-delay = <100>;
+};
+
+&scmi_iomuxc {
+        pinctrl_pcie1: pcie1grp {
+                fsl,pins = <
+                        IMX95_PAD_GPIO_IO16__GPIO2_IO_BIT16              0x31e
+                >;
+        };
 };
