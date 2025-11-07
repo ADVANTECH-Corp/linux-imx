@@ -12,7 +12,7 @@
 	};
 };
 
-&lpi2c4 {
+&lpi2c7 {
 	acodec: sgtl5000@a {
 		compatible = "fsl,sgtl5000";
 		reg = <0x0a>;
