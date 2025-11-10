@@ -40,4 +40,4 @@
 #include "imx95-aom2521-b0-rtc-rx8900.dtsi"
 #include "imx95-aom2521-b0-pcie1-m2.dtsi"
 #include "imx95-aom2521-b0-sound-sgtl5000.dtsi"
-//#include "imx95-aom2521-b0-cam-ov5640.dtsi"
+#include "imx95-aom2521-b0-cam-ov5640.dtsi"

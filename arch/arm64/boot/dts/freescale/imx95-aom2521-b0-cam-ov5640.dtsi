@@ -11,7 +11,7 @@
 		assigned-clock-parents = <&scmi_clk IMX95_CLK_24M>;
 		assigned-clock-rates = <24000000>;
 		csi_id = <0>;
-		powerdown-gpios = <&gpio3 20 GPIO_ACTIVE_HIGH>;
+		powerdown-gpios = <&gpio3 20 GPIO_ACTIVE_LOW>;
 		reset-gpios = <&gpio3 22 GPIO_ACTIVE_LOW>;
 		mclk = <24000000>;
 		mclk_source = <0>;
