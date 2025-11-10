@@ -1,0 +1,94 @@
+ / {
+	reg_usb_otg_vbus: regulator-usb-vbus {
+		compatible = "regulator-fixed";
+		regulator-name = "usb_otg_vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio3 21 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-always-on;
+	};
+};
+
+&lpi2c7 {
+       ptn5110: tcpc@50 {
+               compatible = "nxp,ptn5110";
+               reg = <0x50>;
+               interrupts-extended = <&gpio_exp1 8 IRQ_TYPE_EDGE_FALLING>; /* USB_C_INT */
+
+               port {
+                       typec_dr_sw: endpoint {
+                               remote-endpoint = <&usb3_drd_sw>;
+                       };
+               };
+
+               typec_con: connector {
+                       compatible = "usb-c-connector";
+                       label = "USB-C";
+                       power-role = "dual";
+                       data-role = "dual";
+                       try-power-role = "sink";
+                       source-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+                       sink-pdos = <PDO_FIXED(5000, 0, PDO_FIXED_USB_COMM)>;
+                       op-sink-microwatt = <0>;
+                       self-powered;
+
+                       ports {
+                               #address-cells = <1>;
+                               #size-cells = <0>;
+
+                               port@1 {
+                                       reg = <1>;
+                                       typec_con_ss: endpoint {
+                                               remote-endpoint = <&usb3_data_ss>;
+                                       };
+                               };
+                       };
+               };
+       };
+};
+
+&usb3 {
+	status = "okay";
+};
+
+&usb3_phy {
+	fsl,phy-pcs-tx-deemph-3p5db-attenuation-db = <17>;
+	fsl,phy-pcs-tx-swing-full-percent = <100>;
+	fsl,phy-tx-preemp-amp-tune-microamp = <600>;
+	fsl,phy-tx-vboost-level-microvolt = <1156>;
+	status = "okay";
+
+	port {
+		usb3_data_ss: endpoint {
+			remote-endpoint = <&typec_con_ss>;
+		};
+	};
+};
+
+&usb3_dwc3 {
+	dr_mode = "otg";
+	vbus-supply = <&reg_usb_otg_vbus>;
+	hnp-disable;
+	srp-disable;
+	adp-disable;
+	usb-role-switch;
+	role-switch-default-mode = "none";
+	snps,dis-u1-entry-quirk;
+	snps,dis-u2-entry-quirk;
+	status = "okay";
+
+	port {
+		usb3_drd_sw: endpoint {
+			remote-endpoint = <&typec_dr_sw>;
+		};
+	};
+};
+
+&scmi_iomuxc {
+       pinctrl_usba_en: usbaengrp {
+                fsl,pins = <
+                       IMX95_PAD_SD3_CMD__GPIO3_IO_BIT21               0x31e
+                >;
+        };
+ };
