@@ -4088,6 +4088,35 @@ static const struct panel_desc_dsi auo_g101uan02 = {
 
 #endif
 #if defined(CONFIG_ARCH_ADVANTECH)
+static const struct drm_display_mode auo_g101ean02_mode = {
+    .clock = 71100,
+    .hdisplay = 1280,
+    .hsync_start = 1280 + 10,
+    .hsync_end = 1280 + 10 + 140,
+    .htotal = 1280 + 10 + 140 + 10,
+    .vdisplay = 800,
+    .vsync_start = 800 + 15,
+    .vsync_end = 800 + 15 + 4,
+    .vtotal = 800 + 4 + 15 + 4,
+    .vrefresh = 60,
+};
+
+static const struct panel_desc_dsi auo_g101ean02 = {
+    .desc = {
+        .modes = &auo_g101ean02_mode,
+        .num_modes = 1,
+        .bpc = 8,
+        .size = {
+            .width = 216,
+            .height = 135,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+    },
+    .flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET,
+    .format = MIPI_DSI_FMT_RGB888,
+    .lanes = 4,
+};
+
 static const struct drm_display_mode auo_g070vw01v0_mode = {
     .clock = 29500,
     .hdisplay = 800,
@@ -4365,6 +4394,9 @@ static const struct of_device_id dsi_of_match[] = {
 #endif
 #if defined(CONFIG_ARCH_ADVANTECH)
 	{
+		.compatible = "auo,g101ean02",
+		.data = &auo_g101ean02
+	}, {
 		.compatible = "auo,g070vw01v0",
 		.data = &auo_g070vw01v0
 	}, {
