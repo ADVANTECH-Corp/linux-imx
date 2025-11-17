@@ -38,5 +38,4 @@
 #include "imx95-aom2521-b0-pcie1-m2.dtsi"
 #include "imx95-aom2521-b0-sound-sgtl5000.dtsi"
 #include "imx95-aom2521-b0-lvds0-auog070vw01.dtsi"
-#include "imx95-aom2521-b0-gpiokey.dtsi"
 #include "imx95-aom2521-b0-cam-ov5640.dtsi"
