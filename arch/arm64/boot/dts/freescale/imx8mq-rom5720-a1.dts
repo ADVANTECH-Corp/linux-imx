@@ -306,8 +306,8 @@
                 pinctrl-names = "default";
                 pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
                 status = "okay";
-                wdt-en = <&gpio3 18 0>;
-                wdt-ping = <&gpio4 22 0>;
+                wdt-en-gpios = <&gpio3 18 0>;
+                wdt-ping-gpios = <&gpio4 22 0>;
                 reg = <0x29>;
         };
 
