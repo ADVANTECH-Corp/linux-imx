@@ -4,7 +4,7 @@
 		regulator-name = "WLAN_PWR_EN";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio_exp1 0 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio_exp1 6 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 		regulator-always-on;
 	};

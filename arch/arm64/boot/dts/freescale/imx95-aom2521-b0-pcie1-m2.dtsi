@@ -10,10 +10,6 @@
 
 };
 
-//&reg_slot_pwr {
-//	regulator-always-on;
-//};
-
 &pcie1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie1>;
