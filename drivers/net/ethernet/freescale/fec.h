@@ -631,7 +631,9 @@ struct fec_enet_private {
 #ifdef CONFIG_IMX_SCU_SOC
 	struct imx_sc_ipc *ipc_handle;
 #endif
-
+	int phy_reset;
+	bool active_high;
+	int phy_post_delay;
 	u64 ethtool_stats[0];
 };
 

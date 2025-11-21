@@ -714,7 +714,23 @@ static struct platform_driver imx8mm_clk_driver = {
 		.of_match_table = of_match_ptr(imx8mm_clk_of_match),
 	},
 };
+
+#ifdef CONFIG_ARCH_ADVANTECH
+static int __init imx8mm_clk_init(void)
+{
+    return platform_driver_register(&imx8mm_clk_driver);
+}
+
+static void __exit imx8mm_clk_exit(void)
+{
+    platform_driver_unregister(&imx8mm_clk_driver);
+}
+
+arch_initcall(imx8mm_clk_init);
+module_exit(imx8mm_clk_exit);
+#else
 module_platform_driver(imx8mm_clk_driver);
+#endif
 MODULE_AUTHOR("Bai Ping <ping.bai@nxp.com>");
 MODULE_DESCRIPTION("NXP i.MX8MM clock driver");
 MODULE_LICENSE("GPL v2");

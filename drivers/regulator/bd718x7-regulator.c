@@ -78,6 +78,31 @@ static int bd718xx_set_voltage_sel_pickable_restricted(
 	return regulator_set_voltage_sel_pickable_regmap(rdev, sel);
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int bd718xx_set_suspend_disable(struct regulator_dev *rdev)
+{
+	static int initial=1;
+
+	if(!strcmp(rdev->desc->name,"buck4")){
+		if(initial){
+			--initial;
+			return 0;
+		}
+		return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg, 0x03, 0x02);
+	}
+
+	return 0;
+}
+
+static int bd718xx_resume(struct regulator_dev *rdev)
+{
+	if(strcmp(rdev->desc->name,"buck4"))
+		return 0;
+	else
+		return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg, 0x03, 0x00);
+}
+#endif
+
 static const struct regulator_ops bd718xx_pickable_range_ldo_ops = {
 	.enable = regulator_enable_regmap,
 	.disable = regulator_disable_regmap,
@@ -95,6 +120,10 @@ static const struct regulator_ops bd718xx_pickable_range_buck_ops = {
 	.set_voltage_sel = bd718xx_set_voltage_sel_pickable_restricted,
 	.get_voltage_sel = regulator_get_voltage_sel_pickable_regmap,
 	.set_voltage_time_sel = regulator_set_voltage_time_sel,
+#ifdef CONFIG_ARCH_ADVANTECH
+	.set_suspend_disable = bd718xx_set_suspend_disable,
+	.resume = bd718xx_resume,
+#endif
 };
 
 static const struct regulator_ops bd718xx_ldo_regulator_ops = {
@@ -1281,14 +1310,37 @@ err:
 	return err;
 }
 
+static const struct of_device_id bd718x7_pmic_id[] = {
+	{ .compatible = "bd71837-pmic" },
+	{ .compatible = "bd71847-pmic" },
+	{ },
+};
+MODULE_DEVICE_TABLE(of, bd718x7_pmic_id);
+
 static struct platform_driver bd718xx_regulator = {
 	.driver = {
 		.name = "bd718xx-pmic",
+		.of_match_table = of_match_ptr(bd718x7_pmic_id),
 	},
 	.probe = bd718xx_probe,
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int __init bd718xx_regulator_init(void)
+{
+    return platform_driver_register(&bd718xx_regulator);
+}
+
+static void __exit bd718xx_regulator_exit(void)
+{
+    platform_driver_unregister(&bd718xx_regulator);
+}
+
+subsys_initcall(bd718xx_regulator_init);
+module_exit(bd718xx_regulator_exit);
+#else
 module_platform_driver(bd718xx_regulator);
+#endif
 
 MODULE_AUTHOR("Matti Vaittinen <matti.vaittinen@fi.rohmeurope.com>");
 MODULE_DESCRIPTION("BD71837/BD71847 voltage regulator driver");

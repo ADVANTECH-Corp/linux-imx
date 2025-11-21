@@ -15,6 +15,25 @@
 #include "imx8mm-rsb3730-a2.dts"
 
 / {
+	/delete-node/ rtl8367;
+
+	gpio_sel_reset: gpio-sel-reset {
+		compatible = "gpio-reset";
+		reset-gpios = <&gpio3 19 GPIO_ACTIVE_HIGH>;
+		reset-delay-us = <0>;
+		reset-post-delay-ms = <0>;
+		#reset-cells = <0>;
+	};
+};
+
+&fec1 {
+	/delete-property/ fsl,magic-packet;
+};
+
+&buck4_reg {
+	regulator-state-mem {
+		regulator-off-in-suspend;
+	};
 };
 
 &lt9611uxc {

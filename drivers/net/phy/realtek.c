@@ -73,7 +73,7 @@ static void rtl8211f_phy_fixup(struct phy_device *dev)
 {
 	struct device_node *node = dev->mdio.dev.of_node;
 
-	msleep(200);
+	//msleep(200);
 	phy_write(dev, 0x1f, 0x0d04);
 	/*PHY LED OK*/
 	phy_write(dev, 0x10, 0xa050);
@@ -300,6 +300,12 @@ static int rtl8211f_config_init(struct phy_device *phydev)
 	}
 
 	return ret;
+}
+
+static int rtl8211f_resume(struct phy_device *phydev)
+{
+	rtl8211f_config_init(phydev);
+	return genphy_resume(phydev);
 }
 
 static int rtl8211e_config_init(struct phy_device *phydev)
@@ -612,7 +618,7 @@ static struct phy_driver realtek_drvs[] = {
 		.ack_interrupt	= &rtl8211f_ack_interrupt,
 		.config_intr	= &rtl8211f_config_intr,
 		.suspend	= genphy_suspend,
-		.resume		= genphy_resume,
+		.resume		= rtl8211f_resume,
 		.read_page	= rtl821x_read_page,
 		.write_page	= rtl821x_write_page,
 	}, {

@@ -1205,17 +1205,15 @@ static int pca953x_suspend(struct device *dev)
 {
 	struct pca953x_chip *chip = dev_get_drvdata(dev);
 
-#ifdef CONFIG_ARCH_ADVANTECH
-	return 0;
-#endif
-
 	regcache_cache_only(chip->regmap, true);
 
+#ifdef CONFIG_GPIO_PCA953X_IRQ
 	if (atomic_read(&chip->wakeup_path))
 		device_set_wakeup_path(dev);
 	else
 		if (chip->regulator)
 			regulator_disable(chip->regulator);
+#endif
 
 	return 0;
 }
@@ -1225,12 +1223,9 @@ static int pca953x_resume(struct device *dev)
 	struct pca953x_chip *chip = dev_get_drvdata(dev);
 	int ret;
 
-#ifdef CONFIG_ARCH_ADVANTECH
-	return 0;
-#endif
-
 	regcache_cache_only(chip->regmap, false);
 
+#ifdef CONFIG_GPIO_PCA953X_IRQ
 	if (!atomic_read(&chip->wakeup_path)) {
 		if (chip->regulator) {
 			ret = regulator_enable(chip->regulator);
@@ -1242,6 +1237,7 @@ static int pca953x_resume(struct device *dev)
 			return 0;
 		}
 	}
+#endif
 
 	regcache_mark_dirty(chip->regmap);
 	ret = pca953x_regcache_sync(dev);
