@@ -1,13 +1,13 @@
 / {
 	reg_usb_otg_vbus: regulator-usb-vbus {
-		compatible = "regulator-fixed";
-		regulator-name = "usb_otg_vbus";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		gpio = <&gpio_exp2 13 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-always-on;
-	};
+                compatible = "regulator-fixed";
+                regulator-name = "usb_otg_vbus";
+                regulator-min-microvolt = <5000000>;
+                regulator-max-microvolt = <5000000>;
+                gpio = <&gpio3 21 GPIO_ACTIVE_HIGH>;
+                enable-active-high;
+                regulator-always-on;
+        };
 
 	extcon_usb_otg: extcon_usb_otg@1 {
 		compatible = "linux,extcon-usb-gpio";
@@ -37,4 +37,10 @@
 			IMX95_PAD_ENET2_MDC__GPIO4_IO_BIT14		0x31e
 		>;
 	};
+
+	pinctrl_usba_en: usbaengrp {
+                fsl,pins = <
+                       IMX95_PAD_SD3_CMD__GPIO3_IO_BIT21               0x31e
+                >;
+        };
 };

@@ -1,13 +1,37 @@
-#include "imx95-aom5521-a2-lpuart5.dtsi"
+#include "imx95-aom2521-b0-lpuart5.dtsi"
 
-&gpio_exp3 {
+&gpio_exp1 {
 
-	W_DISABLE2 {
-		gpio-hog;
-		gpios = <1 GPIO_ACTIVE_HIGH>;
-		output-high;
-		line-name = "W_DISABLE2";
-	};
+            W_DISABLE1 {
+                gpio-hog;
+                gpios = <9 GPIO_ACTIVE_HIGH>;
+                output-high;
+                line-name = "W_DISABLE1";
+            };
+
+            W_DISABLE2 {
+                gpio-hog;
+                gpios = <10 GPIO_ACTIVE_HIGH>;
+                output-high;
+                line-name = "W_DISABLE2";
+            };
+
+            WLAN_PWR_EN {
+                gpio-hog;
+                gpios = <6 GPIO_ACTIVE_HIGH>;
+                output-high;
+                line-name = "WLAN_PWR_EN";
+            };
+};
+
+&gpio_exp2 {
+
+            UR_SEL_R {
+                gpio-hog;
+                gpios = <2 GPIO_ACTIVE_HIGH>;
+                output-high;
+                line-name = "UR_SEL_R";
+            };
 };
 
 &lpuart5 {
