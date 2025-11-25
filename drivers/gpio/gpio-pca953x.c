@@ -238,6 +238,7 @@ struct pca953x_chip {
 	const char *const *names;
 	unsigned long driver_data;
 	struct regulator *regulator;
+	u8 saved_output;
 
 	const struct pca953x_reg_config *regs;
 };
@@ -1205,6 +1206,7 @@ static int pca953x_suspend(struct device *dev)
 {
 	struct pca953x_chip *chip = dev_get_drvdata(dev);
 
+	pca953x_read_regs(chip, chip->regs->output, &chip->saved_output);
 	regcache_cache_only(chip->regmap, true);
 
 #ifdef CONFIG_GPIO_PCA953X_IRQ
@@ -1223,6 +1225,7 @@ static int pca953x_resume(struct device *dev)
 	struct pca953x_chip *chip = dev_get_drvdata(dev);
 	int ret;
 
+	usleep_range(10000, 15000);
 	regcache_cache_only(chip->regmap, false);
 
 #ifdef CONFIG_GPIO_PCA953X_IRQ
@@ -1249,6 +1252,7 @@ static int pca953x_resume(struct device *dev)
 		dev_err(dev, "Failed to restore register map: %d\n", ret);
 		return ret;
 	}
+	pca953x_write_regs(chip, chip->regs->output, &chip->saved_output);
 
 	return 0;
 }

@@ -26,6 +26,10 @@
 	};
 };
 
+&uart3_mode {
+	default_mode = <1>;
+};
+
 &fec1 {
 	/delete-property/ fsl,magic-packet;
 };
