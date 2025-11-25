@@ -513,6 +513,13 @@
 			reg = <2>;
 			#address-cells = <1>;
 			#size-cells = <0>;
+
+			isl29034: isl29034@44 {
+				compatible = "isl29034";
+				status = "okay";
+				reg = <0x44>;
+				min-brightness = <10>;
+			};
 		};
 
 		i2c@3 {

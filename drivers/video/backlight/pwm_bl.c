@@ -124,7 +124,7 @@ void enable_ldb_signal(void)
 
 void enable_ldb_bkl_vcc(void)
 {
-	if (bklt_vcc_enable < 0)
+	if ((bklt_vcc_enable < 0) || (bklt_vcc_flag == gpio_get_value(bklt_vcc_enable)))
 		return;
 	mdelay(lvds_bkl_delay_value); // T3 for AUO 7"
 
