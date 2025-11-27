@@ -135,8 +135,8 @@
 &backlight {
 	pinctrl-0 = <&pinctrl_mipi_dsi_en>;
 	pinctrl-names = "default";
-	lvds-vcc-enable = <&gpio5 6 GPIO_ACTIVE_LOW>;
-	lvds-bkl-enable = <&gpio1 15 GPIO_ACTIVE_LOW>;
+	lvds-vcc-enable-gpios = <&gpio5 6 GPIO_ACTIVE_LOW>;
+	lvds-bkl-enable-gpios = <&gpio1 15 GPIO_ACTIVE_LOW>;
         status = "okay";
 };
 
