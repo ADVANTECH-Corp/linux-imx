@@ -464,13 +464,13 @@
 			thermal-sensors = <&tmu 0x0>;
 			trips {
 				cpu_alert0: trip0 {
-					temperature = <85000>;
+					temperature = <95000>;
 					hysteresis = <2000>;
 					type = "passive";
 				};
 
 				cpu_crit0: trip1 {
-					temperature = <95000>;
+					temperature = <100000>;
 					hysteresis = <2000>;
 					type = "critical";
 				};
@@ -494,13 +494,13 @@
 			thermal-sensors = <&tmu 0x1>;
 			trips {
 				soc_alert0: trip0 {
-					temperature = <85000>;
+					temperature = <95000>;
 					hysteresis = <2000>;
 					type = "passive";
 				};
 
 				soc_crit0: trip1 {
-					temperature = <95000>;
+					temperature = <100000>;
 					hysteresis = <2000>;
 					type = "critical";
 				};
