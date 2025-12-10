@@ -148,8 +148,18 @@ initialize:
 static int s35390a_read_status(struct s35390a *s35390a, char *status1)
 {
 	int ret;
-	/* For ROM5722 wait 50ms to ensure S35390A status register is stable for reading */
-	msleep(50);
+
+	/*
+	 * Advantech ROM-5722 and similar boards require a short delay for
+	 * the status register to stabilize after power-on. The original 50ms
+	 * msleep() was overly conservative and caused a ~4s boot stall due
+	 * to I2C bus contention during early probe.
+	 *
+	 * A 1–2ms range is sufficient for hardware stabilization while
+	 * preventing the boot-time hang.
+	 */
+	usleep_range(1000, 2000);
+
 	ret = s35390a_get_reg(s35390a, S35390A_CMD_STATUS1, status1, 1);
 	if (ret < 0)
 		return ret;
@@ -436,6 +446,22 @@ static int s35390a_probe(struct i2c_client *client)
 
 	s35390a->client[0] = client;
 	i2c_set_clientdata(client, s35390a);
+
+	/*
+	 * Check device readiness early. During initial boot, the I2C bus or
+	 * the RTC chip itself may not be fully ready, causing a timeout.
+	 * If so, return -EPROBE_DEFER to retry later. This avoids a severe
+	 * boot stall (~4s) observed on i.MX8M platforms when the driver
+	 * held the boot process hostage while waiting for a busy bus.
+	 */
+	err = s35390a_get_reg(s35390a, S35390A_CMD_STATUS1, &status1, 1);
+	if (err == -ETIMEDOUT || err == -ENXIO) {
+		dev_info(&client->dev, "RTC not ready yet, deferring probe\n");
+		return -EPROBE_DEFER;
+	}
+	if (err < 0)
+		return dev_err_probe(&client->dev, err,
+			"Failed to read status register\n");
 
 	/* This chip uses multiple addresses, use dummy devices for them */
 	for (i = 1; i < 8; ++i) {
