@@ -1674,11 +1674,6 @@ static int fsl_sai_runtime_resume(struct device *dev)
 	unsigned char offset = sai->soc->reg_offset;
 	int ret;
 
-#ifdef CONFIG_ARCH_ADVANTECH
-	if (of_find_property(dev->of_node, "fsl,sai-mclk-direction-output", NULL))
-		return 0;
-#endif
-
 	ret = clk_prepare_enable(sai->bus_clk);
 	if (ret) {
 		dev_err(dev, "failed to enable bus clock: %d\n", ret);
@@ -1715,6 +1710,12 @@ static int fsl_sai_runtime_resume(struct device *dev)
 	ret = regcache_sync(sai->regmap);
 	if (ret)
 		goto disable_rx_clk;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+//Fix audio codec,sgtl5000, losing sound after suspend/resume
+	regmap_update_bits(sai->regmap, FSL_SAI_TCSR(8),
+        	FSL_SAI_CSR_TERE, FSL_SAI_CSR_TERE);
+#endif
 
 	return 0;
 
