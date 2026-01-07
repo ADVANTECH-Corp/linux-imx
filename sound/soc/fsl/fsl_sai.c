@@ -1713,7 +1713,8 @@ static int fsl_sai_runtime_resume(struct device *dev)
 
 #ifdef CONFIG_ARCH_ADVANTECH
 //Fix audio codec,sgtl5000, losing sound after suspend/resume
-	regmap_update_bits(sai->regmap, FSL_SAI_TCSR(8),
+    //Use offset from platform data instead of imx8mp-specific offset 8
+	regmap_update_bits(sai->regmap, FSL_SAI_TCSR(offset),
         	FSL_SAI_CSR_TERE, FSL_SAI_CSR_TERE);
 #endif
 
