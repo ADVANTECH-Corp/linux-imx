@@ -126,9 +126,10 @@ struct imx6_pcie {
 #ifdef CONFIG_ARCH_ADVANTECH
 	int			power_on_gpio;
 	int			usb_host_pwr_en_gpio;
-	int                     reset_time;
+	int         reset_time;
 	int 		power_on_gpio_5g;
-	int                     m2_power_en_gpio;
+	int         m2_power_en_gpio;
+	int			minipcie_reset_gpio;
 #endif
 	bool			gpio_active_high;
 	struct clk		*pcie_bus;
@@ -2529,6 +2530,20 @@ static int imx6_pcie_probe(struct platform_device *pdev)
 		}
 	} else if (imx6_pcie->usb_host_pwr_en_gpio == -EPROBE_DEFER) {
 		return imx6_pcie->usb_host_pwr_en_gpio;
+	}
+
+	imx6_pcie->minipcie_reset_gpio = of_get_named_gpio(node, "minipcie-reset-gpio", 0);
+	if (gpio_is_valid(imx6_pcie->minipcie_reset_gpio)) {
+		ret = devm_gpio_request_one(&pdev->dev,
+					    imx6_pcie->minipcie_reset_gpio,
+					    GPIOF_OUT_INIT_HIGH,
+					    "minipcie-reset");
+		if (ret) {
+			dev_err(&pdev->dev, "unable to get usb-host-pwr-en gpio\n");
+			return ret;
+		}
+	} else if (imx6_pcie->minipcie_reset_gpio == -EPROBE_DEFER) {
+		return imx6_pcie->minipcie_reset_gpio;
 	}
 
 	imx6_pcie->m2_power_en_gpio = of_get_named_gpio(node, "m2-pwr-en", 0);

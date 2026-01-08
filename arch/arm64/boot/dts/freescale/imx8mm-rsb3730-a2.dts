@@ -180,6 +180,7 @@
 	reset-gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;
 	m2-pwr-en = <&gpio4 25 GPIO_ACTIVE_HIGH>;
 	usb-host-pwr-en = <&gpio1 6 GPIO_ACTIVE_HIGH>; /* MINICARD_PWR_EN */
+	minipcie-reset-gpio = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* MINICARD_RESET */
 	clocks = <&clk IMX8MM_CLK_PCIE1_ROOT>,
 		 <&clk IMX8MM_CLK_PCIE1_AUX>,
 		 <&clk IMX8MM_CLK_PCIE1_PHY>,
