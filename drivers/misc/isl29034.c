@@ -18,6 +18,8 @@
 #include <linux/delay.h>
 #include <linux/backlight.h>
 
+#define MAX_BRIGHTNESS_ADC 50000
+
 struct isl29034_info {
 	struct i2c_client       *client;
 	struct delayed_work     light_work;
@@ -46,12 +48,15 @@ static void isl29034_light_work(struct work_struct *work)
 		goto retry;
 	}
 	retval = (retvalh<<8)|retvall;
-	brightness = (u32)((retval*(isl29034->max_brightness-isl29034->min_brightness))>>16)+isl29034->min_brightness;
+	if(retval > MAX_BRIGHTNESS_ADC)
+		brightness = isl29034->max_brightness;
+	else
+		brightness = (u32)((retval*(isl29034->max_brightness-isl29034->min_brightness))>>16)+isl29034->min_brightness;
 	old = isl29034->bd->props.brightness;
 	gap = (brightness > old) ? (brightness - old) : (old - brightness);
 
-	if(gap > 3) {
-		for(i=1; i<=gap; i++){
+	if(gap > 2) {
+		for(i=1; i<=gap; i+=2){
 			if(brightness > old)
 				backlight_device_set_brightness(isl29034->bd, old+i);
 			else
