@@ -34,12 +34,6 @@
 	/delete-property/ fsl,magic-packet;
 };
 
-&buck4_reg {
-	regulator-state-mem {
-		regulator-off-in-suspend;
-	};
-};
-
 &lt9611uxc {
 	status = "disabled";
 	/delete-node/ ports;

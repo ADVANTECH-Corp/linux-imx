@@ -363,6 +363,9 @@
 				regulator-max-microvolt = <3300000>;
 				regulator-boot-on;
 				regulator-always-on;
+                                regulator-state-mem {
+                                        regulator-off-in-suspend;
+                                };
 			};
 
 			buck5_reg: BUCK5 {
@@ -515,8 +518,8 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			isl29034: isl29034@44 {
-				compatible = "isl29034";
+			light_sensor@44 {
+				compatible = "ti,opt3001";
 				status = "okay";
 				reg = <0x44>;
 				min-brightness = <10>;
