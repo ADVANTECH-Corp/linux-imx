@@ -1,0 +1,9 @@
+&usb3_dwc3 {
+	dr_mode = "host";
+	status = "okay";
+	/delete-property/ hnp-disable;
+	/delete-property/ srp-disable;
+	/delete-property/ adp-disable;
+	/delete-property/ usb-role-switch;
+	/delete-property/ role-switch-default-mode;
+};

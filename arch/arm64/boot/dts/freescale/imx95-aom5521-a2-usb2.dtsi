@@ -1,4 +1,0 @@
-&usb2 {
-	/delete-property/ vbus-supply;
-	/delete-property/ disable-over-current;
-};

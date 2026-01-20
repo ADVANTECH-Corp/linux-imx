@@ -15,20 +15,18 @@
 	};
 };
 
-&usb3_dwc3 {
+&usb2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usb_otg>;
-	dr_mode = "host";
+	dr_mode = "otg";
 	extcon = <&extcon_usb_otg>;
 	vbus-supply = <&reg_usb_otg_vbus>;
+	hnp-disable;
+	srp-disable;
+	adp-disable;
+	usb-role-switch;
+	role-switch-default-mode = "none";
 	status = "okay";
-	/delete-property/ hnp-disable;
-	/delete-property/ srp-disable;
-	/delete-property/ adp-disable;
-	/delete-property/ usb-role-switch;
-	/delete-property/ role-switch-default-mode;
-	/delete-property/ snps,dis-u1-entry-quirk;
-	/delete-property/ snps,dis-u2-entry-quirk;
 };
 
 &scmi_iomuxc {
