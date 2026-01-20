@@ -883,8 +883,7 @@ dtb-$(CONFIG_ARCH_MXC) += imx95-19x19-verdin-root.dtb imx95-19x19-verdin-inmate.
 dtb-$(CONFIG_ARCH_MXC) += imx95-aom5521-a2.dtb imx95-aom5521-a2-lvds0-auo.dtb imx95-aom5521-a2-lvds1-auo.dtb imx95-aom5521-a2-m2-sdio.dtb \
 			  imx95-aom5521-a2-lvds-dual.dtb imx95-aom5521-a2-auog101uan02.dtb
 
-dtb-$(CONFIG_ARCH_MXC) += imx95-aom2521-b0.dtb imx95-aom2521-b0-lvds0-auo.dtb imx95-aom2521-b0-lvds1-auo.dtb imx95-aom2521-b0-m2-sdio.dtb \
-                          imx95-aom2521-b0-lvds-dual.dtb imx95-aom2521-b0-auog101uan02.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx95-aom2521-b0.dtb imx95-aom2521-b0-lvds0-auo.dtb imx95-aom2521-b0-m2-sdio.dtb imx95-aom2521-b0-auog101uan02.dtb
 
 dtb-$(CONFIG_ARCH_S32) += s32g274a-evb.dtb
 dtb-$(CONFIG_ARCH_S32) += s32g274a-rdb2.dtb
