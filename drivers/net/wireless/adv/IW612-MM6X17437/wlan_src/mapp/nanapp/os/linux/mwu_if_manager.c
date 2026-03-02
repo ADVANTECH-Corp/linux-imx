@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -198,6 +198,8 @@ struct mwu_iface_info *mwu_iface_init(char *ifname, int module_id)
 		}
 		/** WPA info structure */
 		memset(new_if->pnan_info, 0, sizeof(struct NAN_INFO));
+		new_if->pnan_info->op6G = -1; // default value should be -1 to
+					      // avoid 6G setting
 		INFO("cur_if is %p", new_if);
 		INFO("pnan_info is %p", new_if->pnan_info);
 	} else if (module_id & MLOCATION_ID) {

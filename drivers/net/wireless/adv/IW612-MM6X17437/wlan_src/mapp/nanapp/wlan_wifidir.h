@@ -2,7 +2,7 @@
  *  @brief This file contains definitions for NXP WLAN driver host command,
  *         for wifidir specific commands.
  *
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to

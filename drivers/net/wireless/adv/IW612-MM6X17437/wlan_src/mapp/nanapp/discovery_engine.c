@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -217,7 +217,7 @@ enum nan_error nan_tx_ranging_request_frame(struct mwu_iface_info *cur_if,
 		// Request the ranging schedule taking into consideration the
 		// peer's bitmap
 		ranging_req_bitmap =
-			(DEFAULT_BITMAP1 & peer_entry->combined_time_bitmap);
+			(PREFERRED_BITMAP1 & peer_entry->combined_time_bitmap);
 		/* if(ranging_req_bitmap == 0)
 		    ranging_req_bitmap = (PREFERRED_BITMAP2 &
 		   peer_entry->combined_time_bitmap);
@@ -320,11 +320,11 @@ enum nan_error nan_tx_ranging_request_frame(struct mwu_iface_info *cur_if,
 		chan_list->entry_ctrl.num_entries = 1;
 
 		if (cur_if->pnan_info->a_band) {
+			u8 op_class = nan_get_opclass(g_5G_chan, CHAN_BW_20MHZ);
 			chan_list->chan_band_entry.chan_entry.op_class =
-				DEFAULT_5G_OP_CLASS;
+				op_class;
 			chan_list->chan_band_entry.chan_entry.chan_bitmap =
-				ndp_get_chan_bitmap(DEFAULT_5G_OP_CLASS,
-						    DEFAULT_5G_OP_CHAN);
+				ndp_get_chan_bitmap(op_class, g_5G_chan);
 		} else {
 			chan_list->chan_band_entry.chan_entry.op_class =
 				DEFAULT_2G_OP_CLASS;
@@ -361,8 +361,13 @@ enum nan_error nan_tx_ranging_request_frame(struct mwu_iface_info *cur_if,
 		cur_if->pnan_info->awake_dw_interval; // all slots on 2.4GHz
 	if (cur_if->pnan_info->a_band)
 		device_capa_attr.committed_dw_info._5g_dw = 1;
-	device_capa_attr.supported_bands =
-		cur_if->pnan_info->a_band ? 0x14 : 0x04;
+	if ((cur_if->pnan_info->op6G < 4) && (cur_if->pnan_info->op6G != -1)) {
+		device_capa_attr.supported_bands =
+			cur_if->pnan_info->a_band ? 0x94 : 0x04;
+	} else {
+		device_capa_attr.supported_bands =
+			cur_if->pnan_info->a_band ? 0x14 : 0x04;
+	}
 
 	u8 operation_mode = 0x00;
 	memcpy(&device_capa_attr.op_mode, &operation_mode, 1);
@@ -387,6 +392,19 @@ enum nan_error nan_tx_ranging_request_frame(struct mwu_iface_info *cur_if,
 	u8 htinfo[24] = {0x3d, 0x16, 0x06, 0x05, 0x15, 0x00, 0x00, 0x00,
 			 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+	// VHT reference - FC CH149 VHT80
+	u8 vhtcap[14] = {0xbf, 0x0c, 0x30, 0x70, 0xc0, 0x33, 0xfe,
+			 0xff, 0x86, 0x01, 0xfe, 0xff, 0x86, 0x01};
+	u8 vhtOp[7] = {0xc0, 0x5, 0x1, 0x9b, 0x0, 0xfc, 0xff};
+
+	// HE reference - BB CH37 HE80
+	u8 hecap[27] = {0xff, 0x19, 0x23, 0x6,	0x0,  0x10, 0x1a, 0x0,	0x0,
+			0x4,  0x20, 0x32, 0x89, 0x1d, 0x1,  0xa0, 0xc,	0x0,
+			0x8,  0x0,  0xfa, 0xff, 0xfa, 0xff, 0xa1, 0xff, 0x3};
+	u8 heOp[14] = {0xff, 0xc,  0x24, 0xf0, 0x3f, 0x2, 0xa9,
+		       0xfc, 0xff, 0x25, 0x2,  0x27, 0x0, 0x6};
+
 	u8 *elem_ptr;
 	u16 elem_len = 0;
 
@@ -398,6 +416,12 @@ enum nan_error nan_tx_ranging_request_frame(struct mwu_iface_info *cur_if,
 	container_attr->len = sizeof(supported_rates) +
 			      sizeof(ext_supported_rates) + sizeof(htcap) +
 			      sizeof(htinfo) + 1;
+
+	if (cur_if->pnan_info->a_band) {
+		container_attr->len += sizeof(vhtcap) + sizeof(vhtOp) +
+				       sizeof(hecap) + sizeof(heOp);
+	}
+
 	memcpy(elem_ptr, supported_rates, sizeof(supported_rates));
 	elem_ptr += sizeof(supported_rates);
 	elem_len += sizeof(supported_rates);
@@ -414,10 +438,70 @@ enum nan_error nan_tx_ranging_request_frame(struct mwu_iface_info *cur_if,
 	elem_ptr += sizeof(htinfo);
 	elem_len += sizeof(htinfo);
 
+	if (cur_if->pnan_info->a_band) {
+		memcpy(elem_ptr, vhtcap, sizeof(vhtcap));
+		elem_ptr += sizeof(vhtcap);
+		elem_len += sizeof(vhtcap);
+
+		memcpy(elem_ptr, vhtOp, sizeof(vhtOp));
+		elem_ptr += sizeof(vhtOp);
+		elem_len += sizeof(vhtOp);
+
+		memcpy(elem_ptr, hecap, sizeof(hecap));
+		elem_ptr += sizeof(hecap);
+		elem_len += sizeof(hecap);
+
+		memcpy(elem_ptr, heOp, sizeof(heOp));
+		elem_ptr += sizeof(heOp);
+		elem_len += sizeof(heOp);
+	}
+
 	var_attr_len += sizeof(nan_element_container_attr) + elem_len;
 	var_attr_ptr += sizeof(nan_element_container_attr) + elem_len;
 	// INFO("Element container attr %lu",sizeof(nan_element_container_attr)
 	// + elem_len);
+
+	if ((cur_if->pnan_info->op6G < 4) && (cur_if->pnan_info->op6G != -1)) {
+		/* Device Capability Extension attribute (DCEA) */
+		nan_device_capability_extension_attr *device_cap_ext_attr;
+		device_cap_ext_attr =
+			(nan_device_capability_extension_attr *)var_attr_ptr;
+		device_cap_ext_attr->attribute_id =
+			NAN_DEVICE_CAPABILITY_EXT_ATTR;
+		device_cap_ext_attr->len =
+			sizeof(nan_device_capability_extension_attr) -
+			NAN_ATTR_HDR_LEN;
+
+		device_cap_ext_attr->capability.regulatory_info = 1;
+		device_cap_ext_attr->capability.opMode =
+			cur_if->pnan_info->op6G;
+
+		var_attr_ptr += sizeof(nan_device_capability_extension_attr);
+		var_attr_len += sizeof(nan_device_capability_extension_attr);
+
+		if ((cur_if->pnan_info->op6G == 0) ||
+		    (cur_if->pnan_info->op6G == 1)) // if operating as LPI or SP
+						    // AP
+		{
+			/* Transmit Power Envelope attribute (TPEA) */
+			nan_transmit_power_envelope_attr *transmit_pwr_env_attr;
+			transmit_pwr_env_attr =
+				(nan_transmit_power_envelope_attr *)var_attr_ptr;
+			transmit_pwr_env_attr->attribute_id =
+				NAN_TX_POWER_ENV_ATTR;
+			transmit_pwr_env_attr->len =
+				sizeof(nan_transmit_power_envelope_attr) -
+				NAN_ATTR_HDR_LEN;
+
+			nan_update_txPwr_envelope(
+				cur_if, &transmit_pwr_env_attr->tpeList);
+
+			var_attr_ptr +=
+				sizeof(nan_transmit_power_envelope_attr);
+			var_attr_len +=
+				sizeof(nan_transmit_power_envelope_attr);
+		}
+	}
 
 	// Ranging info attr
 
@@ -486,7 +570,10 @@ enum nan_error nan_tx_ranging_request_frame(struct mwu_iface_info *cur_if,
 	setup_attr->len += 1;
 
 	// Time bitmap
-	memcpy(var_attr_ptr, &ranging_req_bitmap, 4);
+	if (cur_if->pnan_info->a_band)
+		memcpy(var_attr_ptr, &ranging_req_bitmap2, 4);
+	else
+		memcpy(var_attr_ptr, &ranging_req_bitmap, 4);
 
 	var_attr_len += 4;
 	var_attr_ptr += 4;
@@ -828,6 +915,62 @@ enum nan_error nan_tx_sdf(struct mwu_iface_info *cur_if, int type,
 		sd_attr->len = fixed_sd_attr_len + var_sd_attr_len;
 	}
 
+	if (type == FOLLOW_UP) {
+		/* Change Tx Type to 2 for follow up frames so that they go out
+		 * immediately */
+		sdf_buf->tx_type = 2; /* use alternate queue in FW */
+		sd_attr->service_control_bitmap |=
+			SERVICE_CTRL_BITMAP_FOLLOW_UP;
+		sd_attr->service_control_bitmap |=
+			SERVICE_CTRL_BITMAP_SI_PRESENT;
+		ERR("Preparing a follow up message %d",
+		    sd_attr->service_control_bitmap);
+		memcpy(sd_attr->service_hash, pub_service_ptr->service_hash,
+		       SERVICE_HASH_LEN);
+
+		sda_var_attr_ptr = (u8 *)(sd_attr->sda_var_attr);
+
+		if (memcmp(sd_attr->service_hash, "\x00\x00\x00\x00\x00\x00",
+			   6) == 0)
+			memcpy(sd_attr->service_hash,
+			       sub_service_ptr->service_hash, SERVICE_HASH_LEN);
+
+		if (*pub_service_ptr->service_info) {
+			u8 service_info_local[50], service_info_local_len;
+			memcpy(&service_info_local,
+			       pub_service_ptr->service_info,
+			       strlen(pub_service_ptr->service_info));
+			service_info_local_len =
+				strlen(pub_service_ptr->service_info);
+
+			if (service_info_tmp) {
+				u8 service_info_flag[] = {'|',
+							  service_info_tmp,
+							  service_info_tmp,
+							  '|',
+							  service_info_tmp,
+							  service_info_tmp};
+				memcpy(&service_info_local
+					       [service_info_local_len],
+				       (char *)service_info_flag,
+				       sizeof(service_info_flag));
+				service_info_local_len +=
+					sizeof(service_info_flag);
+			}
+			*sda_var_attr_ptr = service_info_local_len;
+			sda_var_attr_ptr++;
+			var_sd_attr_len += 1;
+			memcpy(sda_var_attr_ptr, &service_info_local,
+			       service_info_local_len);
+			var_sd_attr_len += service_info_local_len;
+			sda_var_attr_ptr += service_info_local_len;
+		}
+
+		sd_attr->instance_id = 0x05;
+		sd_attr->requester_instance_id = cur_if->pnan_info->instance_id;
+		sd_attr->len = fixed_sd_attr_len + var_sd_attr_len;
+	}
+
 #ifdef NAN1_TESTBED
 
 	{
@@ -904,7 +1047,11 @@ enum nan_error nan_tx_sdf(struct mwu_iface_info *cur_if, int type,
 			cur_if->pnan_info->awake_dw_interval; /*awake dw info
 								 for 2.4 ghz
 								 band*/
-		if (cur_if->pnan_info->a_band) {
+		if ((cur_if->pnan_info->op6G < 4) &&
+		    (cur_if->pnan_info->op6G != -1)) {
+			device_capa_attr->supported_bands = 0x94;
+			device_capa_attr->committed_dw_info |= 0x08;
+		} else if (cur_if->pnan_info->a_band) {
 			device_capa_attr->supported_bands = 0x14; // gbhat@HC:only
 								  // 5GHz
 			device_capa_attr->committed_dw_info |= 0x08; // gbhat@HC:available
@@ -924,6 +1071,26 @@ enum nan_error nan_tx_sdf(struct mwu_iface_info *cur_if, int type,
 		var_sd_attr_len += sizeof(nan_device_capa_attr);
 	}
 
+	if ((cur_if->pnan_info->op6G < 4) && (cur_if->pnan_info->op6G != -1)) {
+		/* Device Capability Extension attribute (DCEA) */
+		nan_device_capability_extension_attr *device_cap_ext_attr;
+		device_cap_ext_attr = (nan_device_capability_extension_attr *)
+			sda_var_attr_ptr;
+		device_cap_ext_attr->attribute_id =
+			NAN_DEVICE_CAPABILITY_EXT_ATTR;
+		device_cap_ext_attr->len =
+			sizeof(nan_device_capability_extension_attr) -
+			NAN_ATTR_HDR_LEN;
+
+		device_cap_ext_attr->capability.regulatory_info = 1;
+		device_cap_ext_attr->capability.opMode =
+			cur_if->pnan_info->op6G;
+
+		sda_var_attr_ptr +=
+			sizeof(nan_device_capability_extension_attr);
+		var_sd_attr_len += sizeof(nan_device_capability_extension_attr);
+	}
+
 	if (cur_if->pnan_info->ranging_required == 1) {
 		nan_ranging_info_attr info_attr;
 
@@ -936,16 +1103,16 @@ enum nan_error nan_tx_sdf(struct mwu_iface_info *cur_if, int type,
 		sda_var_attr_ptr += sizeof(nan_ranging_info_attr);
 	}
 
-	if (cur_if->pnan_info->data_path_needed ||
-	    cur_if->pnan_info->ranging_required == 1) {
+	if (!(type == FOLLOW_UP) &&
+	    (cur_if->pnan_info->data_path_needed ||
+	     cur_if->pnan_info->ranging_required == 1)) {
 		nan_service_desc_ext_attr *service_desc_ext_attr;
 		service_desc_ext_attr =
 			(nan_service_desc_ext_attr *)sda_var_attr_ptr;
 		service_desc_ext_attr->attribute_id = NAN_SERVICE_DISC_EXT_ATTR;
 		service_desc_ext_attr->len =
 			sizeof(nan_service_desc_ext_attr) - 3;
-		service_desc_ext_attr->instance_id =
-			cur_if->pnan_info->instance_id;
+		service_desc_ext_attr->instance_id = 0x05;
 		service_desc_ext_attr->control |=
 			SDEA_CTRL_BITMAP_DATAPATH_REQUIRED;
 
@@ -1161,7 +1328,10 @@ enum nan_error nan_tx_sdf(struct mwu_iface_info *cur_if, int type,
 						    opt_fields_len);
 				chan_list->entry_ctrl.entry_type = 0x0;
 				chan_list->entry_ctrl.band_type = 0x0;
-				if (cur_if->pnan_info->a_band)
+				if ((cur_if->pnan_info->op6G < 4) &&
+				    (cur_if->pnan_info->op6G != -1)) {
+					chan_list->entry_ctrl.num_entries = 0x3;
+				} else if (cur_if->pnan_info->a_band)
 					chan_list->entry_ctrl.num_entries = 0x2;
 				else
 					chan_list->entry_ctrl.num_entries = 0x1;
@@ -1179,6 +1349,16 @@ enum nan_error nan_tx_sdf(struct mwu_iface_info *cur_if, int type,
 					band_id_len++;
 				}
 
+				if ((cur_if->pnan_info->op6G < 4) &&
+				    (cur_if->pnan_info->op6G != -1)) {
+					u8 *temp =
+						(u8 *)(&chan_list
+								->chan_band_entry
+								.band_id);
+					temp += 2;
+					*temp = 0x07; /*6 GHz*/
+					band_id_len++;
+				}
 				entry->len = sizeof(nan_channel_entry_list) +
 					     sizeof(nan_availability_list) +
 					     opt_fields_len - sz_of_entry_len -
@@ -1248,14 +1428,23 @@ enum nan_error nan_tx_sdf(struct mwu_iface_info *cur_if, int type,
 				chan_list->entry_ctrl.band_type = 0x0;
 				chan_list->entry_ctrl.num_entries = 0x1;
 
-				if (cur_if->pnan_info->a_band) {
+				if ((cur_if->pnan_info->op6G < 4) &&
+				    (cur_if->pnan_info->op6G != -1)) {
 					cur_if->pnan_info->self_avail_info
 						.entry_potential[0]
-						.op_class = DEFAULT_5G_OP_CLASS;
+						.op_class = DEFAULT_6G_OP_CLASS;
 					cur_if->pnan_info->self_avail_info
 						.entry_potential[0]
 						.channels[0] =
-						DEFAULT_5G_OP_CHAN;
+						DEFAULT_6G_OP_CHAN;
+				} else if (cur_if->pnan_info->a_band) {
+					cur_if->pnan_info->self_avail_info
+						.entry_potential[0]
+						.op_class = nan_get_opclass(
+						g_5G_chan, CHAN_BW_20MHZ);
+					cur_if->pnan_info->self_avail_info
+						.entry_potential[0]
+						.channels[0] = g_5G_chan;
 				} else {
 					cur_if->pnan_info->self_avail_info
 						.entry_potential[0]
@@ -1395,29 +1584,48 @@ enum nan_error nan_tx_sdf(struct mwu_iface_info *cur_if, int type,
 								.num_entries =
 								0x1;
 
-							chan_list
-								->chan_band_entry
-								.chan_entry
-								.op_class =
-								cur_if->pnan_info
-									->self_avail_info
-									.entry_committed
-										[i]
-									.op_class;
-							chan_list
-								->chan_band_entry
-								.chan_entry
-								.chan_bitmap = ndp_get_chan_bitmap(
-								cur_if->pnan_info
-									->self_avail_info
-									.entry_committed
-										[i]
-									.op_class,
-								cur_if->pnan_info
-									->self_avail_info
-									.entry_committed
-										[i]
-									.channels[0]);
+							if ((cur_if->pnan_info
+								     ->op6G <
+							     5) &&
+							    (cur_if->pnan_info
+								     ->op6G !=
+							     -1)) {
+								chan_list
+									->chan_band_entry
+									.chan_entry
+									.op_class =
+									DEFAULT_6G_OP_CLASS;
+								chan_list
+									->chan_band_entry
+									.chan_entry
+									.chan_bitmap = ndp_get_chan_bitmap(
+									DEFAULT_6G_OP_CLASS,
+									DEFAULT_6G_OP_CHAN);
+							} else {
+								chan_list
+									->chan_band_entry
+									.chan_entry
+									.op_class =
+									cur_if->pnan_info
+										->self_avail_info
+										.entry_committed
+											[i]
+										.op_class;
+								chan_list
+									->chan_band_entry
+									.chan_entry
+									.chan_bitmap = ndp_get_chan_bitmap(
+									cur_if->pnan_info
+										->self_avail_info
+										.entry_committed
+											[i]
+										.op_class,
+									cur_if->pnan_info
+										->self_avail_info
+										.entry_committed
+											[i]
+										.channels[0]);
+							}
 							chan_list
 								->chan_band_entry
 								.chan_entry
@@ -1445,28 +1653,6 @@ enum nan_error nan_tx_sdf(struct mwu_iface_info *cur_if, int type,
 				    "==>AVAIL_ATTR:", (u8 *)availability_attr,
 				    sizeof(nan_availability_attr));
 		}
-	}
-
-	if (type == FOLLOW_UP) {
-		/* Change Tx Type to 2 for follow up frames so that they go out
-		 * immediately */
-		sdf_buf->tx_type = 2; /* use alternate queue in FW */
-		sd_attr->service_control_bitmap |=
-			SERVICE_CTRL_BITMAP_FOLLOW_UP;
-		ERR("Preparing a follow up message %d",
-		    sd_attr->service_control_bitmap);
-		memcpy(sd_attr->service_hash, pub_service_ptr->service_hash,
-		       SERVICE_HASH_LEN);
-
-		if (memcmp(sd_attr->service_hash, "\x00\x00\x00\x00\x00\x00",
-			   6) == 0)
-			memcpy(sd_attr->service_hash,
-			       sub_service_ptr->service_hash, SERVICE_HASH_LEN);
-
-		sd_attr->instance_id = 0x05;
-		sd_attr->requester_instance_id = cur_if->pnan_info->instance_id;
-
-		sd_attr->len = fixed_sd_attr_len + var_sd_attr_len;
 	}
 
 	cmd_len = cmd_len + sizeof(nan_sd_frame) +
@@ -1590,6 +1776,9 @@ enum nan_error nan_parse_rx_rf(struct mwu_iface_info *cur_if, u8 *buffer,
 
 	rx_rf_attr->oui_subtype = *(tmp_ptr - 1);
 	INFO("ost = %d", rx_rf_attr->oui_subtype);
+
+	if (rx_rf_attr->oui_subtype == RANGING_TERMINATION)
+		return NAN_ERR_SUCCESS;
 
 	while (left_len > NAN_ATTR_HDR_LEN) {
 		attr_id = *tmp_ptr;
@@ -1727,6 +1916,7 @@ enum nan_error nan_parse_rx_sdf(struct mwu_iface_info *cur_if, u8 *buffer,
 	u8 attr_id, rx_sdf_type;
 	u16 len;
 	int i = 1;
+	int ret = -1;
 	u8 *raw;
 	FILE *fp = NULL;
 
@@ -1753,7 +1943,10 @@ enum nan_error nan_parse_rx_sdf(struct mwu_iface_info *cur_if, u8 *buffer,
 
 	if (discovery_mac_written == 0) {
 		raw = (u8 *)cur_if->device_mac_addr;
-		system("rm /tmp/discovery_mac.txt");
+		ret = system("rm /tmp/discovery_mac.txt");
+		if (ret != 0) {
+			printf("Failed to rm /tmp/discovery_mac.txt");
+		}
 		fp = fopen("/tmp/discovery_mac.txt", "w");
 		fprintf(fp, "%02x:%02x:%02x:%02x:%02x:%02x",
 			(unsigned int)raw[0], (unsigned int)raw[1],
@@ -1994,6 +2187,11 @@ enum nan_error nan_parse_rx_sdf(struct mwu_iface_info *cur_if, u8 *buffer,
 			if (dev_cap_attr->capabilities.ndpe_attr_supported) {
 				peer_info->ndpe_attr_supported = TRUE;
 				INFO("Peer supports NDPE attribute");
+			}
+
+			if (dev_cap_attr->supported_bands == 0x94) {
+				peer_info->support_6g = TRUE;
+				INFO("Peer supports 6G");
 			}
 
 			tmp_ptr = tmp_ptr + len + NAN_ATTR_HDR_LEN;
@@ -2331,7 +2529,7 @@ nan_tx_ranging_response_frame(struct mwu_iface_info *cur_if,
 	u8 opt_fields_len = 7;
 	u8 sz_of_entry_len = sizeof(u16);
 	u32 ranging_resp_bitmap = 0;
-	avail_entry_t *peer_entry;
+	avail_entry_t *peer_entry = NULL;
 	availability_attr = (nan_availability_attr *)var_attr_ptr;
 	availability_attr->attribute_id = NAN_AVAILABILITY_ATTR;
 	availability_attr->attr_ctrl.map_id =
@@ -2373,34 +2571,31 @@ nan_tx_ranging_response_frame(struct mwu_iface_info *cur_if,
 					 .time_bitmap[0] &
 				 peer_entry->combined_time_bitmap);
 		}
-		if ((ranging_resp_bitmap == 0) &&
-		    (cur_if->pnan_info->peer_avail_info.committed_valid &
+		if ((cur_if->pnan_info->peer_avail_info.committed_valid &
 		     ENTRY0_VALID)) {
 			peer_entry = &cur_if->pnan_info->peer_avail_info
 					      .entry_committed[0];
-			ranging_resp_bitmap =
+			ranging_resp_bitmap |=
 				(cur_if->pnan_info->self_avail_info
 					 .entry_potential[0]
 					 .time_bitmap[0] &
 				 peer_entry->combined_time_bitmap);
 		}
-		if ((ranging_resp_bitmap == 0) &&
-		    (cur_if->pnan_info->peer_avail_info.conditional_valid &
+		if ((cur_if->pnan_info->peer_avail_info.conditional_valid &
 		     ENTRY1_VALID)) {
 			peer_entry = &cur_if->pnan_info->peer_avail_info
 					      .entry_conditional[1];
-			ranging_resp_bitmap =
+			ranging_resp_bitmap |=
 				(cur_if->pnan_info->self_avail_info
 					 .entry_potential[0]
 					 .time_bitmap[0] &
 				 peer_entry->combined_time_bitmap);
 		}
-		if ((ranging_resp_bitmap == 0) &&
-		    (cur_if->pnan_info->peer_avail_info.conditional_valid &
+		if ((cur_if->pnan_info->peer_avail_info.conditional_valid &
 		     ENTRY0_VALID)) {
 			peer_entry = &cur_if->pnan_info->peer_avail_info
 					      .entry_conditional[0];
-			ranging_resp_bitmap =
+			ranging_resp_bitmap |=
 				(cur_if->pnan_info->self_avail_info
 					 .entry_potential[0]
 					 .time_bitmap[0] &
@@ -2462,8 +2657,12 @@ nan_tx_ranging_response_frame(struct mwu_iface_info *cur_if,
 		cur_if->pnan_info->awake_dw_interval; // all slots on 2.4GHz
 	if (cur_if->pnan_info->a_band)
 		device_capa_attr.committed_dw_info._5g_dw = 1;
-	device_capa_attr.supported_bands =
-		cur_if->pnan_info->a_band ? 0x14 : 0x04;
+	if ((cur_if->pnan_info->op6G < 4) && (cur_if->pnan_info->op6G != -1)) {
+		device_capa_attr.supported_bands =
+			cur_if->pnan_info->a_band ? 0x94 : 0x04;
+	} else
+		device_capa_attr.supported_bands =
+			cur_if->pnan_info->a_band ? 0x14 : 0x04;
 
 	u8 operation_mode = 0x00;
 	memcpy(&device_capa_attr.op_mode, &operation_mode, 1);
@@ -2476,6 +2675,50 @@ nan_tx_ranging_response_frame(struct mwu_iface_info *cur_if,
 	var_attr_ptr += sizeof(nan_device_capability_attr);
 	INFO("Device capability attr");
 
+	if ((cur_if->pnan_info->op6G < 4) && (cur_if->pnan_info->op6G != -1)) {
+		/* Device Capability Extension attribute (DCEA) */
+		nan_device_capability_extension_attr *device_cap_ext_attr;
+		device_cap_ext_attr =
+			(nan_device_capability_extension_attr *)var_attr_ptr;
+		device_cap_ext_attr->attribute_id =
+			NAN_DEVICE_CAPABILITY_EXT_ATTR;
+		device_cap_ext_attr->len =
+			sizeof(nan_device_capability_extension_attr) -
+			NAN_ATTR_HDR_LEN;
+
+		device_cap_ext_attr->capability.regulatory_info = 1;
+		device_cap_ext_attr->capability.opMode =
+			cur_if->pnan_info->op6G;
+
+		var_attr_ptr += sizeof(nan_device_capability_extension_attr);
+		var_attr_len += sizeof(nan_device_capability_extension_attr);
+		INFO("Device capability extension attr");
+
+		if ((cur_if->pnan_info->op6G == 0) ||
+		    (cur_if->pnan_info->op6G == 1)) // if operating as LPI or SP
+						    // AP
+		{
+			/* Transmit Power Envelope attribute (TPEA) */
+			nan_transmit_power_envelope_attr *transmit_pwr_env_attr;
+			transmit_pwr_env_attr =
+				(nan_transmit_power_envelope_attr *)var_attr_ptr;
+			transmit_pwr_env_attr->attribute_id =
+				NAN_TX_POWER_ENV_ATTR;
+			transmit_pwr_env_attr->len =
+				sizeof(nan_transmit_power_envelope_attr) -
+				NAN_ATTR_HDR_LEN;
+
+			nan_update_txPwr_envelope(
+				cur_if, &transmit_pwr_env_attr->tpeList);
+
+			var_attr_ptr +=
+				sizeof(nan_transmit_power_envelope_attr);
+			var_attr_len +=
+				sizeof(nan_transmit_power_envelope_attr);
+			INFO("Transmit power envelope attr");
+		}
+	}
+
 	// Element container attr
 	u8 supported_rates[6] = {0x01, 0x04, 0x82, 0x84, 0x8b, 0x96};
 	u8 ext_supported_rates[10] = {0x32, 0x08, 0x0c, 0x12, 0x18,
@@ -2487,6 +2730,19 @@ nan_tx_ranging_response_frame(struct mwu_iface_info *cur_if,
 	u8 htinfo[24] = {0x3d, 0x16, 0x06, 0x05, 0x15, 0x00, 0x00, 0x00,
 			 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+	// VHT reference - FC CH149 VHT80
+	u8 vhtcap[14] = {0xbf, 0x0c, 0x30, 0x70, 0xc0, 0x33, 0xfe,
+			 0xff, 0x86, 0x01, 0xfe, 0xff, 0x86, 0x01};
+	u8 vhtOp[7] = {0xc0, 0x5, 0x1, 0x9b, 0x0, 0xfc, 0xff};
+
+	// HE reference - BB CH37 HE80
+	u8 hecap[27] = {0xff, 0x19, 0x23, 0x6,	0x0,  0x10, 0x1a, 0x0,	0x0,
+			0x4,  0x20, 0x32, 0x89, 0x1d, 0x1,  0xa0, 0xc,	0x0,
+			0x8,  0x0,  0xfa, 0xff, 0xfa, 0xff, 0xa1, 0xff, 0x3};
+	u8 heOp[14] = {0xff, 0xc,  0x24, 0xf0, 0x3f, 0x2, 0xa9,
+		       0xfc, 0xff, 0x25, 0x2,  0x27, 0x0, 0x6};
+
 	u8 *elem_ptr;
 	u16 elem_len = 0;
 
@@ -2497,6 +2753,12 @@ nan_tx_ranging_response_frame(struct mwu_iface_info *cur_if,
 	container_attr->len = sizeof(supported_rates) +
 			      sizeof(ext_supported_rates) + sizeof(htcap) +
 			      sizeof(htinfo) + 1;
+
+	if (cur_if->pnan_info->a_band) {
+		container_attr->len += sizeof(vhtcap) + sizeof(vhtOp) +
+				       sizeof(hecap) + sizeof(heOp);
+	}
+
 	memcpy(elem_ptr, supported_rates, sizeof(supported_rates));
 	elem_ptr += sizeof(supported_rates);
 	elem_len += sizeof(supported_rates);
@@ -2512,6 +2774,24 @@ nan_tx_ranging_response_frame(struct mwu_iface_info *cur_if,
 	memcpy(elem_ptr, htinfo, sizeof(htinfo));
 	elem_ptr += sizeof(htinfo);
 	elem_len += sizeof(htinfo);
+
+	if (cur_if->pnan_info->a_band) {
+		memcpy(elem_ptr, vhtcap, sizeof(vhtcap));
+		elem_ptr += sizeof(vhtcap);
+		elem_len += sizeof(vhtcap);
+
+		memcpy(elem_ptr, vhtOp, sizeof(vhtOp));
+		elem_ptr += sizeof(vhtOp);
+		elem_len += sizeof(vhtOp);
+
+		memcpy(elem_ptr, hecap, sizeof(hecap));
+		elem_ptr += sizeof(hecap);
+		elem_len += sizeof(hecap);
+
+		memcpy(elem_ptr, heOp, sizeof(heOp));
+		elem_ptr += sizeof(heOp);
+		elem_len += sizeof(heOp);
+	}
 
 	var_attr_len += sizeof(nan_element_container_attr) + elem_len;
 	var_attr_ptr += sizeof(nan_element_container_attr) + elem_len;
@@ -2680,7 +2960,7 @@ enum nan_error nan_process_and_send_ftm_init(NAN_FTM_PARAMS *ftm)
 	return status;
 }
 
-enum nan_error nan_start_ftm_session(unsigned char *mac)
+enum nan_error nan_start_ftm_session(unsigned char *mac, u8 channel)
 {
 	struct mlocation_session mlocations;
 	static struct module mlocation_mod;
@@ -2694,7 +2974,7 @@ enum nan_error nan_start_ftm_session(unsigned char *mac)
 	INFO("rx_rf->peer_mac: ");
 	print_mac(mac);
 	memcpy(mlocations.mac, mac, ETH_ALEN);
-	mlocations.channel = 0;
+	mlocations.channel = channel;
 
 	mwu_hexdump(MSG_INFO, "mlocation_session", (u8 *)&mlocations,
 		    sizeof(struct mlocation_session));
@@ -2821,7 +3101,9 @@ enum nan_error nan_handle_rx_ranging(struct mwu_iface_info *cur_if,
 			}
 
 			INFO("Initiating FTM session");
-			ret = nan_start_ftm_session(rf_attr_frame.peer_mac);
+			ret = nan_start_ftm_session(
+				rf_attr_frame.peer_mac,
+				cur_if->pnan_info->ranging_channel);
 			if (ret != NAN_ERR_SUCCESS) {
 				ERR("Failed to start FTM session");
 			} else {

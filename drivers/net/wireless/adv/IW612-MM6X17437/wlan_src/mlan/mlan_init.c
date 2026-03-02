@@ -4,7 +4,7 @@
  *  and HW.
  *
  *
- *  Copyright 2008-2021 NXP
+ *  Copyright 2008-2021, 2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -264,6 +264,10 @@ mlan_status wlan_allocate_adapter(pmlan_adapter pmadapter)
 		max_mp_regs = pmadapter->pcard_sd->reg->max_mp_regs;
 		mp_tx_aggr_buf_size = pmadapter->pcard_sd->mp_tx_aggr_buf_size;
 		mp_rx_aggr_buf_size = pmadapter->pcard_sd->mp_rx_aggr_buf_size;
+		mp_rx_aggr_buf_size = MIN(pmadapter->pcard_sd->max_seg_size,
+					  mp_rx_aggr_buf_size);
+		mp_tx_aggr_buf_size = MIN(pmadapter->pcard_sd->max_seg_size,
+					  mp_tx_aggr_buf_size);
 	}
 #endif
 
@@ -308,6 +312,7 @@ mlan_status wlan_allocate_adapter(pmlan_adapter pmadapter)
 
 	pmadapter->num_in_chan_stats = sizeof(chan_2g);
 	pmadapter->num_in_chan_stats += sizeof(chan_5g);
+	pmadapter->num_in_chan_stats += MLAN_6G_CHAN_MAX;
 	buf_size = sizeof(ChanStatistics_t) * pmadapter->num_in_chan_stats;
 	if (pmadapter->callbacks.moal_vmalloc &&
 	    pmadapter->callbacks.moal_vfree)
@@ -374,10 +379,10 @@ mlan_status wlan_allocate_adapter(pmlan_adapter pmadapter)
 		}
 #ifdef DEBUG_LEVEL1
 		if (mlan_drvdbg & MMPA_D) {
-			pmadapter->pcard_sd->mpa_buf_size =
-				SDIO_MP_DBG_NUM *
-				pmadapter->pcard_sd->mp_aggr_pkt_limit *
-				MLAN_SDIO_BLOCK_SIZE;
+			pmadapter->pcard_sd->mpa_buf_size = (SECURE_MULT_UINT32(
+				SDIO_MP_DBG_NUM,
+				pmadapter->pcard_sd->mp_aggr_pkt_limit,
+				pmadapter->pcard_sd->sdio_blk_size));
 			if (pmadapter->callbacks.moal_vmalloc &&
 			    pmadapter->callbacks.moal_vfree)
 				ret = pmadapter->callbacks.moal_vmalloc(
@@ -476,6 +481,15 @@ mlan_status wlan_init_priv(pmlan_private priv)
 
 	memset(pmadapter, &priv->assoc_rsp_buf, 0, sizeof(priv->assoc_rsp_buf));
 	priv->assoc_rsp_size = 0;
+	_memset(pmadapter, &priv->assoc_req_buf, 0,
+		sizeof(priv->assoc_req_buf));
+	priv->assoc_req_size = 0;
+	_memset(pmadapter, &priv->prior_assoc_rsp, 0,
+		sizeof(priv->prior_assoc_rsp));
+	priv->prior_assoc_rsp_size = 0;
+	_memset(pmadapter, &priv->prior_assoc_req, 0,
+		sizeof(priv->prior_assoc_req));
+	priv->prior_assoc_req_size = 0;
 
 	wlan_11d_priv_init(priv);
 	wlan_11h_priv_init(priv);
@@ -558,6 +572,8 @@ mlan_status wlan_init_priv(pmlan_private priv)
 	SET_EXTCAP_OPERMODENTF(priv->ext_cap);
 	SET_EXTCAP_TDLS(priv->ext_cap);
 	SET_EXTCAP_QOS_MAP(priv->ext_cap);
+	/* Set FILS Capability */
+	SET_EXTCAP_FILS(priv->ext_cap);
 	/* Save default Extended Capability */
 	memcpy_ext(priv->adapter, &priv->def_ext_cap, &priv->ext_cap,
 		   sizeof(priv->ext_cap), sizeof(priv->def_ext_cap));
@@ -752,6 +768,10 @@ t_void wlan_init_adapter(pmlan_adapter pmadapter)
 	pmadapter->specific_scan_time = MRVDRV_SPECIFIC_SCAN_CHAN_TIME;
 	pmadapter->active_scan_time = MRVDRV_ACTIVE_SCAN_CHAN_TIME;
 	pmadapter->passive_scan_time = MRVDRV_PASSIVE_SCAN_CHAN_TIME;
+	pmadapter->wifi_6g_scan_time = MRVDRV_6G_SCAN_CHAN_TIME;
+	pmadapter->wifi_6g_scan_split = MFALSE;
+	pmadapter->wifi_6g_scan_coloc_ap = MFALSE; /* configurable */
+	pmadapter->scan_6g = MFALSE;
 	if (!pmadapter->init_para.passive_to_active_scan)
 		pmadapter->passive_to_active_scan = MLAN_PASS_TO_ACT_SCAN_EN;
 	else if (pmadapter->init_para.passive_to_active_scan ==
@@ -785,6 +805,8 @@ t_void wlan_init_adapter(pmlan_adapter pmadapter)
 	pmadapter->local_listen_interval = 0; /* default value in firmware will
 						 be used */
 #endif /* STA_SUPPORT */
+	pmadapter->fw_wakeup_method = WAKEUP_FW_UNCHANGED;
+	pmadapter->fw_wakeup_gpio_pin = DEF_WAKEUP_FW_GPIO;
 
 	pmadapter->is_deep_sleep = MFALSE;
 	pmadapter->idle_time = DEEP_SLEEP_IDLE_TIME;
@@ -809,7 +831,7 @@ t_void wlan_init_adapter(pmlan_adapter pmadapter)
 	pmadapter->pm_wakeup_fw_try = MFALSE;
 	pmadapter->pm_wakeup_timeout = 0;
 
-	if (!pmadapter->init_para.max_tx_buf)
+	if (!pmadapter->init_para.max_tx_buf && pmadapter->pcard_info)
 		pmadapter->max_tx_buf_size =
 			pmadapter->pcard_info->max_tx_buf_size;
 	else
@@ -1048,6 +1070,28 @@ mlan_status wlan_init_priv_lock_list(pmlan_adapter pmadapter, t_u8 start_index)
 					priv->adapter->callbacks.moal_init_lock);
 			}
 			util_init_list_head(
+				pmadapter->pmoal_handle, &priv->wmm.all_stas,
+				MTRUE, pmadapter->callbacks.moal_init_lock);
+			util_init_list_head(
+				pmadapter->pmoal_handle,
+				&priv->wmm.pending_stas, MTRUE,
+				pmadapter->callbacks.moal_init_lock);
+			util_init_list_head(
+				pmadapter->pmoal_handle,
+				&priv->wmm.active_stas.list, MTRUE,
+				pmadapter->callbacks.moal_init_lock);
+			for (j = 0; j < NELEMENTS(priv->wmm.pending_txq); ++j) {
+				util_init_list_head(
+					pmadapter->pmoal_handle,
+					&priv->wmm.pending_txq[j], MTRUE,
+					pmadapter->callbacks.moal_init_lock);
+			}
+			priv->wmm.selected_ra_list = MNULL;
+			pcb->moal_get_host_time_ns(
+				&priv->wmm.active_stas.next_update);
+			pcb->moal_get_host_time_ns(&priv->wmm.next_rate_update);
+			priv->wmm.is_rate_update_pending = MFALSE;
+			util_init_list_head(
 				(t_void *)pmadapter->pmoal_handle,
 				&priv->tx_ba_stream_tbl_ptr, MTRUE,
 				pmadapter->callbacks.moal_init_lock);
@@ -1165,6 +1209,16 @@ mlan_status wlan_init_lock_list(pmlan_adapter pmadapter)
 		goto error;
 	}
 #endif
+#ifdef USB
+	if (IS_USB(pmadapter->card_type)) {
+		if (pcb->moal_init_lock(pmadapter->pmoal_handle,
+					&pmadapter->pmlan_usb_event_lock) !=
+		    MLAN_STATUS_SUCCESS) {
+			ret = MLAN_STATUS_FAILURE;
+			goto error;
+		}
+	}
+#endif
 #if defined(USB)
 	if (IS_USB(pmadapter->card_type)) {
 		for (i = 0; i < MAX_USB_TX_PORT_NUM; i++) {
@@ -1213,7 +1267,16 @@ mlan_status wlan_init_lock_list(pmlan_adapter pmadapter)
 	util_init_list_head((t_void *)pmadapter->pmoal_handle,
 			    &pmadapter->ioctl_pending_q, MTRUE,
 			    pmadapter->callbacks.moal_init_lock);
-
+	/* Initialize coloc_ap_list */
+	util_init_list_head((t_void *)pmadapter->pmoal_handle,
+			    &pmadapter->coloc_ap_list, MTRUE,
+			    pmadapter->callbacks.moal_init_lock);
+#ifdef PCIE
+	util_scalar_init((t_void *)pmadapter->pmoal_handle,
+			 &pmadapter->rx_refill_start_index,
+			 MLAN_INVALID_TXRX_INDEX_VAL, MNULL,
+			 pmadapter->callbacks.moal_init_lock);
+#endif
 error:
 	LEAVE();
 	return ret;
@@ -1266,6 +1329,11 @@ t_void wlan_free_lock_list(pmlan_adapter pmadapter)
 	if (pmadapter->pmlan_pcie_lock)
 		pcb->moal_free_lock(pmadapter->pmoal_handle,
 				    pmadapter->pmlan_pcie_lock);
+#endif
+#ifdef USB
+	if (IS_USB(pmadapter->card_type) && pmadapter->pmlan_usb_event_lock)
+		pcb->moal_free_lock(pmadapter->pmoal_handle,
+				    pmadapter->pmlan_usb_event_lock);
 #endif
 #if defined(USB)
 	if (IS_USB(pmadapter->card_type)) {
@@ -1327,6 +1395,14 @@ t_void wlan_free_lock_list(pmlan_adapter pmadapter)
 			    &pmadapter->ioctl_pending_q,
 			    pmadapter->callbacks.moal_free_lock);
 
+	util_free_list_head((t_void *)pmadapter->pmoal_handle,
+			    &pmadapter->coloc_ap_list,
+			    pmadapter->callbacks.moal_free_lock);
+#ifdef PCIE
+	util_scalar_free((t_void *)pmadapter->pmoal_handle,
+			 &pmadapter->rx_refill_start_index,
+			 pcb->moal_free_lock);
+#endif
 	for (i = 0; i < pmadapter->priv_num; i++)
 		util_free_list_head((t_void *)pmadapter->pmoal_handle,
 				    &pmadapter->bssprio_tbl[i].bssprio_head,
@@ -1352,6 +1428,24 @@ t_void wlan_free_lock_list(pmlan_adapter pmadapter)
 					(t_void *)priv->adapter->pmoal_handle,
 					&priv->wmm.tid_tbl_ptr[j].ra_list,
 					priv->adapter->callbacks.moal_free_lock);
+			util_free_list_head(
+				(t_void *)priv->adapter->pmoal_handle,
+				&priv->wmm.all_stas,
+				priv->adapter->callbacks.moal_free_lock);
+			util_free_list_head(
+				(t_void *)priv->adapter->pmoal_handle,
+				&priv->wmm.pending_stas,
+				priv->adapter->callbacks.moal_free_lock);
+			util_free_list_head(
+				(t_void *)priv->adapter->pmoal_handle,
+				&priv->wmm.active_stas.list,
+				priv->adapter->callbacks.moal_free_lock);
+			for (j = 0; j < NELEMENTS(priv->wmm.pending_txq); ++j) {
+				util_free_list_head(
+					(t_void *)priv->adapter->pmoal_handle,
+					&priv->wmm.pending_txq[j],
+					priv->adapter->callbacks.moal_free_lock);
+			}
 			util_free_list_head(
 				(t_void *)priv->adapter->pmoal_handle,
 				&priv->tx_ba_stream_tbl_ptr,
@@ -1488,12 +1582,33 @@ mlan_status wlan_init_fw(pmlan_adapter pmadapter)
 #ifdef MFG_CMD_SUPPORT
 	if (pmadapter->mfg_mode != MTRUE) {
 #endif
-		wlan_adapter_get_hw_spec(pmadapter);
+#ifdef SECURE_HOST
+		if (pmadapter->shc_secure_host) {
+			wlan_adapter_func_init(pmadapter);
+		} else {
+#endif
+			wlan_adapter_get_hw_spec(pmadapter);
+#ifdef SECURE_HOST
+		}
+#endif
 #ifdef MFG_CMD_SUPPORT
 	}
 #ifdef PCIE
 	else if (IS_PCIE(pmadapter->card_type)) {
 		if (MLAN_STATUS_SUCCESS != wlan_set_pcie_buf_config(priv)) {
+			ret = MLAN_STATUS_FAILURE;
+			goto done;
+		}
+	}
+
+	if (((pmadapter->card_type) & 0xff) == CARD_TYPE_AW693
+#ifdef SECURE_HOST
+	    && (!pmadapter->shc_secure_host)
+#endif
+	) {
+		ret = wlan_prepare_cmd(priv, HostCmd_CMD_FUNC_INIT,
+				       HostCmd_ACT_GEN_SET, 0, MNULL, MNULL);
+		if (ret) {
 			ret = MLAN_STATUS_FAILURE;
 			goto done;
 		}
@@ -1550,7 +1665,10 @@ static void wlan_update_hw_spec(pmlan_adapter pmadapter)
 		pmadapter->fw_bands |= BAND_AN;
 	if (!(pmadapter->fw_bands & BAND_G) && (pmadapter->fw_bands & BAND_GN))
 		pmadapter->fw_bands &= ~BAND_GN;
-
+	if (!(pmadapter->fw_bands & BAND_A) && (pmadapter->fw_bands & BAND_AAC))
+		pmadapter->fw_bands &= ~BAND_AAC;
+	if (!(pmadapter->fw_bands & BAND_G) && (pmadapter->fw_bands & BAND_GAC))
+		pmadapter->fw_bands &= ~BAND_GAC;
 	pmadapter->config_bands = pmadapter->fw_bands;
 	for (i = 0; i < pmadapter->priv_num; i++) {
 		if (pmadapter->priv[i]) {
@@ -1606,7 +1724,7 @@ static void wlan_update_hw_spec(pmlan_adapter pmadapter)
 			pmadapter->fw_bands |= BAND_GAX;
 			pmadapter->config_bands |= BAND_GAX;
 		}
-		if (pmadapter->hw_hecap_len) {
+		if ((pmadapter->fw_bands & BAND_A) && pmadapter->hw_hecap_len) {
 			pmadapter->fw_bands |= BAND_AAX;
 			pmadapter->config_bands |= BAND_AAX;
 		}
@@ -1654,6 +1772,18 @@ static void wlan_update_hw_spec(pmlan_adapter pmadapter)
 						~HE_MAC_CAP_TWT_REQ_SUPPORT;
 			}
 		}
+	}
+	if (IS_FW_SUPPORT_6G(pmadapter)) {
+		pmadapter->fw_bands |= BAND_6G;
+		pmadapter->config_bands |= BAND_6G;
+		for (i = 0; i < pmadapter->priv_num; i++) {
+			if (pmadapter->priv[i]) {
+				pmadapter->priv[i]->config_bands =
+					pmadapter->config_bands;
+			}
+		}
+		pmadapter->wifi_6g_scan_split = MTRUE;
+		pmadapter->wifi_6g_scan_coloc_ap = MTRUE;
 	}
 	LEAVE();
 	return;
@@ -1738,7 +1868,7 @@ done:
  */
 t_void wlan_free_adapter(pmlan_adapter pmadapter)
 {
-	mlan_callbacks *pcb = (mlan_callbacks *)&pmadapter->callbacks;
+	mlan_callbacks *pcb;
 #if defined(USB)
 	t_s32 i = 0;
 #endif
@@ -1750,6 +1880,15 @@ t_void wlan_free_adapter(pmlan_adapter pmadapter)
 		return;
 	}
 
+	pcb = (mlan_callbacks *)&pmadapter->callbacks;
+#ifdef PCIE
+	if (IS_PCIE(pmadapter->card_type)) {
+		/* Free ssu dma buffer just in case  */
+		wlan_free_ssu_pcie_buf(pmadapter);
+		/* Free PCIE ring buffers */
+		wlan_free_pcie_ring_buf(pmadapter);
+	}
+#endif
 	wlan_cancel_all_pending_cmd(pmadapter, MTRUE);
 	/* Free command buffer */
 	PRINTM(MINFO, "Free Command buffer\n");
@@ -1784,6 +1923,7 @@ t_void wlan_free_adapter(pmlan_adapter pmadapter)
 		pmadapter->wakeup_fw_timer_is_set = MFALSE;
 	}
 	wlan_free_fw_cfp_tables(pmadapter);
+	wlan_free_fw_6g_cfp_tables(pmadapter);
 #ifdef STA_SUPPORT
 	PRINTM(MINFO, "Free ScanTable\n");
 	if (pmadapter->pscan_table) {
@@ -1853,14 +1993,7 @@ t_void wlan_free_adapter(pmlan_adapter pmadapter)
 	wlan_free_mlan_buffer(pmadapter, pmadapter->psleep_cfm);
 	pmadapter->psleep_cfm = MNULL;
 
-#ifdef PCIE
-	if (IS_PCIE(pmadapter->card_type)) {
-		/* Free ssu dma buffer just in case  */
-		wlan_free_ssu_pcie_buf(pmadapter);
-		/* Free PCIE ring buffers */
-		wlan_free_pcie_ring_buf(pmadapter);
-	}
-#endif
+	wlan_free_rnr_coloc_ap(pmadapter);
 
 	/* Free timers */
 	wlan_free_timer(pmadapter);
@@ -1956,8 +2089,8 @@ static mlan_status wlan_init_interface(pmlan_adapter pmadapter)
 				}
 
 				pmadapter->priv_num++;
-				memset(pmadapter, pmadapter->priv[i], 0,
-				       sizeof(mlan_private));
+				_memset(pmadapter, pmadapter->priv[i], 0,
+					sizeof(mlan_private));
 			}
 			pmadapter->priv[i]->adapter = pmadapter;
 
@@ -1996,6 +2129,12 @@ static mlan_status wlan_init_interface(pmlan_adapter pmadapter)
 			for (j = 0; mlan_ops[j]; j++) {
 				if (mlan_ops[j]->bss_role ==
 				    GET_BSS_ROLE(pmadapter->priv[i])) {
+					/* coverity assumes that Passing
+					 * pmadapter to memset, sets
+					 * pmadapter->callbacks.moal_memcpy_ext
+					 * to NULL
+					 */
+					// coverity[cert_exp34_c_violation:SUPPRESS]
 					memcpy_ext(pmadapter,
 						   &pmadapter->priv[i]->ops,
 						   mlan_ops[j],

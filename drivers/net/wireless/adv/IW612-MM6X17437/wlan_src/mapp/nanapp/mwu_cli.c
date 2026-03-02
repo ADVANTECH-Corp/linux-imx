@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -34,8 +34,12 @@
 #include "mwu.h"
 #include "mwu_defs.h"
 
+#define IFNAMSIZ 16
+#define NAN_MAX_EVENT_NAME 24
+#define CLI_EVENT_WAIT_TMO 10
 #define ERR(...) fprintf(stderr, __VA_ARGS__)
 
+int wait_for_event = 0;
 static int send_message(struct mwu *mwu, int argc, char **argv)
 {
 	int max_msg_size, i, remaining, written, ret = 0;
@@ -93,7 +97,14 @@ done:
 static int send_message_oneshot(int argc, char **argv)
 {
 	struct mwu mwu;
-	int ret;
+	int ret, maxfd;
+	fd_set rdset;
+	struct mwu_msg *msg;
+	char *p;
+	char iface[IFNAMSIZ + 1];
+	char event[NAN_MAX_EVENT_NAME];
+	char modname[NAN_MAX_EVENT_NAME];
+	int event_wait = 0;
 
 	/* connect to mwu */
 	ret = mwu_connect(&mwu);
@@ -105,6 +116,78 @@ static int send_message_oneshot(int argc, char **argv)
 
 	ret = send_message(&mwu, argc, argv);
 
+	/**If user specified command line option to wait for any events for that
+	 * command, listen on event socket */
+	if (wait_for_event == 1) {
+		do {
+			sleep(1);
+			event_wait++;
+			FD_ZERO(&rdset);
+			FD_SET(STDIN_FILENO, &rdset);
+			maxfd = STDIN_FILENO;
+			FD_SET(mwu.efd, &rdset);
+			maxfd = mwu.efd > maxfd ? mwu.efd : maxfd;
+
+			ret = select(maxfd + 1, &rdset, NULL, NULL, NULL);
+			if (ret == -1 && errno == EINTR) {
+				/* somebody hit ctrl-C or something */
+				mwu_disconnect(&mwu);
+				return ret;
+			}
+
+			if (ret == -1) {
+				ERR("select failed: %s\n", strerror(errno));
+				mwu_disconnect(&mwu);
+				return ret;
+			}
+
+			if (FD_ISSET(mwu.efd, &rdset)) {
+				ret = mwu_recv_message(&mwu, &msg);
+				if (ret != MWU_ERR_SUCCESS) {
+					ERR("Failed to read event: ret=%d\n",
+					    ret);
+					continue;
+				}
+				/* Remove newlines so printing is prettier */
+				p = msg->data;
+				while (*p != '\0') {
+					if (*p == '\n')
+						*p = ' ';
+					p++;
+				}
+				/* parse the event message to display only FTM
+				 * complete events*/
+				ret = sscanf(msg->data,
+					     "module=%s iface=%s event=%s",
+					     modname, iface, event);
+
+				if (ret == 3) {
+					if ((strcmp(event, "ftm_complete") ==
+					     0)) {
+						event_wait = CLI_EVENT_WAIT_TMO;
+						printf("\nFTM COMPLETE: %s\n",
+						       msg->data);
+					}
+
+					if ((strcmp(event,
+						    "ftm_burst_distance") ==
+					     0)) {
+						event_wait = CLI_EVENT_WAIT_TMO;
+						printf("\nFTM PER BURST DISTANCE: %s\n",
+						       msg->data);
+					}
+
+					if ((strcmp(event, "ftm_fail") == 0)) {
+						event_wait = CLI_EVENT_WAIT_TMO;
+						printf("\nFTM FAIL: %s\n",
+						       msg->data);
+					}
+				}
+			}
+		} while (event_wait < CLI_EVENT_WAIT_TMO);
+
+		mwu_free_msg(msg);
+	}
 	mwu_disconnect(&mwu);
 
 	return ret;
@@ -204,6 +287,9 @@ static void cli(void)
 	int argc;
 	struct mwu_msg *msg;
 	char *p;
+	char iface[IFNAMSIZ + 1];
+	char event[NAN_MAX_EVENT_NAME];
+	char modname[NAN_MAX_EVENT_NAME];
 
 	/* connect to mwu */
 	ret = mwu_connect(&mwu);
@@ -278,7 +364,28 @@ static void cli(void)
 					*p = ' ';
 				p++;
 			}
-			printf("\nRECEIVED EVENT: %s\n", msg->data);
+			/* parse the event message to display only FTM complete
+			 * events*/
+			ret = sscanf(msg->data, "module=%s iface=%s event=%s",
+				     modname, iface, event);
+
+			if (ret == 3) {
+				if ((strcmp(event, "ftm_complete") == 0)) {
+					printf("\nFTM COMPLETE: %s\n",
+					       msg->data);
+				}
+
+				if ((strcmp(event, "ftm_burst_distance") ==
+				     0)) {
+					printf("\nFTM PER BURST DISTANCE: %s\n",
+					       msg->data);
+				}
+
+				if ((strcmp(event, "ftm_fail") == 0)) {
+					printf("\nFTM FAIL: %s\n", msg->data);
+				}
+			}
+
 			mwu_free_msg(msg);
 		}
 	}
@@ -301,13 +408,17 @@ int cli_main(int argc, char **argv)
 {
 	int opt;
 
-	while ((opt = getopt(argc, argv, "h")) != -1) {
+	while ((opt = getopt(argc, argv, "hw")) != -1) {
 		switch (opt) {
 		case 'h':
 			printf(HELP_TEXT);
 			return 0;
 			break;
-
+		/**Option to set wait for 5 secs before cli disconnect from
+		 * daemon*/
+		case 'w':
+			wait_for_event = 1;
+			break;
 		default:
 			ERR("Unknown option: %c\n", opt);
 			return -1;

@@ -156,7 +156,7 @@ enum COMMANDS {
 };
 
 /** Maximum number of channels that can be sent in a setuserscan ioctl */
-#define WLAN_IOCTL_USER_SCAN_CHAN_MAX 50
+#define WLAN_IOCTL_USER_SCAN_CHAN_MAX 109
 
 #ifndef ETH_ALEN
 /** MAC address length */

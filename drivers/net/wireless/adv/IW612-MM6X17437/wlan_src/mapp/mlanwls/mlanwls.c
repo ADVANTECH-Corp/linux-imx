@@ -6,7 +6,7 @@
  *  Usage:
  *
  *
- * Copyright 2024 NXP
+ * Copyright 2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -48,55 +48,8 @@ Change log:
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #include <net/ethernet.h>
-#include "../mlanutl/mlanutl.h"
 #include "mlanwls.h"
-
-/** WLS application's version number */
-#define WLS_VER "4.1"
-
-/*Command arguments index*/
-#define NXP_ADDR "530 Holgerway SanJose"
-
-#define PROTO_DOT11AZ_NTB 1
-#define PROTO_DOT11AZ_TB 2
-#define PROTO_DOT11MC 0
-
-#define WLS_SUBCMD_INDEX 2
-#define FTM_SUBCMD_INDEX 3
-#define FTM_CFG_SET_CMD_LEN 6
-#define FTM_CFG_GET_CMD_LEN 4
-#define FTM_CFG_PROTOCOL_INDEX 4
-#define FTM_CFG_FILE_ARG_INDEX 5
-
-#define FTM_ACTION_START 1
-#define FTM_ACTION_STOP 2
-#define FTM_SESSION_SUBCMD_LEN_CONF 9
-#define FTM_SESSION_SUBCMD_LEN 8
-#define FTM_SESSION_SUBCMD_NONSTOP_LEN 7
-#define FTM_SESSION_SUBCMD_TERM_LEN 5
-#define FTM_SESSION_ACTION_OFFSET 4
-#define FTM_SESSION_CHANNEL_OFFSET 5
-#define FTM_SESSION_PEER_ADDR_OFFSET 6
-#define FTM_SESSION_LOOP_OFFSET 7
-#define FTM_CSI_CONF_OFFSET 8
-
-#define ANQP_NBOR_CMD_LEN 7
-#define ANQP_NBOR_CHANNEL_OFFSET 5
-#define ANQP_NBOR_MAC_OFFSET 6
-#define ANQP_NBOR_CFG_FILE_OFFSET 4
-
-#define PASN_CMD_LEN 5
-#define PASN_ACTION_OFFSET 3
-#define PASN_ACTION_START 1
-#define PASN_ACTION_STOP 2
-
-#define FTM_SESSION_ASSOCIATED 1
-#define FTM_SESSION_ASSOCIATED_PMF 3
-#define FTM_SESSION_UNASSOCIATED 4
-#define FTM_SESSION_UNASSOCIATED_PASN 5
-#define FTM_SESSION_UNASSOCIATED_P2P 6
-
-#define DEF_CONFIG_FILE "ftm.conf"
+#include "../libcsi/event.h"
 
 /********************************************************
 		Functions Declarations
@@ -111,7 +64,7 @@ extern char *config_get_line(char *s, int size, FILE *stream, int *line,
 int parse_line(char *line, char *args[], t_u16 args_count);
 int mac2raw(char *mac, t_u8 *raw);
 
-extern void mlanwls_event_monitor(int nl_sk);
+extern void mlanwls_event_monitor(int nl_sk, int wls_mode);
 static int mlanwls_send_ioctl(t_u8 *cmd_buf);
 static int mlanwls_init(void);
 static int mlanwls_read_ftm_config(char *file_name);
@@ -126,22 +79,17 @@ static int process_anqp_comeback(t_u16 delay, t_u8 *mac);
 static int process_neighbor_report_req(int argc, char *argv[], void *param);
 static int process_dot11az_ranging_cfg(int argc, char *argv[], void *param);
 static int process_dot11mc_ftm_cfg(int argc, char *argv[], void *param);
+static int process_dot11mc_unassoc_ftm_cfg(int argc, char *argv[], void *param);
 static int process_ftm_start(int argc, char *argv[], void *param);
 static int process_ftm_stop(int argc, char *argv[], void *param);
 static int process_ftm_hostcmd_resp(char *cmd_name, t_u8 *buf);
 static int process_pasn(int argc, char *argv[], void *param);
 int process_wls_generic_event(t_u8 *buffer, t_u16 size, char *if_name);
 
-#if 0
-static void mlanwls_event_handler(int nl_sk);
-static void print_event_drv_connected(t_u8* buffer, t_u16 size);
-static int drv_nlevt_handler(struct nlmsghdr *nlh, int bytes_read, int *evt_conn);
-static int read_event(int nl_sk, struct msghdr *msg,  struct timeval *ptv);
-#endif
-
 static int get_netlink_num(int dev_index);
 static int open_netlink(int dev_index);
 static t_void display_help(t_u32 n, char **data);
+static int is_nan_event_mode = 0;
 
 /********************************************************
 		Local Variables
@@ -154,9 +102,10 @@ static char *mlanwls_help[] = {
 	"		ftm <subcmd>",
 	"	where subcmd for ftm command can be,",
 	"		session_cfg  [<ftm_protocol> <config_file>]",
-	"		session_ctrl [<action> <chan> <mac_address> <loop_cnt>]",
+	"		session_ctrl [<action> <chan> <mac_address> <loop_cnt> <wlan_device_number>]",
 	"		anqp_req     [<conf> <chan> <mac_address>]",
 	"		neighbor_report_req  [<conf> <chan> <mac_address>]",
+	"		event        [<<wlan_device_number>]",
 	"	For help on each subcommand,",
 	"		mlanwls mlan0 <command> <subcommand> -h"
 	""};
@@ -209,28 +158,50 @@ static char *pasn_help[] = {
 
 static char *ftm_session_ctrl_help[] = {
 	"Usage: ",
-	"	mlanwls mlan0 ftm session_ctrl [<action> <chan> <mac_address> <loop_cnt>] ",
+	"	mlanwls <interface> ftm session_ctrl [<action> <chan> <mac_address> <loop_cnt> <wlan_device_number>] ",
 	" 	where,",
+	"	<interface> : mlan0 / mmlan0(for multiple mac chipset)"
 	"	<action>",
 	"		2: Stop FTM session"
 	" 		1: Start 11mc/11az FTM with associated Peer AP",
 	" 		3: Start protected 11az FTM with associated Peer AP",
 	"		4: Start 11az/11mc FTM with unassoc Peer",
 	"		5: Start protected 11az FTM with unassoc Peer with PASN",
-	"	<loop_cnt> : number of ftm sessions to run repeatedly ( default:1,  0:non-stop, n>1: n times)",
+	"		6: Start 11mc/11az FTM with unassociated Peer STA"
 	"	<chan> 	: Channel on which FTM must be started",
 	"	<mac_address> : Mac address of the peer with whom FTM session is required",
+	"	<loop_cnt> : number of ftm sessions to run repeatedly ( default:1,  0:non-stop, n>1: n times)",
+	"	<wlan_device_number> : wifi device number for the selected <interface>/<radio>",
+	"		0: mac1 / radio0 / mlan0 / uap0 interface",
+	"		1: mac2 / radio1 / mmlan0 /muap0 interface",
+	"		Default: 0 / if not specified",
 	" ",
 	"	eg: mlanwls mlan0 ftm session_ctrl 1 11 00:50:43:20:bc:4  	- Starts associated FTM session (11az/mc as configured ) without PMF on channel 11",
 	"		mlanwls mlan0 ftm session_ctrl 3 36 00:50:43:20:bc:4  	- Starts associated FTM session with PMF on channel 36",
 	"		mlanwls mlan0 ftm session_ctrl 4 149 00:50:43:20:bc:4 	- Starts unassociated FTM session without PASN on channel 149",
 	"		mlanwls mlan0 ftm session_ctrl 5 37e 00:50:43:20:bc:4  	- Starts unassociated protected 11az FTM session with PASN on channel 37 (6GHz)",
 	"		mlanwls mlan0 ftm session_ctrl 2 						- Stop the FTM session",
+	"		mlanwls mmlan0 ftm session_ctrl 1 11 00:50:43:20:bc:4 2 1	- Runs 2 associated FTM sessions on radio1 (11az/mc as configured ) without PMF on channel 11",
 	"Note:"
 	"Run session_cfg command before running session_ctrl to set the required protocol (11mc/11az) and"
 	"the corresponding ftm params."
 	"In current implementation, STA FW default protocol is 11mc. So if we need to run 11az session multiple times"
 	"each run needs session_cfg command to be given before session_ctrl."
+	"If session_ctrl should be run on radio1 / mac2 interface, wlan_dev_number=1 should be given to bind the netlink event socket to that interface"
+	" "};
+
+static char *dot11mc_unassoc_ftm_cfg_req_help[] = {
+	"Usage: ",
+	"   mlanwls <mlanX/uAPX> ftm dot11mc_unassoc_ftm_cfg [enable] ",
+	"",
+	"   [enable]          : 0 - Disable unassociated state FTM",
+	"                       1 - Enable unassociated state FTM ",
+	"",
+	"   Examples:",
+	"   mlanwls mlan0 ftm dot11mc_unassoc_ftm_cfg",
+	"       - Get current state of unassociated state FTM cfg",
+	"   mlanwls mlan0 ftm dot11mc_unassoc_ftm_cfg 1",
+	"       - Set the unassociated state FTM cfg to Enabled",
 	" "};
 
 /** WLS app command ID */
@@ -240,6 +211,7 @@ enum user_command_id {
 	ANQP_REQ_CMD_ID,
 	NEIGHBOR_REPORT_REQ_CMD_ID,
 	PASN_CMD_ID,
+	DOT11MC_UNASSOC_FTM_CFG_CMD_ID,
 };
 
 enum wls_status {
@@ -254,7 +226,9 @@ enum wls_status {
 	/*Note: Don't use Error code value 0x7, as it was used for dedicated
 	   pre-sleep error handling in driver*/
 	WLS_ERROR_ACTION_NOT_SUPPORTED = 0x0008,
-	WLS_ERROR_SECURE_SESSION_NOT_SUPPORTED = 0x0009
+	WLS_ERROR_SECURE_SESSION_NOT_SUPPORTED = 0x0009,
+	WLS_ERROR_PEER_IS_ASSOCIATED = 0x000A, /*Peer is associated, don't use
+						  un-associated mode*/
 };
 
 /** WLS app command table */
@@ -267,10 +241,13 @@ static wls_app_command_table wls_app_command[] = {
 	{NEIGHBOR_REPORT_REQ_CMD_ID, "neighbor_report_req",
 	 process_neighbor_report_req, neighbor_report_req_help},
 	{PASN_CMD_ID, "pasn", process_pasn, pasn_help},
+	{DOT11MC_UNASSOC_FTM_CFG_CMD_ID, "dot11mc_unassoc_ftm_cfg",
+	 process_dot11mc_unassoc_ftm_cfg, dot11mc_unassoc_ftm_cfg_req_help},
 };
 
 /** WLS app data*/
 wls_app_data_t gwls_data;
+wls_csi_cfg_t gwls_csi_cfg;
 
 /** Radio Measurement FTM Range Request*/
 #define MAX_RANGE_REQ 5
@@ -444,7 +421,7 @@ static int process_ftm_hostcmd_resp(char *cmd_name, t_u8 *buf)
 			       le16_to_cpu(phostcmd->cmd_hdr.result));
 
 			if (result == WLS_ERROR_PEER_NOT_ASSOCIATED) {
-				printf("[ERROR] Not associated with peer\n");
+				printf("[ERROR] Not associated with peer, use un-associated\n");
 			} else if (result == WLS_ERROR_NO_PMF) {
 				printf("[ERROR] PMF not supported at peer to start secure FTM session \n");
 			} else if (result == WLS_ERROR_PEER_NOT_PRE_AUTH) {
@@ -458,6 +435,9 @@ static int process_ftm_hostcmd_resp(char *cmd_name, t_u8 *buf)
 			} else if (result ==
 				   WLS_ERROR_SECURE_SESSION_NOT_SUPPORTED) {
 				printf("[ERROR] Starting secure session is not supported in DOT11MC config. Rerun ftm config with 11az\n");
+			}
+			if (result == WLS_ERROR_PEER_IS_ASSOCIATED) {
+				printf("[ERROR] Associated with peer, use associated\n");
 			}
 			ret = MLAN_STATUS_FAILURE;
 			goto done;
@@ -500,8 +480,8 @@ static int process_ftm_hostcmd_resp(char *cmd_name, t_u8 *buf)
 			       phostcmd->cmd.ftm_session_cfg.tlv.cfg_11az
 				       .range_tlv.val.i2r_lmr_feedback);
 		} else if ((le16_to_cpu(phostcmd->cmd.ftm_session_cfg.tlv
-						.cfg_11mc.sess_tlv.type)) ==
-			   FTM_SESSION_CFG_INITATOR_TLV_ID) {
+						.cfg_11mc.sess_tlv.type) ==
+			    FTM_SESSION_CFG_INITATOR_TLV_ID)) {
 			if (le16_to_cpu(phostcmd->cmd.ftm_session_cfg.action) ==
 			    MLAN_ACT_GET) {
 				/* Get */
@@ -540,22 +520,7 @@ static int process_ftm_hostcmd_resp(char *cmd_name, t_u8 *buf)
 			goto done;
 		}
 		break;
-#if 0
-		case HostCmd_CMD_ANQP_ACTION_FRAME:
-		{
-			hostcmd_anqp_req_t* phostcmd = (hostcmd_anqp_req_t*)buf;
-			if (!le16_to_cpu(phostcmd->cmd_hdr.result)){
-				printf("\n\n Hostcmd ANQP Request Sent \n");
-			}else {
-    			printf("[ERROR] Hostcmd failed: ReturnCode=%#04x, Result=%#04x\n",
-           		le16_to_cpu(phostcmd->cmd_hdr.command), le16_to_cpu(phostcmd->cmd_hdr.result));
-    			ret = MLAN_STATUS_FAILURE;
-				goto done;
-			}
-			break;
-		}
 
-#endif
 	case HostCmd_CMD_NEIGHBOR_REQ: {
 		hostcmd_nbor_req_t *phostcmd = (hostcmd_nbor_req_t *)buf;
 		if (!le16_to_cpu(phostcmd->cmd_hdr.result)) {
@@ -977,6 +942,7 @@ int process_wls_generic_event(t_u8 *buffer, t_u16 size, char *if_name)
 	wls_event_t *ftm_event = NULL;
 	int ret = MLAN_STATUS_SUCCESS;
 	float distance = 0.0;
+	t_u8 *MAC;
 
 	if (!buffer) {
 		DBG_ERROR("[ERROR] Event buffer null\n");
@@ -984,24 +950,36 @@ int process_wls_generic_event(t_u8 *buffer, t_u16 size, char *if_name)
 	}
 	ftm_event = (wls_event_t *)buffer;
 
-	printf("[INFO] Event received for interface %s\n", if_name);
-	printf("[INFO] EventID: 0x%x SubeventID:%d\n", ftm_event->event_id,
-	       ftm_event->sub_event_id);
-	hexdump("EventData:", (void *)buffer, size, ' ');
+	printf("[INFO] Event received for interface %s\tEventID: 0x%x SubeventID:%d\n",
+	       if_name, ftm_event->event_id, ftm_event->sub_event_id);
+	// hexdump("EventData:",(void *) buffer, size, ' ');
 
 	switch (ftm_event->sub_event_id) {
 	case WLS_SUB_EVENT_FTM_COMPLETE:
 
-		printf("\n\nFTM Session Complete:\n");
+		MAC = ftm_event->e.ftm_complete.mac;
+		printf("\n\nFTM Session Complete (MAC %02X:%02X:%02X:%02X:%02X:%02X)\n",
+		       MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
+		if (ftm_event->e.ftm_complete.protocol_type > 0)
+			printf("11az(%d): Measurements started/completed: %d/%d\n",
+			       ftm_event->e.ftm_complete.protocol_type,
+			       ftm_event->e.ftm_complete.protocol_num_bursts,
+			       ftm_event->e.ftm_complete
+				       .protocol_num_measurements);
+		else
+			printf("11mc: Bursts started %d, Measurements completed %d\n",
+			       ftm_event->e.ftm_complete.protocol_num_bursts,
+			       ftm_event->e.ftm_complete
+				       .protocol_num_measurements);
+
 		printf("=====================\n");
-		printf("Average RTT: %d ns\n",
-		       ftm_event->e.ftm_complete.avg_rtt);
+		printf("Average ToF: %d ps\n",
+		       ftm_event->e.ftm_complete.avg_tof);
 		printf("Average Clockoffset:%d ns\n",
 		       ftm_event->e.ftm_complete.avg_clk_offset);
 
-		distance = ((ftm_event->e.ftm_complete.avg_clk_offset / 2) *
-			    (0.0003));
-		printf("Distance: %f meters\n\n", distance);
+		distance = ((ftm_event->e.ftm_complete.avg_tof) * (0.0003));
+		printf("Distance: %.2f meters\n\n", distance);
 
 		/* FTM req from radio measurement is ongoing*/
 		if (gwls_data.is_radio_request) {
@@ -1011,7 +989,9 @@ int process_wls_generic_event(t_u8 *buffer, t_u16 size, char *if_name)
 				range_req[gwls_data.current_range_req_idx]
 					.start_time =
 					ftm_event->e.ftm_complete.meas_start_tsf;
-				printf("Measurement start time: %d",
+				printf("RMR Measurement with AP:%x Distance:%f Starttime:%d",
+				       gwls_data.current_range_req_idx,
+				       distance,
 				       range_req[gwls_data.current_range_req_idx]
 					       .start_time);
 				gwls_data.current_range_req_idx++;
@@ -1020,8 +1000,13 @@ int process_wls_generic_event(t_u8 *buffer, t_u16 size, char *if_name)
 			}
 		} else {
 			gwls_data.loop_cnt--;
-			if ((gwls_data.loop_cnt > 0) ||
-			    (gwls_data.run_nonstop)) {
+			if (is_nan_event_mode) {
+				// Do not terminate for NAN event mode to
+				// receive continous measurements
+				printf("FTM Session Complete\n");
+				printf("=====================\n");
+			} else if ((gwls_data.loop_cnt > 0) ||
+				   (gwls_data.run_nonstop)) {
 				/*Stop and restart the FTM*/
 				sleep(1);
 				process_ftm_start(0, NULL, &gwls_data);
@@ -1063,239 +1048,77 @@ int process_wls_generic_event(t_u8 *buffer, t_u16 size, char *if_name)
 			printf("[ERROR] Unknown GAS Response\n");
 		}
 		break;
+	case WLS_SUB_EVENT_FTM_FAIL:
+		MAC = ftm_event->e.ftm_complete.mac;
+		printf("\n\nFTM Session Fail (MAC %02X:%02X:%02X:%02X:%02X:%02X) StatusCode:%d\n",
+		       MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5],
+		       ftm_event->e.ftm_complete.status_code);
+		if (ftm_event->e.ftm_complete.protocol_state < 2) {
+			if (ftm_event->e.ftm_complete.protocol_type > 0) {
+				printf("11az(%d): Negotiation failed (protocol state %d)\n",
+				       ftm_event->e.ftm_complete.protocol_type,
+				       ftm_event->e.ftm_complete.protocol_state);
+			} else
+				printf("11mc: Negotiation failed (protocol state %d)\n",
+				       ftm_event->e.ftm_complete.protocol_state);
+		} else {
+			if (ftm_event->e.ftm_complete.protocol_type > 0) {
+				printf("11az(%d): Measurements failed (protocol state %d), Measurements started %d\n",
+				       ftm_event->e.ftm_complete.protocol_type,
+				       ftm_event->e.ftm_complete.protocol_state,
+				       ftm_event->e.ftm_complete
+					       .protocol_num_bursts);
+			} else
+				printf("11mc: Measurements failed (protocol state %d), Bursts started %d\n",
+				       ftm_event->e.ftm_complete.protocol_state,
+				       ftm_event->e.ftm_complete
+					       .protocol_num_bursts);
+		}
+		// printf("Debug output: (%x/%x/%x/%x)\n",
+		// ftm_event->e.ftm_complete.protocol_type,
+		// ftm_event->e.ftm_complete.protocol_state,
+		//	ftm_event->e.ftm_complete.protocol_num_bursts,
+		//ftm_event->e.ftm_complete.protocol_num_measurements);
+		printf("=====================\n");
+
+		/* FTM req from radio measurement is ongoing, so do not
+		 * terminate.Proceed with next AP in RMR request*/
+		if (gwls_data.is_radio_request) {
+			if (gwls_data.is_range_req_in_progress) {
+				range_req[gwls_data.current_range_req_idx]
+					.range = 0;
+				range_req[gwls_data.current_range_req_idx]
+					.start_time =
+					ftm_event->e.ftm_complete.meas_start_tsf;
+				printf("RMR Measurement Failed for AP:%d, Proceed with next AP",
+				       gwls_data.current_range_req_idx);
+				gwls_data.current_range_req_idx++;
+				sleep(1);
+				start_ftm_range_measurement();
+			}
+		} else {
+			gwls_data.terminate_app = TRUE;
+		}
+
+		break;
+	case WLS_SUB_EVENT_DISTANCE:
+		MAC = ftm_event->e.ftm_distance.mac;
+		distance = ftm_event->e.ftm_distance.distance / 256.0f;
+
+		// call Kalman filtering
+
+		printf("FTM distance report (MAC %02X:%02X:%02X:%02X:%02X:%02X), TSF %x, distance %.2f meters\n",
+		       MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5],
+		       ftm_event->e.ftm_distance.meas_start_tsf, distance);
+
+		break;
+
 	default:
 		printf("[ERROR] Unknown sub event\n");
 		break;
 	}
 	return ret;
 }
-
-#if 0
-
-/**
- *  @brief Print connect and disconnect event related information
- *
- *  @param buffer   Pointer to received event buffer
- *  @param size     Length of the received event
- *
- *  @return         N/A
- */
-static void print_event_drv_connected(t_u8* buffer, t_u16 size)
-{
-    struct ether_addr *wap;
-    struct ether_addr etherzero =
-        { {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} };
-    char buf[32];
-
-    wap = (struct ether_addr *)(buffer+strlen(CUS_EVT_AP_CONNECTED));
-
-    if (!memcmp
-        (wap, &etherzero, sizeof(struct ether_addr))) {
-        printf("---< Disconnected from AP >---\n");
-        assoc_flag = FALSE;
-
-    } else {
-        memset(buf, 0, sizeof(buf));
-        snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
-                wap->ether_addr_octet[0],
-                wap->ether_addr_octet[1],
-                wap->ether_addr_octet[2],
-                wap->ether_addr_octet[3],
-                wap->ether_addr_octet[4],
-                wap->ether_addr_octet[5]);
-        printf("---< Connected to AP: %s >---\n", buf);
-        /** set TRUE, if connected */
-        assoc_flag = TRUE;
-    }
-}
-
-
-
-/**
- *  @brief              This function parses for NETLINK events
- *
- *  @param nlh          Pointer to Netlink message header
- *  @param bytes_read   Number of bytes to be read
- *  @param evt_conn     A pointer to a output buffer. It sets TRUE when it gets
- *  					the event CUS_EVT_OBSS_SCAN_PARAM, otherwise FALSE
- *  @return             MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
- */
-static int drv_nlevt_handler(struct nlmsghdr *nlh, int bytes_read, int *evt_conn)
-{
-    int len, plen;
-    t_u8* buffer = NULL;
-    t_u32 event_id = 0;
-    event_header *event = NULL;
-    char if_name[IFNAMSIZ + 1];
-
-    /* Initialize receive buffer */
-    buffer = (t_u8*)malloc(NL_MAX_PAYLOAD);
-    if (!buffer) {
-        printf("ERR: Could not alloc buffer\n");
-        return MLAN_STATUS_FAILURE;
-    }
-    memset(buffer, 0, NL_MAX_PAYLOAD);
-
-    *evt_conn = FALSE;
-    while((unsigned int)bytes_read >= NLMSG_HDRLEN) {
-        len = nlh->nlmsg_len;   /* Length of message including header */
-        plen = len - NLMSG_HDRLEN;
-        if (len > bytes_read || plen < 0) {
-            free(buffer);
-            /* malformed netlink message */
-            return MLAN_STATUS_FAILURE;
-        }
-        if ((unsigned int)len > NLMSG_SPACE(NL_MAX_PAYLOAD)) {
-            printf("ERR:Buffer overflow!\n");
-            free(buffer);
-            return MLAN_STATUS_FAILURE;
-        }
-        memset(buffer, 0, NL_MAX_PAYLOAD);
-        memcpy(buffer, NLMSG_DATA(nlh), plen);
-
-        if (NLMSG_OK(nlh, len)) {
-            memcpy(&event_id, buffer, sizeof(event_id));
-
-            if(((event_id & 0xFF000000) == 0x80000000) || ((event_id & 0xFF000000) == 0)) {
-                event = (event_header *) buffer;
-            } else {
-                memset(if_name, 0, IFNAMSIZ + 1);
-                memcpy(if_name, buffer, IFNAMSIZ);
-                event = (event_header *) (buffer + IFNAMSIZ);
-            }
-        }
-
-		/*Prints the events*/
-        if (event){
-            switch (event->event_id) {
-				case EVENT_WLS_FTM_COMPLETE:
-					process_ftm_complete_event((t_u8*)event, bytes_read,if_name);
-				break;
-				default:
-    				if(!strncmp(CUS_EVT_AP_CONNECTED, (char *)event, strlen(CUS_EVT_AP_CONNECTED))) {
-         			if(strlen(if_name))
-            			printf("EVENT for interface %s\n", if_name);
-         			print_event_drv_connected((t_u8*)event, bytes_read);
-    			}
-				break;
-    		}
-        }
-        len = NLMSG_ALIGN(len);
-        bytes_read -= len;
-        nlh = (struct nlmsghdr *) ((char *) nlh + len);
-    }
-    free(buffer);
-    return MLAN_STATUS_SUCCESS;
-}
-
-
-/**
- *  @brief Configure and read event data from netlink socket
- *
- *  @param nl_sk        Netlink socket handler
- *  @param msg          Pointer to message header
- *  @param ptv          Pointer to struct timeval
- *
- *  @return             Number of bytes read or MLAN_STATUS_FAILURE
- */
-static int read_event(int nl_sk, struct msghdr *msg,  struct timeval *ptv)
-{
-    int count = -1;
-    int ret = MLAN_STATUS_FAILURE;
-    fd_set rfds;
-
-    /* Setup read fds and initialize event buffers */
-    FD_ZERO(&rfds);
-    FD_SET(nl_sk, &rfds);
-
-    /* Wait for reply */
-    ret = select(nl_sk + 1, &rfds, NULL, NULL, ptv);
-
-    if (ret == MLAN_STATUS_FAILURE) {
-        /* Error */
-        mlanwls_terminate_flag++;
-        ptv->tv_sec = DEFAULT_SCAN_INTERVAL;
-        ptv->tv_usec = 0;
-        goto done;
-    }
-    if (!FD_ISSET(nl_sk, &rfds)) {
-        /* Unexpected error. Try again */
-        ptv->tv_sec = DEFAULT_SCAN_INTERVAL;
-        ptv->tv_usec = 0;
-        goto done;
-    }
-    /* Success */
-    count = recvmsg(nl_sk, msg, 0);
-
-done:
-    return count;
-}
-
-/**
- *  @brief Run the application
- *
- *  @param nl_sk    Netlink socket
- *
- *  @return         N/A
- */
-static void mlanwls_event_handler(int nl_sk)
-{
-    struct timeval tv;
-    int bytes_read, evt_conn;
-    struct msghdr msg;
-    struct sockaddr_nl dest_addr;
-    struct nlmsghdr* nlh;
-    struct iovec iov;
-
-    /* Initialize timeout value */
-    tv.tv_sec = DEFAULT_SCAN_INTERVAL;
-    tv.tv_usec = 0;
-
-    /* Initialize netlink header */
-    nlh = (struct nlmsghdr *) malloc(NLMSG_SPACE(NL_MAX_PAYLOAD));
-    if (!nlh) {
-         printf("[ERROR] Could not allocate space for netlink header\n");
-         goto done;
-    }
-    memset(nlh, 0, NLMSG_SPACE(NL_MAX_PAYLOAD));
-    /* Fill the netlink message header */
-    nlh->nlmsg_len = NLMSG_SPACE(NL_MAX_PAYLOAD);
-    nlh->nlmsg_pid = getpid();  /* self pid */
-    nlh->nlmsg_flags = 0;
-
-    /* Initialize I/O vector */
-    memset(&iov, 0, sizeof(struct iovec));
-    iov.iov_base = (void *) nlh;
-    iov.iov_len = nlh->nlmsg_len;
-
-    /* Set destination address */
-    memset(&dest_addr, 0, sizeof(struct sockaddr_nl));
-    dest_addr.nl_family = AF_NETLINK;
-    dest_addr.nl_pid = 0;      /* Kernel */
-    dest_addr.nl_groups = NL_MULTICAST_GROUP;
-
-    /* Initialize message header */
-    memset(&msg, 0, sizeof(struct msghdr));
-    msg.msg_name = (void *) &dest_addr;
-    msg.msg_namelen = sizeof(dest_addr);
-    msg.msg_iov = &iov;
-    msg.msg_iovlen = 1;
-
-    while (!gwls_data.terminate_app) {
-        /* event buffer is received for all the interfaces */
-        bytes_read = read_event(nl_sk, &msg,  &tv);
-        /* handle only NETLINK events here */
-        drv_nlevt_handler((struct nlmsghdr *) nlh, bytes_read, &evt_conn);
-    }
-
-done:
-    if (nl_sk > 0)
-        close(nl_sk);
-    if (nlh)
-        free(nlh);
-    return;
-}
-#endif
 
 /**
  *  @brief Process ftm session ntb ranging configuration
@@ -1433,6 +1256,8 @@ static int process_dot11mc_ftm_cfg(int argc, char *argv[], void *param)
 		phostcmd->cmd.ftm_session_cfg.tlv.cfg_11mc.sess_tlv.val
 			.burst_period =
 			cpu_to_le16(app_data->session_cfg.burst_period);
+		phostcmd->cmd.ftm_session_cfg.tlv.cfg_11mc.sess_tlv.val
+			.iftm_tmo = cpu_to_le16(app_data->session_cfg.iftm_tmo);
 		phostcmd->cmd.ftm_session_cfg.tlv.cfg_11mc.sess_tlv.civic_req =
 			app_data->civic_request;
 		phostcmd->cmd.ftm_session_cfg.tlv.cfg_11mc.sess_tlv.lci_req =
@@ -1501,6 +1326,88 @@ done:
 	if (buffer)
 		free(buffer);
 	return ret;
+}
+
+/**
+ *  @brief Process dot11mc unassoc ftm cfg enable/disable
+ *  @param argc   Number of arguments
+ *  @param argv   A pointer to arguments array
+ *  @param param   A pointer to app_data structure
+ *  @return       MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int process_dot11mc_unassoc_ftm_cfg(int argc, char *argv[], void *param)
+{
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+	dot11mc_unassoc_ftm_cfg_para data;
+
+	/* Check arguments */
+	if (argc < 4 || (argc > 5)) {
+		printf("ERR:Incorrect number of arguments!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	mlanwls_prepare_buffer(buffer, argv[3], (argc - 4), &argv[4]);
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanwls");
+		fprintf(stderr, "mlanwls: dot11mc_unassoc_ftm_cfg fail\n");
+		if (cmd)
+			free(cmd);
+		if (buffer)
+			free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Process result */
+	memset((void *)&data, 0, sizeof(data));
+	memcpy((void *)&data, buffer, sizeof(data));
+
+	printf("DOT11MC unassociated FTM cfg: ");
+	if (data.state == TRUE)
+		printf("Enabled\n");
+	else if (data.state == FALSE)
+		printf("Disabled\n");
+	else
+		printf("Invalid CFG\n");
+	printf("\n");
+
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return MLAN_STATUS_SUCCESS;
 }
 
 /**
@@ -1631,7 +1538,7 @@ static int process_ftm_start(int argc, char *argv[], void *param)
 		DBG_LOG("[INFO] Wait for session complete event.. \n");
 		/** run the event monitor to process CSI and FTM complete event
 		 */
-		mlanwls_event_monitor(nl_sk);
+		mlanwls_event_monitor(nl_sk, 1);
 	} else {
 		DBG_ERROR("[ERROR] Starting FTM Session failed\n");
 		app_data->ftm_started = FALSE;
@@ -1662,12 +1569,6 @@ static int process_ftm_stop(int argc, char *argv[], void *param)
 		goto done;
 	}
 	app_data = (wls_app_data_t *)param;
-
-	//	if(!app_data->ftm_started){
-	//		DBG_LOG("[INFO] FTM Session already stopped!\n");
-	//		ret = MLAN_STATUS_FAILURE;
-	//		goto done;
-	//	}
 
 	/* Initialize buffer */
 	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
@@ -2241,9 +2142,10 @@ static int process_subcommand(int argc, char *argv[])
 						    argc) {
 							t_u32 temp = a2hex_or_atoi(
 								argv[FTM_CSI_CONF_OFFSET]);
-							*((t_u32 *)&gwls_data
-								  .wls_processing_input) =
-								temp;
+							memcpy(&gwls_csi_cfg
+									.wls_processing_input,
+							       &temp,
+							       sizeof(t_u32));
 							printf("CSI config set to 0x%x\n",
 							       temp);
 						}
@@ -2310,6 +2212,19 @@ static int process_subcommand(int argc, char *argv[])
 				DBG_ERROR(
 					"[ERROR] Invalid number of arguments\n");
 				display_help(NELEMENTS(pasn_help), pasn_help);
+				ret = MLAN_STATUS_FAILURE;
+				goto done;
+			}
+			break;
+		case DOT11MC_UNASSOC_FTM_CFG_CMD_ID:
+			if ((DOT11MC_UNASSOC_FTM_CFG_CMD_LEN != argc) &&
+			    ((DOT11MC_UNASSOC_FTM_CFG_CMD_LEN - 1) != argc)) {
+				DBG_ERROR(
+					"[ERROR] Invalid number of arguments\n");
+				display_help(
+					NELEMENTS(
+						dot11mc_unassoc_ftm_cfg_req_help),
+					dot11mc_unassoc_ftm_cfg_req_help);
 				ret = MLAN_STATUS_FAILURE;
 				goto done;
 			}
@@ -2406,6 +2321,10 @@ static int mlanwls_read_ftm_config(char *file_name)
 				gwls_data.session_cfg.burst_period =
 					(t_u16)(atoi(args[1]));
 				PRINT_CFG("\t BURST_PERIOD=%d\n", param);
+			} else if (strcmp(args[0], "IFTM_TMO") == 0) {
+				gwls_data.session_cfg.iftm_tmo =
+					(t_u16)(atoi(args[1]));
+				PRINT_CFG("\t IFTM_TMO=%d\n", param);
 
 			} else if (strcmp(args[0], "LCI_REQUEST") == 0) {
 				gwls_data.lci_request = (t_u8)(atoi(args[1]));
@@ -2564,6 +2483,7 @@ static int mlanwls_init(void)
 	int ret = MLAN_STATUS_SUCCESS;
 
 	memset(&gwls_data, 0, sizeof(wls_app_data_t));
+	memset(&gwls_csi_cfg, 0, sizeof(wls_csi_cfg_t));
 
 	/*Initialize app private data with default values*/
 	gwls_data.associated = 0;
@@ -2587,25 +2507,26 @@ static int mlanwls_init(void)
 	gwls_data.range_cfg.i2r_lmr_feedback = 0;
 
 	/*CSI processing config*/
-	gwls_data.wls_processing_input.enableCsi = 1; // turn on CSI processing
-	gwls_data.wls_processing_input.enableAoA = AOA_DEFAULT; // turn on AoA
-								// (req.
-								// enableCsi==1)
-	gwls_data.wls_processing_input.nTx = MAX_TX; // limit # tx streams to
-						     // process
-	gwls_data.wls_processing_input.nRx = MAX_RX; // limit # rx to process
-	gwls_data.wls_processing_input.selCal = 0; // choose cal values
-	gwls_data.wls_processing_input.dumpMul = 0; // dump extra peaks in AoA
-	gwls_data.wls_processing_input.enableAntCycling = 0; // enable antenna
-							     // cycling
-	gwls_data.wls_processing_input.dumpRawAngle = 0; // Dump Raw Angle
-	gwls_data.wls_processing_input.useToaMin =
+	gwls_csi_cfg.channel = 0;
+	gwls_csi_cfg.wls_processing_input.enableCsi = 1; // turn on CSI
+							 // processing
+	gwls_csi_cfg.wls_processing_input.enableAoA =
+		AOA_DEFAULT; // turn on AoA (req. enableCsi==1)
+	gwls_csi_cfg.wls_processing_input.nTx = MAX_TX; // limit # tx streams to
+							// process
+	gwls_csi_cfg.wls_processing_input.nRx = MAX_RX; // limit # rx to process
+	gwls_csi_cfg.wls_processing_input.selCal = 0; // choose cal values
+	gwls_csi_cfg.wls_processing_input.dumpMul = 0; // dump extra peaks in
+						       // AoA
+	gwls_csi_cfg.wls_processing_input.enableAntCycling = 0; // enable
+								// antenna
+								// cycling
+	gwls_csi_cfg.wls_processing_input.dumpRawAngle = 0; // Dump Raw Angle
+	gwls_csi_cfg.wls_processing_input.useToaMin =
 		TOA_MIN_DEFAULT; // 1: use min combining, 0: power combining;
-	gwls_data.wls_processing_input.useSubspace = SUBSPACE_DEFAULT; // 1: use
-								       // subspace
-								       // algo;
-								       // 0: no;
-	gwls_data.wls_processing_input.useFindAngleDelayPeaks =
+	gwls_csi_cfg.wls_processing_input.useSubspace =
+		SUBSPACE_DEFAULT; // 1: use subspace algo; 0: no;
+	gwls_csi_cfg.wls_processing_input.useFindAngleDelayPeaks =
 		ENABLE_DELAY_PEAKS; // use this algorithm for AoA
 
 	/*DOT11MC  FTM session default config*/
@@ -2642,6 +2563,210 @@ static int mlanwls_init(void)
 	return ret;
 }
 
+#if 1
+/**
+ *  @brief              This function parses for NETLINK events
+ *
+ *  @param nlh          Pointer to Netlink message header
+ *  @param bytes_read   Number of bytes to be read
+ *  @param evt_conn     A pointer to a output buffer. It sets TRUE when it gets
+ *  					the event CUS_EVT_OBSS_SCAN_PARAM, otherwise
+ * FALSE
+ *  @return             MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
+ */
+static int mlanwls_drv_nlevt_handler(struct nlmsghdr *nlh, int bytes_read,
+				     int *evt_conn, int wls_mode)
+{
+	int len, plen;
+	t_u8 *buffer = NULL;
+	t_u32 event_id = 0;
+	event_header *event = NULL;
+	char if_name[IFNAMSIZ + 1];
+	unsigned int csi_res_array[8];
+
+	/* Initialize receive buffer */
+	buffer = (t_u8 *)malloc(NL_MAX_PAYLOAD);
+	if (!buffer) {
+		printf("ERR: Could not alloc buffer\n");
+		return MLAN_STATUS_FAILURE;
+	}
+	memset(buffer, 0, NL_MAX_PAYLOAD);
+
+	*evt_conn = FALSE;
+	while ((unsigned int)bytes_read >= NLMSG_HDRLEN) {
+		len = nlh->nlmsg_len; /* Length of message including header */
+		plen = len - NLMSG_HDRLEN;
+		if (len > bytes_read || plen < 0) {
+			free(buffer);
+			/* malformed netlink message */
+			return MLAN_STATUS_FAILURE;
+		}
+		if ((unsigned int)len > NLMSG_SPACE(NL_MAX_PAYLOAD)) {
+			printf("ERR:Buffer overflow!\n");
+			free(buffer);
+			return MLAN_STATUS_FAILURE;
+		}
+		memset(buffer, 0, NL_MAX_PAYLOAD);
+		memcpy(buffer, NLMSG_DATA(nlh), plen);
+
+		if (NLMSG_OK(nlh, len)) {
+			memcpy(&event_id, buffer, sizeof(event_id));
+
+			if (((event_id & 0xFF000000) == 0x80000000) ||
+			    ((event_id & 0xFF000000) == 0)) {
+				event = (event_header *)buffer;
+			} else {
+				memset(if_name, 0, IFNAMSIZ + 1);
+				memcpy(if_name, buffer, IFNAMSIZ);
+				event = (event_header *)(buffer + IFNAMSIZ);
+			}
+		}
+
+		if (event) {
+			if (wls_mode) {
+				if (event->event_id == EVENT_WLS_GENERIC) {
+					process_wls_generic_event((t_u8 *)event,
+								  bytes_read,
+								  if_name);
+				} else if (!strncmp((char *)event,
+						    CUS_EVT_MLAN_CSI,
+						    strlen(CUS_EVT_MLAN_CSI))) {
+					/* procss CSI data */
+					proc_csi_event_wls(event,
+							   csi_res_array);
+					send_csi_ack(csi_res_array);
+#ifdef PRINT_CSI_TO_FILE
+					print_csi_event(event, bytes_read,
+							if_name);
+#endif
+				}
+			} else {
+				if (!strncmp((char *)event, CUS_EVT_MLAN_CSI,
+					     strlen(CUS_EVT_MLAN_CSI))) {
+					proc_csi_event(event);
+#ifdef PRINT_CSI_TO_FILE
+					print_csi_event(event, bytes_read,
+							if_name);
+#endif
+				}
+			}
+		}
+		len = NLMSG_ALIGN(len);
+		bytes_read -= len;
+		nlh = (struct nlmsghdr *)((char *)nlh + len);
+	}
+	free(buffer);
+	return MLAN_STATUS_SUCCESS;
+}
+
+/**
+ *  @brief Configure and read event data from netlink socket
+ *
+ *  @param nl_sk        Netlink socket handler
+ *  @param msg          Pointer to message header
+ *  @param ptv          Pointer to struct timeval
+ *
+ *  @return             Number of bytes read or MLAN_STATUS_FAILURE
+ */
+static int read_event(int nl_sk, struct msghdr *msg, struct timeval *ptv)
+{
+	int count = -1;
+	int ret = MLAN_STATUS_FAILURE;
+	fd_set rfds;
+
+	/* Setup read fds and initialize event buffers */
+	FD_ZERO(&rfds);
+	FD_SET(nl_sk, &rfds);
+
+	/* Wait for reply */
+	ret = select(nl_sk + 1, &rfds, NULL, NULL, ptv);
+
+	if (ret == MLAN_STATUS_FAILURE) {
+		/* Error */
+		ptv->tv_sec = DEFAULT_SCAN_INTERVAL;
+		ptv->tv_usec = 0;
+		goto done;
+	}
+	if (!FD_ISSET(nl_sk, &rfds)) {
+		/* Unexpected error. Try again */
+		ptv->tv_sec = DEFAULT_SCAN_INTERVAL;
+		ptv->tv_usec = 0;
+		goto done;
+	}
+	/* Success */
+	count = recvmsg(nl_sk, msg, 0);
+
+done:
+	return count;
+}
+
+/**
+ *  @brief Run the application
+ *
+ *  @param nl_sk    Netlink socket
+ *
+ *  @return         N/A
+ */
+void mlanwls_event_monitor(int nl_sk, int wls_mode)
+{
+	struct timeval tv;
+	int bytes_read, evt_conn;
+	struct msghdr msg;
+	struct sockaddr_nl dest_addr;
+	struct nlmsghdr *nlh;
+	struct iovec iov;
+
+	/* Initialize timeout value */
+	tv.tv_sec = DEFAULT_SCAN_INTERVAL;
+	tv.tv_usec = 0;
+
+	/* Initialize netlink header */
+	nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(NL_MAX_PAYLOAD));
+	if (!nlh) {
+		printf("[ERROR] Could not allocate space for netlink header\n");
+		goto done;
+	}
+	memset(nlh, 0, NLMSG_SPACE(NL_MAX_PAYLOAD));
+	/* Fill the netlink message header */
+	nlh->nlmsg_len = NLMSG_SPACE(NL_MAX_PAYLOAD);
+	nlh->nlmsg_pid = getpid(); /* self pid */
+	nlh->nlmsg_flags = 0;
+
+	/* Initialize I/O vector */
+	memset(&iov, 0, sizeof(struct iovec));
+	iov.iov_base = (void *)nlh;
+	iov.iov_len = nlh->nlmsg_len;
+
+	/* Set destination address */
+	memset(&dest_addr, 0, sizeof(struct sockaddr_nl));
+	dest_addr.nl_family = AF_NETLINK;
+	dest_addr.nl_pid = 0; /* Kernel */
+	dest_addr.nl_groups = NL_MULTICAST_GROUP;
+
+	/* Initialize message header */
+	memset(&msg, 0, sizeof(struct msghdr));
+	msg.msg_name = (void *)&dest_addr;
+	msg.msg_namelen = sizeof(dest_addr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+
+	while (!gwls_data.terminate_app) {
+		/* event buffer is received for all the interfaces */
+		bytes_read = read_event(nl_sk, &msg, &tv);
+		/* handle only NETLINK events here */
+		mlanwls_drv_nlevt_handler((struct nlmsghdr *)nlh, bytes_read,
+					  &evt_conn, wls_mode);
+	}
+
+done:
+	if (nl_sk > 0)
+		close(nl_sk);
+	if (nlh)
+		free(nlh);
+	return;
+}
+#endif
+
 /********************************************************
 		Global Functions
 ********************************************************/
@@ -2653,8 +2778,8 @@ static int mlanwls_init(void)
  */
 int main(int argc, char *argv[])
 {
-	int dev_index = 0; //-1; /** initialise with -1 to open multiple NETLINK
-			   //Sockets */
+	int dev_index = 0; /*Default device index is for mlan0, initialise with
+			      -1 to open multiple NETLINK Sockets */
 	int ret = MLAN_STATUS_SUCCESS;
 
 	printf("\n\n---------------------------------------------------\n");
@@ -2666,6 +2791,11 @@ int main(int argc, char *argv[])
 		return MLAN_STATUS_FAILURE;
 	}
 
+	/*Check for NAN0 Event mode to avoid termination*/
+	if (!strncmp(argv[1], "nan0", 4)) {
+		is_nan_event_mode = 1;
+	}
+
 	/*Initialize private data*/
 	printf("[INFO] Initializing App\n");
 	ret = mlanwls_init();
@@ -2673,6 +2803,12 @@ int main(int argc, char *argv[])
 	/*Set the interface*/
 	memset(dev_name, 0, sizeof(dev_name));
 	strncpy(dev_name, argv[1], IFNAMSIZ);
+
+	/*Set device index corresponding to the interface*/
+	if ((argc == FTM_SESSION_SUBCMD_LEN) &&
+	    (strcmp(argv[3], "session_ctrl") == 0)) {
+		dev_index = A2HEXDECIMAL(argv[FTM_SESSION_DEV_NUM_OFFSET]);
+	}
 
 	/* create a socket */
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -2692,7 +2828,13 @@ int main(int argc, char *argv[])
 	signal(SIGALRM, mlanwls_terminate_handler); /* catch kill signal */
 
 	if (!strncmp(argv[WLS_SUBCMD_INDEX], "event", 5)) {
-		mlanwls_event_monitor(nl_sk);
+		int wls_mode = 1;
+		if (argc > 3) {
+			if (strcmp(argv[3], "csi") == 0)
+				wls_mode = 0;
+			printf("Mode %s\n", argv[3]);
+		}
+		mlanwls_event_monitor(nl_sk, wls_mode);
 	} else {
 		/*Process the wlscmd sub command argument*/
 		ret = process_subcommand(argc, argv);

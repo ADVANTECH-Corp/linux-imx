@@ -1,6 +1,6 @@
 # File : mlanwls/Makefile
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 
 # Path to the top directory of the wlan distribution
 PATH_TO_TOP = ../..
@@ -25,7 +25,7 @@ CFLAGS := $(filter-out -I$(KERNELDIR)%, $(CFLAGS))
 
 #CFLAGS += -DAP22 -fshort-enums
 CFLAGS += -Wall
-CFLAGS += -Wno-stringop-truncation
+CFLAGS += -Wno-stringop-truncation -DNAN_CSI_PROCESSING
 #ECHO = @
 ifeq (,$(findstring ANDROID_KERNEL, $(CFLAGS)))
 LIBS=-lrt
@@ -33,10 +33,15 @@ endif
 
 
 
+#LIBS += -L../libcsi
+#LIBS += -lcsi -lm
+CFLAGS += -I../libcsi
+
 .PHONY: default tags all
 
-OBJECTS = mlanwls.o utils.o event.o wls_api.o wls_processing.o wls_radix4Fft.o wls_QR_algorithm.o wls_subspace_processing.o range_kalman.o
+OBJECTS = mlanwls.o utils.o
 HEADERS = mlanwls.h
+DEPS := ../libcsi/libcsi.a
 
 TARGET = mlanwls
 
@@ -45,8 +50,11 @@ build appsbuild default: $(TARGET)
 
 all : tags default
 
-$(TARGET): $(OBJECTS) $(HEADERS)
-	$(ECHO)$(CC) $(LIBS) -o $@ $(OBJECTS) -lm
+$(DEPS):
+	@$(MAKE) -C $(dir $(DEPS))
+
+$(TARGET): $(OBJECTS) $(HEADERS) $(DEPS)
+	$(ECHO)$(CC) $(LIBS) -o $@ $(OBJECTS) $(DEPS) -lm
 
 %.o: %.c $(HEADERS)
 	$(ECHO)$(CC) $(CFLAGS) -c -o $@ $<

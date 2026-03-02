@@ -1,7 +1,7 @@
 /** @file wps_wlan.c
  *  @brief This file contains functions for WLAN driver control/command.
  *
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -70,6 +70,8 @@
 #include "mlocation_lib.h"
 #include "mlocation_api.h"
 
+#include "../../../libcsi/event.h"
+
 #ifdef CONFIG_HOTSPOT
 /* @TODO: need to find a correct place for following declarations */
 extern u8 hotspot_is_init(void);
@@ -104,6 +106,10 @@ typedef struct _CHANNEL_FREQ_ENTRY {
 #define KEEP_PREV_RESULT 1
 
 #define BUF_HEADER_SIZE 4
+
+#define PRINT_CASE(i)                                                          \
+	case i:                                                                \
+		return #i
 
 /********************************************************
 	Local Variables
@@ -1678,6 +1684,7 @@ int load_cred_info(struct mwu_iface_info *cur_if, bss_config_t *bss)
 	return ret;
 }
 
+#if 0
 /**
  *  @brief Change AP configuration as per registrar credential structure
  *
@@ -1685,53 +1692,51 @@ int load_cred_info(struct mwu_iface_info *cur_if, bss_config_t *bss)
  *
  *  @return          WPS_STATUS_SUCCESS--success, WPS_STATUS_FAIL--fail
  */
-static int wlan_change_ap_configuration(struct mwu_iface_info *cur_if)
+static int
+wlan_change_ap_configuration(struct mwu_iface_info *cur_if)
 {
-	struct MESSAGE_ENROLLEE_REGISTRAR *enr_reg = NULL;
-	bss_config_t bss;
-	int ret = WPS_STATUS_SUCCESS;
-	struct CREDENTIAL_DATA *pCred = NULL;
+    struct MESSAGE_ENROLLEE_REGISTRAR *enr_reg = NULL;
+    bss_config_t bss;
+    int ret = WPS_STATUS_SUCCESS;
+    struct CREDENTIAL_DATA *pCred = NULL;
 
-	ENTER();
+    ENTER();
 
-	mwu_apcmd_stop_bss(cur_if->ifname);
+    mwu_apcmd_stop_bss(cur_if->ifname);
 
-	enr_reg = &cur_if->pwps_info->registrar;
-	pCred = &enr_reg->cred_data[0];
-	mwu_printf(MSG_ERROR, "ap_conf: pCred: %p", pCred);
+    enr_reg = &cur_if->pwps_info->registrar;
+    pCred = &enr_reg->cred_data[0];
+    mwu_printf(MSG_ERROR, "ap_conf: pCred: %p", pCred);
 
-	memset(&bss, 0, sizeof(bss_config_t));
+    memset(&bss, 0, sizeof(bss_config_t));
 
-	/* Read current params for default values */
-	if ((ret = mwu_apcmd_get_bss_config(cur_if->ifname, &bss)) !=
-	    WPS_STATUS_SUCCESS) {
-		goto done;
-	}
+    /* Read current params for default values */
+    if ((ret = mwu_apcmd_get_bss_config(cur_if->ifname, &bss)) != WPS_STATUS_SUCCESS) {
+        goto done;
+    }
 
-	wps_cred_to_bss_config(&bss, pCred,
-			       cur_if->pwps_info->config_load_by_oob);
+    wps_cred_to_bss_config(&bss, pCred, cur_if->pwps_info->config_load_by_oob);
 
-	mwu_printf(DEBUG_WLAN, "====== new credentials ======\n");
+    mwu_printf(DEBUG_WLAN, "====== new credentials ======\n");
 
-	mwu_printf(
-		DEBUG_WLAN,
-		"SSID:%s proto:0x%x pair_cip_wpa:0x%x pair_cip_wpa2:0x%x group_cip:0x%x\n",
-		bss.ssid.ssid, bss.protocol, bss.wpa_cfg.pairwise_cipher_wpa,
-		bss.wpa_cfg.pairwise_cipher_wpa2, bss.wpa_cfg.group_cipher);
+    mwu_printf(DEBUG_WLAN,
+               "SSID:%s proto:0x%x pair_cip_wpa:0x%x pair_cip_wpa2:0x%x group_cip:0x%x\n",
+               bss.ssid.ssid, bss.protocol, bss.wpa_cfg.pairwise_cipher_wpa,
+               bss.wpa_cfg.pairwise_cipher_wpa2, bss.wpa_cfg.group_cipher);
 
-	mwu_hexdump(DEBUG_WLAN, "Net key(PSK)", (u8 *)bss.wpa_cfg.passphrase,
-		    bss.wpa_cfg.length);
+    mwu_hexdump(DEBUG_WLAN, "Net key(PSK)",
+                (u8 *) bss.wpa_cfg.passphrase, bss.wpa_cfg.length);
 
-	/* Set updated params */
-	ret = mwu_apcmd_set_bss_config(cur_if->ifname, &bss);
+    /* Set updated params */
+    ret = mwu_apcmd_set_bss_config(cur_if->ifname, &bss);
 
-	mwu_apcmd_start_bss(cur_if->ifname);
+    mwu_apcmd_start_bss(cur_if->ifname);
 
-done:
-	LEAVE();
-	return ret;
+  done:
+    LEAVE();
+    return ret;
 }
-#if 0
+
 int
 wps_wlan_reset_ap_config(struct mwu_iface_info *cur_if)
 {
@@ -2395,6 +2400,8 @@ static inline int is_zero_mac(const u8 *a)
 #define EV_ID_UAP_EV_RSN_CONNECT 0x00000051
 #define EV_ID_STA_EV_SCAN_COMPLETE 0x80000008
 #define EV_ID_STA_EV_SCAN_COMPLETE_GSPI 0x80000009
+#define EV_ID_MLOCATION_COMPLETE_EVENT 0x00000086
+#define EV_ID_FW_CSI_EVENT 0x0000008D
 
 static inline char *nl_event_id_to_str(int id)
 {
@@ -2409,9 +2416,12 @@ static inline char *nl_event_id_to_str(int id)
 		PRINT_CASE(EV_ID_WIFIDIR_GENERIC);
 		PRINT_CASE(EV_ID_WIFIDIR_SERVICE_DISCOVERY);
 		PRINT_CASE(EV_ID_UAP_EV_RSN_CONNECT);
+		PRINT_CASE(EV_ID_MLOCATION_COMPLETE_EVENT);
+		PRINT_CASE(EV_ID_FW_CSI_EVENT);
 	}
 	return "UNKNOWN";
 }
+
 /**
  *  @brief  Wlan event parser for FW events
  *  @param context    Pointer to Context
@@ -2426,12 +2436,12 @@ void wps_wlan_event_parser(void *context, char *if_name, char *evt_buffer,
 {
 	event_header *event = NULL;
 	u32 event_id = 0;
-	eventbuf_rsn_connect *evt_rsn_connect;
+	// eventbuf_rsn_connect *evt_rsn_connect;
 	/* Event to pass to state machine */
 	struct event *e = NULL;
 	struct mwu_iface_info *cur_if = NULL;
 	struct mwu_iface_info *temp_if = NULL;
-
+	unsigned int csi_res_array[8];
 	/* Interface name in the event is must for supporting events on multiple
 	 * interaces.*/
 	if (if_name == NULL) {
@@ -2500,6 +2510,15 @@ void wps_wlan_event_parser(void *context, char *if_name, char *evt_buffer,
 		strncpy(e->val, if_name, e->len);
 		// mwpamod_sta_kernel_event(e);
 		goto done;
+	} else if (strncmp(evt_buffer, CUS_EVT_MLAN_CSI,
+			   strlen(CUS_EVT_MLAN_CSI)) == 0) {
+		/* procss CSI data */
+		proc_csi_event_wls((event_header *)evt_buffer, csi_res_array);
+		send_csi_ack(csi_res_array);
+#ifdef PRINT_CSI_TO_FILE
+		print_csi_event(event, bytes_read, if_name);
+#endif
+		goto done;
 	}
 
 	/* Event should always have interface name prepended with it. */
@@ -2565,13 +2584,35 @@ void wps_wlan_event_parser(void *context, char *if_name, char *evt_buffer,
 
 	case EV_ID_MLOCATION_COMPLETE_EVENT:
 		mwu_printf(MSG_INFO,
-			   "FTM_EVENT : event %s (%d) on interface %s\n",
+			   "FTM_EVENT : event %s (0x%x) on interface %s\n",
 			   nl_event_id_to_str(event->event_id), event->event_id,
 			   if_name);
 
 		mlocation_driver_event(if_name, (u8 *)event->event_data,
 				       evt_len - sizeof(event->event_id));
 		break;
+
+		//  This is handled above
+		// #ifdef NAN_CSI_PROCESSING
+		//     case EV_ID_FW_CSI_EVENT:
+		//         mwu_printf(MSG_INFO, "CSI_EVENT : event %s (0x%x) on
+		//         interface %s\n",
+		//                    nl_event_id_to_str(event->event_id),
+		//                    event->event_id, if_name);
+
+		//           if(!strncmp((char *)event, CUS_EVT_MLAN_CSI,
+		//           strlen(CUS_EVT_MLAN_CSI))) {
+
+		// 						/* procss CSI data
+		// */ 						proc_csi_event(event, csi_res_array);
+		//                         send_csi_ack(csi_res_array);
+		// #ifdef PRINT_CSI_TO_FILE
+		//                         print_csi_event(event, bytes_read,
+		//                         if_name);
+		// #endif
+		//                     }
+
+		// #endif
 
 	default:
 		mwu_printf(MSG_INFO,

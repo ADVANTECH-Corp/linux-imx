@@ -1,6 +1,6 @@
 # File : nanapp/Makefile
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 
 # Path to the top directory of the wlan distribution
 PATH_TO_TOP = ../..
@@ -40,6 +40,7 @@ CONFIG_OPENSSL = y
 ifeq ($(CONFIG_NAN), y)
 CFLAGS += -DCONFIG_NAN
 CFLAGS += -DCONFIG_LOCATION
+CFLAGS += -DNAN_CSI_PROCESSING
 NAN_SECURITY = y
 CONFIG_NAN2 = y
 CONFIG_NAN3 = y
@@ -65,21 +66,25 @@ ifeq ($(NAN_SECURITY), y)
 OBJECTS += nan_security.o nan_eapol.o
 CFLAGS += -DNAN_SECURITY
 CFLAGS += -DOPENSSL
-CFLAGS += -I/opt/openssl-3.1.1-imx/include/openssl/
-CFLAGS += -I/opt/openssl-3.1.1-imx/include/
-LIBS += -L/opt/openssl-3.1.1-imx/
-LIBS += -lssl -lcrypto
+CFLAGS += -I/opt/openssl/include/openssl/
+CFLAGS += -I/opt/openssl/include/
+LIBS += -L/opt/openssl/
+
+LIBS += -L../libcsi
+LIBS += -lssl -lcrypto -lcsi -lm
 endif
 ifeq ($(CONFIG_NAN2), y)
 OBJS += data_engine.o
 endif
-CFLAGS += -I. -Ios/include -Inan -Iwsc/encrypt_src -Imlocationmod
+CFLAGS += -I. -Ios/include -Inan -Iwsc/encrypt_src -Imlocationmod -I../libcsi
 ifeq ($(CONFIG_OPENSSL), y)
 OBJECTS += sha1.o md5.o
 endif
 endif
 
 HEADERS = *.h
+
+DEPS := ../libcsi/libcsi.a
 
 TARGET = nanapp
 
@@ -88,8 +93,11 @@ build appsbuild default: $(TARGET)
 
 all : tags default
 
-$(TARGET): $(OBJECTS) $(HEADERS)
-	$(ECHO)$(CC) -o $@ $(OBJECTS) -lm $(LIBS)
+$(DEPS):
+	@$(MAKE) -C $(dir $(DEPS))
+
+$(TARGET): $(OBJECTS) $(HEADERS) $(DEPS)
+	$(ECHO)$(CC) -o $@ $(OBJECTS) $(LIBS)
 
 %.o: %.c $(HEADERS)
 	$(ECHO)$(CC) $(CFLAGS) -c -o $@ $<
@@ -98,6 +106,6 @@ tags:
 	ctags -R -f tags.txt
 
 distclean clean:
-	$(ECHO)$(RM) $(OBJECTS) $(TARGET) *.o
+	$(ECHO)$(RM) $(OBJECTS) $(TARGET) *.o *.a
 	$(ECHO)$(RM) tags.txt
 

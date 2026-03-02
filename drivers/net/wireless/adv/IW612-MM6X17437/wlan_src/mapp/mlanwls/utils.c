@@ -4,10 +4,10 @@
  *
  * @brief Program to control parameters in the mlandriver
  *
- * Usage: mlanutl mlanX cmd [...]
+ * Usage: mlanwls mlanX cmd [...]
  *
  *
- * Copyright 2023 NXP
+ * Copyright 2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -44,7 +44,7 @@ Change log:
 #include <sys/time.h>
 #include <getopt.h>
 
-#include "../mlanutl/mlanutl.h"
+#include "mlanwls.h"
 
 int hexval(t_s32 chr)
 {

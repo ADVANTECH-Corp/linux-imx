@@ -5,7 +5,7 @@
  *  Usage:
  *
  *
- * Copyright 2009-2021 NXP
+ * Copyright 2009-2021, 2024 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -822,7 +822,8 @@ done:
 static void run_app(int nl_sk)
 {
 	struct timeval tv;
-	int bytes_read, evt_conn;
+	int bytes_read = 0;
+	int evt_conn = 0;
 	struct msghdr msg;
 	struct sockaddr_nl dest_addr;
 	struct nlmsghdr *nlh;

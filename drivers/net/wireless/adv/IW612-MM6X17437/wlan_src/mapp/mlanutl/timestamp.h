@@ -3,7 +3,7 @@
  * @brief This file contains definitions used for timestamp feature
  *
  *
- * Copyright 2011-2021 NXP
+ * Copyright 2011-2021,2024 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -32,6 +32,7 @@
 #include <linux/if_packet.h>
 #include <netinet/ether.h>
 #include <linux/net_tstamp.h>
+#include <net/ethernet.h>
 
 #define BUF_SIZ 1024
 #define ARP_FORMAT "%s %*s %*s %s %*s %s"

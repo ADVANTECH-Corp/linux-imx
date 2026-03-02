@@ -3,7 +3,7 @@
  * @brief This file contains the handling of command.
  *
  *
- * Copyright 2008-2022 NXP
+ * Copyright 2008-2022, 2024-2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -146,10 +146,12 @@ static void print_sys_cfg_channel_ext_usage(void)
 	printf("\n BAND:");
 	printf("\n        0 : 2.4GHz operation");
 	printf("\n        1 : 5GHz operation");
+	printf("\n        2 : 6GHz operation");
 	printf("\n MODE:  band config mode ");
 	printf("\n        Bit 0: ACS mode enable/disable");
 	printf("\n        Bit 1: secondary channel is above primary channel");
 	printf("\n        Bit 2: secondary channel is below primary channel");
+	printf("\n        Bit 4-5: channel width 0=20MHz, 2=40MHz, 3=80MHz");
 	printf("\n");
 	return;
 }
@@ -167,6 +169,7 @@ static void print_sys_cfg_scan_channels_usage(void)
 	printf("\n BAND : band of operation");
 	printf("\n        0 : 2.4GHZ");
 	printf("\n        1 : 5GHZ\n");
+	printf("\n        2 : 6GHZ\n");
 	return;
 }
 
@@ -1890,6 +1893,8 @@ int apcmd_sys_cfg_channel_ext(int argc, char *argv[])
 		} else {
 			if (atoi(argv[1]) == 0) {
 				tlv->bandcfg.chanBand = BAND_2GHZ;
+			} else if (atoi(argv[1]) == 2) {
+				tlv->bandcfg.chanBand = BAND_6GHZ;
 			} else {
 				tlv->bandcfg.chanBand = BAND_5GHZ;
 			}
@@ -1914,6 +1919,10 @@ int apcmd_sys_cfg_channel_ext(int argc, char *argv[])
 				if (mode & BITMAP_CHANNEL_BELOW)
 					tlv->bandcfg.chan2Offset =
 						SEC_CHAN_BELOW;
+				if (tlv->bandcfg.chanBand == BAND_6GHZ)
+					tlv->bandcfg.chanWidth =
+						(mode & BITMAP_CHANNEL_WIDTH) >>
+						BITMAP_CHANNEL_WIDTH_OFFSET;
 			}
 		}
 	}
@@ -1944,6 +1953,8 @@ int apcmd_sys_cfg_channel_ext(int argc, char *argv[])
 				printf("Band    = %s\n",
 				       (tlv->bandcfg.chanBand == BAND_5GHZ) ?
 					       "5GHz" :
+				       (tlv->bandcfg.chanBand == BAND_6GHZ) ?
+					       "6GHz" :
 					       "2.4GHz");
 				printf("BandWidth = %d\n",
 				       tlv->bandcfg.chanWidth);
@@ -2058,20 +2069,27 @@ int apcmd_sys_cfg_scan_channels(int argc, char *argv[])
 			pchan_list->chan_number = chan_number;
 			pchan_list->bandcfg.chanBand = BAND_2GHZ;
 
-			if (((band_flag != -1) && (band_flag)) ||
-			    (chan_number > MAX_CHANNELS_BG)) {
-				pchan_list->bandcfg.chanBand = BAND_5GHZ;
-			}
-			scan_channels_band = BAND_B | BAND_G;
-			if ((scan_channels_band != BAND_A) &&
-			    (pchan_list->bandcfg.chanBand == BAND_5GHZ)) {
-				scan_channels_band = BAND_A;
-			}
-			if (check_channel_validity_11d(pchan_list->chan_number,
-						       scan_channels_band,
-						       0) == UAP_FAILURE) {
-				free(buffer);
-				return UAP_FAILURE;
+			if (band_flag == 2) {
+				pchan_list->bandcfg.chanBand = BAND_6GHZ;
+			} else {
+				if (((band_flag != -1) && (band_flag)) ||
+				    (chan_number > MAX_CHANNELS_BG)) {
+					pchan_list->bandcfg.chanBand =
+						BAND_5GHZ;
+				}
+				scan_channels_band = BAND_B | BAND_G;
+				if ((scan_channels_band != BAND_A) &&
+				    (pchan_list->bandcfg.chanBand ==
+				     BAND_5GHZ)) {
+					scan_channels_band = BAND_A;
+				}
+				if (check_channel_validity_11d(
+					    pchan_list->chan_number,
+					    scan_channels_band,
+					    0) == UAP_FAILURE) {
+					free(buffer);
+					return UAP_FAILURE;
+				}
 			}
 			pchan_list++;
 		}
@@ -2107,6 +2125,9 @@ int apcmd_sys_cfg_scan_channels(int argc, char *argv[])
 				     i++) {
 					printf("\n%d\t%sGHz",
 					       pchan_list->chan_number,
+					       (pchan_list->bandcfg.chanBand ==
+						BAND_6GHZ) ?
+						       "6" :
 					       (pchan_list->bandcfg.chanBand ==
 						BAND_5GHZ) ?
 						       "5" :
@@ -4775,6 +4796,13 @@ int apcmd_sys_cfg_pwk_cipher(int argc, char *argv[])
 						       "WPA2" :
 						       "WPA | WPA2");
 				while (tlv_get_len > 0) {
+					if (tlv_get_len <
+					    sizeof(tlvbuf_pwk_cipher)) {
+						printf("ERR:PWK Cipher: incorrect tlv, tlv_len=%d tlv_get_len=%d\n",
+						       tlv->length,
+						       tlv_get_len);
+						break;
+					}
 					endian_convert_tlv_header_in(tlv);
 					tlv->protocol =
 						uap_le16_to_cpu(tlv->protocol);
@@ -5895,6 +5923,13 @@ int apcmd_sys_cfg_sticky_tim_sta_mac_addr(int argc, char *argv[])
 					      sizeof(apcmdbuf_sys_configure) +
 					      BUF_HEADER_SIZE;
 				while (tlv_get_len > 0) {
+					if (tlv_get_len <
+					    sizeof(tlvbuf_sticky_tim_sta_mac_addr)) {
+						printf("ERR:TIM sta MAC addr: incorrect tlv, tlv_len=%d tlv_get_len=%d\n",
+						       tlv->length,
+						       tlv_get_len);
+						break;
+					}
 					printf("station MAC address = ");
 					print_mac(tlv->sta_mac_address);
 					printf("\ncontrol = %x\n",
@@ -7272,16 +7307,15 @@ static void print_sys_cfg_restrict_client_mode_usage(void)
 {
 	printf("\nUsage : sys_cfg_restrict_client_mode [<ENABLE> [MODE_CONFIG]]\n");
 	printf("\nOptions:");
-	printf("\n        Bit 0: 1 enable restricted client mode");
-	printf("\n               0 disable restricted client mode");
-	printf("\n        Bits [1-7] : set to 0");
-	printf("\n        Bits [8:12]:");
-	printf("\n               Bit 8: B only Mode");
-	printf("\n               Bit 9: A only Mode");
-	printf("\n               Bit 10: G only Mode");
-	printf("\n               Bit 11: N only Mode");
-	printf("\n               Bit 12: AC only Mode");
-	printf("\n        Bits [13:15]: set to 0");
+	printf("\n        [ENABLE]:");
+	printf("\n              1 enable restricted client mode");
+	printf("\n              0 disable restricted client mode");
+	printf("\n        [MODE_CONFIG]:");
+	printf("\n               Bit 0: B only Mode");
+	printf("\n               Bit 1: A only Mode");
+	printf("\n               Bit 2: G only Mode");
+	printf("\n               Bit 3: N only Mode");
+	printf("\n               Bit 4: AC only Mode");
 	printf("\n");
 	printf("\n        Empty - Get current restricted client mode setting.\n");
 	return;
@@ -7586,5 +7620,115 @@ int apcmd_sys_cfg_ext_cap_len(int argc, char *argv[])
 
 	if (buffer)
 		free(buffer);
+	return ret;
+}
+
+/**
+ *  @brief Creates a sys_cfg request for channel
+ *   and sends to the driver
+ *
+ *   Usage: "sys_cfg_6e_inband_frames [ENABLE] [TYPE] [INTERVAL]"
+ *           if parametes are provided, a 'set' is performed
+ *           else a 'get' is performed
+ *
+ *  @param argc     Number of arguments
+ *  @param argv     Pointer to the arguments
+ *  @return         UAP_SUCCESS/UAP_FAILURE
+ */
+int apcmd_sys_cfg_6e_inband_frames(int argc, char *argv[])
+{
+	apcmdbuf_sys_configure *cmd_buf = NULL;
+	tlvbuf_6e_inband_frames_t *tlv = NULL;
+	t_u8 *buffer = NULL;
+	t_u16 cmd_len;
+	int ret = UAP_FAILURE;
+	/* Initialize the command length */
+	cmd_len = sizeof(apcmdbuf_sys_configure) +
+		  sizeof(tlvbuf_6e_inband_frames_t);
+	/* Initialize the command buffer */
+	buffer = (t_u8 *)malloc(cmd_len);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return -1;
+	}
+	memset(buffer, 0, cmd_len);
+
+	/* Locate headers */
+	cmd_buf = (apcmdbuf_sys_configure *)buffer;
+	tlv = (tlvbuf_6e_inband_frames_t *)(buffer +
+					    sizeof(apcmdbuf_sys_configure));
+
+	/* Fill the command buffer */
+	cmd_buf->cmd_code = APCMD_SYS_CONFIGURE;
+	cmd_buf->size = cmd_len - BUF_HEADER_SIZE;
+	cmd_buf->seq_num = 0;
+	cmd_buf->result = 0;
+
+	if (argc <= 2) {
+		cmd_buf->action = ACTION_GET;
+	} else {
+		cmd_buf->action = ACTION_SET;
+		tlv->enabled = atoi(argv[1]);
+		if ((tlv->enabled != 0) && (tlv->enabled != 1)) {
+			printf("ERR:Invalid input %d, should be 0 for disable or 1 for enable\n",
+			       tlv->enabled);
+			free(buffer);
+			return UAP_FAILURE;
+		}
+		tlv->frameType = atoi(argv[2]);
+		if (tlv->frameType != 1) {
+			printf("ERR:Invalid input %d, Current only support broadcast probe response type = 1\n",
+			       tlv->frameType);
+			free(buffer);
+			return UAP_FAILURE;
+		}
+		if (argc >= 4)
+			tlv->interval = uap_cpu_to_le16(atoi(argv[3]));
+	}
+	tlv->tag = NXP_6E_INBAND_FRAMES_TLV_ID;
+	tlv->length = sizeof(tlvbuf_6e_inband_frames_t) - TLVHEADER_LEN;
+
+	/* Send the command */
+	endian_convert_tlv_header_out(tlv);
+
+	ret = uap_ioctl((t_u8 *)cmd_buf, &cmd_len, cmd_len);
+	/* Process response */
+	endian_convert_tlv_header_in(tlv);
+
+	if (ret == UAP_SUCCESS) {
+		/* Verify response */
+		if ((cmd_buf->cmd_code !=
+		     (APCMD_SYS_CONFIGURE | APCMD_RESP_CHECK)) ||
+		    (tlv->tag != NXP_6E_INBAND_FRAMES_TLV_ID)) {
+			printf("ERR:Corrupted response! cmd_code=%x, Tlv->tag=%x\n",
+			       cmd_buf->cmd_code, tlv->tag);
+			free(buffer);
+			return UAP_FAILURE;
+		}
+
+		/* Copy response */
+		if (cmd_buf->result == CMD_SUCCESS) {
+			if (cmd_buf->action == ACTION_GET) {
+				printf("Feature is %s\n",
+				       tlv->enabled ? "enabled" : "disabled");
+				printf("    Frame type is %s\n",
+				       (tlv->frameType == 1) ?
+					       "broadcast probe response" :
+					       "not supported");
+				printf("    Interval is %d TU\n",
+				       tlv->interval);
+			}
+			ret = UAP_SUCCESS;
+		} else {
+			ret = UAP_FAILURE;
+			printf("ERR:Could not get 6E inband frame settings!\n");
+		}
+	} else {
+		printf("ERR:Command sending failed!\n");
+		ret = UAP_FAILURE;
+	}
+	if (buffer)
+		free(buffer);
+
 	return ret;
 }

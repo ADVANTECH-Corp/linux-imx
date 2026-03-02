@@ -5,7 +5,7 @@
  * Usage: mlanutl mlanX cmd [...]
  *
  *
- * Copyright 2011-2022 NXP
+ * Copyright 2011-2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -49,7 +49,7 @@ Change log:
 
 #include "mlanutl.h"
 
-extern int mlanwls_main(int argc, char *argv[]);
+#define MRVL_VENDOR_ID 0x005043
 
 /** Supported stream modes */
 #define HT_STREAM_MODE_1X1 0x11
@@ -60,6 +60,8 @@ extern int mlanwls_main(int argc, char *argv[]);
 
 /** Termination flag */
 int terminate_flag = 0;
+/* Flag to dump the cmd buffer for the vendor cmd */
+t_u8 vndr_hexdump = 0;
 
 /** Termination flag */
 boolean mcast_debug_flag = 0;
@@ -80,9 +82,10 @@ boolean mcast_debug_flag = 0;
 #define BAND_AAC (1U << 6)
 #define BAND_GAX (1U << 8)
 #define BAND_AAX (1U << 9)
+#define BAND_6G (1U << 10)
 
 static char *band[] = {
-	"B", "G", "A", "GN", "AN", "GAC", "AAC", "11P", "GAX", "AAX",
+	"B", "G", "A", "GN", "AN", "GAC", "AAC", "11P", "GAX", "AAX", "6G",
 };
 
 /** Stringification of rateId enumeration */
@@ -129,6 +132,8 @@ char mod_conv_he_2x2[4][35] = {"HE2_20_QAM256  (MCS 8,9)",
 #define MIOCTL MBIT(7)
 
 #define MREG_D MBIT(9)
+#define MREG MBIT(10)
+#define MLSTATS MBIT(11)
 
 #define MMPA_D MBIT(15)
 #define MDAT_D MBIT(16)
@@ -136,6 +141,9 @@ char mod_conv_he_2x2[4][35] = {"HE2_20_QAM256  (MCS 8,9)",
 #define MEVT_D MBIT(18)
 #define MFW_D MBIT(19)
 #define MIF_D MBIT(20)
+#ifdef SECURE_HOST
+#define MSHC_D MBIT(23)
+#endif
 
 #ifdef DEBUG_LEVEL2
 #define MENTRY MBIT(28)
@@ -179,6 +187,8 @@ static int process_txwatchdog(int argc, char *argv[]);
 static int process_turbo_mode(int argc, char *argv[]);
 static int process_getuuid(int argc, char *argv[]);
 static int process_crosssynch(int argc, char *argv[]);
+static int process_tsp(int argc, char *argv[]);
+static int process_vndr_cmd_dump(int argc, char *argv[]);
 
 static int process_multi_chan_cfg(int argc, char *argv[]);
 static int process_multi_chan_policy(int argc, char *argv[]);
@@ -234,7 +244,9 @@ static int process_psmode(int argc, char *argv[]);
 static int process_hscfg(int argc, char *argv[]);
 static int process_wakeupresaon(int argc, char *argv[]);
 static int process_mgmtfilter(int argc, char *argv[]);
+static int process_events_mask(int argc, char *argv[]);
 static int process_scancfg(int argc, char *argv[]);
+static int process_6gscancfg(int argc, char *argv[]);
 static int process_aggrctrl(int argc, char *argv[]);
 static int process_usbaggrctrl(int argc, char *argv[]);
 static int process_warmreset(int argc, char *argv[]);
@@ -284,6 +296,7 @@ static int process_regioncode(int argc, char *argv[]);
 static int process_cfpinfo(int argc, char *argv[]);
 static int process_offchannel(int argc, char *argv[]);
 static int process_linkstats(int argc, char *argv[]);
+static int process_plinkstats(int argc, char *argv[]);
 #if defined(STA_SUPPORT)
 static int process_pmfcfg(int argc, char *argv[]);
 #endif
@@ -383,21 +396,22 @@ static int process_ssu_cmd(int argc, char *argv[]);
 static int process_ctrldeauth(int argc, char *argv[]);
 static int process_gpiocfg(int argc, char *argv[]);
 static int process_bootsleep(int argc, char *argv[]);
-static int process_csi_cmd(int argc, char *argv[]);
 static int process_range_ext(int argc, char *argv[]);
 static int process_twt_setup(int argc, char *argv[]);
 static int process_twt_teardown(int argc, char *argv[]);
 static int process_twt_report(int argc, char *argv[]);
 static int process_twt_information(int argc, char *argv[]);
-
-static int process_ftm_cmd(int argc, char *argv[]);
+static int process_btwt_ap_config_set(int argc, char *argv[]);
+static int process_btwt_ap_config_get(int argc, char *argv[]);
 
 static int process_rx_abort_cfg(int argc, char *argv[]);
 static int process_rx_abort_cfg_ext(int argc, char *argv[]);
 static int process_nav_mitigation(int argc, char *argv[]);
+static int process_nav_mitigation_hw(int argc, char *argv[]);
+
 static int process_led(int argc, char *argv[]);
 static int process_tx_ampdu_prot_mode(int argc, char *argv[]);
-static int process_dot11mc_unassoc_ftm_cfg(int argc, char *argv[]);
+static int process_preamble_pwr_boost(int argc, char *argv[]);
 static int process_hal_phy_cfg(int argc, char *argv[]);
 static int process_rate_adapt_cfg(int argc, char *argv[]);
 static int process_cck_desense_cfg(int argc, char *argv[]);
@@ -413,6 +427,14 @@ static int process_mcast_tx(int argc, char *argv[]);
 static int process_stats(int argc, char *argv[]);
 static int process_ch_load(int argc, char *argv[]);
 static int process_ch_load_results(int argc, char *argv[]);
+
+static int process_auth_assoc_timeout_cfg(int argc, char *argv[]);
+static int process_foundry_type(int argc, char *argv[]);
+static int process_per_band_txpwr_cap(int argc, char *argv[]);
+
+#ifdef UAP_SUPPORT
+static int process_agcs(int argc, char *argv[]);
+#endif
 
 struct command_node command_list[] = {
 	{"version", process_version},
@@ -492,7 +514,9 @@ struct command_node command_list[] = {
 	{"hscfg", process_hscfg},
 	{"wakeupreason", process_wakeupresaon},
 	{"mgmtfilter", process_mgmtfilter},
+	{"events_mask", process_events_mask},
 	{"scancfg", process_scancfg},
+	{"6gscancfg", process_6gscancfg},
 	{"aggrctrl", process_aggrctrl},
 	{"usbaggrctrl", process_usbaggrctrl},
 	{"warmreset", process_warmreset},
@@ -542,6 +566,7 @@ struct command_node command_list[] = {
 	{"cfpinfo", process_cfpinfo},
 	{"offchannel", process_offchannel},
 	{"linkstats", process_linkstats},
+	{"plinkstats", process_plinkstats},
 #if defined(STA_SUPPORT)
 	{"pmfcfg", process_pmfcfg},
 #endif
@@ -646,25 +671,26 @@ struct command_node command_list[] = {
 	{"ctrldeauth", process_ctrldeauth},
 	{"gpiocfg", process_gpiocfg},
 	{"bootsleep", process_bootsleep},
-	{"csi", process_csi_cmd},
 	{"dmcs", process_dmcs},
 	{"range_ext", process_range_ext},
 	{"twt_setup", process_twt_setup},
 	{"twt_teardown", process_twt_teardown},
 	{"twt_report", process_twt_report},
 	{"twt_information", process_twt_information},
+	{"btwt_ap_config_set", process_btwt_ap_config_set},
+	{"btwt_ap_config_get", process_btwt_ap_config_get},
 	{"rx_abort_cfg", process_rx_abort_cfg},
 	{"ofdm_desense_cfg", process_ofdm_desense_cfg},
 	{"rx_abort_cfg_ext", process_rx_abort_cfg_ext},
 	{"nav_mitigation", process_nav_mitigation},
+	{"nav_mitigation_hw", process_nav_mitigation_hw},
 	{"led", process_led},
 	{"tx_ampdu_prot_mode", process_tx_ampdu_prot_mode},
+	{"preamble_pwr_boost", process_preamble_pwr_boost},
 	{"rate_adapt_cfg", process_rate_adapt_cfg},
 	{"cck_desense_cfg", process_cck_desense_cfg},
 	{"lpm", process_lpm},
 	{"arb", process_arbcfg},
-	{"dot11mc_unassoc_ftm_cfg", process_dot11mc_unassoc_ftm_cfg},
-	{"ftm", process_ftm_cmd},
 	{"tp_state", process_tp_state},
 	{"hal_phy_cfg", process_hal_phy_cfg},
 	{"ips_cfg", process_ips_cfg},
@@ -678,6 +704,15 @@ struct command_node command_list[] = {
 	{"getuuid", process_getuuid},
 	{"turbo_mode", process_turbo_mode},
 	{"crosssynch", process_crosssynch},
+	{"wlan_tsp_cfg", process_tsp},
+	{"vndr_cmd_dump", process_vndr_cmd_dump},
+	{"auth_assoc_timeout_cfg", process_auth_assoc_timeout_cfg},
+	{"foundry_type", process_foundry_type},
+	{"per_band_txpwr_cap", process_per_band_txpwr_cap},
+
+#ifdef UAP_SUPPORT
+	{"agcs", process_agcs},
+#endif
 };
 
 static char *usage[] = {
@@ -743,7 +778,7 @@ static char *usage[] = {
 	"         hotspotcfg", "         hscfg", "         mgmtfilter",
 	"         htstreamcfg", "         mimoswitch", "         httxbfcap",
 	"         httxbfcfg", "         inactivityto", "         ipaddr",
-	"         linkstats",
+	"         linkstats", "         plinkstats",
 #ifdef STA_SUPPORT
 	"         listeninterval",
 #endif
@@ -780,7 +815,7 @@ static char *usage[] = {
 	"         reassoctrl",
 #endif
 	"         regioncode", "         cfpinfo", "         regrdwr",
-	"         rejectaddbareq", "         scancfg",
+	"         rejectaddbareq", "         scancfg", "         6gscancfg",
 #ifdef SDIO
 	"         sdcmd52rw", "         sdcmd53rw", "         sdioclock",
 	"         sdiobuswidth",
@@ -816,14 +851,23 @@ static char *usage[] = {
 	"         range_ext", "         twt_setup", "         twt_teardown",
 	"         twt_report", "         rx_abort_cfg",
 	"         rx_abort_cfg_ext", "         nav_mitigation",
-	"         tx_ampdu_prot_mode", "         rate_adapt_cfg",
+	"		  nav_mitigation_hw", "         tx_ampdu_prot_mode",
+	"         preamble_pwr_boost", "         rate_adapt_cfg",
 	"         cck_desense_cfg", "         ofdm_desense_cfg",
 	"         get_chnrgpwr", "         comparergpwr",
 	"         comparetrpc", "         getcfgchanlist", "         lpm",
-	"         arb", "         dot11mc_unassoc_ftm_cfg", "         tp_state",
-	"         hal_phy_cfg", "         ips_cfg", "         mcast_aggr_group",
-	"         mc_aggr_cfg", "         getchload", "         ftm",
-	"         getuuid", "         crosssynch", "         wlan_tsp_cfg"};
+	"         arb", "         tp_state", "         hal_phy_cfg",
+	"         ips_cfg", "         mcast_aggr_group", "         mc_aggr_cfg",
+	"         getchload", "         ftm", "         getuuid",
+	"         crosssynch", "         vndr_cmd_dump",
+	"         auth_assoc_timeout_cfg", "         foundry_type",
+
+	"         per_band_txpwr_cap",
+#ifdef UAP_SUPPORT
+	"         agcs"
+#endif
+
+};
 
 /** Socket */
 t_s32 sockfd;
@@ -861,6 +905,141 @@ static int hexval(t_s32 chr)
 	return 0;
 }
 
+/* command and subcmd struct for vendor cmd */
+typedef struct {
+	char vndr_cmd[50];
+	t_u16 vndr_subcmd;
+} vndr_cmd_subcmd_map;
+
+/* cmd and subcmd mapped table for the vendor cmd */
+static vndr_cmd_subcmd_map vndr_cmd_list[] = {{"scancfg", 0x200},
+					      {"addbapara", 0x201}};
+
+/**
+ *  @brief Show usage information for the vndr_cmd_dump command
+ *
+ *  $return         N/A
+ */
+static void print_vndr_cmd_dump_usage(void)
+{
+	printf("Invalid input command provided to vndr_cmd_dump! \n");
+	printf("Usage: ./mlanutl mlan0 vndr_cmd_dump <cmd> <input parameters> \n");
+	printf("To SET: ./mlanutl mlan0 vndr_cmd_dump scancfg 0 1 2 200\n");
+	printf("To GET: ./mlanutl mlan0 vndr_cmd_dump scancfg\n");
+	printf("\n");
+}
+
+/**
+ *  @brief Return the matching subcmd for private vendor cmd
+ *  subcmd is an identifier in driver, handles the same functionality
+ *
+ *  @param cmd          Command for the specific operation
+ *
+ *  @return subcmd      Subcmd id for the matching cmd id
+ */
+t_u16 vndr_get_subcmd(char *cmd)
+{
+	t_u16 subcmd_id = 0;
+	t_u8 i = 0;
+
+	if (!cmd)
+		printf("Invalid vndr_cmd, can't get the vndr_subcmd\n");
+	for (i = 0; i < (int)NELEMENTS(vndr_cmd_list); ++i) {
+		if (!(strncmp(vndr_cmd_list[i].vndr_cmd, cmd,
+			      strlen(vndr_cmd_list[i].vndr_cmd)))) {
+			printf("Found the match, vndr_cmd=%s, vndr_subcmd=0x%x\n",
+			       vndr_cmd_list[i].vndr_cmd,
+			       vndr_cmd_list[i].vndr_subcmd);
+			subcmd_id = vndr_cmd_list[i].vndr_subcmd;
+			break;
+		}
+	}
+	return subcmd_id;
+}
+/**
+ *  @brief Get the no of bytes in a given number
+ *
+ *  @param num	        An input is a number
+ *
+ *  @return bytes	No of bytes used in the given number
+ */
+t_u8 get_bytes_in_num(t_u32 num)
+{
+	t_u8 bytes = 1;
+	t_u32 maxvalue = 0xFF;
+
+	while (num > maxvalue) {
+		bytes++;
+		maxvalue = maxvalue << 8 | 0xFF;
+	}
+	return bytes;
+}
+/**
+ *  @brief dump cmd buffer as per private vendor cmd format
+ *   This dump can be used with iw/wpa_cli vendor cmd
+ *
+ *  @param prompt         A pointer prompt buffer
+ *  @param vndr_subcmd    vendor subcmd used to identify an operation in driver
+ *  @param argv           A pointer to argument list
+ *  @param argc           No of arguments
+ *  @param delim          Delim char
+ *  @return               None
+ */
+void vndr_cmd_hexdump(char *prompt, t_u16 vndr_subcmd, char *argv[], t_u32 argc,
+		      char delim)
+{
+	t_u8 i = 0;
+
+	if (!argv)
+		printf("Invalid cmd arguments \n");
+
+	if (prompt) {
+		printf("\nvendor cmd dump format: <OUI> <SUBCMD> <data length in bytes> <data in hex bytes>...\n");
+		printf("\n%s: use the below dump with iw vendor cmd\n", prompt);
+	}
+
+	printf("0x%x ", MRVL_VENDOR_ID);
+	printf("0x%x ", vndr_subcmd);
+	/* iw vendor cmd input data dump
+	 * GET: driver requires input as 0x0 for the GET operation iw private
+	 * vendor cmd GET: iw support the read and prints the data arguments in
+	 * the hex format*/
+	if (argc == 0)
+		printf("0x%02x", 0);
+	/* SET: <OUI> <SUBCMD> <cmd input data dumped in hex bytes format> */
+	for (i = 0; i < argc; i++) {
+		t_u32 num = 0;
+		t_u8 bytes = 0;
+		sscanf(argv[i], "%d", &num);
+		bytes = get_bytes_in_num(num);
+		printf("0x%02x%c", bytes, delim);
+		for (; bytes > 0; --bytes)
+			printf("0x%02x%c", ((num) >> ((bytes - 1) * 8)) & 0xFF,
+			       delim);
+	}
+
+	printf("\n%s: use the below dump with wpa_cli vendor cmd\n", prompt);
+	printf("%x ", MRVL_VENDOR_ID);
+	printf("%d ", vndr_subcmd);
+	/* wpa_cli vendor cmd input data dump
+	 * GET: driver requires input as 00 for the GET operation for the
+	 * wpa_cli vendor cmd GET: wpa_cli doesn't support the GET/read for the
+	 * vendor cmd, though driver supports it */
+	if (argc == 0)
+		printf("%02x", 0);
+	/* SET: <OUI> <SUBCMD> <cmd input data dumped in hex format> */
+	for (i = 0; i < argc; i++) {
+		t_u32 num = 0;
+		t_u8 bytes = 0;
+
+		sscanf(argv[i], "%d", &num);
+		bytes = get_bytes_in_num(num);
+		printf("%02x", bytes);
+		for (; bytes > 0; --bytes)
+			printf("%02x", ((num) >> ((bytes - 1) * 8)) & 0xFF);
+	}
+	printf(" nested=0\n\n");
+}
 /**
  *  @brief Hump hex data
  *
@@ -971,9 +1150,9 @@ static char *convert2hex(char *ptr, t_u8 *chr)
  */
 static int read_int_from_config_line(char *config_line)
 {
-	char prm_name[MAX_CONFIG_VARIABLE_LEN + 1];
+	char prm_name[MAX_CONFIG_VARIABLE_LEN];
 	int val;
-	sscanf(config_line, "%32[^=]=%d", prm_name, &val);
+	sscanf(config_line, "%31[^=]=%d", prm_name, &val);
 	return val;
 }
 
@@ -984,8 +1163,8 @@ static int read_int_from_config_line(char *config_line)
  */
 static void read_str_from_config_line(char *config_line, char *val)
 {
-	char prm_name[MAX_CONFIG_VARIABLE_LEN + 1];
-	sscanf(config_line, "%32[^=]=%s", prm_name, val);
+	char prm_name[MAX_CONFIG_VARIABLE_LEN];
+	sscanf(config_line, "%31[^=]=%31s", prm_name, val);
 }
 
 /**
@@ -996,8 +1175,8 @@ static void read_str_from_config_line(char *config_line, char *val)
  */
 static void read_float_from_config_line(char *config_line, float *val)
 {
-	char prm_name[MAX_CONFIG_VARIABLE_LEN + 1];
-	sscanf(config_line, "%32[^=]=%f", prm_name, val);
+	char prm_name[MAX_CONFIG_VARIABLE_LEN];
+	sscanf(config_line, "%31[^=]=%f", prm_name, val);
 }
 
 /**
@@ -1023,7 +1202,6 @@ static int process_command(int argc, char *argv[])
 {
 	int i = 0, ret = MLAN_STATUS_NOTFOUND;
 	struct command_node *node = NULL;
-
 	for (i = 0; i < (int)NELEMENTS(command_list); i++) {
 		node = &command_list[i];
 		if (!strcasecmp(node->name, argv[2])) {
@@ -1941,6 +2119,10 @@ static int process_drvdbg(int argc, char *argv[])
 #endif
 		printf("MMPA_D (%08x) %s\n", MMPA_D,
 		       (drvdbg & MMPA_D) ? "X" : "");
+#ifdef SECURE_HOST
+		printf("MSHC_D (%08x) %s\n", MSHC_D,
+		       (drvdbg & MSHC_D) ? "X" : "");
+#endif
 		printf("MIF_D  (%08x) %s\n", MIF_D,
 		       (drvdbg & MIF_D) ? "X" : "");
 		printf("MFW_D  (%08x) %s\n", MFW_D,
@@ -1951,8 +2133,11 @@ static int process_drvdbg(int argc, char *argv[])
 		       (drvdbg & MCMD_D) ? "X" : "");
 		printf("MDAT_D (%08x) %s\n", MDAT_D,
 		       (drvdbg & MDAT_D) ? "X" : "");
+		printf("MREG   (%08x) %s\n", MREG, (drvdbg & MREG) ? "X" : "");
 		printf("MREG_D (%08x) %s\n", MREG_D,
 		       (drvdbg & MREG_D) ? "X" : "");
+		printf("MLSTATS(%08x) %s\n", MLSTATS,
+		       (drvdbg & MLSTATS) ? "X" : "");
 		printf("MIOCTL (%08x) %s\n", MIOCTL,
 		       (drvdbg & MIOCTL) ? "X" : "");
 		printf("MINTR  (%08x) %s\n", MINTR,
@@ -2251,6 +2436,7 @@ static int process_getlog(int argc, char *argv[])
 		       "RxIsr2NotDoneCnt                   %u\n"
 		       "gdmaAbortCnt                       %u\n"
 		       "gResetRxMacCnt                     %u\n"
+		       "SdmaStuckCnt                       %u\n"
 		       "gOwnrshpCtlErrCnt                  %u\n"
 		       "gOwnrshpBcnErrCnt                  %u\n"
 		       "gOwnrshpMgtErrCnt                  %u\n"
@@ -2258,7 +2444,10 @@ static int process_getlog(int argc, char *argv[])
 		       "bigtk_mmeGoodCnt                   %u\n"
 		       "bigtk_replayErrCnt                 %u\n"
 		       "bigtk_micErrCnt                    %u\n"
-		       "bigtk_mmeNotFoundCnt               %u\n",
+		       "bigtk_mmeNotFoundCnt               %u\n"
+		       "current_temperature                %u\n"
+		       "TxPwrMethod                        %s\n"
+		       "isDPDdone                          %s\n",
 		       stats->rx_stuck_issue_cnt[0],
 		       stats->rx_stuck_issue_cnt[1],
 		       stats->rx_stuck_poll_recovery_cnt,
@@ -2271,11 +2460,15 @@ static int process_getlog(int argc, char *argv[])
 		       stats->channel_number, stats->channel_switch_mode,
 		       stats->rx_reset_mac_recovery_cnt,
 		       stats->rx_Isr2_NotDone_Cnt, stats->gdma_abort_cnt,
-		       stats->g_reset_rx_mac_cnt, stats->dwCtlErrCnt,
-		       stats->dwBcnErrCnt, stats->dwMgtErrCnt,
-		       stats->dwDatErrCnt, stats->bigtk_mmeGoodCnt,
-		       stats->bigtk_replayErrCnt, stats->bigtk_micErrCnt,
-		       stats->bigtk_mmeNotFoundCnt);
+		       stats->g_reset_rx_mac_cnt, stats->SdmaStuckCnt,
+		       stats->dwCtlErrCnt, stats->dwBcnErrCnt,
+		       stats->dwMgtErrCnt, stats->dwDatErrCnt,
+		       stats->bigtk_mmeGoodCnt, stats->bigtk_replayErrCnt,
+		       stats->bigtk_micErrCnt, stats->bigtk_mmeNotFoundCnt,
+		       stats->currTemp, (stats->TXpwrMethod ? "OLPC" : "CLPC"),
+		       ((stats->isDPDdone == 0xFF) ?
+				"INVALID" :
+				(stats->isDPDdone ? "YES" : "NO")));
 	}
 
 	if (cmd->used_len == sizeof(struct eth_priv_get_log)) {
@@ -2370,6 +2563,14 @@ static int process_getlog(int argc, char *argv[])
 		       stats->rx_octets_in_ampdu_cnt,
 		       stats->ampdu_delimiter_crc_error_cnt);
 	}
+	if (stats->cca_cnt_us != 0) {
+		printf("cca_cnt_us                           %llu\n"
+		       "rxAirtime_us                         %llu\n"
+		       "txAirtime_us                         %llu\n",
+		       stats->cca_cnt_us, stats->rxAirtime_us,
+		       stats->txAirtime_us);
+	}
+
 	if (buffer)
 		free(buffer);
 	if (cmd)
@@ -2656,6 +2857,88 @@ done:
 #endif /* #ifdef STA_SUPPORT */
 
 /**
+ *  @brief 	  Get fw support band from driver
+ *
+ *  @param fw_band a pointer to return FW band
+ *
+ *  @return        MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+
+int get_bandcfg(t_u32 *fw_band)
+{
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct eth_priv_bandcfg *bandcfg = NULL;
+	struct ifreq ifr;
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	prepare_buffer(buffer, PRIV_CMD_BANDCFG, 0, NULL);
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("");
+		fprintf(stderr, "get bandcfg failed\n");
+		if (cmd)
+			free(cmd);
+		if (buffer)
+			free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	bandcfg = (struct eth_priv_bandcfg *)buffer;
+	*fw_band = bandcfg->fw_bands;
+
+	if (cmd)
+		free(cmd);
+	if (buffer)
+		free(buffer);
+	return MLAN_STATUS_SUCCESS;
+}
+
+/**
+ *  @brief	Check if 6GHz sub band supported
+ *
+ *  @return	if supported return 1; otherwise 0
+ */
+static t_u8 is_6g_sub_band_allowed(void)
+{
+	int ret = 0;
+	t_u32 fw_band = 0;
+
+	get_bandcfg(&fw_band);
+	if (fw_band & BAND_6G)
+		ret = 1;
+	return ret;
+}
+
+/**
  * @brief      Get txpwrlimit
  *
  * @param argc Number of arguments
@@ -2717,7 +3000,6 @@ static int get_txpwrlimit(FILE *fp_raw, char *argv[], t_u16 sub_band,
 			trpc_tlv = (MrvlIETypes_ChanTRPCConfig_t *)pTlvHdr;
 			printf("StartFreq: %d\n",
 			       le16_to_cpu(trpc_tlv->start_freq));
-			printf("ChanWidth: %d\n", trpc_tlv->width);
 			printf("ChanNum:   %d\n", trpc_tlv->chan_num);
 			mod_num = (pTlvHdr->header.len - 4) /
 				  sizeof(mod_group_setting);
@@ -2732,7 +3014,7 @@ static int get_txpwrlimit(FILE *fp_raw, char *argv[], t_u16 sub_band,
 					       trpc_tlv->mod_group[i].mod_group,
 					       trpc_tlv->mod_group[i].power);
 			}
-			printf("\n");
+			printf("\n \n");
 			break;
 		default:
 			break;
@@ -2745,6 +3027,11 @@ static int get_txpwrlimit(FILE *fp_raw, char *argv[], t_u16 sub_band,
 		case 0:
 			fprintf(fp_raw, "txpwrlimit_2g_get={\n");
 			break;
+#if defined(SDAW693) || defined(PCIEAW693)
+		case 0x80:
+			fprintf(fp_raw, "txpwrlimit_2g_mac2_get={\n");
+			break;
+#endif
 		case 0x10:
 			fprintf(fp_raw, "txpwrlimit_5g_sub0_get={\n");
 			break;
@@ -2780,6 +3067,9 @@ static int get_txpwrlimit(FILE *fp_raw, char *argv[], t_u16 sub_band,
 			break;
 		case 0x27:
 			fprintf(fp_raw, "txpwrlimit_6g_sub7_get={\n");
+			break;
+		case 0x28:
+			fprintf(fp_raw, "txpwrlimit_6g_uap_psd_get={\n");
 			break;
 		default:
 			break;
@@ -2826,7 +3116,7 @@ static int process_get_txpwrlimit(int argc, char *argv[])
 	/* Sanity tests */
 	if (argc < 4) {
 		printf("Error: invalid no of arguments\n");
-		printf("mlanutl mlanX/uapX get_txpwrlimit [0/0x10/0x11/0x12/0x13/0x1f/0x20/0x21/0x22/0x23/0x24/0x25/0x26/0x27/0x2f/0xff]\n");
+		printf("mlanutl mlanX/uapX get_txpwrlimit [0/0x80/0x10/0x11/0x12/0x13/0x1f/0x20/0x21/0x22/0x23/0x24/0x25/0x26/0x27/0x28/0x2f/0xff]\n");
 		ret = MLAN_STATUS_FAILURE;
 		goto done;
 	}
@@ -2849,6 +3139,9 @@ static int process_get_txpwrlimit(int argc, char *argv[])
 	}
 	switch (sub_band) {
 	case 0:
+#if defined(SDAW693) || defined(PCIEAW693)
+	case 0x80:
+#endif
 	case 0x10:
 	case 0x11:
 	case 0x12:
@@ -2861,6 +3154,7 @@ static int process_get_txpwrlimit(int argc, char *argv[])
 	case 0x25:
 	case 0x26:
 	case 0x27:
+	case 0x28:
 		ret = get_txpwrlimit(fp_raw, argv, sub_band, buffer,
 				     sizeof(mlan_ds_misc_chan_trpc_cfg) +
 					     strlen(argv[2]),
@@ -2917,6 +3211,10 @@ static int process_get_txpwrlimit(int argc, char *argv[])
 				     sizeof(mlan_ds_misc_chan_trpc_cfg) +
 					     strlen(argv[2]),
 				     cmd);
+		ret = get_txpwrlimit(fp_raw, argv, 0x28, buffer,
+				     sizeof(mlan_ds_misc_chan_trpc_cfg) +
+					     strlen(argv[2]),
+				     cmd);
 		break;
 	case 0xff:
 		ret = get_txpwrlimit(fp_raw, argv, 0, buffer,
@@ -2939,43 +3237,63 @@ static int process_get_txpwrlimit(int argc, char *argv[])
 				     sizeof(mlan_ds_misc_chan_trpc_cfg) +
 					     strlen(argv[2]),
 				     cmd);
-		ret = get_txpwrlimit(fp_raw, argv, 0x20, buffer,
-				     sizeof(mlan_ds_misc_chan_trpc_cfg) +
-					     strlen(argv[2]),
-				     cmd);
-		ret = get_txpwrlimit(fp_raw, argv, 0x21, buffer,
-				     sizeof(mlan_ds_misc_chan_trpc_cfg) +
-					     strlen(argv[2]),
-				     cmd);
-		ret = get_txpwrlimit(fp_raw, argv, 0x22, buffer,
-				     sizeof(mlan_ds_misc_chan_trpc_cfg) +
-					     strlen(argv[2]),
-				     cmd);
-		ret = get_txpwrlimit(fp_raw, argv, 0x23, buffer,
-				     sizeof(mlan_ds_misc_chan_trpc_cfg) +
-					     strlen(argv[2]),
-				     cmd);
-		ret = get_txpwrlimit(fp_raw, argv, 0x24, buffer,
-				     sizeof(mlan_ds_misc_chan_trpc_cfg) +
-					     strlen(argv[2]),
-				     cmd);
-		ret = get_txpwrlimit(fp_raw, argv, 0x25, buffer,
-				     sizeof(mlan_ds_misc_chan_trpc_cfg) +
-					     strlen(argv[2]),
-				     cmd);
-		ret = get_txpwrlimit(fp_raw, argv, 0x26, buffer,
-				     sizeof(mlan_ds_misc_chan_trpc_cfg) +
-					     strlen(argv[2]),
-				     cmd);
-		ret = get_txpwrlimit(fp_raw, argv, 0x27, buffer,
-				     sizeof(mlan_ds_misc_chan_trpc_cfg) +
-					     strlen(argv[2]),
-				     cmd);
+		if (is_6g_sub_band_allowed()) {
+			ret = get_txpwrlimit(
+				fp_raw, argv, 0x20, buffer,
+				sizeof(mlan_ds_misc_chan_trpc_cfg) +
+					strlen(argv[2]),
+				cmd);
+			ret = get_txpwrlimit(
+				fp_raw, argv, 0x21, buffer,
+				sizeof(mlan_ds_misc_chan_trpc_cfg) +
+					strlen(argv[2]),
+				cmd);
+			ret = get_txpwrlimit(
+				fp_raw, argv, 0x22, buffer,
+				sizeof(mlan_ds_misc_chan_trpc_cfg) +
+					strlen(argv[2]),
+				cmd);
+			ret = get_txpwrlimit(
+				fp_raw, argv, 0x23, buffer,
+				sizeof(mlan_ds_misc_chan_trpc_cfg) +
+					strlen(argv[2]),
+				cmd);
+			ret = get_txpwrlimit(
+				fp_raw, argv, 0x24, buffer,
+				sizeof(mlan_ds_misc_chan_trpc_cfg) +
+					strlen(argv[2]),
+				cmd);
+			ret = get_txpwrlimit(
+				fp_raw, argv, 0x25, buffer,
+				sizeof(mlan_ds_misc_chan_trpc_cfg) +
+					strlen(argv[2]),
+				cmd);
+			ret = get_txpwrlimit(
+				fp_raw, argv, 0x26, buffer,
+				sizeof(mlan_ds_misc_chan_trpc_cfg) +
+					strlen(argv[2]),
+				cmd);
+			ret = get_txpwrlimit(
+				fp_raw, argv, 0x27, buffer,
+				sizeof(mlan_ds_misc_chan_trpc_cfg) +
+					strlen(argv[2]),
+				cmd);
+			ret = get_txpwrlimit(
+				fp_raw, argv, 0x28, buffer,
+				sizeof(mlan_ds_misc_chan_trpc_cfg) +
+					strlen(argv[2]),
+				cmd);
+			ret = get_txpwrlimit(
+				fp_raw, argv, 0x80, buffer,
+				sizeof(mlan_ds_misc_chan_trpc_cfg) +
+					strlen(argv[2]),
+				cmd);
+		}
 		break;
 	default:
 		printf("Error: invalid arguments\n");
-		printf("mlanutl mlanX/uapX get_txpwrlimit [0/0x10/0x11/0x12/0x13/0x1f/0xff]\n");
-		printf("mlanutl mlanX/uapX get_txpwrlimit [0x20/0x21/0x22/0x23/0x24/0x25/0x26/0x27/0xff]\n");
+		printf("mlanutl mlanX/uapX get_txpwrlimit [0/0x80/0x10/0x11/0x12/0x13/0x1f/0xff]\n");
+		printf("mlanutl mlanX/uapX get_txpwrlimit [0x20/0x21/0x22/0x23/0x24/0x25/0x26/0x27/0x28/0xff]\n");
 		break;
 	}
 done:
@@ -3353,6 +3671,15 @@ static int process_addbapara(int argc, char *argv[])
 	cmd->used_len = 0;
 	cmd->total_len = BUFFER_LENGTH;
 
+	if (vndr_hexdump) {
+		t_u16 vndr_subcmd = 0;
+		vndr_subcmd = vndr_get_subcmd(argv[2]);
+		/* cmd buffer dump for the driver supported private vendor cmd
+		 * only */
+		if (vndr_subcmd)
+			vndr_cmd_hexdump("vndr_cmd_dump", vndr_subcmd, &argv[3],
+					 (argc - 3), ' ');
+	}
 	/* Perform IOCTL */
 	memset(&ifr, 0, sizeof(struct ifreq));
 	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
@@ -3607,6 +3934,14 @@ static int process_11axcfg(int argc, char *argv[])
 					       buffer + cmd_header_len + id_len,
 					       (t_u8 *)config_id);
 
+		/* make sure next tlv default = 0 for next tlv may not existed*/
+		memset(buffer + cmd_header_len + id_len, 0,
+		       sizeof(mlan_ds_11ax_he_6g_capa));
+		snprintf(config_id, sizeof(config_id), "HE6GCap");
+		id_len +=
+			fparse_for_cmd_and_hex(fp,
+					       buffer + cmd_header_len + id_len,
+					       (t_u8 *)config_id);
 		hexdump("Set 11axcfg", buffer + cmd_header_len,
 			sizeof(mlan_ds_11ax_he_cfg), ' ');
 		cmd->used_len = cmd_header_len + sizeof(mlan_ds_11ax_he_cfg);
@@ -3635,6 +3970,91 @@ done:
 }
 
 /**
+ *  @brief Process 11ax llde config
+ *  @param file_name   llde config file name
+ *  @param llde_data   llde parameters
+ *  @return     MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int parse_llde_cfg_data_file(char *file_name, char *llde_data)
+{
+	FILE *config_file = NULL;
+	char *line = NULL;
+	char *args[100], *pos;
+	int data_len = 0, ret = 0, li = 0;
+
+	config_file = fopen(file_name, "r");
+	if (config_file == NULL) {
+		perror("CONFIG");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	line = (char *)malloc(MAX_CONFIG_LINE);
+	if (!line) {
+		printf("ERR:Cannot allocate memory for line\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	memset(line, 0, MAX_CONFIG_LINE);
+	/* Parse file and process */
+	while (config_get_line(line, MAX_CONFIG_LINE, config_file, &li, &pos)) {
+		parse_line(line, args, 100);
+
+		if (strcmp(args[0], "enable") == 0) {
+			data_len += snprintf(llde_data + data_len, 10, " %s",
+					     args[1]);
+			if (atoi(args[1]) == 0)
+				break;
+		} else if (strcmp(args[0], "mode") == 0) {
+			data_len += snprintf(llde_data + data_len, 10, " %s",
+					     args[1]);
+		} else if (strcmp(args[0], "tx_mcs") == 0) {
+			data_len += snprintf(llde_data + data_len, 10, " %s",
+					     args[1]);
+		} else if (strcmp(args[0], "triggerlimit") == 0) {
+			data_len += snprintf(llde_data + data_len, 10, " %s",
+					     args[1]);
+		} else if (strcmp(args[0], "peakULrate") == 0) {
+			data_len += snprintf(llde_data + data_len, 10, " %s",
+					     args[1]);
+		} else if (strcmp(args[0], "dl_llde") == 0) {
+			data_len += snprintf(llde_data + data_len, 10, " %s",
+					     args[1]);
+		} else if (strcmp(args[0], "pollinterval") == 0) {
+			data_len += snprintf(llde_data + data_len, 10, " %s",
+					     args[1]);
+		} else if (strcmp(args[0], "txOpDuration") == 0) {
+			data_len += snprintf(llde_data + data_len, 10, " %s",
+					     args[1]);
+		} else if (strcmp(args[0], "llde_ctrl") == 0) {
+			data_len += snprintf(llde_data + data_len, 10, " %s",
+					     args[1]);
+		} else if (strcmp(args[0], "device_filter") == 0) {
+			data_len += snprintf(llde_data + data_len, 20,
+					     " device_filter=%s", args[1]);
+		} else if (strcmp(args[0], "macfilter1") == 0) {
+			data_len += snprintf(llde_data + data_len, 30,
+					     " macfilter1=%s", args[1]);
+		} else if (strcmp(args[0], "macfilter2") == 0) {
+			data_len += snprintf(llde_data + data_len, 30,
+					     " macfilter2=%s", args[1]);
+		} else if (strcmp(args[0], "packet_type") == 0) {
+			data_len += snprintf(llde_data + data_len, 20,
+					     " packet_type=%s", args[1]);
+		}
+	}
+
+done:
+	if (line)
+		free(line);
+	if (config_file)
+		fclose(config_file);
+
+	return ret;
+}
+
+/**
  *  @brief Process 11ax command
  *  @param argc   Number of arguments
  *  @param argv   A pointer to arguments array
@@ -3651,6 +4071,10 @@ static int process_11axcmdcfg(int argc, char *argv[])
 	t_u8 row = 0;
 	t_u8 col = 0;
 	t_u8 index = 0;
+	t_u8 llde_cfg_present = 0;
+	t_u32 data_len = 0;
+	char llde_cfg_data[BUFFER_LENGTH] = {0};
+	char file_name[100];
 
 #define MAX_CFG_ID_SIZE 2
 	if (strcmp(argv[3], "obss_pd_offset") == 0) {
@@ -3678,11 +4102,43 @@ static int process_11axcmdcfg(int argc, char *argv[])
 		snprintf(argv[3], MAX_CFG_ID_SIZE, "%d",
 			 MLAN_11AXCMD_CFG_ID_OBSSNBRU_TOLTIME);
 	} else if (strcmp(argv[3], "llde") == 0) {
-		snprintf(argv[3], MAX_CFG_ID_SIZE, "%d",
-			 MLAN_11AXCMD_CFG_ID_LLDE);
+		if (argc == 5) {
+			llde_cfg_present = 1;
+			/* prepare ioctl buffer for llde config data to pass to
+			 * firmware*/
+			data_len =
+				snprintf(llde_cfg_data, sizeof(llde_cfg_data),
+					 "%s", CMD_NXP);
+			data_len +=
+				snprintf(llde_cfg_data + data_len,
+					 sizeof(llde_cfg_data), "%s", argv[2]);
+			data_len += snprintf(llde_cfg_data + data_len,
+					     sizeof(llde_cfg_data), "%d",
+					     MLAN_11AXCMD_CFG_ID_LLDE);
+			memset(file_name, 0, sizeof(file_name));
+			strncpy(file_name, argv[4], sizeof(file_name) - 1);
+
+			/* extract llde config parameters from config/llde.conf
+			 * file */
+			if (MLAN_STATUS_FAILURE ==
+			    parse_llde_cfg_data_file(
+				    file_name, llde_cfg_data + data_len)) {
+				fprintf(stderr,
+					"Usage: "
+					"./mlanutil <interface> 11axcmd llde <config/llde.conf>\n");
+				return MLAN_STATUS_FAILURE;
+			}
+		} else if (argc == 4) {
+			// get llde function.
+			snprintf(argv[3], MAX_CFG_ID_SIZE, "%d",
+				 MLAN_11AXCMD_CFG_ID_LLDE);
+		}
 	} else if (strcmp(argv[3], "get_rutx_pwr") == 0) {
 		snprintf(argv[3], MAX_CFG_ID_SIZE + 1, "%d",
 			 MLAN_11AXCMD_CFG_ID_RUTXPWR);
+	} else if (strcmp(argv[3], "HeSuER") == 0) {
+		snprintf(argv[3], MAX_CFG_ID_SIZE + 1, "%d",
+			 MLAN_11AXCMD_CFG_ID_HESUER);
 	} else {
 		printf("ERR:unknown command %s!\n", argv[3]);
 		return MLAN_STATUS_FAILURE;
@@ -3695,7 +4151,10 @@ static int process_11axcmdcfg(int argc, char *argv[])
 		return MLAN_STATUS_FAILURE;
 	}
 
-	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
+	if (llde_cfg_present)
+		memcpy(buffer, &llde_cfg_data, strlen(llde_cfg_data) + 1);
+	else
+		prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
 
 	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
 	if (!cmd) {
@@ -3837,7 +4296,8 @@ static int process_11axcmdcfg(int argc, char *argv[])
 			printf("\n RU Sub-band table for 2G \n");
 			printf("        ru26 \t ru52 \t ru106 \t ru242 \t ru484 \t ru996 \t ru2*996 \n");
 
-			for (row = 0; row < 12; row++) {
+			for (row = 0; row < axcmd->param.rutxpwr_cfg.row;
+			     row++) {
 				if (row % 3 == 0 && row != 0) {
 					if (row / 3 == 1)
 						printf("\n\n RU TX pwr table for 5G Sub-band 1 (Channel 36 to Channel 64)  \n");
@@ -3845,7 +4305,14 @@ static int process_11axcmdcfg(int argc, char *argv[])
 						printf("\n\n RU TX pwr table for 5G Sub-band 2 (Channel 100 to Channel 144)  \n");
 					if (row / 3 == 3)
 						printf("\n\n RU TX pwr table for 5G Sub-band 3 (Channel 149 to Channel 177)  \n");
-
+					if (row / 3 == 4)
+						printf("\n\n RU TX pwr table for 6G Sub-band 1  \n");
+					if (row / 3 == 5)
+						printf("\n\n RU TX pwr table for 6G Sub-band 2  \n");
+					if (row / 3 == 6)
+						printf("\n\n RU TX pwr table for 6G Sub-band 3  \n");
+					if (row / 3 == 7)
+						printf("\n\n RU TX pwr table for 6G Sub-band 4   \n");
 					printf("        ru26 \t ru52 \t ru106 \t ru242 \t ru484 \t ru996 \t ru2*996 \n");
 				}
 
@@ -3865,13 +4332,21 @@ static int process_11axcmdcfg(int argc, char *argv[])
 				}
 				printf("\n");
 			}
-
-			printf("\n table BandEdge Qam MaxUlTxPwr \n");
-			for (row = 0; row < 5; row++) {
-				printf(" %d \t", axcmd->param.rutxpwr_cfg
-							 .rutxSubPwr[index++]);
+			if (axcmd->param.rutxpwr_cfg.row != 3) {
+				printf("\n table BandEdge Qam MaxUlTxPwr \n");
+				for (row = 0; row < 5; row++) {
+					printf(" %d \t",
+					       axcmd->param.rutxpwr_cfg
+						       .rutxSubPwr[index++]);
+				}
 			}
 			printf("\n\n");
+			break;
+		case MLAN_11AXCMD_HESUER_SUBID:
+			printf("HeSuER %s(%d)\n",
+			       axcmd->param.HeSuER_cfg.value == 1 ? "enabled" :
+								    "disabled",
+			       axcmd->param.HeSuER_cfg.value);
 			break;
 
 		default:
@@ -4174,10 +4649,31 @@ int process_host_cmd_resp(char *cmd_name, t_u8 *buf)
 						AutoTx_MacFrame_t *atmf =
 							&at->auto_tx
 								 .auto_tx_mac_frame;
+						t_u16 interval =
+							(atmf->interval) &
+							AUTO_TX_INTERVAL_BITS;
 
-						printf("Interval: %d second(s)\n",
-						       le16_to_cpu(
-							       atmf->interval));
+						if ((atmf->interval &
+						     AUTO_TX_INTERVAL_CTRL) ==
+						    AUTO_TX_INTERVAL_SEC) {
+							printf("Interval: %d second(s)\n",
+							       le16_to_cpu(
+								       interval));
+						} else if ((atmf->interval &
+							    AUTO_TX_INTERVAL_CTRL) ==
+							   AUTO_TX_INTERVAL_MS) {
+							printf("Interval: %d millisecond(ms)\n",
+							       le16_to_cpu(
+								       interval));
+						} else if ((atmf->interval &
+							    AUTO_TX_INTERVAL_CTRL) ==
+							   AUTO_TX_INTERVAL_US) {
+							printf("Interval: %d microsecond(us)\n",
+							       le16_to_cpu(
+								       interval));
+						} else {
+							printf("Interval: one shot\n");
+						}
 						printf("Priority: %#x\n",
 						       atmf->priority);
 						printf("Frame Length: %d\n",
@@ -4552,6 +5048,7 @@ int process_host_cmd_resp(char *cmd_name, t_u8 *buf)
 				       wmm_param->ac_params[AC_VO].tx_op_limit));
 			break;
 		}
+#if defined(SDAW693) || defined(PCIEAW693)
 		case HostCmd_ROBUST_COEX: {
 			host_RobustCoexLteStats_t *RobustCoexLteStat =
 				(host_RobustCoexLteStats_t *)(buf + S_DS_GEN);
@@ -4581,14 +5078,263 @@ int process_host_cmd_resp(char *cmd_name, t_u8 *buf)
 				printf("LTE STAT Counters cleared \n");
 			} else // else print default cmdresp
 			{
+				external_coex_common_t *response =
+					(external_coex_common_t *)(buf +
+								   S_DS_GEN);
 				printf("HOSTCMD_RESP: CmdCode=%#04x, Size=%#04x,"
 				       " SeqNum=%#04x, Result=%#04x\n",
 				       hostcmd->command, hostcmd->size,
 				       hostcmd->seq_num, hostcmd->result);
 				hexdump("payload", (t_void *)(buf + S_DS_GEN),
 					hostcmd->size - S_DS_GEN, ' ');
-			}
+				if (response->RobustCoexTlvType ==
+				    ROBUST_COEX_TLV_EXT_COEX) {
+					switch (response->Enabled) {
+					case EXT_COEX_UART_GPIO_CONFIG_RESPONSE:
+					case EXT_COEX_UART_GPIO_CONFIG_RESPONSE_DISABLE: {
+						external_coex_uart_gpio_config_t
+							*response_gpio_config =
+								(external_coex_uart_gpio_config_t
+									 *)(buf +
+									    S_DS_GEN);
+						printf("Action=0x%04x\n",
+						       response_gpio_config
+							       ->Action);
+						printf("RSVD=0x%04x\n",
+						       response_gpio_config
+							       ->RSVD);
+						printf("robustCoexTlvType=0x%04x\n",
+						       response_gpio_config
+							       ->RobustCoexTlvType);
+						printf("len=0x%04x\n",
+						       response_gpio_config
+							       ->len);
+						printf("Enable=0x%02x\n",
+						       response_gpio_config
+							       ->Enabled);
+						printf("ExtCoexHwIntWci2=0x%02x\n",
+						       response_gpio_config
+							       ->ExtCoexHwIntWci2);
+						break;
+					}
+					case EXT_COEX_UART_CONFIG_RESPONSE: /* external_coex_uart_config
+									     */
+					case EXT_COEX_UART_CONFIG_RESPONSE_DISABLE:
+					case EXT_COEX_UART2_CONFIG_RESPONSE:
+					case EXT_COEX_UART2_CONFIG_RESPONSE_DISABLE: {
+						external_coex_uart_config_t *response_uart =
+							(external_coex_uart_config_t
+								 *)(buf +
+								    S_DS_GEN);
+						printf("Action=0x%04x\n",
+						       response_uart->Action);
+						printf("RSVD=0x%04x\n",
+						       response_uart->RSVD);
+						printf("robustCoexTlvType=0x%04x\n",
+						       response_uart
+							       ->RobustCoexTlvType);
+						printf("len=0x%04x\n",
+						       response_uart->len);
+						printf("Enable=0x%02x\n",
+						       response_uart->Enabled);
+						printf("Loopback=0x%02x\n",
+						       response_uart->Loopback);
+						printf("BaudRate=0x%08x\n",
+						       response_uart->BaudRate);
+						printf("Band=0x%02x\n",
+						       response_uart->Band);
+						break;
+					}
+					case EXT_COEX_PTA_CONFIG_RESPONSE: /* external_coex_pta_config
+									    */
+					case EXT_COEX_PTA_CONFIG_RESPONSE_DISABLE:
+					case EXT_COEX_WCI2_CONFIG_RESPONSE: /* WCI2
+									       protocal  use same structure as PTA use */
+					case EXT_COEX_WCI2_CONFIG_RESPONSE_DISABLE: {
+						external_coex_pta_config_t *response_pta =
+							(external_coex_pta_config_t
+								 *)(buf +
+								    S_DS_GEN);
+						printf("Action=0x%04x\n",
+						       response_pta->Action);
+						printf("RSVD=0x%04x\n",
+						       response_pta->RSVD);
+						printf("robustCoexTlvType=0x%04x\n",
+						       response_pta
+							       ->RobustCoexTlvType);
+						printf("len=0x%04x\n",
+						       response_pta->len);
+						printf("Enabled=0x%02x\n",
+						       response_pta->Enabled);
+						printf("ExtWifiBtArb=0x%02x\n",
+						       response_pta
+							       ->ExtWifiBtArb);
+						printf("PolGrantPin=0x%02x\n",
+						       response_pta
+							       ->PolGrantPin);
+						printf("EnablePriPtaInt=0x%02x\n",
+						       response_pta
+							       ->EnablePriPtaInt);
+						printf("EnableStateFromPta=0x%02x\n",
+						       response_pta
+							       ->EnableStateFromPta);
+						printf("SetPriSampTiming=0x%04x\n",
+						       response_pta
+							       ->SetPriSampTiming);
+						printf("SetStateInfoSampTiming=0x%04x\n",
+						       response_pta
+							       ->SetStateInfoSampTiming);
+						printf("ExtRadioTrafficPrio=0x%02x\n",
+						       response_pta
+							       ->ExtRadioTrafficPrio);
+						printf("ExtCoexHwIntWci2=0x%02x\n",
+						       response_pta
+							       ->ExtCoexHwIntWci2);
+						printf("Band=0x%02x\n",
+						       response_pta->Band);
+						printf("Freq=0x%02x\n",
+						       response_pta->Freq);
+						break;
+					}
+					case EXT_COEX_UWB_CONFIG_RESPONSE: /* external_coex_uwb_config
+									    */
+					case EXT_COEX_UWB_CONFIG_RESPONSE_DISABLE: {
+						external_coex_uwb_config_t *response_uwb =
+							(external_coex_uwb_config_t
+								 *)(buf +
+								    S_DS_GEN);
+						printf("Action=0x%04x\n",
+						       response_uwb->Action);
+						printf("RSVD=0x%04x\n",
+						       response_uwb->RSVD);
+						printf("robustCoexTlvType=0x%04x\n",
+						       response_uwb
+							       ->RobustCoexTlvType);
+						printf("len=0x%04x\n",
+						       response_uwb->len);
+						printf("Enable=0x%02x\n",
+						       response_uwb->Enabled);
+						break;
+					}
+					case EXT_COEX_CONFIG_2_RESPONSE: /* external_coex_config_2
+									  */
+					case EXT_COEX_CONFIG_2_RESPONSE_DISABLE: {
+						external_coex_config_2_t *response_2 =
+							(external_coex_config_2_t
+								 *)(buf +
+								    S_DS_GEN);
+						printf("Action=0x%04x\n",
+						       response_2->Action);
+						printf("RSVD=0x%04x\n",
+						       response_2->RSVD);
+						printf("robustCoexTlvType=0x%04x\n",
+						       response_2
+							       ->RobustCoexTlvType);
+						printf("len=0x%04x\n",
+						       response_2->len);
+						printf("Enable=0x%02x\n",
+						       response_2->Enabled);
+						printf("ExtHighInputPriority=0x%02x\n",
+						       response_2
+							       ->ExtHighInputPriority);
+						printf("ExtLowInputPriority=0x%02x\n",
+						       response_2
+							       ->ExtLowInputPriority);
+						break;
+					}
+					case EXT_COEX_CONFIG_RESPONSE: /* external_coex_config
+									*/
+					case EXT_COEX_CONFIG_RESPONSE_DISABLE: {
+						external_coex_config_t *response_config =
+							(external_coex_config_t
+								 *)(buf +
+								    S_DS_GEN);
+						printf("Action=0x%04x\n",
+						       response_config->Action);
+						printf("RSVD=0x%04x\n",
+						       response_config->RSVD);
+						printf("robustCoexTlvType=0x%04x\n",
+						       response_config
+							       ->RobustCoexTlvType);
+						printf("len=0x%04x\n",
+						       response_config->len);
+						printf("Enabled=0x%02x\n",
+						       response_config->Enabled);
+						printf("ExtHighInputPriority=0x%02x\n",
+						       response_config
+							       ->ExtHighInputPriority);
+						printf("ExtLowInputPriority=0x%02x\n",
+						       response_config
+							       ->ExtLowInputPriority);
+						printf("ExtPriGPIONum=0x%02x\n",
+						       response_config
+							       ->ExtPriGPIONum);
+						printf("ExtPriGPIOPolarity=0x%02x\n",
+						       response_config
+							       ->ExtPriGPIOPolarity);
+						printf("ExtReqGPIONum=0x%02x\n",
+						       response_config
+							       ->ExtReqGPIONum);
+						printf("ExtReqGPIOPolarity=0x%02x\n",
+						       response_config
+							       ->ExtReqGPIOPolarity);
+						printf("ExtGrntGPIONum=0x%02x\n",
+						       response_config
+							       ->ExtGrntGPIONum);
+						printf("ExtGrntGPIOPolarity=0x%02x\n",
+						       response_config
+							       ->ExtGrntGPIOPolarity);
+						break;
+					}
+					default: {
+						external_coex_common_t *response_common =
+							(external_coex_common_t
+								 *)(buf +
+								    S_DS_GEN);
+						printf("Action=0x%04x\n",
+						       response_common->Action);
+						printf("RSVD=0x%04x\n",
+						       response_common->RSVD);
+						printf("robustCoexTlvType=0x%04x\n",
+						       response_common
+							       ->RobustCoexTlvType);
+						printf("len=0x%04x\n",
+						       response_common->len);
+						printf("Enabled=0x%02x\n",
+						       response_common->Enabled);
+						break;
+					}
+					}
+				} else if (response->RobustCoexTlvType ==
+					   ROBUST_COEX_TLV_COEX_MODE) {
+					printf("Action=0x%04x\n",
+					       response->Action);
+					printf("RSVD=0x%04x\n", response->RSVD);
+					printf("robustCoexTlvType=0x%04x\n",
+					       response->RobustCoexTlvType);
+					printf("len=0x%04x\n", response->len);
+					printf("Enable=0x%02x\n",
+					       response->Enabled);
+
+					switch (response->Enabled) {
+					case COEX_MODE_NONE:
+						printf("\nCoex Mode is Concurrent!\n");
+						break;
+					case COEX_MODE_BCA_TDM:
+						printf("\nCoex Mode is BCA TDM!\n");
+						break;
+					default:
+						printf("Coex Mode not supported!\n");
+						break;
+					}
+				} else {
+					// Handle parsing of remaining or newly
+					// added TLVs here
+					printf("\n");
+				}
+			} /* RobustCoexLteStat->ResponseType */
 		} break;
+#endif /* defined(SDAW693) || defined(PCIEAW693) */
 		case HostCmd_CMD_ED_CTRL:
 			/*
 			 * Read/Write EDMAC control parameters.
@@ -4604,10 +5350,13 @@ int process_host_cmd_resp(char *cmd_name, t_u8 *buf)
 			       sizeof(struct _ed_mac_ctrl));
 			printf("edmac_2G:0x%02x\noffset_2G:0x%02x\n"
 			       "edmac_5G:0x%02x\noffset_5G:0x%02x\n"
+			       "edmac_6G:0x%02x\noffset_6G:0x%02x\n"
 			       "\n",
 			       ed_ctrl.ed_ctrl_2g, ed_ctrl.ed_offset_2g,
-			       ed_ctrl.ed_ctrl_5g, ed_ctrl.ed_offset_5g);
+			       ed_ctrl.ed_ctrl_5g, ed_ctrl.ed_offset_5g,
+			       ed_ctrl.ed_ctrl_6g, ed_ctrl.ed_offset_6g);
 			break;
+
 		default:
 			printf("HOSTCMD_RESP: CmdCode=%#04x, Size=%#04x,"
 			       " SeqNum=%#04x, Result=%#04x\n",
@@ -4618,10 +5367,28 @@ int process_host_cmd_resp(char *cmd_name, t_u8 *buf)
 			break;
 		}
 	} else {
-		printf("HOSTCMD failed: CmdCode=%#04x, Size=%#04x,"
-		       " SeqNum=%#04x, Result=%#04x\n",
-		       hostcmd->command, hostcmd->size, hostcmd->seq_num,
-		       hostcmd->result);
+#if defined(SDAW693) || defined(PCIEAW693)
+		if (hostcmd->command == HostCmd_ROBUST_COEX) {
+			switch (hostcmd->result) {
+			case EXT_COEX_SAME_BAND_NOT_ALLOWED:
+				printf("HOSTCMD failed: Both external coex cannot be used in same band. CmdCode=%#04x, Size=%#04x, SeqNum=%#04x, Result=%#04x\n\n",
+				       hostcmd->command, hostcmd->size,
+				       hostcmd->seq_num, hostcmd->result);
+				fallthrough;
+			default:
+				printf("HOSTCMD failed: CmdCode=%#04x, Size=%#04x,"
+				       " SeqNum=%#04x, Result=%#04x\n",
+				       hostcmd->command, hostcmd->size,
+				       hostcmd->seq_num, hostcmd->result);
+			}
+		} else
+#endif /* defined(SDAW693) || defined(PCIEAW693) */
+		{
+			printf("HOSTCMD failed: CmdCode=%#04x, Size=%#04x,"
+			       " SeqNum=%#04x, Result=%#04x\n",
+			       hostcmd->command, hostcmd->size,
+			       hostcmd->seq_num, hostcmd->result);
+		}
 	}
 	return ret;
 }
@@ -5520,6 +6287,209 @@ mef_exit:
 	return ret;
 }
 
+#define EVENTS_MASK_CMDCODE 0x028a
+/**
+ *  @brief Process events_mask command
+ *  @param argc     number of arguments
+ *  @param argv     A pointer to arguments array
+ *  @return         MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int process_events_mask(int argc, char *argv[])
+{
+	char line[256], cmdname[256], *pos = NULL;
+	int cmdname_found = 0, name_found = 0;
+	int ln = 0;
+	int ret = MLAN_STATUS_SUCCESS;
+	int i;
+	t_u8 *buffer = NULL;
+	FILE *fp = NULL;
+	t_u32 cmd_len = 0, cmd_header_len;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+	HostCmd_DS_EVENT_MASK_CFG *evt_mask_cmd = NULL;
+	HostCmd_DS_GEN *hostcmd = NULL;
+
+	cmd_header_len = strlen(CMD_NXP) + strlen("HOSTCMD");
+	cmd_len = sizeof(HostCmd_DS_GEN) + sizeof(HostCmd_DS_EVENT_MASK_CFG);
+
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return -ENOMEM;
+	}
+
+	memset(buffer, 0, BUFFER_LENGTH);
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+	/* buf = MRVL_CMD<cmd> */
+	prepare_buffer(buffer, HOSTCMD, 0, NULL);
+
+	/* buf = MRVL_CMD<cmd><hostcmd_size><HostCmd_DS_GEN> */
+	hostcmd = (HostCmd_DS_GEN *)(buffer + cmd_header_len + sizeof(t_u32));
+	hostcmd->command = cpu_to_le16(EVENTS_MASK_CMDCODE);
+	hostcmd->seq_num = 0;
+	hostcmd->result = 0;
+	/* buf =
+	 * MRVL_CMD<cmd><hostcmd_size><HostCmd_DS_GEN><HostCmd_DS_EVENT_MASK_CFG>
+	 */
+	evt_mask_cmd = (HostCmd_DS_EVENT_MASK_CFG *)(buffer + cmd_header_len +
+						     sizeof(t_u32) + S_DS_GEN);
+
+	/* Host Command Population */
+	if (argc == 3) {
+		evt_mask_cmd->action = HostCmd_ACT_GEN_GET;
+	} else {
+		evt_mask_cmd->action = HostCmd_ACT_GEN_SET;
+
+		snprintf(cmdname, sizeof(cmdname), "%s={", argv[2]);
+		cmdname_found = 0;
+
+		fp = fopen(argv[3], "r");
+		if (fp == NULL) {
+			fprintf(stderr, "Cannot open file %s\n", argv[4]);
+			exit(1);
+		}
+
+		while ((pos = mlan_config_get_line(fp, line, sizeof(line),
+						   &ln))) {
+			if (strcmp(pos, cmdname) == 0) {
+				cmdname_found = 1;
+
+				snprintf(cmdname, sizeof(cmdname), "Enabled=");
+				name_found = 0;
+				while ((pos = mlan_config_get_line(
+						fp, line, sizeof(line), &ln))) {
+					if (strncmp(pos, cmdname,
+						    strlen(cmdname)) == 0) {
+						name_found = 1;
+						evt_mask_cmd->enabled =
+							a2hex_or_atoi(
+								pos +
+								strlen(cmdname));
+						break;
+					}
+				}
+				if (!name_found) {
+					fprintf(stderr,
+						"mlanutl: Enabled not found in file '%s'\n",
+						argv[3]);
+					break;
+				}
+
+				if (evt_mask_cmd->enabled == FALSE) {
+					break;
+				}
+
+				name_found = 0;
+				while ((pos = mlan_config_get_line(
+						fp, line, sizeof(line), &ln))) {
+					t_u32 event_index = 0xff;
+					if (sscanf(pos, "[0x%x]",
+						   &event_index)) {
+						name_found = 1;
+						if ((event_index >=
+						     (sizeof(evt_mask_cmd
+								     ->events_bitmap) *
+						      8))) {
+							printf("Error: Invalid values, event_index %x \n",
+							       event_index);
+							ret = MLAN_STATUS_FAILURE;
+							goto evtmask_exit;
+						}
+						evt_mask_cmd->events_bitmap
+							[event_index / 32] |=
+							(1
+							 << (event_index % 32));
+					}
+				}
+				if (!name_found) {
+					fprintf(stderr,
+						"mlanutl: Event mask entries not found in file '%s'\n",
+						argv[3]);
+				}
+				break;
+			}
+		}
+		fclose(fp);
+
+		if (!cmdname_found)
+			fprintf(stderr,
+				"mlanutl: cmdname '%s' not found in file '%s'\n",
+				argv[4], argv[3]);
+
+		if (!cmdname_found || !name_found) {
+			ret = MLAN_STATUS_FAILURE;
+			goto evtmask_exit;
+		}
+	}
+
+	for (i = 0; i < NELEMENTS(evt_mask_cmd->events_bitmap); i++) {
+		evt_mask_cmd->events_bitmap[i] =
+			cpu_to_le32(evt_mask_cmd->events_bitmap[i]);
+	}
+
+	/* buf = MRVL_CMD<cmd><hostcmd_size> */
+	memcpy(buffer + cmd_header_len, (t_u8 *)&cmd_len, sizeof(t_u32));
+	hostcmd->size = cpu_to_le16(cmd_len);
+
+	/* Initialize the ifr structure */
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+	/* Perform ioctl */
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("ioctl[EVENT_MASK]");
+		printf("ERR:Command sending failed!\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto evtmask_exit;
+	}
+
+	if (hostcmd->result) {
+		ret = MLAN_STATUS_FAILURE;
+		goto evtmask_exit;
+	}
+
+	if (evt_mask_cmd->action == HostCmd_ACT_GEN_GET) {
+		printf("HS Event masks configuration:\n");
+		printf("----------------------------\n");
+		printf("Enabled:	%d\n", evt_mask_cmd->enabled);
+		for (i = 0; i < NELEMENTS(evt_mask_cmd->events_bitmap); i++) {
+			t_u32 pos, bitmap = evt_mask_cmd->events_bitmap[i];
+			for (pos = 0; bitmap && pos < 32; pos++) {
+				if (bitmap & (1 << pos)) {
+					printf("Event [0x%04x] masked\n",
+					       (i * 32) + pos);
+					bitmap &= (~(1 << pos));
+				}
+			}
+		}
+	}
+
+evtmask_exit:
+	if (buffer)
+		free(buffer);
+
+	if (cmd)
+		free(cmd);
+
+	return ret;
+}
+
 /**
  *  @brief Check the Hex String
  *  @param s  A pointer to the string
@@ -5757,46 +6727,11 @@ static int process_cloud_keep_alive(int argc, char *argv[])
 					argv[3]);
 				break;
 			}
-			snprintf(cmdname, sizeof(cmdname), "enable=");
-			name_found = 0;
-			while ((pos = mlan_config_get_line(
-					fp, line, sizeof(line), &ln))) {
-				if (strncmp(pos, cmdname, strlen(cmdname)) ==
-				    0) {
-					name_found = 1;
-					keep_alive->enable = a2hex_or_atoi(
-						pos + strlen(cmdname));
-					break;
-				}
-			}
-			if (!name_found) {
-				fprintf(stderr,
-					"mlanutl: enable not found in file '%s'\n",
-					argv[3]);
-				break;
-			}
 			if (strcmp(argv[4], "reset") == 0) {
-				snprintf(cmdname, sizeof(cmdname), "reset=");
-				name_found = 0;
-				while ((pos = mlan_config_get_line(
-						fp, line, sizeof(line), &ln))) {
-					if (strncmp(pos, cmdname,
-						    strlen(cmdname)) == 0) {
-						name_found = 1;
-						keep_alive
-							->reset = a2hex_or_atoi(
-							pos + strlen(cmdname));
-						break;
-					}
-				}
-				if (!name_found) {
-					fprintf(stderr,
-						"mlanutl: reset not found in file '%s'\n",
-						argv[3]);
-					break;
-				}
-			}
-			if (strcmp(argv[4], "start") == 0) {
+				keep_alive->reset = 1;
+				keep_alive->enable = 0;
+			} else if (strcmp(argv[4], "start") == 0) {
+				keep_alive->enable = 1;
 				snprintf(cmdname, sizeof(cmdname),
 					 "sendInterval=");
 				name_found = 0;
@@ -5974,6 +6909,8 @@ static int process_cloud_keep_alive(int argc, char *argv[])
 						argv[3]);
 					break;
 				}
+			} else if (strcmp(argv[4], "stop") == 0) {
+				keep_alive->enable = 0;
 			}
 		}
 	}
@@ -6111,46 +7048,11 @@ static int process_cloud_keep_alive_rx(int argc, char *argv[])
 					argv[3]);
 				break;
 			}
-			snprintf(cmdname, sizeof(cmdname), "enable=");
-			name_found = 0;
-			while ((pos = mlan_config_get_line(
-					fp, line, sizeof(line), &ln))) {
-				if (strncmp(pos, cmdname, strlen(cmdname)) ==
-				    0) {
-					name_found = 1;
-					keep_alive_rx->enable = a2hex_or_atoi(
-						pos + strlen(cmdname));
-					break;
-				}
-			}
-			if (!name_found) {
-				fprintf(stderr,
-					"mlanutl: enable not found in file '%s'\n",
-					argv[3]);
-				break;
-			}
 			if (strcmp(argv[4], "reset") == 0) {
-				snprintf(cmdname, sizeof(cmdname), "reset=");
-				name_found = 0;
-				while ((pos = mlan_config_get_line(
-						fp, line, sizeof(line), &ln))) {
-					if (strncmp(pos, cmdname,
-						    strlen(cmdname)) == 0) {
-						name_found = 1;
-						keep_alive_rx
-							->reset = a2hex_or_atoi(
-							pos + strlen(cmdname));
-						break;
-					}
-				}
-				if (!name_found) {
-					fprintf(stderr,
-						"mlanutl: reset not found in file '%s'\n",
-						argv[3]);
-					break;
-				}
-			}
-			if (strcmp(argv[4], "start") == 0) {
+				keep_alive_rx->reset = 1;
+				keep_alive_rx->enable = 0;
+			} else if (strcmp(argv[4], "start") == 0) {
+				keep_alive_rx->enable = 1;
 				snprintf(cmdname, sizeof(cmdname),
 					 "destMacAddr=");
 				name_found = 0;
@@ -6241,6 +7143,8 @@ static int process_cloud_keep_alive_rx(int argc, char *argv[])
 						argv[3]);
 					break;
 				}
+			} else if (strcmp(argv[4], "stop") == 0) {
+				keep_alive_rx->enable = 0;
 			}
 		}
 	}
@@ -6437,6 +7341,14 @@ static int ISDIGIT(char *x)
  * Check of decimal or hex string
  * @param   num string
  */
+#define IS_HEX(num)                                                            \
+	(strncasecmp("0x", (num), 2) ? MLAN_STATUS_FAILURE :                   \
+				       MLAN_STATUS_SUCCESS)
+
+/**
+ * Check of decimal or hex string
+ * @param   num string
+ */
 #define IS_HEX_OR_DIGIT(num)                                                   \
 	(strncasecmp("0x", (num), 2) ? ISDIGIT((num)) : ishexstring((num)))
 
@@ -6471,7 +7383,9 @@ static int get_netlink_num(int i)
 
 	if (fp) {
 		while (!feof(fp)) {
-			fgets(str, sizeof(str), fp);
+			if (!fgets(str, sizeof(str), fp)) {
+				break;
+			}
 			if (strncmp(str, srch, strlen(srch)) == 0) {
 				netlink_num = atoi(str + strlen(srch) + 1);
 				break;
@@ -6906,6 +7820,14 @@ static int process_dmcs(int argc, char *argv[])
 	if (*argv[3] == '1') {
 		status = (struct eth_priv_dmcs_status *)buffer;
 		printf("mapping policy: %d\n", status->mapping_policy);
+		if (status->mapping_policy == 0)
+			printf("    Direct mapping \n");
+		else if (status->mapping_policy == 1)
+			printf("    Dynamic mapping. Prefer DBC is enabled.\n");
+		else if (status->mapping_policy == 2)
+			printf("    Dynamic mapping. Prefer DBC is disabled.\n");
+		else
+			printf("unknown mapping policy");
 		for (i = 0; i < MAX_NUM_MAC; i++) {
 			printf("radio_status[%d]:\n", i);
 			printf("\tradio id: %d\n",
@@ -7137,7 +8059,7 @@ static int process_bandcfg(int argc, char *argv[])
 		/* GET operation */
 		printf("Band Configuration:\n");
 		printf("  Infra Band: 0x%x (", (int)bandcfg->config_bands);
-		for (i = 0; i < 10; i++) {
+		for (i = 0; i < 11; i++) {
 			if ((bandcfg->config_bands >> i) & 0x1)
 				printf(" %s", band[i]);
 		}
@@ -7911,7 +8833,8 @@ static int process_getstalist(int argc, char *argv[])
 			       "2.4G_11ax," :
 		       (list->client_info[i].bandmode == BAND_AAX) ?
 			       "5G_11ax," :
-			       "unknown");
+		       (list->client_info[i].bandmode == BAND_6G) ? "6G_11ax," :
+								    "unknown");
 		/** On some platform, s8 is same as unsigned char*/
 		rssi = (int)list->client_info[i].rssi;
 		if (rssi > 0x7f)
@@ -9261,6 +10184,13 @@ static int prepare_setuserscan_buffer(wlan_ioctl_user_scan_cfg *scan_req,
 								[chan_cmd_idx]
 									.radio_type =
 								0;
+							is_radio_set = TRUE;
+							break;
+						case 'E':
+							scan_req->chan_list
+								[chan_cmd_idx]
+									.radio_type =
+								2;
 							is_radio_set = TRUE;
 							break;
 						case 'C':
@@ -11096,6 +12026,15 @@ static int process_scancfg(int argc, char *argv[])
 	cmd->used_len = 0;
 	cmd->total_len = BUFFER_LENGTH;
 
+	if (vndr_hexdump) {
+		t_u16 vndr_subcmd = 0;
+		vndr_subcmd = vndr_get_subcmd(argv[2]);
+		/* cmd buffer dump for the driver supported private vendor cmd
+		 * only */
+		if (vndr_subcmd)
+			vndr_cmd_hexdump("vndr_cmd_dump", vndr_subcmd, &argv[3],
+					 (argc - 3), ' ');
+	}
 	/* Perform IOCTL */
 	memset(&ifr, 0, sizeof(struct ifreq));
 	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
@@ -11160,6 +12099,70 @@ static int process_scancfg(int argc, char *argv[])
  *  @param argv   A pointer to arguments array
  *  @return     MLAN_STATUS_SUCCESS--success, otherwise--fail
  */
+static int process_6gscancfg(int argc, char *argv[])
+{
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+	struct eth_priv_scan_6g_cfg *scancfg = NULL;
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl");
+		fprintf(stderr, "mlanutl: 6gscancfg fail\n");
+		if (cmd)
+			free(cmd);
+		if (buffer)
+			free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Process result */
+	scancfg = (struct eth_priv_scan_6g_cfg *)buffer;
+	/* Show scan configure */
+	printf("6G Scan Configuration:\n");
+	printf("    Scan Flag:              %d (%s)\n", scancfg->scan_coloc_ap,
+	       scancfg->scan_coloc_ap ?
+		       "Scan colocated AP channels or/and PSC channels" :
+		       "Scan all 6 GHz channels");
+
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return MLAN_STATUS_SUCCESS;
+}
 
 /**
  *  @brief Process packet aggregation configuration
@@ -13927,7 +14930,8 @@ static int process_customie(int argc, char *argv[])
 	if (argc > 3) {
 		if (((IS_HEX_OR_DIGIT(argv[3]) == MLAN_STATUS_FAILURE) &&
 		     (atoi(argv[3]) != -1)) ||
-		    (atoi(argv[3]) < -1)) {
+		    (atoi(argv[3]) < -1) ||
+		    (IS_HEX(argv[3]) == MLAN_STATUS_SUCCESS)) {
 			printf("ERR:Illegal index %s\n", argv[3]);
 			print_custom_ie_usage();
 			ret = MLAN_STATUS_FAILURE;
@@ -14767,6 +15771,7 @@ _exit_:
 	return ret;
 }
 
+#define MAX_ARG_SIZE 1600
 /**
  *  @brief Process transmission of mgmt frames
  *  @param argc   number of arguments
@@ -14779,7 +15784,7 @@ static int process_mgmtframetx(int argc, char *argv[])
 	char *line = NULL;
 	FILE *config_file = NULL;
 	int li = 0, arg_num = 0, ret = 0, i = 0;
-	char *args[100], *pos = NULL, mac_addr[21] = {0};
+	char *args[MAX_ARG_SIZE], *pos = NULL, mac_addr[21] = {0};
 	t_u8 peer_mac[ETH_ALEN];
 	t_u16 data_len = 0, type = 0, subtype = 0;
 	t_u16 seq_num = 0, frag_num = 0, from_ds = 0, to_ds = 0;
@@ -14820,7 +15825,7 @@ static int process_mgmtframetx(int argc, char *argv[])
 
 	/* Parse file and process */
 	while (config_get_line(line, MAX_CONFIG_LINE, config_file, &li, &pos)) {
-		arg_num = parse_line(line, args, 100);
+		arg_num = parse_line(line, args, MAX_ARG_SIZE);
 		if (strcmp(args[0], "PktType") == 0) {
 			type = (t_u16)A2HEXDECIMAL(args[1]);
 			pmgmt_frame->frm_ctl = (type & 0x3) << 2;
@@ -16846,6 +17851,12 @@ static int process_stats(int argc, char *argv[])
 					printf("-------------------------------------------\n");
 					while (tlv_len >
 					       sizeof(MrvlIEtypesHeader_t)) {
+						if (tlv_len <
+						    sizeof(Stats_Mcast_t)) {
+							printf("MCast Drv STATS: invalid tlv, tlv_len=%d",
+							       tlv_len);
+							break;
+						}
 						if (mcastStats->is_busy) {
 							printf("\nGroup MAC address       = ");
 							print_mac(
@@ -16891,6 +17902,12 @@ static int process_stats(int argc, char *argv[])
 						printf("-------------------------------------------\n");
 						while (tlv_len >
 						       sizeof(MrvlIEtypesHeader_t)) {
+							if (tlv_len <
+							    sizeof(Stats_Ucast_t)) {
+								printf("UCast Drv STATS: invalid tlv, tlv_len=%d",
+								       tlv_len);
+								break;
+							}
 							if (ucastStats->is_busy) {
 								printf("\nUnicast MAC address     = ");
 								print_mac(
@@ -17126,195 +18143,6 @@ done:
 	if (buffer)
 		free(buffer);
 
-	return ret;
-}
-
-#define CSI_FILTER_MAX 16
-#define CSI_FILTER_SIZE 9
-/**
- * @brief      Enable/disable CSI support
- *
- * @param argc Number of arguments
- * @param argv Pointer to the arguments array
- *
- * @return     MLAN_STATUS_SUCCESS/MLAN_STATUS_FAILURE
- */
-static int process_csi_cmd(int argc, char *argv[])
-{
-	t_u8 *buffer = NULL;
-	struct eth_priv_cmd *cmd;
-	struct ifreq ifr;
-	t_u8 csi_filter[CSI_FILTER_SIZE * CSI_FILTER_MAX];
-	t_u8 headID[4];
-	t_u8 tailID[4];
-	t_u8 chipID = 0;
-	t_u8 i;
-	t_u16 csi_enable;
-	t_u8 csi_filter_cnt;
-	char csi_filter_name[20];
-	int csi_filter_len = 0;
-	int id_len = 0;
-	FILE *fp = NULL;
-	int cmd_header_len = 0, ret = 0;
-	char filename[32];
-
-	if (argc != 4) {
-		printf("Error: Invalid number of arguments\n");
-		printf("Enable:  ./mlanutl <interface> csi config/<csi_file_name>\n");
-		printf("Disable: ./mlanutl <interface> csi 0\n");
-		return MLAN_STATUS_FAILURE;
-	}
-	/* Initialize buffer */
-	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
-	if (!buffer) {
-		printf("ERR:Cannot allocate buffer for command!\n");
-		return MLAN_STATUS_FAILURE;
-	}
-
-	cmd_header_len = strlen(CMD_NXP) + strlen(argv[2]);
-	prepare_buffer(buffer, argv[2], 0, NULL);
-	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
-	if (!cmd) {
-		printf("ERR:Cannot allocate buffer for command!\n");
-		free(buffer);
-		return MLAN_STATUS_FAILURE;
-	}
-
-	/* Fill up buffer */
-#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
-	memset(cmd, 0, sizeof(struct eth_priv_cmd));
-	memcpy(&cmd->buf, &buffer, sizeof(buffer));
-#else
-	cmd->buf = buffer;
-#endif
-	cmd->used_len = 0;
-	cmd->total_len = BUFFER_LENGTH;
-
-	if (IS_HEX_OR_DIGIT(argv[3]) == MLAN_STATUS_FAILURE) {
-		csi_enable = 1;
-		/*copy filename from user */
-		memset(filename, 0, sizeof(filename));
-		strncpy(filename, argv[3], sizeof(filename) - 1);
-		fp = fopen(filename, "r");
-		if (fp == NULL) {
-			perror("fopen");
-			fprintf(stderr, "Cannot open CSI config file %s\n",
-				filename);
-			ret = -EFAULT;
-			goto done;
-		}
-
-		snprintf(csi_filter_name, sizeof(csi_filter_name), "headID");
-		id_len = fparse_for_cmd_and_hex(fp, headID,
-						(t_u8 *)csi_filter_name);
-		if (id_len != 4) {
-			printf(" Expected head id size is 4 bytes\n");
-			goto done;
-		}
-		for (i = 0; i < id_len; i++) {
-			printf("%02x ", headID[i]);
-		}
-		printf("\n");
-
-		snprintf(csi_filter_name, sizeof(csi_filter_name), "tailID");
-		id_len = fparse_for_cmd_and_hex(fp, tailID,
-						(t_u8 *)csi_filter_name);
-		if (id_len != 4) {
-			printf(" Expected tail id size is 4 bytes\n");
-			goto done;
-		}
-		for (i = 0; i < id_len; i++) {
-			printf("%02x ", tailID[i]);
-		}
-		printf("\n");
-
-		snprintf(csi_filter_name, sizeof(csi_filter_name), "chipID");
-		id_len = fparse_for_cmd_and_hex(fp, (t_u8 *)&chipID,
-						(t_u8 *)csi_filter_name);
-		if (id_len != 1) {
-			printf(" Expected chip id size is 1 bytes\n");
-			goto done;
-		}
-		printf("%02x \n", chipID);
-
-		/* Parse CSI filters */
-		for (csi_filter_cnt = 0; csi_filter_cnt < CSI_FILTER_MAX;
-		     csi_filter_cnt++) {
-			snprintf(csi_filter_name, sizeof(csi_filter_name),
-				 "csifilter%d", csi_filter_cnt);
-			csi_filter_len = fparse_for_cmd_and_hex(
-				fp,
-				&csi_filter[CSI_FILTER_SIZE * csi_filter_cnt],
-				(t_u8 *)csi_filter_name);
-
-			printf("Found %d bytes in the csifilter%d section of conf file %s.\n",
-			       csi_filter_len, csi_filter_cnt, filename);
-			if (csi_filter_len != CSI_FILTER_SIZE) {
-				printf(" Expected filter size is %d\n",
-				       CSI_FILTER_SIZE);
-				break;
-			} else {
-				for (i = 0; i < CSI_FILTER_SIZE; i++) {
-					printf("%02x ",
-					       csi_filter[CSI_FILTER_SIZE *
-								  csi_filter_cnt +
-							  i]);
-				}
-				printf("\n");
-			}
-		}
-		printf("Found %d CSI filters\n", csi_filter_cnt);
-		memcpy(buffer + cmd_header_len, (t_u8 *)&csi_enable,
-		       sizeof(csi_enable));
-		memcpy(buffer + cmd_header_len + sizeof(csi_enable), headID,
-		       4 * sizeof(t_u8));
-		memcpy(buffer + cmd_header_len + sizeof(csi_enable) +
-			       4 * sizeof(t_u8),
-		       tailID, 4 * sizeof(t_u8));
-		memcpy(buffer + cmd_header_len + sizeof(csi_enable) +
-			       8 * sizeof(t_u8),
-		       (t_u8 *)&csi_filter_cnt, sizeof(csi_filter_cnt));
-		memcpy(buffer + cmd_header_len + sizeof(csi_enable) +
-			       8 * sizeof(t_u8) + sizeof(csi_filter_cnt),
-		       (t_u8 *)&chipID, sizeof(chipID));
-		if (csi_filter_cnt > 0)
-			memcpy(buffer + cmd_header_len + sizeof(csi_enable) +
-				       8 * sizeof(t_u8) +
-				       sizeof(csi_filter_cnt) + sizeof(chipID),
-			       csi_filter, CSI_FILTER_SIZE * csi_filter_cnt);
-	} else {
-		csi_enable = (t_u16)A2HEXDECIMAL(argv[3]);
-		if (csi_enable == 0)
-			memcpy(buffer + cmd_header_len, (t_u8 *)&csi_enable,
-			       sizeof(csi_enable));
-		else {
-			printf("Err: Invalid CSI command parameter\n");
-			printf("Enable:  ./mlanutl <interface> csi config/<csi_file_name>\n");
-			printf("Disable: ./mlanutl <interface> csi 0\n");
-			ret = MLAN_STATUS_FAILURE;
-			goto done;
-		}
-	}
-
-	/* Initialize the ifr structure */
-	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
-	ifr.ifr_ifru.ifru_data = (void *)cmd;
-
-	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
-		perror("mlanutl: csi ioctl");
-		ret = -EFAULT;
-		goto done;
-	}
-
-done:
-	if (fp)
-		fclose(fp);
-
-	if (buffer)
-		free(buffer);
-	if (cmd)
-		free(cmd);
 	return ret;
 }
 
@@ -18771,10 +19599,128 @@ static int process_regioncode(int argc, char *argv[])
 }
 
 /**
+ *  @brief	Fetch 6g cfpinfo
+ *  @param argc	Number of arguments
+ *  @param argv	Pointer to arguments array
+ *  @return	MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int fetch_6g_cfpinfo(int argc, char *argv[])
+{
+	t_u8 *data, *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+	t_u32 i, size = 0;
+	t_u8 *pos = NULL;
+	t_u32 j;
+	t_u32 header_len = 0;
+	cfp *c1 = NULL;
+	cfpinfo *c2 = NULL;
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
+	pos = buffer;
+	header_len = strlen(CMD_NXP) + strlen(argv[2]);
+	if (header_len + sizeof(cfp) < BUFFER_LENGTH) {
+		pos += header_len;
+		c2 = (struct _cfpinfo *)pos;
+		c2->action = MLAN_ACT_GET_6G_CFP_TBL;
+	}
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		if (cmd)
+			free(cmd);
+		if (buffer)
+			free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Process result */
+	c2 = (struct _cfpinfo *)buffer;
+	if (!c2)
+		goto out;
+
+	data = buffer + sizeof(cfpinfo);
+	/* Print cfp tables */
+	if (c2->is6g_present) {
+		if (!*data)
+			goto out;
+		size = c2->rows_6g * sizeof(struct chan_freq_power);
+		printf("\n6GHz Channels:\n");
+
+		printf("%8s%10s%6s%11s%16s%16s%17s%10s\n", "Channel",
+		       "isPassive", "isDFS", "isDisabled", "is40MHzDisabled",
+		       "is80MHzDisabled", "is160MHzDisabled", " DFS state");
+
+		i = 0;
+		while (i < size) {
+			c1 = (struct chan_freq_power *)data;
+			printf("%8u%10u%6u%11u%16u%16u%17c%8u\n", c1->channel,
+			       (c1->flags & NXP_CHANNEL_PASSIVE) ? 1 : 0,
+			       c1->passive_scan_or_radar_detect,
+			       (c1->flags & NXP_CHANNEL_DISABLED) ? 1 : 0,
+			       (c1->flags & NXP_CHANNEL_NOHT40) ? 1 : 0,
+			       (c1->flags & NXP_CHANNEL_NOHT80) ? 1 : 0, '-',
+			       c1->dfs_state);
+
+			i += sizeof(struct chan_freq_power);
+			data += sizeof(struct chan_freq_power);
+		}
+	}
+	/* Print power tables */
+	if (c2->rows_6g && c2->cols_6g) {
+		printf("\n6GHz Power Table:\n");
+		printf("%8s ", "Channel");
+		for (i = 0; i < c2->cols_6g - 1; i++)
+			printf(" m%02d", i);
+
+		for (i = 0; i < c2->rows_6g; i++) {
+			printf("\n%8u ", *data++);
+			for (j = 1; j < c2->cols_6g; j++)
+				printf("%3u ", *data++);
+		}
+	}
+out:
+	printf("\n");
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return MLAN_STATUS_SUCCESS;
+}
+/**
  *  @brief	Process cfpinfo get command
  *  @param argc	Number of arguments
  *  @param argv	Pointer to arguments array
- *  @return		MLAN_STATUS_SUCCESS--success, otherwise--fail
+ *  @return	MLAN_STATUS_SUCCESS--success, otherwise--fail
  */
 static int process_cfpinfo(int argc, char *argv[])
 {
@@ -18783,16 +19729,9 @@ static int process_cfpinfo(int argc, char *argv[])
 	struct ifreq ifr;
 	t_u32 i, size = 0;
 	t_u32 j;
-	t_u32 rows, cols;
-	struct chan_freq_power {
-		t_u16 channel;
-		t_u32 freq;
-		t_u16 max_tx_power;
-		t_u8 passive_scan_or_radar_detect;
-		t_u16 flags;
-		t_u8 blacklist;
-		t_u32 dfs_state;
-	} * cfp;
+	t_u32 cols;
+	cfp *c1 = NULL;
+	cfpinfo *c2 = NULL;
 
 	/* Initialize buffer */
 	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
@@ -18835,139 +19774,118 @@ static int process_cfpinfo(int argc, char *argv[])
 	}
 
 	/* Process result */
-	data = buffer;
-	size = *(t_u32 *)data;
-	if (!size)
+	c2 = (struct _cfpinfo *)buffer;
+	if (!c2)
 		goto out;
 
-	/* Region code is stored in first 2 bytes, country code in next 3 bytes
-	 * and environment, if available, in the following byte
-	 */
-	data += sizeof(size);
-	printf("Region Code  : 0x%x\n", *(t_u16 *)data);
-	data += 2;
-	printf("Country Code : %c%c\n", *data, *(data + 1));
-	data += 3;
-	if (size == 6) {
-		printf("Environment  : 0x%x\n", *data);
-		data++;
-	}
-	/* Print cfp tables */
-	size = *(t_u32 *)data;
-	if (!size)
-		goto out;
+	data = buffer + sizeof(cfpinfo);
 
-	data += sizeof(size);
-	printf("\n2.4GHz Channels:\n");
-	printf("%8s%10s%6s%11s%16s%16s%17s\n", "Channel", "isPassive", "isDFS",
-	       "isDisabled", "is40MHzDisabled", "is80MHzDisabled",
-	       "is160MHzDisabled");
-	i = 0;
-	while (i < size) {
-		if (!(*data))
+	printf("Region Code  : 0x%x\n", c2->region_code);
+	printf("Country Code : %c%c\n", c2->country_code[0],
+	       c2->country_code[1]);
+	printf("Environment  : 0x%x\n", c2->environment);
+	if (c2->is2g_present) {
+		if (!*data)
 			goto out;
-		cfp = (struct chan_freq_power *)data;
-		printf("%8u%10u%6u%11u%16u%16c%17c\n", cfp->channel,
-		       (cfp->flags & NXP_CHANNEL_PASSIVE) ? 1 : 0,
-		       cfp->passive_scan_or_radar_detect,
-		       (cfp->flags & NXP_CHANNEL_DISABLED) ? 1 : 0,
-		       (cfp->flags & NXP_CHANNEL_NOHT40) ? 1 : 0, '-', '-');
-		data += sizeof(struct chan_freq_power);
-		i += sizeof(struct chan_freq_power);
+		size = c2->rows_2g * sizeof(struct chan_freq_power);
+
+		printf("\n2.4GHz Channels:\n");
+		printf("%8s%10s%6s%11s%16s%16s%17s\n", "Channel", "isPassive",
+		       "isDFS", "isDisabled", "is40MHzDisabled",
+		       "is80MHzDisabled", "is160MHzDisabled");
+		i = 0;
+		while (i < size) {
+			c1 = (struct chan_freq_power *)data;
+			printf("%8u%10u%6u%11u%16u%16c%17c\n", c1->channel,
+			       (c1->flags & NXP_CHANNEL_PASSIVE) ? 1 : 0,
+			       c1->passive_scan_or_radar_detect,
+			       (c1->flags & NXP_CHANNEL_DISABLED) ? 1 : 0,
+			       (c1->flags & NXP_CHANNEL_NOHT40) ? 1 : 0, '-',
+			       '-');
+			i += sizeof(struct chan_freq_power);
+			data += sizeof(struct chan_freq_power);
+		}
 	}
-	size = *(t_u32 *)data;
-	if (!size)
-		goto out;
-
-	data += sizeof(size);
-
-	printf("\n5GHz Channels:\n");
-	printf("%8s%10s%6s%11s%16s%16s%17s%10s\n", "Channel", "isPassive",
-	       "isDFS", "isDisabled", "is40MHzDisabled", "is80MHzDisabled",
-	       "is160MHzDisabled", " DFS state");
-
-	i = 0;
-	while (i < size) {
-		if (!(*data))
+	if (c2->is5g_present) {
+		if (!*data)
 			goto out;
-		cfp = (struct chan_freq_power *)data;
-		printf("%8u%10u%6u%11u%16u%16u%17c%8u\n", cfp->channel,
-		       (cfp->flags & NXP_CHANNEL_PASSIVE) ? 1 : 0,
-		       cfp->passive_scan_or_radar_detect,
-		       (cfp->flags & NXP_CHANNEL_DISABLED) ? 1 : 0,
-		       (cfp->flags & NXP_CHANNEL_NOHT40) ? 1 : 0,
-		       (cfp->flags & NXP_CHANNEL_NOHT80) ? 1 : 0, '-',
-		       cfp->dfs_state);
-		data += sizeof(struct chan_freq_power);
-		i += sizeof(struct chan_freq_power);
+		size = c2->rows_5g * sizeof(struct chan_freq_power);
+		printf("\n5GHz Channels:\n");
+		printf("%8s%10s%6s%11s%16s%16s%17s%10s\n", "Channel",
+		       "isPassive", "isDFS", "isDisabled", "is40MHzDisabled",
+		       "is80MHzDisabled", "is160MHzDisabled", " DFS state");
+
+		i = 0;
+		while (i < size) {
+			c1 = (struct chan_freq_power *)data;
+			printf("%8u%10u%6u%11u%16u%16u%17c%8u\n", c1->channel,
+			       (c1->flags & NXP_CHANNEL_PASSIVE) ? 1 : 0,
+			       c1->passive_scan_or_radar_detect,
+			       (c1->flags & NXP_CHANNEL_DISABLED) ? 1 : 0,
+			       (c1->flags & NXP_CHANNEL_NOHT40) ? 1 : 0,
+			       (c1->flags & NXP_CHANNEL_NOHT80) ? 1 : 0, '-',
+			       c1->dfs_state);
+
+			i += sizeof(struct chan_freq_power);
+			data += sizeof(struct chan_freq_power);
+		}
 	}
 
-	/* Print power tables */
-	size = *(t_u32 *)data;
-	if (!size)
-		goto out;
+	if (c2->rows_2g && c2->cols_2g) {
+		printf("\n2.4GHz Power Table:\n");
+		printf("%8s ", "Channel");
+		for (i = 0; i < c2->cols_2g - 1; i++)
+			printf(" m%02d", i);
 
-	data += sizeof(size);
-	rows = *(t_u32 *)data;
-	data += sizeof(size);
-	cols = *(t_u32 *)data;
-	data += sizeof(size);
-	if (!rows || !cols)
-		goto out;
-
-	printf("\n2.4GHz Power Table:\n");
-	printf("%8s ", "Channel");
-	for (i = 0; i < cols - 1; i++)
-		printf(" m%02d", i);
-
-	for (i = 0; i < rows; i++) {
-		printf("\n%8u ", *data++);
-		for (j = 1; j < cols; j++)
-			printf("%3u ", *data++);
+		for (i = 0; i < c2->rows_2g; i++) {
+			printf("\n%8u ", *data++);
+			for (j = 1; j < c2->cols_2g; j++)
+				printf("%3u ", *data++);
+		}
+		printf("\n");
 	}
-	printf("\n");
-	size = *(t_u32 *)data;
-	if (!size)
-		goto out;
+	if (c2->rows_5g && c2->cols_5g) {
+		printf("\n5GHz Power Table:\n");
+		printf("%8s ", "Channel");
+		for (i = 0; i < c2->cols_5g - 1; i++)
+			printf(" m%02d", i);
 
-	data += sizeof(size);
-	rows = *(t_u32 *)data;
-	data += sizeof(size);
-	cols = *(t_u32 *)data;
-	data += sizeof(size);
-	if (!rows || !cols)
-		goto out;
-
-	printf("\n5GHz Power Table:\n");
-	printf("%8s ", "Channel");
-	for (i = 0; i < cols - 1; i++)
-		printf(" m%02d", i);
-
-	for (i = 0; i < rows; i++) {
-		printf("\n%8u ", *data++);
-		for (j = 1; j < cols; j++)
-			printf("%3u ", *data++);
+		for (i = 0; i < c2->rows_5g; i++) {
+			printf("\n%8u ", *data++);
+			for (j = 1; j < c2->cols_5g; j++)
+				printf("%3u ", *data++);
+		}
+		printf("\n");
 	}
-
+	fetch_6g_cfpinfo(argc, argv);
 	/* Print Modulation Conversion Information */
+	cols = (c2->cols_2g > c2->cols_5g) ? c2->cols_2g : c2->cols_5g;
+	if (!cols)
+		goto out;
 	printf("\n\nModulation Conversions:\n");
 	j = 0;
 	for (i = 0; i < 10; i++)
 		printf("m%02d: %s\n", j++, mod_conv_bg_1x1[i]);
-	for (i = 0; i < 6; i++)
-		printf("m%02d: %s\n", j++, mod_conv_bg_2x2[i]);
+	if (c2->nss == 2) {
+		for (i = 0; i < 6; i++)
+			printf("m%02d: %s\n", j++, mod_conv_bg_2x2[i]);
+	}
 	if (j >= cols - 1)
 		goto out;
 	for (i = 0; i < 6; i++)
 		printf("m%02d: %s\n", j++, mod_conv_a_1x1[i]);
-	for (i = 0; i < 6; i++)
-		printf("m%02d: %s\n", j++, mod_conv_a_2x2[i]);
+	if (c2->nss == 2) {
+		for (i = 0; i < 6; i++)
+			printf("m%02d: %s\n", j++, mod_conv_a_2x2[i]);
+	}
 	if (j >= cols - 1)
 		goto out;
 	for (i = 0; i < 4; i++)
 		printf("m%02d: %s\n", j++, mod_conv_he_1x1[i]);
-	for (i = 0; i < 4; i++)
-		printf("m%02d: %s\n", j++, mod_conv_he_2x2[i]);
+	if (c2->nss == 2) {
+		for (i = 0; i < 4; i++)
+			printf("m%02d: %s\n", j++, mod_conv_he_2x2[i]);
+	}
 out:
 	printf("\n");
 	if (buffer)
@@ -21711,6 +22629,11 @@ static int get_fw_rgpwr_data(FILE *fp, region_chan_pwr_tbl *rgchnpwr_tbl)
 		tlv = (MrvlIEtypesHeader_t *)tlv_buf;
 		tlv_type = le16_to_cpu(tlv->type);
 		tlv_len = le16_to_cpu(tlv->len);
+		if (tlv_buf_left < (sizeof(MrvlIEtypesHeader_t) + tlv_len)) {
+			printf("get fw rgpower data: invalid tlv, tlv_len=%d, tlv_buf_left=%d\n",
+			       tlv_len, tlv_buf_left);
+			break;
+		}
 		switch (tlv_type) {
 		case TLV_TYPE_POWER_TABLE_ATTR:
 			pwr_tbl_attr_tlv =
@@ -22661,6 +23584,148 @@ done:
 }
 
 /**
+ *  @brief Process print link statistics
+ *  @param argc   Number of arguments
+ *  @param argv   A pointer to arguments array
+ *  @return     MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int process_plinkstats(int argc, char *argv[])
+{
+	int ret = 0;
+	int data[4];
+	t_u8 *buffer = NULL;
+	t_u8 *pos = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+	memset(buffer, 0, BUFFER_LENGTH);
+
+	/* Check if arguments are valid */
+	if (argc > 7) {
+		printf("ERR: Invalid arguments\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl");
+		fprintf(stderr, "mlanutl: print link stats fail\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	/* Process result */
+	memset(data, 0, sizeof(data));
+	memcpy(data, buffer, sizeof(data));
+	pos = buffer;
+
+	if ((argc == 3)) {
+		if (data[0] == 1) {
+			printf("Print linkstats: feature ENABLED\n");
+			printf("  filter mask   = 0x%08x\n", data[1]);
+			printf("  interval (s)  = %u\n", data[2]);
+			printf("  netlink event = %d\n", data[3]);
+		} else {
+			printf("Print linkstats: feature DISABLED\n");
+		}
+		goto done;
+	}
+
+	switch (data[0]) {
+	case 0: /* disable */
+		printf("Print linkstats: feature DISABLED\n");
+		break;
+	case 1: /* enable */
+		printf("Print linkstats: feature ENABLED\n");
+		printf("  filter mask   = 0x%08x\n", data[1]);
+		printf("  interval (s)  = %u\n", data[2]);
+		printf("  netlink event = %d\n", data[3]);
+		break;
+	case 2: /* reset */
+		printf("Print linkstats: statistics RESET\n");
+		break;
+	case 3: /* get */
+	{
+		struct eth_priv_linkstats *stats = NULL;
+		pos += sizeof(data);
+		stats = (struct eth_priv_linkstats *)pos;
+
+		printf("Print linkstats: GET link statistics\n");
+		printf("  Num TX Packets      : %lu\n", stats->tx_packets);
+		printf("  Num TX Bytes        : %lu\n", stats->tx_bytes);
+		printf("  Num RX Packets      : %lu\n", stats->rx_packets);
+		printf("  Num RX Bytes        : %lu\n", stats->rx_bytes);
+		printf("  Noise Floor         : %d\n", stats->noise);
+		printf("  Channel Utilization : %d %%\n", stats->chload);
+		printf("  Channel             : %d\n", stats->channel);
+		printf("  Region              : 0x%x\n", stats->region_code);
+		printf("  Retry Count         : %lu\n", stats->retry_cnt);
+		printf("  Failed Count        : %lu\n", stats->failed_cnt);
+		printf("  RTS Fail Count      : %lu\n", stats->rtsfailure);
+		printf("  FCS Error Count     : %lu\n", stats->fcserror);
+		printf("  TX Frame Count      : %lu\n", stats->txframe);
+		printf("  Dropped Packets     : %lu\n", stats->tx_dropped);
+		printf("  Num Deauth TX       : %lu\n",
+		       stats->num_evt_deauth_tx);
+		printf("  Num Deauth RX       : %lu\n",
+		       stats->num_evt_deauth_rx);
+		printf("  Associated STA List : \n");
+
+		/* add per-STA list */
+		char *getstalist_argv[] = {"mlanutl", dev_name, "getstalist"};
+		int getstalist_argc =
+			sizeof(getstalist_argv) / sizeof(getstalist_argv[0]);
+		ret = process_getstalist(getstalist_argc, getstalist_argv);
+		break;
+	}
+
+	default:
+		fprintf(stderr, "ERR: unknown action %d\n", data[0]);
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+done:
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return ret;
+}
+
+/**
  * @brief      Set/Get network monitor configurations
  *
  * @param argc Number of arguments
@@ -23525,13 +24590,14 @@ done:
 static int process_set_get_tx_rx_ant(int argc, char *argv[])
 {
 	int ret = 0;
-	int data[3] = {0};
+	int data[5] = {0};
 	t_u8 *buffer = NULL;
 	struct eth_priv_cmd *cmd = NULL;
 	struct ifreq ifr;
 
 	/* Check if arguments are valid */
-	if ((argc != 3) && (argc != 4) && (argc != 5)) {
+	if ((argc != 3) && (argc != 4) && (argc != 5) && (argc != 6) &&
+	    (argc != 7)) {
 		printf("ERR: Invalid arguments\n");
 		ret = MLAN_STATUS_FAILURE;
 		goto done;
@@ -23580,9 +24646,27 @@ static int process_set_get_tx_rx_ant(int argc, char *argv[])
 			if (cmd->used_len > 0) {
 				memcpy(data, buffer, cmd->used_len);
 				printf("Mode of Tx path is 0x%x\n", data[0]);
-				if (cmd->used_len >= (sizeof(int) * 2))
-					printf("Mode of Rx path is 0x%x\n",
-					       data[1]);
+				/* Evaluate time is valid only when SAD is
+				 * enabled */
+				if (data[0] == 0xffff) {
+					printf("Evaluate time = %d\n", data[1]);
+					/* Current antenna value should be 1,2.
+					 * 0 is invalid value*/
+					if (data[2] > 0)
+						printf("Current antenna is %d\n",
+						       data[2]);
+				} else {
+					if (cmd->used_len >= (sizeof(int) * 2))
+						printf("Mode of Rx path is 0x%x\n",
+						       data[1]);
+					if (cmd->used_len ==
+					    (sizeof(int) * 4)) {
+						printf("Mode of Tx path 6G is 0x%x\n",
+						       data[2]);
+						printf("Mode of Rx path 6G is 0x%x\n",
+						       data[3]);
+					}
+				}
 			}
 		} else {
 			memcpy(data, buffer, sizeof(data));
@@ -26245,7 +27329,7 @@ static void send_dot11_packet(char *ifName, char *file_name)
 	t_u8 *sendbuf = NULL;
 	t_u8 *buff = NULL;
 	char *args[100], *pos, mac_addr[20];
-	struct ether_header *eh = (struct ether_header *)sendbuf;
+	struct ether_header *eh = NULL;
 	int data_len = 0, tx_len = 0;
 	dot11_txcontrol *txc;
 	struct sockaddr_ll socket_address;
@@ -26269,6 +27353,7 @@ static void send_dot11_packet(char *ifName, char *file_name)
 		free(sendbuf);
 		exit(1);
 	}
+	eh = (struct ether_header *)sendbuf;
 	memset(buff, 0, BUF_SIZ);
 	memset(mac, 0, sizeof(mac));
 	memset(mac_addr, 0, sizeof(mac_addr));
@@ -26672,6 +27757,7 @@ static int process_ctrldeauth(int argc, char *argv[])
 	t_u8 *buffer = NULL;
 	struct eth_priv_cmd *cmd = NULL;
 	struct ifreq ifr;
+	t_u32 is_sta_interface = 0;
 
 	/* Initialize buffer */
 	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
@@ -26688,7 +27774,10 @@ static int process_ctrldeauth(int argc, char *argv[])
 		free(buffer);
 		return MLAN_STATUS_FAILURE;
 	}
-
+	/* dev_name contains the interface name. Checking whether
+	 * mlan string is present in the interface name.
+	 */
+	is_sta_interface = !(strstr(dev_name, "mlan") == NULL);
 	/* Fill up buffer */
 #ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
 	memset(cmd, 0, sizeof(struct eth_priv_cmd));
@@ -26716,7 +27805,11 @@ static int process_ctrldeauth(int argc, char *argv[])
 
 	/* Process result */
 	printf("Deauth control: ");
-	if (buffer[0])
+	/* For STA interface, only value 2 is valid.
+	 * For UAP interface, only value 1 is valid.
+	 */
+	if ((is_sta_interface && buffer[0] == 2) ||
+	    (!is_sta_interface && buffer[0] == 1))
 		printf("enabled.\n");
 	else
 		printf("disabled.\n");
@@ -27230,6 +28323,87 @@ static int process_nav_mitigation(int argc, char *argv[])
 	return MLAN_STATUS_SUCCESS;
 }
 
+static int process_nav_mitigation_hw(int argc, char *argv[])
+{
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+	nav_mitigation_hw_para *nav_param = NULL;
+
+	/* Check arguments */
+	if (argc < 3 || (argc > 7)) {
+		printf("ERR:Incorrect number of arguments!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	memset(buffer, 0, BUFFER_LENGTH);
+	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl");
+		fprintf(stderr, "mlanutl: nav_mitigation fail\n");
+		if (cmd)
+			free(cmd);
+		if (buffer)
+			free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Process result */
+	if (argc == 3) {
+		nav_param = (nav_mitigation_hw_para *)buffer;
+		if (nav_param->start_nav_mitigation) {
+			printf("	hw nav mitigation enabled \n");
+			printf("	nav duration threshold:%d\n",
+			       nav_param->duration_threshold);
+			printf("	honoring threshold:%d\n",
+			       nav_param->honoring_duration);
+			printf("	txop duration threshold:%d\n",
+			       nav_param->txop_duration_threshold);
+		} else {
+			printf("	hw nav mitigation disabled \n");
+		}
+	}
+
+	printf("\n");
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return MLAN_STATUS_SUCCESS;
+}
+
 /**
  *  @brief Process led control command
  *  @param argc   Number of arguments
@@ -27358,102 +28532,6 @@ static int process_led(int argc, char *argv[])
 }
 
 /**
- *  @brief Process wifi location services command
- *  @param argc   Number of arguments
- *  @param argv   A pointer to arguments array
- *  @return       MLAN_STATUS_SUCCESS--success, otherwise--fail
- */
-
-static int process_ftm_cmd(int argc, char *argv[])
-{
-	int ret = MLAN_STATUS_SUCCESS;
-	// Process all wifi location services commands
-	ret = mlanwls_main(argc, argv);
-	return ret;
-}
-
-/**
- *  @brief Process dot11mc unassoc ftm cfg enable/disable
- *  @param argc   Number of arguments
- *  @param argv   A pointer to arguments array
- *  @return       MLAN_STATUS_SUCCESS--success, otherwise--fail
- */
-static int process_dot11mc_unassoc_ftm_cfg(int argc, char *argv[])
-{
-	t_u8 *buffer = NULL;
-	struct eth_priv_cmd *cmd = NULL;
-	struct ifreq ifr;
-	dot11mc_unassoc_ftm_cfg_para data;
-
-	/* Check arguments */
-	if (argc < 3 || (argc > 4)) {
-		printf("ERR:Incorrect number of arguments!\n");
-		return MLAN_STATUS_FAILURE;
-	}
-
-	/* Initialize buffer */
-	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
-	if (!buffer) {
-		printf("ERR:Cannot allocate buffer for command!\n");
-		return MLAN_STATUS_FAILURE;
-	}
-
-	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
-
-	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
-	if (!cmd) {
-		printf("ERR:Cannot allocate buffer for command!\n");
-		free(buffer);
-		return MLAN_STATUS_FAILURE;
-	}
-
-	/* Fill up buffer */
-#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
-	memset(cmd, 0, sizeof(struct eth_priv_cmd));
-	memcpy(&cmd->buf, &buffer, sizeof(buffer));
-#else
-	cmd->buf = buffer;
-#endif
-	cmd->used_len = 0;
-	cmd->total_len = BUFFER_LENGTH;
-
-	/* Perform IOCTL */
-	memset(&ifr, 0, sizeof(struct ifreq));
-	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
-	ifr.ifr_ifru.ifru_data = (void *)cmd;
-
-	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
-		perror("mlanutl");
-		fprintf(stderr, "mlanutl: dot11mc_unassoc_ftm_cfg fail\n");
-		if (cmd)
-			free(cmd);
-		if (buffer)
-			free(buffer);
-		return MLAN_STATUS_FAILURE;
-	}
-
-	/* Process result */
-	memset((void *)&data, 0, sizeof(data));
-	memcpy((void *)&data, buffer, sizeof(data));
-
-	printf("DOT11MC unassociated FTM cfg: ");
-	if (data.state == TRUE)
-		printf("Enabled\n");
-	else if (data.state == FALSE)
-		printf("Disabled\n");
-	else
-		printf("Invalid CFG\n");
-	printf("\n");
-
-	if (buffer)
-		free(buffer);
-	if (cmd)
-		free(cmd);
-
-	return MLAN_STATUS_SUCCESS;
-}
-
-/**
  *  @brief Process tx ampdu protection mode set/get
  *  @param argc   Number of arguments
  *  @param argv   A pointer to arguments array
@@ -27527,6 +28605,93 @@ static int process_tx_ampdu_prot_mode(int argc, char *argv[])
 	else
 		printf("Disabled\n");
 	printf("\n");
+
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return MLAN_STATUS_SUCCESS;
+}
+
+/**
+ *  @brief Process Preamble Pwr Boost enable/disable/force-enable
+ *  @param argc   Number of arguments
+ *  @param argv   A pointer to arguments array
+ *  @return       MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int process_preamble_pwr_boost(int argc, char *argv[])
+{
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+	preamble_pwr_boost_para data;
+	int rssi = 0;
+
+	/* Check arguments */
+	if (argc < 3 || (argc > 5)) {
+		printf("ERR:Incorrect number of arguments!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl");
+		fprintf(stderr, "mlanutl: preamble_pwr_boost_enable fail\n");
+		if (cmd)
+			free(cmd);
+		if (buffer)
+			free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Process result */
+	memset((void *)&data, 0, sizeof(data));
+	memcpy((void *)&data, buffer, sizeof(data));
+
+	printf("Preamble Power Boost Enable: %s\n",
+	       (data.enable_mode == 1) ? "force-enabled" :
+	       (data.enable_mode == 2) ? "dynamically-enabled" :
+					 "force-disabled");
+
+	if (data.enable_mode) {
+		/* on some platforms, t_s8 is same as unsigned char */
+		rssi = (int)(data.rssi_threshold);
+		if (rssi > 0x7f)
+			rssi = -(256 - rssi);
+		printf("RSSI Threshold : %s%ddBm\n", ((rssi > 0) ? "-" : ""),
+		       rssi);
+	}
 
 	if (buffer)
 		free(buffer);
@@ -28157,6 +29322,9 @@ static int process_twt_setup(int argc, char *argv[])
 			param_buf->twt_mantissa = (t_u16)A2HEXDECIMAL(args[1]);
 		} else if (strcmp(args[0], "TWTRequestType") == 0) {
 			param_buf->twt_request = (t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "BeaconMissThreshold") == 0) {
+			param_buf->bcnMiss_threshold =
+				(t_u16)A2HEXDECIMAL(args[1]);
 		} else if (strcmp(args[0], "}") == 0 && cmd_found) {
 			break;
 		}
@@ -28535,6 +29703,320 @@ done:
 }
 
 /**
+ *  @brief Process btwt_ap_config
+ *  @param argc    number of arguments
+ *  @param argv    A pointer to arguments array
+ *  @return        MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int process_btwt_ap_config_set(int argc, char *argv[])
+{
+	btwt_ap_config *param_buf = NULL;
+	char *line = NULL;
+	FILE *config_file = NULL;
+	int li = 0, ret = MLAN_STATUS_SUCCESS, cmd_found = 0,
+	    cmd_header_len = 0;
+	char *args[50], *pos = NULL;
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+
+	/* Check arguments */
+	if (argc != 4) {
+		printf("ERR:Incorrect number of arguments.\n");
+		printf("Syntax: ./mlanutl uapX process_btwt_ap_config_set <config/twt.conf>\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate memory!\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	cmd_header_len = strlen(CMD_NXP) + strlen(argv[2]);
+	prepare_buffer(buffer, argv[2], 0, NULL);
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR: Cannot allocate buffer for command!\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = cmd_header_len;
+	cmd->total_len = BUFFER_LENGTH;
+
+	param_buf = (btwt_ap_config *)((t_u8 *)buffer + cmd_header_len);
+
+	/* Check if file exists */
+	config_file = fopen(argv[3], "r");
+	if (config_file == NULL) {
+		printf("\nERR:Could not open Config file.\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	line = (char *)malloc(MAX_CONFIG_LINE);
+	if (!line) {
+		printf("ERR:Cannot allocate memory for line\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+	memset(line, 0, MAX_CONFIG_LINE);
+
+	/* Parse file and process */
+	while (config_get_line(line, MAX_CONFIG_LINE, config_file, &li, &pos)) {
+		parse_line(line, args, 50);
+		if (!cmd_found && strncmp(args[0], argv[2], strlen(args[0])))
+			continue;
+
+		cmd_found = 1;
+
+		if (strcmp(args[0], "ap_bcast_bet_sta_wait") == 0) {
+			param_buf->ap_bcast_bet_sta_wait =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "Ap_Bcast_Offset") == 0) {
+			param_buf->Ap_Bcast_Offset =
+				(t_u16)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "bcastTWTLI") == 0) {
+			param_buf->bcastTWTLI = (t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "count") == 0) {
+			param_buf->count = (t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "btwtId0") == 0) {
+			param_buf->BTWT_sets[0].btwtId =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "Ap_Bcast_Mantissa0") == 0) {
+			param_buf->BTWT_sets[0].Ap_Bcast_Mantissa =
+				(t_u16)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "Ap_Bcast_Exponent0") == 0) {
+			param_buf->BTWT_sets[0].Ap_Bcast_Exponent =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "nominalwake0") == 0) {
+			param_buf->BTWT_sets[0].nominalwake =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "btwtId1") == 0) {
+			param_buf->BTWT_sets[1].btwtId =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "Ap_Bcast_Mantissa1") == 0) {
+			param_buf->BTWT_sets[1].Ap_Bcast_Mantissa =
+				(t_u16)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "Ap_Bcast_Exponent1") == 0) {
+			param_buf->BTWT_sets[1].Ap_Bcast_Exponent =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "nominalwake1") == 0) {
+			param_buf->BTWT_sets[1].nominalwake =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "btwtId2") == 0) {
+			param_buf->BTWT_sets[2].btwtId =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "Ap_Bcast_Mantissa2") == 0) {
+			param_buf->BTWT_sets[2].Ap_Bcast_Mantissa =
+				(t_u16)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "Ap_Bcast_Exponent2") == 0) {
+			param_buf->BTWT_sets[2].Ap_Bcast_Exponent =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "nominalwake2") == 0) {
+			param_buf->BTWT_sets[2].nominalwake =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "btwtId3") == 0) {
+			param_buf->BTWT_sets[3].btwtId =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "Ap_Bcast_Mantissa3") == 0) {
+			param_buf->BTWT_sets[3].Ap_Bcast_Mantissa =
+				(t_u16)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "Ap_Bcast_Exponent3") == 0) {
+			param_buf->BTWT_sets[3].Ap_Bcast_Exponent =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "nominalwake3") == 0) {
+			param_buf->BTWT_sets[3].nominalwake =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "btwtId4") == 0) {
+			param_buf->BTWT_sets[4].btwtId =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "Ap_Bcast_Mantissa4") == 0) {
+			param_buf->BTWT_sets[4].Ap_Bcast_Mantissa =
+				(t_u16)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "Ap_Bcast_Exponent4") == 0) {
+			param_buf->BTWT_sets[4].Ap_Bcast_Exponent =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "nominalwake4") == 0) {
+			param_buf->BTWT_sets[4].nominalwake =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "}") == 0 && cmd_found) {
+			break;
+		}
+	}
+
+	if (!cmd_found) {
+		printf("Command %s not found in the config file!\n"
+		       "Syntax: ./mlanutl uapX process_btwt_ap_config_set <config/twt.conf>\n",
+		       (char *)argv[2]);
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	cmd->used_len = cmd_header_len + sizeof(btwt_ap_config);
+
+	/* Initialize the ifr structure */
+	memset(&ifr, 0, sizeof(ifr));
+
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl: process_btwt_ap_config_set");
+		fprintf(stderr, "mlanutl:process_btwt_ap_config_set failed\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+done:
+	if (line)
+		free(line);
+	if (config_file)
+		fclose(config_file);
+	if (cmd)
+		free(cmd);
+	if (buffer)
+		free(buffer);
+	return ret;
+}
+
+/**
+ *  @brief Process btwt_ap_config_get
+ *  @param argc    number of arguments
+ *  @param argv    A pointer to arguments array
+ *  @return        MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int process_btwt_ap_config_get(int argc, char *argv[])
+{
+	btwt_ap_config *param_buf = NULL;
+	char *line = NULL;
+	FILE *config_file = NULL;
+	int li = 0, ret = MLAN_STATUS_SUCCESS, cmd_found = 0,
+	    cmd_header_len = 0;
+	char *args[50], *pos = NULL;
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+
+	/* Check arguments */
+	if (argc != 4) {
+		printf("ERR:Incorrect number of arguments.\n");
+		printf("Syntax: ./mlanutl uapX process_btwt_ap_config_get <config/twt.conf>\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate memory!\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	cmd_header_len = strlen(CMD_NXP) + strlen(argv[2]);
+	prepare_buffer(buffer, argv[2], 0, NULL);
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR: Cannot allocate buffer for command!\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = cmd_header_len;
+	cmd->total_len = BUFFER_LENGTH;
+
+	param_buf = (btwt_ap_config *)((t_u8 *)buffer + cmd_header_len);
+
+	/* Check if file exists */
+	config_file = fopen(argv[3], "r");
+	if (config_file == NULL) {
+		printf("\nERR:Could not open Config file.\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	line = (char *)malloc(MAX_CONFIG_LINE);
+	if (!line) {
+		printf("ERR:Cannot allocate memory for line\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+	memset(line, 0, MAX_CONFIG_LINE);
+
+	/* Parse file and process */
+	while (config_get_line(line, MAX_CONFIG_LINE, config_file, &li, &pos)) {
+		parse_line(line, args, 50);
+		if (!cmd_found && strncmp(args[0], argv[2], strlen(args[0])))
+			continue;
+
+		cmd_found = 1;
+
+		if (strcmp(args[0], "ap_bcast_bet_sta_wait") == 0) {
+			param_buf->ap_bcast_bet_sta_wait =
+				(t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "Ap_Bcast_Offset") == 0) {
+			param_buf->Ap_Bcast_Offset =
+				(t_u16)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "bcastTWTLI") == 0) {
+			param_buf->bcastTWTLI = (t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "count") == 0) {
+			param_buf->count = (t_u8)A2HEXDECIMAL(args[1]);
+		} else if (strcmp(args[0], "}") == 0 && cmd_found) {
+			break;
+		}
+	}
+
+	if (!cmd_found) {
+		printf("Command %s not found in the config file!\n"
+		       "Syntax: ./mlanutl uapX process_btwt_ap_config_get <config/twt.conf>\n",
+		       (char *)argv[2]);
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	cmd->used_len = cmd_header_len + sizeof(btwt_ap_config);
+
+	/* Initialize the ifr structure */
+	memset(&ifr, 0, sizeof(ifr));
+
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl: process_btwt_ap_config_get");
+		fprintf(stderr, "mlanutl:process_btwt_ap_config_get failed\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+done:
+	if (line)
+		free(line);
+	if (config_file)
+		fclose(config_file);
+	if (cmd)
+		free(cmd);
+	if (buffer)
+		free(buffer);
+	return ret;
+}
+
+/**
  * *  @brief Process txwatchdog check command
  * *  @param argc     number of arguments
  * *  @param argv     A pointer to arguments array
@@ -28863,6 +30345,771 @@ static int process_crosssynch(int argc, char *argv[])
 
 	return MLAN_STATUS_SUCCESS;
 }
+
+/**
+ *  @brief Process Set/Get TSP Config
+ *  @param argc   Number of arguments
+ *  @param argv   A pointer to arguments array
+ *  @return     MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int process_tsp(int argc, char *argv[])
+{
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	mlan_ds_tsp_cfg *cfg = NULL;
+	struct ifreq ifr;
+	t_u8 rpath = 0;
+	t_u8 mac = 0;
+
+	if ((argc < 3) || (argc > 8 && argc != 11)) {
+		fprintf(stderr, "mlanutl: Invalid number of arguments\n");
+		fprintf(stderr,
+			"Usage: \nmlanutl <interface> wlan_tsp_cfg [enable] [backoff] [high threshold] [low threshold] [duty_cyc_step] [duty_cyc_min] [high_thrshld_temp] [low_thrshld_temp]\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	if (argc > 3) {
+		if ((atoi(argv[3]) < 0) || (atoi(argv[3]) > 1)) {
+			fprintf(stderr,
+				"ERR: Invalid enable value <valid 0/1>\n");
+			return MLAN_STATUS_FAILURE;
+		}
+
+		if ((atoi(argv[3]) != 0) && (argc != 11)) {
+			fprintf(stderr,
+				"mlanutl: for enabling TSP, please provide all other arguments as well\n");
+			fprintf(stderr,
+				"Usage: \nmlanutl <interface> wlan_tsp_cfg [enable] [backoff] [high threshold] [low threshold] [duty_cyc_step] [duty_cyc_min] [high_thrshld_temp] [low_thrshld_temp]\n");
+			return MLAN_STATUS_FAILURE;
+		}
+	}
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl");
+		fprintf(stderr, "mlanutl: TSP config fail\n");
+		if (cmd)
+			free(cmd);
+		if (buffer)
+			free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Process result */
+	if (argc == 3) {
+		cfg = (mlan_ds_tsp_cfg *)buffer;
+		/* Show TSP config data */
+		printf("TSP Configuration:\n");
+		printf("Enable:%d (%s)\n", cfg->enable,
+		       (cfg->enable == 1) ?
+			       "Enabled" :
+			       ((cfg->enable == 0) ? "Disabled" :
+						     "Invalid option set"));
+
+		if (cfg->enable < 0 || cfg->enable > 1) {
+			if (cmd)
+				free(cmd);
+			if (buffer)
+				free(buffer);
+			return MLAN_STATUS_FAILURE;
+		}
+
+		if (cfg->enable == 1) {
+			printf("\tPower backoff:%d\n\tHigh Power Threshold:%d\n\tLow Power Threshold:%d\n\tDuty Cycle Step:%d\n\tDuty CycleMin :%d\n\tHigh Threshold Temperature:%d\n\tLow Threshold Temperature:%d\n\tDuty Cycle Throttle Percent:%d\n\t Rf Temp Poll count:%d\n",
+			       cfg->backoff, cfg->high_thrshld,
+			       cfg->low_thrshld, cfg->duty_cyc_step,
+			       cfg->duty_cyc_min, cfg->high_thrshld_temp,
+			       cfg->low_thrshld_temp, cfg->throttle_duty_cycle,
+			       cfg->rf_temp_poll_cnt);
+		}
+
+		printf("\tCAU TSEN Temperature:%d\n", cfg->reg_cau_val);
+		printf("\tRFU Temperature: \n");
+		for (mac = 0; mac < MAX_NUM_MAC; mac++) {
+			for (rpath = 0; (rpath < MAX_PATHS) &&
+					(cfg->reg_rfu_temp[mac][rpath]);
+			     rpath++) {
+				printf("\t\t[mac:%d][%s]:%d\n", mac,
+				       (rpath == 0) ? "PATH_A" : "PATH_B",
+				       cfg->reg_rfu_temp[mac][rpath]);
+			}
+		}
+	}
+
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return MLAN_STATUS_SUCCESS;
+}
+
+/**
+ *  @brief Trigger the cmd buffer dump required for the private vendor cmd
+ *
+ *  @param argc   Number of arguments
+ *  @param argv   A pointer to arguments array
+ *  @return       MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int process_vndr_cmd_dump(int argc, char *argv[])
+{
+	int i = 0, ret = MLAN_STATUS_NOTFOUND;
+	struct command_node *node = NULL;
+
+	for (i = 0; i < (int)NELEMENTS(command_list); i++) {
+		node = &command_list[i];
+		if (!strcasecmp(node->name, argv[3])) {
+			vndr_hexdump = 1;
+			--argc;
+			argv++;
+			printf("argc=%d, command[%d]=%s \n", argc, i,
+			       command_list[i].name);
+			ret = node->handler(argc, argv);
+			break;
+		}
+	}
+
+	if (!vndr_hexdump)
+		print_vndr_cmd_dump_usage();
+
+	return ret;
+}
+
+/**
+ *  @brief Process auth_assoc_timeout_cfg configuration
+ *  @param argc   Number of arguments
+ *  @param argv   A pointer to arguments array
+ *  @return     MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int process_auth_assoc_timeout_cfg(int argc, char *argv[])
+{
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+	struct eth_priv_auth_assoc_timeout_cfg *timeout_cfg;
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl");
+		fprintf(stderr, "mlanutl: auth_assoc_timeout_cfg fail\n");
+		if (cmd)
+			free(cmd);
+		if (buffer)
+			free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Process result */
+	timeout_cfg = (struct eth_priv_auth_assoc_timeout_cfg *)buffer;
+	/* Show auth assoc timeout configure */
+	printf("Auth Assoc Timeout Configuration:\n");
+	printf("    auth_timeout:                   %d ms\n",
+	       timeout_cfg->auth_timeout);
+	printf("    auth_retry_timeout_if_ack:      %d ms \n",
+	       timeout_cfg->auth_retry_timeout_if_ack);
+	printf("    auth_retry_timeout_if_no_ack:   %d ms\n",
+	       timeout_cfg->auth_retry_timeout_if_no_ack);
+	printf("    assoc_timeout:                  %d ms\n",
+	       timeout_cfg->assoc_timeout);
+	printf("    reassoc_timeout:                %d ms\n",
+	       timeout_cfg->reassoc_timeout);
+	printf("    retry_timeout:                  %d ms\n",
+	       timeout_cfg->retry_timeout);
+
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return MLAN_STATUS_SUCCESS;
+}
+/**
+ *  @brief process get_foundry_type
+ *  @param argc  number of arguments
+ *  @param argv  A pointer to arguments array
+ *  @return  MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+
+static int process_foundry_type(int argc, char *argv[])
+{
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+	int ret = 0;
+	t_s8 fab_code = 0;
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+	memset(buffer, 0, BUFFER_LENGTH);
+
+	if (argc != 3) {
+		printf("incorrect number of arguments\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	prepare_buffer(buffer, argv[2], 0, NULL);
+
+	/*send command */
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl");
+		fprintf(stderr, "mlanutl: fab code info fail\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	/* Process result */
+
+	if (argc == 3) {
+		/* GET operation */
+		memcpy(&fab_code, buffer, sizeof(t_s8));
+		if (fab_code == 1)
+			printf("Foundry_type is TSMC\n");
+
+		else if (fab_code == 2)
+			printf("Foundry_type is UMC\n");
+
+		else
+			printf("invalid foundry_type\n");
+	}
+
+done:
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return ret;
+}
+
+/**
+ *  @brief Process per band txpwr cap set/get
+ *  @param argc   Number of arguments
+ *  @param argv   A pointer to arguments array
+ *  @return       MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int process_per_band_txpwr_cap(int argc, char *argv[])
+{
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+	per_band_txpwr_cap data;
+	int rssi1 = 0, rssi2 = 0;
+	/* Check arguments */
+	if (argc < 4 || (argc > 7)) {
+		printf("ERR:Incorrect number of arguments!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl");
+		fprintf(stderr, "mlanutl: per_band_txpwr_cap fail\n");
+		if (cmd)
+			free(cmd);
+		if (buffer)
+			free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Process result */
+	memset((void *)&data, 0, sizeof(data));
+	memcpy((void *)&data, buffer, sizeof(data));
+
+	if (data.band < 2)
+		printf("per_band_txpwr_cap: band = %d, power = %ddBm\n",
+		       data.band, data.power);
+	if (data.band == 2) {
+		printf("per_band_txpwr_cap: band = %d", data.band);
+		if (data.power == 0xff) {
+			/* on some platforms, t_s8 is same as unsigned char */
+			rssi1 = (int)(data.strong_rssi_thresh);
+			if (rssi1 > 0x7f)
+				rssi1 = -(256 - rssi1);
+			rssi2 = (int)(data.weak_rssi_thresh);
+			if (rssi2 > 0x7f)
+				rssi2 = -(256 - rssi2);
+			printf("\nPeer RSSI Thresholds used to backoff Tx power on operating in 6GHz PSD VLP mode:");
+			printf("\nstrong = %s%ddBm, weak = %s%ddBm\n",
+			       ((rssi1 > 0) ? "-" : ""), rssi1,
+			       ((rssi2 > 0) ? "-" : ""), rssi2);
+		} else {
+			printf(", power = %ddBm\n", data.power);
+		}
+	}
+	printf("\n");
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return MLAN_STATUS_SUCCESS;
+}
+
+#ifdef UAP_SUPPORT
+/**
+ *  @brief Prepare agcs command buffer
+ *  @param agcs_req pointer to wlan_ioctl_agcs_info structure
+ *  @param num      Number of arguments
+ *  @param args     Arguments list
+ *  @return         MLAN_STATUS_SUCCESS
+ */
+static int prepare_agcs_buffer(wlan_ioctl_agcs_info *agcs_req, t_u32 num,
+			       char *args[])
+{
+	int arg_idx = 0;
+	char *parg_tok = NULL;
+	char *pchan_tok = NULL;
+	char *parg_cookie = NULL;
+	char *pchan_cookie = NULL;
+	int chan_parse_idx = 0;
+	int chan_cmd_idx = 0;
+	char chan_scratch[MAX_CHAN_SCRATCH];
+	char *pscratch = NULL;
+	int tmp_idx = 0;
+	int scan_time = 0;
+	int is_radio_set = 0;
+
+	for (arg_idx = 0; arg_idx < (int)num; arg_idx++) {
+		if (strncmp(args[arg_idx], "mode=", strlen("mode=")) == 0) {
+			/* "mode" token string handler */
+			agcs_req->mode = strtol(args[arg_idx] + strlen("mode="),
+						NULL, 16);
+			if ((agcs_req->mode & 0xF) && !(agcs_req->mode & 0x1)) {
+				printf("ERR: Not support this mode without set BIT0 on\n");
+				return MLAN_STATUS_FAILURE;
+			}
+		} else if (strncmp(args[arg_idx],
+				   "avg_th=", strlen("avg_th=")) == 0) {
+			/* "avg_th" token string handler */
+			agcs_req->avg_threshold_percentage =
+				atoi(args[arg_idx] + strlen("avg_th="));
+		} else if (strncmp(args[arg_idx],
+				   "rx_min_pkt=", strlen("rx_min_pkt=")) == 0) {
+			/* "rx_min_pkt" token string handler */
+			agcs_req->rx_min_pkt_count =
+				atoi(args[arg_idx] + strlen("rx_min_pkt="));
+		} else if (strncmp(args[arg_idx],
+				   "tx_min_pkt=", strlen("tx_min_pkt=")) == 0) {
+			/* "tx_min_pkt" token string handler */
+			agcs_req->tx_min_pkt_count =
+				atoi(args[arg_idx] + strlen("tx_min_pkt="));
+		} else if (strncmp(args[arg_idx], "sample_time=",
+				   strlen("sample_time=")) == 0) {
+			/* "sample_time" token string handler */
+			agcs_req->sample_time =
+				atoi(args[arg_idx] + strlen("sample_time="));
+		} else if (strncmp(args[arg_idx], "sample_window=",
+				   strlen("sample_window=")) == 0) {
+			/* "sample_window" token string handler */
+			agcs_req->sample_count_window =
+				atoi(args[arg_idx] + strlen("sample_window="));
+		} else if (strncmp(args[arg_idx],
+				   "hit_cnt=", strlen("hit_cnt=")) == 0) {
+			/* "hit_cnt" token string handler */
+			agcs_req->continuous_hit_count =
+				atoi(args[arg_idx] + strlen("hit_cnt="));
+		} else if (strncmp(args[arg_idx],
+				   "nf_margin=", strlen("nf_margin=")) == 0) {
+			/* "nf_margin" token string handler */
+			agcs_req->nf_margin =
+				atoi(args[arg_idx] + strlen("nf_margin="));
+		} else if (strncmp(args[arg_idx],
+				   "chload_th=", strlen("chload_th=")) == 0) {
+			/* "chload_th" token string handler */
+			agcs_req->chload_threshold_percentage =
+				atoi(args[arg_idx] + strlen("chload_th="));
+		} else if (strncmp(args[arg_idx],
+				   "csa_cnt=", strlen("csa_cnt=")) == 0) {
+			/* "csa_cnt" token string handler */
+			agcs_req->csa_cnt =
+				atoi(args[arg_idx] + strlen("csa_cnt="));
+		} else if (strncmp(args[arg_idx], "chan=", strlen("chan=")) ==
+			   0) {
+			/* "chan" token string handler */
+			parg_tok = args[arg_idx] + strlen("chan=");
+
+			if (strlen(parg_tok) > MAX_CHAN_SCRATCH) {
+				printf("Error: Specified channels exceeds max limit\n");
+				return MLAN_STATUS_FAILURE;
+			}
+			is_radio_set = FALSE;
+
+			while ((parg_tok = strtok_r(parg_tok, ",",
+						    &parg_cookie)) != NULL) {
+				memset(chan_scratch, 0x00,
+				       sizeof(chan_scratch));
+				pscratch = chan_scratch;
+
+				for (chan_parse_idx = 0;
+				     (unsigned int)chan_parse_idx <
+				     strlen(parg_tok);
+				     chan_parse_idx++) {
+					if (isalpha((unsigned char)*(
+						    parg_tok +
+						    chan_parse_idx))) {
+						*pscratch++ = ' ';
+					}
+					*pscratch++ =
+						*(parg_tok + chan_parse_idx);
+				}
+				*pscratch = 0;
+				parg_tok = NULL;
+
+				pchan_tok = chan_scratch;
+
+				while ((pchan_tok = strtok_r(pchan_tok, " ",
+							     &pchan_cookie)) !=
+				       NULL) {
+					if (isdigit((unsigned char)*pchan_tok)) {
+						agcs_req->chan_list[chan_cmd_idx]
+							.chan_number =
+							atoi(pchan_tok);
+						if (agcs_req->chan_list
+							    [chan_cmd_idx]
+								    .chan_number >
+						    MAX_CHAN_BG_BAND)
+							agcs_req->chan_list
+								[chan_cmd_idx]
+									.radio_type =
+								1;
+					} else {
+						switch (toupper((
+							unsigned char)*pchan_tok)) {
+						case 'A':
+							agcs_req->chan_list
+								[chan_cmd_idx]
+									.radio_type =
+								1;
+							is_radio_set = TRUE;
+							break;
+						case 'B':
+						case 'G':
+							agcs_req->chan_list
+								[chan_cmd_idx]
+									.radio_type =
+								0;
+							is_radio_set = TRUE;
+							break;
+						case 'E':
+							agcs_req->chan_list
+								[chan_cmd_idx]
+									.radio_type =
+								2;
+							is_radio_set = TRUE;
+							break;
+						case 'C':
+							agcs_req->chan_list
+								[chan_cmd_idx]
+									.scan_type =
+								MLAN_SCAN_TYPE_ACTIVE;
+							break;
+						case 'P':
+							agcs_req->chan_list
+								[chan_cmd_idx]
+									.scan_type =
+								MLAN_SCAN_TYPE_PASSIVE;
+							break;
+						default:
+							printf("Error: Band type not supported!\n");
+							return -EOPNOTSUPP;
+						}
+						if (!chan_cmd_idx &&
+						    !agcs_req->chan_list
+							     [chan_cmd_idx]
+								     .chan_number &&
+						    is_radio_set)
+							agcs_req->chan_list
+								[chan_cmd_idx]
+									.radio_type |=
+								BAND_SPECIFIED;
+					}
+					pchan_tok = NULL;
+				}
+				if (((agcs_req->chan_list[chan_cmd_idx]
+					      .chan_number > MAX_CHAN_BG_BAND) &&
+				     !agcs_req->chan_list[chan_cmd_idx]
+					      .radio_type) ||
+				    ((agcs_req->chan_list[chan_cmd_idx]
+					      .chan_number < MAX_CHAN_BG_BAND) &&
+				     (agcs_req->chan_list[chan_cmd_idx]
+					      .radio_type == 1))) {
+					printf("Error: Invalid Radio type: chan=%d radio_type=%d\n",
+					       agcs_req->chan_list[chan_cmd_idx]
+						       .chan_number,
+					       agcs_req->chan_list[chan_cmd_idx]
+						       .radio_type);
+					return MLAN_STATUS_FAILURE;
+				}
+				agcs_req->chan_list[chan_cmd_idx].scan_time =
+					30;
+				chan_cmd_idx++;
+			}
+		} else if (strncmp(args[arg_idx],
+				   "scan_dur=", strlen("scan_dur=")) == 0) {
+			/* "scan_dur" token string handler */
+			scan_time = atoi(args[arg_idx] + strlen("scan_dur="));
+			agcs_req->chan_list[0].scan_time = scan_time;
+		} else if (strncmp(args[arg_idx], "nav_mitigation_th=",
+				   strlen("nav_mitigation_th=")) == 0) {
+			/* "nav_mitigation_th" token string handler */
+			agcs_req->nav_mitigation_th = atoi(
+				args[arg_idx] + strlen("nav_mitigation_th="));
+		} else if (strncmp(args[arg_idx], "ch_th=", strlen("ch_th=")) ==
+			   0) {
+			/* "ch_th" token string handler */
+			agcs_req->ch_th =
+				atoi(args[arg_idx] + strlen("ch_th="));
+		} else if (strncmp(args[arg_idx], "min_pkt_percentage=",
+				   strlen("min_pkt_percentage=")) == 0) {
+			/* "min_pkt_percentage" token string handler */
+			agcs_req->min_pkt_percentage = atoi(
+				args[arg_idx] + strlen("min_pkt_percentage="));
+		} else {
+			printf("Error: Unrecognized parameter %s\n",
+			       args[arg_idx]);
+			return MLAN_STATUS_FAILURE;
+		}
+	}
+
+	/* Update all the channels to have the same scan time */
+	for (tmp_idx = 1; tmp_idx < chan_cmd_idx; tmp_idx++) {
+		agcs_req->chan_list[tmp_idx].scan_time = scan_time;
+	}
+
+	return MLAN_STATUS_SUCCESS;
+}
+
+/**
+ *  @brief Show usage information for the agcs command
+ *
+ *  $return         N/A
+ */
+static void print_agcs_usage(void)
+{
+	printf("Invalid input command provided to agcs! \n");
+	printf("Usage: ./mlanutl uap0 agcs [mode=<bit_map>] [avg_th=<value>] [rx_min_pkt=<value>] [tx_min_pkt=<value>] ...\n");
+	printf("[ch_th=<value>] only used for agcs only per ch load on NH\n");
+	printf("[avg_th=<value>][rx_min_pkt=<value>][tx_min_pkt=<value>][sample_window=<value>][hit_cnt=<value>][nav_mitigation_th=<value>][min_pkt_percentage=<value>] not used for agcs only per ch load on NH\n");
+	printf("To SET: ./mlanutl uap0 agcs mode=0x1\n");
+	printf("To GET: ./mlanutl uap0 agcs\n");
+	printf("\n");
+}
+
+/**
+ *  @brief Process agcs configuration
+ *  @param argc   Number of arguments
+ *  @param argv   A pointer to arguments array
+ *  @return     MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int process_agcs(int argc, char *argv[])
+{
+	wlan_ioctl_agcs_info *agcs_req = NULL;
+	t_u8 *pos = NULL;
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	memset(buffer, 0, BUFFER_LENGTH);
+
+	/* Flag it for our use */
+	pos = buffer;
+
+	/* Insert command */
+	strncpy((char *)pos, (char *)argv[2], strlen(argv[2]));
+	pos += (strlen(argv[2]));
+
+	/* Insert arguments */
+	agcs_req = (wlan_ioctl_agcs_info *)pos;
+
+	if (prepare_agcs_buffer(agcs_req, (argc - 3), &argv[3])) {
+		print_agcs_usage();
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+	if (argc == 3) {
+		agcs_req->action = MLAN_ACT_GET;
+	} else {
+		agcs_req->action = MLAN_ACT_SET;
+	}
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl");
+		fprintf(stderr, "mlanutl: agcs fail\n");
+		if (cmd)
+			free(cmd);
+		if (buffer)
+			free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Process Get result */
+	if (argc == 3) {
+		/* GET operation */
+		agcs_req = (wlan_ioctl_agcs_info *)buffer;
+		printf("agcs param: mode=%d avg_th=%d rx_min_pkt=%d tx_min_pkt=%d sample_time=%d sample_window=%d hit_cnt=%d nf_margin=%d chload_th=%d csa_cnt=%d nav_mitigation_th=%d ch_th=%d min_pkt_percentage=%d\n\n",
+		       agcs_req->mode, agcs_req->avg_threshold_percentage,
+		       agcs_req->rx_min_pkt_count, agcs_req->tx_min_pkt_count,
+		       agcs_req->sample_time, agcs_req->sample_count_window,
+		       agcs_req->continuous_hit_count, agcs_req->nf_margin,
+		       agcs_req->chload_threshold_percentage, agcs_req->csa_cnt,
+		       agcs_req->nav_mitigation_th, agcs_req->ch_th,
+		       agcs_req->min_pkt_percentage);
+		printf("ch_th is only used for agcs only per ch load on NH, otherwise its value is meaningless\n");
+		printf("For agcs only per ch load on NH, avg_th, rx_min_pkt, tx_min_pkt, sample_window, hit_cnt and nav_mitigation_th are meaningless\n");
+	}
+
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+	return MLAN_STATUS_SUCCESS;
+}
+#endif /* UAP_SUPPORT */
 
 /********************************************************
 			Global Functions

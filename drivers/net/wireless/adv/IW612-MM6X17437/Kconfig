@@ -10,3 +10,7 @@ config IW612_MM6X17437
 		(indicating Multi-Chip x Multi-Interface support) based on
 		NXP 802.11n/ac chipsets. If you choose to build it as a module,
 		it will be build 2 modules moal.ko and mlan.ko.
+if IW612_MM6X17437
+source "drivers/net/wireless/adv/IW612-MM6X17437/wlan_src/Kconfig"
+
+endif

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -34,6 +34,9 @@
 #include "mwu_key_material.h"
 #include "nan_eapol.h"
 u8 a_band_flag = TRUE;
+u8 op6GEnabled = TRUE;
+u8 g_5G_chan = 0;
+u8 channel_config_err = 0;
 void change_ndp_state(struct mwu_iface_info *cur_if, enum ndp_state new);
 void nan_send_ndp_event(struct mwu_iface_info *cur_if, u8 event_id,
 			u8 *event_buffer, unsigned int buffer_len);
@@ -41,7 +44,7 @@ void nan_send_ndp_event(struct mwu_iface_info *cur_if, u8 event_id,
 typedef struct _oper_bw_chan {
 	unsigned char op_class; // operating class
 	unsigned char bandwidth; // bandwidth 0-20M 1-40M 2-80M 3-160M
-	unsigned char channel_list[13]; // channel list
+	unsigned char channel_list[59]; // channel list
 } oper_bw_chan;
 
 static oper_bw_chan global_oper_bw_chan[] = {
@@ -60,7 +63,11 @@ static oper_bw_chan global_oper_bw_chan[] = {
 	{128, 2, {42, 58, 106, 122, 138, 155}},
 	{129, 3, {50, 114}},
 	{130, 2, {42, 58, 106, 122, 138, 155}},
-};
+	{131, 0, {1,   5,   9,	 13,  17,  21,	25,  29,  33,  37,  41,	 45,
+		  49,  53,  57,	 61,  65,  69,	73,  77,  81,  85,  89,	 93,
+		  97,  101, 105, 109, 113, 117, 121, 125, 129, 133, 137, 141,
+		  145, 149, 153, 157, 161, 165, 169, 173, 177, 181, 185, 189,
+		  193, 197, 201, 205, 209, 213, 217, 221, 225, 229, 233}}};
 
 static u16 repeat_interval[] = {
 	0, 128, 256, 512, 1024, 2048, 4096, 8192,
@@ -82,16 +89,30 @@ u16 ndp_get_chan_bitmap(int op_class, int chan)
 	int i, j, temp_chan;
 	static int num_op_class =
 		sizeof(global_oper_bw_chan) / sizeof(oper_bw_chan);
+	u16 bitmap = 0;
 
 	for (i = 0; i < num_op_class; i++) {
 		if (global_oper_bw_chan[i].op_class == op_class) {
-			for (j = 0; j < 13; j++) {
-				temp_chan =
-					global_oper_bw_chan[i].channel_list[j];
-				if (temp_chan && chan == temp_chan)
-					return (1U << j);
-				else if (!temp_chan)
-					break;
+			if (op_class < 131) {
+				for (j = 0; j < 13; j++) {
+					temp_chan = global_oper_bw_chan[i]
+							    .channel_list[j];
+					if (temp_chan && chan == temp_chan)
+						return (1U << j);
+					else if (!temp_chan)
+						break;
+				}
+			} else {
+				for (j = 0; j < 59; j++) {
+					temp_chan = global_oper_bw_chan[i]
+							    .channel_list[j];
+					if (temp_chan && chan == temp_chan)
+						bitmap = (((59 - j + 1) << 8) |
+							  (temp_chan));
+					else if (!temp_chan)
+						break;
+				}
+				return bitmap;
 			}
 		}
 	}
@@ -129,6 +150,24 @@ u8 nan_get_channels_from_bitmap(u8 op_class, u16 bitmap, u8 primary_chan_bitmap,
 		}
 	}
 	return k;
+}
+
+u8 nan_get_opclass(u8 channel, u8 bw)
+{
+	int i, j;
+	static int num_op_class =
+		sizeof(global_oper_bw_chan) / sizeof(oper_bw_chan);
+	for (i = 0; i < num_op_class; i++) {
+		if (global_oper_bw_chan[i].bandwidth == bw) {
+			for (j = 0; j < 13; j++) {
+				if (global_oper_bw_chan[i].channel_list[j] ==
+				    channel) {
+					return global_oper_bw_chan[i].op_class;
+				}
+			}
+		}
+	}
+	return 0;
 }
 
 /*============NEW NAN Data Engine functions start from here=============*/
@@ -1581,6 +1620,10 @@ enum nan_error nan_parse_ndp_req(struct mwu_iface_info *cur_if, u8 *ndl_status,
 	ndp_req_buf = cur_if->pnan_info->rx_ndp_req;
 
 	a_band_flag = cur_if->pnan_info->a_band ? TRUE : FALSE;
+	if ((cur_if->pnan_info->op6G < 4) && (cur_if->pnan_info->op6G != -1))
+		op6GEnabled = TRUE;
+	else
+		op6GEnabled = FALSE;
 
 	/* Process NDL attribute */
 	ndl_attr = (nan_ndl_attr *)nan_get_nan_attr(
@@ -3514,7 +3557,7 @@ enum nan_error nan_parse_avail_entries(nan_availability_list *avail,
 		avail_entry->period = ind;
 		ERR("NAN2 : repeat_interval assigned %d", repeat_interval[ind]);
 
-		if (!avail_entry->time_bitmap) {
+		if (avail_entry->time_bitmap_count == 0) {
 			ERR("NAN2 : Parsed time bitmap is 0!");
 		}
 		szof_time_bitmap_ctrl = 2;
@@ -3560,8 +3603,16 @@ enum nan_error nan_parse_avail_entries(nan_availability_list *avail,
 			}
 			if (*band_id == 4 && a_band_flag == TRUE) // 5 GHz
 			{
-				avail_entry->channels[0] = DEFAULT_5G_OP_CHAN;
-				avail_entry->op_class = DEFAULT_5G_OP_CLASS;
+				avail_entry->channels[0] = g_5G_chan;
+				avail_entry->op_class = nan_get_opclass(
+					g_5G_chan, CHAN_BW_20MHZ);
+				break;
+			}
+
+			if (*band_id == 7 && op6GEnabled == TRUE) // 6 GHz
+			{
+				avail_entry->channels[0] = DEFAULT_6G_OP_CHAN;
+				avail_entry->op_class = DEFAULT_6G_OP_CLASS;
 				break;
 			}
 			band_id++;
@@ -3587,9 +3638,9 @@ enum nan_error nan_parse_avail_entries(nan_availability_list *avail,
 					chan_entry->primary_chan_bitmap,
 					&avail_entry->channels[j]);
 				avail_entry->op_class = chan_entry->op_class;
-				if (chan_entry->op_class >= 128)
-					avail_entry->op_class =
-						DEFAULT_5G_OP_CLASS;
+				/*if(chan_entry->op_class >= 115)
+				    avail_entry->op_class =
+				   nan_get_opclass(g_5G_chan, CHAN_BW_20MHZ);*/
 				break;
 			}
 			chan_entry++;
@@ -3604,8 +3655,9 @@ enum nan_error nan_parse_avail_entries(nan_availability_list *avail,
 				chan_entry->primary_chan_bitmap,
 				&avail_entry->channels[j]);
 			avail_entry->op_class = chan_entry->op_class;
-			if (chan_entry->op_class >= 128)
-				avail_entry->op_class = DEFAULT_5G_OP_CLASS;
+			/*if(chan_entry->op_class >= 115)
+			    avail_entry->op_class = nan_get_opclass(g_5G_chan,
+			   CHAN_BW_20MHZ);*/
 		}
 		/*If still no channel found return error*/
 		if (j == 0)
@@ -4811,6 +4863,16 @@ enum nan_error nan_handle_schedule_update(struct mwu_iface_info *cur_if,
 		count++;
 	}
 
+	// Device Capability Extension Attribute
+	nan_device_capability_extension_attr *peer_cap_ext_attr =
+		(nan_device_capability_extension_attr *)nan_get_nan_attr(
+			NAN_DEVICE_CAPABILITY_EXT_ATTR, buffer, size);
+	if (peer_cap_ext_attr) {
+		if (peer_cap_ext_attr->capability.regulatory_info)
+			ERR("NAN 6G: Peer device operating mode: %d",
+			    peer_cap_ext_attr->capability.opMode);
+	}
+
 	return NAN_ERR_SUCCESS;
 }
 
@@ -4866,8 +4928,13 @@ enum nan_error nan_send_ndp_req(struct mwu_iface_info *cur_if, nan_ndp_req *req,
 						      // all slots on 2.4GHz
 	if (cur_if->pnan_info->a_band)
 		device_capa_attr->committed_dw_info._5g_dw = 1;
-	device_capa_attr->supported_bands =
-		cur_if->pnan_info->a_band ? 0x14 : 0x04; // gbhat@HC:only 2.4GHz
+	if ((cur_if->pnan_info->op6G < 4) && (cur_if->pnan_info->op6G != -1)) {
+		device_capa_attr->supported_bands =
+			cur_if->pnan_info->a_band ? 0x94 : 0x04;
+	} else
+		device_capa_attr->supported_bands =
+			cur_if->pnan_info->a_band ? 0x14 : 0x04; // gbhat@HC:only
+								 // 2.4GHz
 
 	if ((cur_if->pnan_info->ndpe_attr_supported) &&
 	    (cur_if->pnan_info->peer_avail_info_published.ndpe_attr_supported))
@@ -5106,7 +5173,22 @@ enum nan_error nan_send_ndp_req(struct mwu_iface_info *cur_if, nan_ndp_req *req,
 						peer_info =
 							&cur_if->pnan_info
 								 ->peer_avail_info_published;
-						if (peer_info->committed_valid) {
+						if ((cur_if->pnan_info->op6G <
+						     4) &&
+						    (cur_if->pnan_info->op6G !=
+						     -1)) {
+							if (peer_info->potential_valid &&
+							    peer_info
+								    ->support_6g) {
+								peer_entry =
+									peer_info
+										->entry_potential;
+								valid = peer_info
+										->potential_valid;
+								ERR("potential entry chosen from peer's published avail 6G entries");
+							}
+						} else if (peer_info
+								   ->committed_valid) {
 							peer_entry =
 								peer_info
 									->entry_committed;
@@ -5195,10 +5277,24 @@ enum nan_error nan_send_ndp_req(struct mwu_iface_info *cur_if, nan_ndp_req *req,
 													.combined_time_bitmap;
 											// peer_chan = peer_entry[i].channels[0];
 											// peer_class = peer_entry[i].op_class;
-											peer_chan =
-												DEFAULT_5G_OP_CHAN;
-											peer_class =
-												DEFAULT_5G_OP_CLASS;
+											if ((cur_if->pnan_info
+												     ->op6G <
+											     4) &&
+											    (cur_if->pnan_info
+												     ->op6G !=
+											     -1)) {
+												peer_chan =
+													DEFAULT_6G_OP_CHAN;
+												peer_class = nan_get_opclass(
+													peer_chan,
+													CHAN_BW_20MHZ);
+											} else {
+												peer_chan =
+													g_5G_chan;
+												peer_class = nan_get_opclass(
+													g_5G_chan,
+													CHAN_BW_20MHZ);
+											}
 											ERR("peer bit map found in a band (%x) ",
 											    peer_bitmap);
 											break;
@@ -5247,16 +5343,31 @@ enum nan_error nan_send_ndp_req(struct mwu_iface_info *cur_if, nan_ndp_req *req,
 							      peer_bitmap)) {
 								peer_bitmap =
 									0xffffffff;
-								peer_chan =
-									cur_if->pnan_info
-											->a_band ?
-										DEFAULT_2G_OP_CHAN :
-										DEFAULT_5G_OP_CHAN;
-								peer_class =
-									cur_if->pnan_info
-											->a_band ?
-										DEFAULT_2G_OP_CLASS :
-										DEFAULT_5G_OP_CLASS;
+								if ((cur_if->pnan_info
+									     ->op6G <
+								     4) &&
+								    (cur_if->pnan_info
+									     ->op6G !=
+								     -1)) {
+									peer_chan =
+										DEFAULT_6G_OP_CHAN;
+									peer_class = nan_get_opclass(
+										peer_chan,
+										CHAN_BW_20MHZ);
+								} else {
+									peer_chan =
+										cur_if->pnan_info
+												->a_band ?
+											DEFAULT_2G_OP_CHAN :
+											g_5G_chan;
+									peer_class =
+										cur_if->pnan_info
+												->a_band ?
+											DEFAULT_2G_OP_CLASS :
+											nan_get_opclass(
+												g_5G_chan,
+												CHAN_BW_20MHZ);
+								}
 							}
 						}
 
@@ -5427,10 +5538,14 @@ enum nan_error nan_send_ndp_req(struct mwu_iface_info *cur_if, nan_ndp_req *req,
 							    opt_fields_len);
 					chan_list->entry_ctrl.entry_type = 0x0;
 					chan_list->entry_ctrl.band_type = 0x0;
-					if (cur_if->pnan_info->a_band)
+					if ((cur_if->pnan_info->op6G < 4) &&
+					    (cur_if->pnan_info->op6G != -1)) {
+						chan_list->entry_ctrl
+							.num_entries = 0x3;
+					} else if (cur_if->pnan_info->a_band) {
 						chan_list->entry_ctrl
 							.num_entries = 0x2;
-					else
+					} else
 						chan_list->entry_ctrl
 							.num_entries = 0x1;
 
@@ -5446,6 +5561,17 @@ enum nan_error nan_send_ndp_req(struct mwu_iface_info *cur_if, nan_ndp_req *req,
 									.band_id);
 						temp++;
 						*temp = 0x04; /*5 GHz*/
+						sz_of_band_id++;
+					}
+
+					if ((cur_if->pnan_info->op6G < 4) &&
+					    (cur_if->pnan_info->op6G != -1)) {
+						u8 *temp =
+							(u8 *)(&chan_list
+									->chan_band_entry
+									.band_id);
+						temp += 2;
+						*temp = 0x07; /*6 GHz*/
 						sz_of_band_id++;
 					}
 
@@ -5714,6 +5840,19 @@ enum nan_error nan_send_ndp_req(struct mwu_iface_info *cur_if, nan_ndp_req *req,
 				 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+		// VHT reference - FC CH149 VHT80
+		u8 vhtcap[14] = {0xbf, 0x0c, 0x30, 0x70, 0xc0, 0x33, 0xfe,
+				 0xff, 0x86, 0x01, 0xfe, 0xff, 0x86, 0x01};
+		u8 vhtOp[7] = {0xc0, 0x5, 0x1, 0x9b, 0x0, 0xfc, 0xff};
+
+		// HE reference - BB CH37 HE80
+		u8 hecap[27] = {0xff, 0x19, 0x23, 0x6,	0x0,  0x10, 0x1a,
+				0x0,  0x0,  0x4,  0x20, 0x32, 0x89, 0x1d,
+				0x1,  0xa0, 0xc,  0x0,	0x8,  0x0,  0xfa,
+				0xff, 0xfa, 0xff, 0xa1, 0xff, 0x3};
+		u8 heOp[14] = {0xff, 0xc,  0x24, 0xf0, 0x3f, 0x2, 0xa9,
+			       0xfc, 0xff, 0x25, 0x2,  0x27, 0x0, 0x6};
 		u8 *elem_ptr;
 		u16 elem_len = 0;
 
@@ -5726,6 +5865,12 @@ enum nan_error nan_send_ndp_req(struct mwu_iface_info *cur_if, nan_ndp_req *req,
 		element_container_attr->len =
 			sizeof(supported_rates) + sizeof(ext_supported_rates) +
 			sizeof(htcap) + sizeof(htinfo) + 1;
+
+		if (cur_if->pnan_info->a_band) {
+			element_container_attr->len +=
+				sizeof(vhtcap) + sizeof(vhtOp) + sizeof(hecap) +
+				sizeof(heOp);
+		}
 
 		memcpy(elem_ptr, supported_rates, sizeof(supported_rates));
 		// mwu_hexdump(MSG_INFO, "elem", elem_ptr,
@@ -5747,11 +5892,73 @@ enum nan_error nan_send_ndp_req(struct mwu_iface_info *cur_if, nan_ndp_req *req,
 		elem_ptr += sizeof(htinfo);
 		elem_len += sizeof(htinfo);
 
+		if (cur_if->pnan_info->a_band) {
+			memcpy(elem_ptr, vhtcap, sizeof(vhtcap));
+			elem_ptr += sizeof(vhtcap);
+			elem_len += sizeof(vhtcap);
+
+			memcpy(elem_ptr, vhtOp, sizeof(vhtOp));
+			elem_ptr += sizeof(vhtOp);
+			elem_len += sizeof(vhtOp);
+
+			memcpy(elem_ptr, hecap, sizeof(hecap));
+			elem_ptr += sizeof(hecap);
+			elem_len += sizeof(hecap);
+
+			memcpy(elem_ptr, heOp, sizeof(heOp));
+			elem_ptr += sizeof(heOp);
+			elem_len += sizeof(heOp);
+		}
+
 		ndp_var_attr_ptr = ndp_var_attr_ptr +
 				   sizeof(nan_element_container_attr) +
 				   elem_len;
 		var_sd_attr_len = var_sd_attr_len +
 				  sizeof(nan_element_container_attr) + elem_len;
+	}
+
+	if ((cur_if->pnan_info->op6G < 4) && (cur_if->pnan_info->op6G != -1)) {
+		/* Device Capability Extension attribute (DCEA) */
+		nan_device_capability_extension_attr *device_cap_ext_attr;
+		device_cap_ext_attr = (nan_device_capability_extension_attr *)
+			ndp_var_attr_ptr;
+		device_cap_ext_attr->attribute_id =
+			NAN_DEVICE_CAPABILITY_EXT_ATTR;
+		device_cap_ext_attr->len =
+			sizeof(nan_device_capability_extension_attr) -
+			NAN_ATTR_HDR_LEN;
+
+		device_cap_ext_attr->capability.regulatory_info = 1;
+		device_cap_ext_attr->capability.opMode =
+			cur_if->pnan_info->op6G;
+
+		ndp_var_attr_ptr +=
+			sizeof(nan_device_capability_extension_attr);
+		var_sd_attr_len += sizeof(nan_device_capability_extension_attr);
+
+		if ((cur_if->pnan_info->op6G == 0) ||
+		    (cur_if->pnan_info->op6G == 1)) // if operating as LPI or SP
+						    // AP
+		{
+			/* Transmit Power Envelope attribute (TPEA) */
+			nan_transmit_power_envelope_attr *transmit_pwr_env_attr;
+			transmit_pwr_env_attr =
+				(nan_transmit_power_envelope_attr *)
+					ndp_var_attr_ptr;
+			transmit_pwr_env_attr->attribute_id =
+				NAN_TX_POWER_ENV_ATTR;
+			transmit_pwr_env_attr->len =
+				sizeof(nan_transmit_power_envelope_attr) -
+				NAN_ATTR_HDR_LEN;
+
+			nan_update_txPwr_envelope(
+				cur_if, &transmit_pwr_env_attr->tpeList);
+
+			ndp_var_attr_ptr +=
+				sizeof(nan_transmit_power_envelope_attr);
+			var_sd_attr_len +=
+				sizeof(nan_transmit_power_envelope_attr);
+		}
 	}
 
 	/*Security attributes*/
@@ -6269,8 +6476,13 @@ enum nan_error nan_send_ndp_resp(struct mwu_iface_info *cur_if,
 						      // all slots on 2.4GHz
 	if (cur_if->pnan_info->a_band)
 		device_capa_attr->committed_dw_info._5g_dw = 1;
-	device_capa_attr->supported_bands =
-		cur_if->pnan_info->a_band ? 0x14 : 0x04; // gbhat@HC:only 2.4GHz
+	if ((cur_if->pnan_info->op6G < 4) && (cur_if->pnan_info->op6G != -1)) {
+		device_capa_attr->supported_bands =
+			cur_if->pnan_info->a_band ? 0x94 : 0x04;
+	} else
+		device_capa_attr->supported_bands =
+			cur_if->pnan_info->a_band ? 0x14 : 0x04; // gbhat@HC:only
+								 // 2.4GHz
 
 	if ((cur_if->pnan_info->ndpe_attr_supported) &&
 	    (cur_if->pnan_info->peer_avail_info_published.ndpe_attr_supported))
@@ -6607,15 +6819,28 @@ enum nan_error nan_send_ndp_resp(struct mwu_iface_info *cur_if,
 					chan_list->entry_ctrl.entry_type = 0x1;
 					chan_list->entry_ctrl.band_type = 0x0;
 					chan_list->entry_ctrl.num_entries = 0x1;
-					chan_list->chan_band_entry.chan_entry
-						.op_class =
-						self_entry[i].op_class;
-					chan_list->chan_band_entry.chan_entry
-						.chan_bitmap =
-						ndp_get_chan_bitmap(
-							self_entry[i].op_class,
-							self_entry[i]
-								.channels[0]);
+					if ((cur_if->pnan_info->op6G < 4) &&
+					    (cur_if->pnan_info->op6G != -1)) {
+						chan_list->chan_band_entry
+							.chan_entry.op_class =
+							DEFAULT_6G_OP_CLASS;
+						chan_list->chan_band_entry
+							.chan_entry.chan_bitmap =
+							ndp_get_chan_bitmap(
+								DEFAULT_6G_OP_CLASS,
+								DEFAULT_6G_OP_CHAN);
+					} else {
+						chan_list->chan_band_entry
+							.chan_entry.op_class =
+							self_entry[i].op_class;
+						chan_list->chan_band_entry
+							.chan_entry.chan_bitmap =
+							ndp_get_chan_bitmap(
+								self_entry[i]
+									.op_class,
+								self_entry[i].channels
+									[0]);
+					}
 					chan_list->chan_band_entry.chan_entry
 						.primary_chan_bitmap = 0x0;
 					// chan_list->chan_band_entry.chan_entry.aux_chan_bitmap
@@ -6742,6 +6967,20 @@ enum nan_error nan_send_ndp_resp(struct mwu_iface_info *cur_if,
 				 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+		// VHT reference - FC CH149 VHT80
+		u8 vhtcap[14] = {0xbf, 0x0c, 0x30, 0x70, 0xc0, 0x33, 0xfe,
+				 0xff, 0x86, 0x01, 0xfe, 0xff, 0x86, 0x01};
+		u8 vhtOp[7] = {0xc0, 0x5, 0x1, 0x9b, 0x0, 0xfc, 0xff};
+
+		// HE reference - BB CH37 HE80
+		u8 hecap[27] = {0xff, 0x19, 0x23, 0x6,	0x0,  0x10, 0x1a,
+				0x0,  0x0,  0x4,  0x20, 0x32, 0x89, 0x1d,
+				0x1,  0xa0, 0xc,  0x0,	0x8,  0x0,  0xfa,
+				0xff, 0xfa, 0xff, 0xa1, 0xff, 0x3};
+		u8 heOp[14] = {0xff, 0xc,  0x24, 0xf0, 0x3f, 0x2, 0xa9,
+			       0xfc, 0xff, 0x25, 0x2,  0x27, 0x0, 0x6};
+
 		u8 *elem_ptr;
 		u16 elem_len = 0;
 
@@ -6754,6 +6993,12 @@ enum nan_error nan_send_ndp_resp(struct mwu_iface_info *cur_if,
 		element_container_attr->len =
 			sizeof(supported_rates) + sizeof(ext_supported_rates) +
 			sizeof(htcap) + sizeof(htinfo) + 1;
+
+		if (cur_if->pnan_info->a_band) {
+			element_container_attr->len +=
+				sizeof(vhtcap) + sizeof(vhtOp) + sizeof(hecap) +
+				sizeof(heOp);
+		}
 
 		memcpy(elem_ptr, supported_rates, sizeof(supported_rates));
 		// mwu_hexdump(MSG_INFO, "elem", elem_ptr,
@@ -6775,11 +7020,73 @@ enum nan_error nan_send_ndp_resp(struct mwu_iface_info *cur_if,
 		elem_ptr += sizeof(htinfo);
 		elem_len += sizeof(htinfo);
 
+		if (cur_if->pnan_info->a_band) {
+			memcpy(elem_ptr, vhtcap, sizeof(vhtcap));
+			elem_ptr += sizeof(vhtcap);
+			elem_len += sizeof(vhtcap);
+
+			memcpy(elem_ptr, vhtOp, sizeof(vhtOp));
+			elem_ptr += sizeof(vhtOp);
+			elem_len += sizeof(vhtOp);
+
+			memcpy(elem_ptr, hecap, sizeof(hecap));
+			elem_ptr += sizeof(hecap);
+			elem_len += sizeof(hecap);
+
+			memcpy(elem_ptr, heOp, sizeof(heOp));
+			elem_ptr += sizeof(heOp);
+			elem_len += sizeof(heOp);
+		}
+
 		ndp_var_attr_ptr = ndp_var_attr_ptr +
 				   sizeof(nan_element_container_attr) +
 				   elem_len;
 		var_sd_attr_len = var_sd_attr_len +
 				  sizeof(nan_element_container_attr) + elem_len;
+	}
+
+	if ((cur_if->pnan_info->op6G < 4) && (cur_if->pnan_info->op6G != -1)) {
+		/* Device Capability Extension attribute (DCEA) */
+		nan_device_capability_extension_attr *device_cap_ext_attr;
+		device_cap_ext_attr = (nan_device_capability_extension_attr *)
+			ndp_var_attr_ptr;
+		device_cap_ext_attr->attribute_id =
+			NAN_DEVICE_CAPABILITY_EXT_ATTR;
+		device_cap_ext_attr->len =
+			sizeof(nan_device_capability_extension_attr) -
+			NAN_ATTR_HDR_LEN;
+
+		device_cap_ext_attr->capability.regulatory_info = 1;
+		device_cap_ext_attr->capability.opMode =
+			cur_if->pnan_info->op6G;
+
+		ndp_var_attr_ptr +=
+			sizeof(nan_device_capability_extension_attr);
+		var_sd_attr_len += sizeof(nan_device_capability_extension_attr);
+
+		if ((cur_if->pnan_info->op6G == 0) ||
+		    (cur_if->pnan_info->op6G == 1)) // if operating as LPI or SP
+						    // AP
+		{
+			/* Transmit Power Envelope attribute (TPEA) */
+			nan_transmit_power_envelope_attr *transmit_pwr_env_attr;
+			transmit_pwr_env_attr =
+				(nan_transmit_power_envelope_attr *)
+					ndp_var_attr_ptr;
+			transmit_pwr_env_attr->attribute_id =
+				NAN_TX_POWER_ENV_ATTR;
+			transmit_pwr_env_attr->len =
+				sizeof(nan_transmit_power_envelope_attr) -
+				NAN_ATTR_HDR_LEN;
+
+			nan_update_txPwr_envelope(
+				cur_if, &transmit_pwr_env_attr->tpeList);
+
+			ndp_var_attr_ptr +=
+				sizeof(nan_transmit_power_envelope_attr);
+			var_sd_attr_len +=
+				sizeof(nan_transmit_power_envelope_attr);
+		}
 	}
 
 	/*Security attributes*/
@@ -7458,10 +7765,17 @@ enum nan_error nan_send_ndp_confirm(struct mwu_iface_info *cur_if,
 							     // on 2.4GHz
 			if (cur_if->pnan_info->a_band)
 				device_capa_attr->committed_dw_info._5g_dw = 1;
-			device_capa_attr->supported_bands =
-				cur_if->pnan_info->a_band ? 0x14 :
-							    0x04; // gbhat@HC:only
-								  // 2.4GHz
+
+			if ((cur_if->pnan_info->op6G < 4) &&
+			    (cur_if->pnan_info->op6G != -1)) {
+				device_capa_attr->supported_bands =
+					cur_if->pnan_info->a_band ? 0x94 : 0x04;
+			} else
+				device_capa_attr->supported_bands =
+					cur_if->pnan_info->a_band ?
+						0x14 :
+						0x04; // gbhat@HC:only 2.4GHz
+
 			if ((cur_if->pnan_info->ndpe_attr_supported) &&
 			    (cur_if->pnan_info->peer_avail_info_published
 				     .ndpe_attr_supported))
@@ -8467,10 +8781,16 @@ enum nan_error nan_send_schedule_update(struct mwu_iface_info *cur_if,
 			// peer_info = &cur_if->pnan_info->peer_avail_info;
 
 			self_info = &cur_if->pnan_info->self_avail_info;
-
-			sched_op_class = self_info->entry_committed[0].op_class;
-			sched_op_chan =
-				self_info->entry_committed[0].channels[0];
+			if ((cur_if->pnan_info->op6G < 4) &&
+			    (cur_if->pnan_info->op6G != -1)) {
+				sched_op_class = DEFAULT_6G_OP_CLASS;
+				sched_op_chan = DEFAULT_6G_OP_CHAN;
+			} else {
+				sched_op_class =
+					self_info->entry_committed[0].op_class;
+				sched_op_chan = self_info->entry_committed[0]
+							.channels[0];
+			}
 
 			// include the existing NDC schedule
 			sched_req_bitmap = ndc->slot;
@@ -8665,7 +8985,10 @@ enum nan_error nan_send_schedule_update(struct mwu_iface_info *cur_if,
 		chan_list->entry_ctrl.entry_type = 0x0;
 		chan_list->entry_ctrl.band_type = 0x0;
 		chan_list->entry_ctrl.num_entries = 0x1;
-		if (cur_if->pnan_info->a_band)
+		if ((cur_if->pnan_info->op6G < 5) &&
+		    (cur_if->pnan_info->op6G != -1)) {
+			chan_list->chan_band_entry.band_id = 0x07; /*6 GHz*/
+		} else if (cur_if->pnan_info->a_band)
 			chan_list->chan_band_entry.band_id = 0x04; /*5 GHz*/
 		else
 			chan_list->chan_band_entry.band_id = 0x02; /*2.4 GHz*/
@@ -8741,6 +9064,26 @@ enum nan_error nan_send_schedule_update(struct mwu_iface_info *cur_if,
 } // end of the block adding potential entry
 
 } // End of the if for ndp-ndl setup
+}
+
+if ((cur_if->pnan_info->op6G < 5) && (cur_if->pnan_info->op6G != -1)) {
+	/* Device Capability Extension attribute (DCEA) */
+
+	nan_device_capability_extension_attr *device_cap_ext_attr;
+	device_cap_ext_attr =
+		(nan_device_capability_extension_attr *)ndp_var_attr_ptr;
+	device_cap_ext_attr->attribute_id = NAN_DEVICE_CAPABILITY_EXT_ATTR;
+	device_cap_ext_attr->len =
+		sizeof(nan_device_capability_extension_attr) - NAN_ATTR_HDR_LEN;
+
+	// memcpy(&device_cap_ext_attr->capability, capabilities,
+	// sizeof(capabilities));
+	device_cap_ext_attr->capability.regulatory_info = 1;
+	device_cap_ext_attr->capability.opMode = cur_if->pnan_info->op6G;
+
+	ndp_var_attr_ptr += sizeof(nan_device_capability_extension_attr);
+	var_sd_attr_len += sizeof(nan_device_capability_extension_attr);
+	INFO("Device capability extension attr");
 }
 
 cmd_len = cmd_len + sizeof(nan_ndp) + var_sd_attr_len;
@@ -8910,12 +9253,21 @@ enum nan_error nan_send_bcast_schedule_update(struct mwu_iface_info *cur_if)
 					chan_list->chan_band_entry.chan_entry
 						.op_class =
 						self_entry[i].op_class;
-					chan_list->chan_band_entry.chan_entry
-						.chan_bitmap =
-						ndp_get_chan_bitmap(
-							self_entry[i].op_class,
-							self_entry[i]
-								.channels[0]);
+					if ((cur_if->pnan_info->op6G < 4) &&
+					    (cur_if->pnan_info->op6G != -1)) {
+						chan_list->chan_band_entry
+							.chan_entry.chan_bitmap =
+							ndp_get_chan_bitmap(
+								DEFAULT_6G_OP_CLASS,
+								DEFAULT_6G_OP_CHAN);
+					} else
+						chan_list->chan_band_entry
+							.chan_entry.chan_bitmap =
+							ndp_get_chan_bitmap(
+								self_entry[i]
+									.op_class,
+								self_entry[i].channels
+									[0]);
 					chan_list->chan_band_entry.chan_entry
 						.primary_chan_bitmap = 0x0;
 					// chan_list->chan_band_entry.chan_entry.aux_chan_bitmap
@@ -9048,4 +9400,43 @@ void nan_clear_avail_entries(struct mwu_iface_info *cur_if)
 	nan_clear_self_avail_entries(cur_if);
 	nan_clear_peer_avail_published_entries(cur_if);
 	nan_clear_peer_avail_entries(cur_if);
+}
+
+void nan_update_txPwr_envelope(struct mwu_iface_info *cur_if,
+			       tpe_entry_list *TpeList)
+{
+	tpe_payload TpePayload = {0};
+	sched_entry cur_entry = {0};
+
+	TpePayload.elem_id = NAN_TX_PWR_PAYLOAD_ID;
+	TpePayload.len = 4;
+	TpePayload.tpInfo.maxTpCount = 3;
+	TpePayload.tpInfo.maxTpInterpret = 2;
+	TpePayload.tpInfo.maxTpCategory = 0;
+
+	if (cur_if->pnan_info->op6G == 0) // Indoor - LPI
+	{
+		memset(TpePayload.localPwrConstraint, 0x30, 3); // Max Pwr - 24
+								// dBm
+	} else if (cur_if->pnan_info->op6G == 1) // Standard Power - SP
+	{
+		memset(TpePayload.localPwrConstraint, 0x3C, 3); // Max Pwr - 30
+								// dBm
+	} else if (cur_if->pnan_info->op6G == 2) // Very Low Power - VLP
+	{
+		memset(TpePayload.localPwrConstraint, 0x1C, 3); // Max Pwr - 14
+								// dBm
+	}
+
+	cur_entry.map_id = cur_if->pnan_info->self_avail_info.map_id;
+	cur_entry.time_bitmap_ctrl.bit_duration = NDP_TIME_BM_DUR_16;
+	cur_entry.time_bitmap_ctrl.bit_period = NDP_TIME_BM_PERIOD_512;
+	cur_entry.time_bitmap_ctrl.start_offset = 0;
+	cur_entry.time_bitmap_len = 4;
+	cur_entry.bitmap[0] =
+		cur_if->pnan_info->self_avail_info.entry_conditional[0]
+			.time_bitmap[0];
+
+	memcpy(&TpeList->tpePayload, &TpePayload, sizeof(tpe_payload));
+	memcpy(&TpeList->schedEntry, &cur_entry, sizeof(sched_entry));
 }

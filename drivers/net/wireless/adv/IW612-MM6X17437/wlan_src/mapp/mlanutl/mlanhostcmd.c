@@ -3,7 +3,7 @@
  * @brief This file contains mlanutl helper functions
  *
  *
- * Copyright 2008-2021 NXP
+ * Copyright 2008-2021, 2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -565,10 +565,32 @@ int process_host_cmd_resp(t_u8 *buf)
 						AutoTx_MacFrame_t *atmf =
 							&at->auto_tx
 								 .auto_tx_mac_frame;
+						t_u16 interval =
+							(atmf->interval) &
+							AUTO_TX_INTERVAL_BITS;
 
-						printf("Interval: %d second(s)\n",
-						       le16_to_cpu(
-							       atmf->interval));
+						if ((atmf->interval &
+						     AUTO_TX_INTERVAL_CTRL) ==
+						    AUTO_TX_INTERVAL_SEC) {
+							printf("Interval: %d second(s)\n",
+							       le16_to_cpu(
+								       interval));
+						} else if ((atmf->interval &
+							    AUTO_TX_INTERVAL_CTRL) ==
+							   AUTO_TX_INTERVAL_MS) {
+							printf("Interval: %d millisecond(ms)\n",
+							       le16_to_cpu(
+								       interval));
+						} else if ((atmf->interval &
+							    AUTO_TX_INTERVAL_CTRL) ==
+							   AUTO_TX_INTERVAL_US) {
+							printf("Interval: %d microsecond(us)\n",
+							       le16_to_cpu(
+								       interval));
+						} else {
+							printf("Interval: one shot\n");
+						}
+
 						printf("Priority: %#x\n",
 						       atmf->priority);
 						printf("Frame Length: %d\n",

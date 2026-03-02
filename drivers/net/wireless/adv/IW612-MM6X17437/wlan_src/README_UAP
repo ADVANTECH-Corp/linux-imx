@@ -1,7 +1,7 @@
 ===============================================================================
 			U S E R  M A N U A L
 
- Copyright 2009-2023 NXP
+ Copyright 2009-2024 NXP
 
 
 1) FOR DRIVER BUILD
@@ -9,9 +9,56 @@
 	Goto source code directory wlan_src.
 		make [clean] build
 	The driver binaries can be found in ../bin_xxxx directory.
-	The driver code supports Linux kernel from 2.6.32 to 6.7.0.
+	The driver source code is compatible with hosts running Linux kernel versions ranging from 2.6.32 to 6.17.0.
 
-2) FOR DRIVER INSTALL
+2) FOR INTEGRATING DRIVER INTO LINUX KERNEL
+
+	a) mkdir -p <Linux_Kernel_Repo>/drivers/net/wireless/nxp
+	b) Clone the WLAN source code from nxp-imx/mwifiex repo to the drivers/net/wireless/nxp directory in the kernel repo.
+		cd <Linux_Kernel_Repo>/drivers/net/wireless/nxp
+		git clone https://github.com/nxp-imx/mwifiex.git
+	c) Make sure the directories mlan/, mlinux/ as well as the files Makefile, Kconfig are present in drivers/net/wireless/nxp/mwifiex.
+	d) In <Linux_Kernel_Repo>/drivers/net/wireless/Kconfig, add the following line:
+		'source "drivers/net/wireless/nxp/mwifiex/Kconfig"'
+	e) In <Linux_Kernel_Repo>/drivers/net/wireless/Makefile, add the following line:
+		'obj-$(CONFIG_WLAN_VENDOR_NXP) += nxp/mwifiex/'
+	f) Run make defconfig or menuconfig to enable support for NXP WLAN devices:
+		Device Drivers > Network device support > Wireless LAN
+			[*]		"NXP WLAN devices"
+	g) To configure the driver as a module:
+			<M>		"NXP WLAN Driver"
+	   Or to configure the driver as inbuilt:
+			<*>		"NXP WLAN Driver"
+	h) Save. Verify the kernel .config file for CONFIG_WLAN_VENDOR_NXP and CONFIG_NXP_WLAN_DRIVER flags.
+	i) source <toolchain>
+	j) make
+
+	There is a high chance that the inbuilt NXP WLAN driver would be loaded before rootfs is mounted.
+	In such scenario, the firmware files can also be added to the linux kernel Image using the following steps:
+	a) mkdir -p <Linux_Kernel_Repo>/kernel/firmware/nxp
+	b) Copy FW files to <Linux_Kernel_Repo>/kernel/firmware/nxp/
+	c) In kernel .config, add 2 new config flags:
+		i) CONFIG_EXTRA_FIRMWARE="nxp/wifi_mod_para.conf nxp/pcieuartaw693_combo_v1.bin nxp/sduart_nw61x_v1.bin.se"
+		ii) CONFIG_EXTRA_FIRMWARE_DIR="kernel/firmware"
+	d) make
+
+	To pass module parameters to the inbuilt NXP WLAN driver, append the kernel bootargs with:
+		moal.<param>=<value>
+	For Example:
+		moal.mod_para=nxp/wifi_mod_para.conf moal.ps_mode=2 moal.drvdbg=0x37
+
+	To speed up driver loading, WLAN interface creation and reduce boot time, append the kernel bootargs with:
+		loglevel=2
+
+    Performance Comparison - WLAN Interface Creation Time (Example measurements):
+		Test Platform: iMX8MQ + PCIE AW693 on Linux 6.12.32 iMX BSP
+		a) WLAN drivers as loadable modules (rc.local/init script):       10 seconds
+		b) WLAN drivers as auto-load modules (modprobe.d/modules-load.d):  7 seconds
+		c) WLAN drivers built into kernel:                                 5 seconds
+		d) WLAN drivers built into kernel with loglevel=2:                 3 seconds
+	Note: Option 2 is the default configuration in iMX Linux BSP from kernel version 6.12.xx onwards.
+
+3) FOR DRIVER INSTALL
 
 	a) Copy firmware image to /lib/firmware/nxp/, copy wifi_mod_para.conf to /lib/firmware/nxp/.
 	b) Install WLAN driver
@@ -87,12 +134,12 @@
 	  expected PA current is expected to be in the 80-90 mA range for b/g/n modes
 	  max_wfd_bss: Maximum number of WIFIDIRECT BSS (default 1, max 1)
 	  wfd_name: Name of the WIFIDIRECT interface (default: "wfd")
-	  max_vir_bss: Number of Virtual interfaces (default 0)
+	  max_vir_bss: Number of Virtual interfaces (default 1)
 	  nan_name: Name of the NAN interface (default: "nan")
 	  max_nan_bss: Number of NAN interfaces (default 1)
+	  start_11ai_scan: Enable/disable 11ai bgscan (default 0, to enable:1, to disable:0)
 	 dpd_data_cfg=<DPD data config file name>
 	   e.g. copy dpd_data.conf to firmware directory, dpd_data_cfg=nxp/dpd_data.conf
-	  pcie_int_mode=0|1|2 <Legacy mode, MSI mode (default), MSI-X mode>
 	  pcie_int_mode=0|1 <Legacy mode, MSI mode (default)>
 	wakelock_timeout=<set wakelock_timeout value (ms)>
 	pmic=0|1 <No pmic configure cmd sent to firmware | Send pmic configure cmd to firmware>
@@ -112,17 +159,26 @@
 	  Bit15~Bit8:Channel time for channel index1;
 	  Bit7~Bit0:mode for channel index1; 0|1 <PM1 | Null2Self>
 	roamoffload_in_hs=0|1 <always enable fw roaming (default) | enable fw roaming only when host suspend>
-	uap_max_sta: Maximum number of STA for UAP/GO (default 0, max 64)
+	uap_max_sta: Maximum number of STA for UAP/GO (default 0, max STA number for UAP/GO supported in FW)
 	host_mlme=0|1 <Disable Host MLME support (default)| Enable Host MLME support>
 	country_ie_ignore=0|1 <Follow countryIE from AP and beacon hint enable (default) | Ignore countryIE from AP and beacon hint disable>
 	beacon_hints=0|1 <enable beacon hints(default) | disable beacon hints>
+    plinkstats=0|1|2 <Disable plinkstats (default) | Enable plinkstats | Restore plinkstats>
+	Example usage:
+		insmod moal.ko plinkstats=0            : Disable link statistics prints
+		insmod moal.ko plinkstats=1            : Enable link statistics prints
+		insmod moal.ko plinkstats=2            : Reset link statistics prints
+		insmod moal.ko plinkstats=1,0x7,5,0    : Enable Num TX Packets, Num RX Packets and Channel prints on dmesg.
+		insmod moal.ko plinkstats=1,0xf,5,1    : Enable Num TX Packets, Num RX Packets, Channel and Region prints on dmesg, and netlink event also enabled.
+	Note:
+		1. For more details about plinkstats parameters, refer plinkstats command details in README_MLAN file.
+		2. When changing drvdbg mask dynamically while running test, set MLSTATS bit(0x800) along with the change, if wifi logging feature is enabled.
     wacp_mode=0|1|2 <disable WACP default | WACP mode 1 | WACP mode 2>
-
 	Note: On some platforms (e.g. PXA910/920) double quotation marks ("") need to used
 	for module parameters.
 		insmod sdxxx.ko "<para1> <para2> ..."
 
-3) FOR DRIVER PROC & DEBUG
+4) FOR DRIVER PROC & DEBUG
 	The following info are provided in /proc/mwlan/adapterX/uapY/info.
 
 	driver_name = "uap"
@@ -239,7 +295,7 @@
 	b) touch /var/log/debug (if the file doesn't exist)
 	c) service rsyslog restart
 
-4) SOFT_RESET command
+5) SOFT_RESET command
    This command is used to perform a "soft reset" on the module.
    The FW code will disable hardware and jump to boot code.
    Host software will then need to re-download firmware if required.
@@ -286,8 +342,8 @@ sta_list
 sta_deauth <STA_MAC_ADDRESS>
 sta_deauth_ext <STA_MAC_ADDRESS> <REASON_CODE>
 radioctrl [0|1]
-txratecfg [l] [m] [n] [o]
-antcfg [m] [n]
+txratecfg [l] [m] [n] [o] [p]
+antcfg [m] [n] [o] [p]
 pscfg [MODE] [CTRL INACTTO MIN_SLEEP MAX_SLEEP MIN_AWAKE MAX_AWAKE]
 mic_err <STA_MAC_ADDRESS>
 key_material <MAC_ADDRESS> <KEY> [KEY_ID]
@@ -375,6 +431,8 @@ sys_cfg_tdls_ext_cap [CONFIG_FILE]
 sys_cfg_restrict_client_mode [<ENABLE> [MODE_CONFIG]]
 sys_cfg_wacp_mode [Mode]
 skip_cac <CHANNEL> <MODE> [<bw>]
+sys_cfg_6e_inband_frames [<ENABLE> <TYPE> <INTERVAL>]
+vndr_cmd_dump [uaputl_cmd] [arguments]
 
 -------------------
 Details of Commands
@@ -504,12 +562,13 @@ radioctrl
 
 txratecfg
 ----------
-    "./uaputl.exe txratecfg [l] [m] [n] [o]"
+    "./uaputl.exe txratecfg [l] [m] [n] [o] [p]"
 
     This command is used to set/get the transmit data rate.
 
     Note:
     1) Parameter [o] is optional. If [o] is not given, it will be set as 0xffff.
+    2) Parameter [p] is optional. It is only for auto tx packets. For parameter [P], BW configuration in [o] parameter is compulsory.
 
     Where
         [l] is <format>
@@ -655,6 +714,18 @@ txratecfg
 
         0xffff: Auto
 
+    [p] is <autoTx_set>
+
+    <autoTx_set> - This parameter is used to set the fix rate only for auto tx packets.
+        0: reset data rate of auto tx packets.
+        1: set configured data rate only for auto tx packets.
+
+    NOTE: BW configuration in [o] parameter is compulsory.
+         Bit 2 - 4 : indicate BW:
+             0 = 20 MHz
+             1 = 40 MHz
+             2 = 80 MHz
+
     Examples:
         ./uaputl.exe txratecfg 0 3        : Set fixed Tx rate to 11 Mbps
         ./uaputl.exe txratecfg 0 11       : Set fixed Tx rate to 54 Mbps
@@ -666,9 +737,12 @@ txratecfg
         ./uaputl.exe txratecfg 0xff     : Disable fixed rate and uses auto rate
         ./uaputl.exe txratecfg          : Read the current data rate setting
 
+        ./uaputl.exe txratecfg 2 0 1 4 1  : set fixed TX rate to MCS0 for NSS1 only for auto tx null/QoS null packets.
+        ./uaputl.exe txratecfg 2 0 1 4 0  : Disable fixed TX rate and use auto rate for null/QoS null packets.
+
 antcfg
 ----------
-	"./uaputl.exe antcfg [m] [n]"
+	"./uaputl.exe antcfg [m] [n] [o] [p]"
 
     This command is used to set/get the transmit and receive antenna.
     where value of m is:
@@ -690,6 +764,16 @@ antcfg
         Bit 9   -- Rx Path B
         Bit 8-9 -- Rx Path A+B
         For 9097/9098/IW624, HIGH BYTE for 5G setting
+    where value of o is:
+        For IW624, 6G setting
+        Bit 0   -- Tx Path A
+        Bit 1   -- Tx Path B
+        Bit 0-1 -- Tx Path A+B
+    where value of p is:
+        For IW624, 6G setting
+        Bit 0   -- Rx Path A
+        Bit 1   -- Rx Path B
+        Bit 0-1 -- Rx Path A+B
     The Tx path setting (m) is used if Rx path (n) is not provided.
 
     Examples:
@@ -699,6 +783,7 @@ antcfg
         ./uaputl.exe antcfg 0x103       : Set Tx and Rx path to A+B on 2G and Tx and Rx path to A on 5G
         ./uaputl.exe antcfg 0x3 0x3     : Set Tx path to A+B and Rx path to A+B on 2G, 5G not changed
         ./uaputl.exe antcfg 0x300 0x300 : Set Tx path to A+B and Rx path to A+B on 5G, 2G not changed
+        ./uaputl.exe antcfg 0x103 0x103 2 2   : Set both Tx and Rx path to A+B on 2G, both Tx and Rx path to A on 5G, both Tx and Rx path to B on 6G
 
 sys_cfg_ap_mac_address
 ----------------------
@@ -775,7 +860,7 @@ sys_cfg_scan_channels
     This command is used to set or get the AP's scan channel list.
 
     If no arguments are given, this command returns the scan channel list.
-    If BAND is 0, channel is set in 2.4 GHz band, and if BAND is 1, channel is set to 5GHz.
+    If BAND is 0, channel is set in 2.4 GHz band, if BAND is 1, channel is set to 5GHz, and if BAND is 2, channel is set to 6GHz.
     Channels from only one of the bands should be specified.
     Each CHANNEL.BAND pair must be separated by a space. BAND parameter is optional.
 
@@ -792,6 +877,8 @@ sys_cfg_scan_channels
 	./uaputl.exe sys_cfg_scan_channels 8.1 16.1 34
 		Set AP scan channel list to 8 16 and 34 in 5GHz band.
 
+	./uaputl.exe sys_cfg_scan_channels 37.2
+		Set AP scan channel list to 37 in 6GHz band.
 
 sys_cfg_channel
 ---------------
@@ -861,6 +948,7 @@ sys_cfg_channel_ext
 
     BAND: 0 : 2.4GHz operation
           1 : 5GHz operation
+          2 : 6GHz operation
     MODE: band config mode.
           Bit 0:  automatic channel selection (ACS) enable/disable
           Bit 1:  secondary channel is above primary channel enable/disable(only allow for channel 1-7)
@@ -882,6 +970,7 @@ sys_cfg_channel_ext
           157, 161
           165, 169
           173, 177
+          Bit 4-5:  Channel Width 0=20MHz, 2=40MHz, 3=80MHz for 6GHz band
     Example:
         ./uaputl.exe sys_cfg_channel_ext 6
                 Set AP radio channel to 6, and no secondary channel.
@@ -916,6 +1005,8 @@ sys_cfg_channel_ext
                 Set AP primary radio channel to 36, band to 5GHz and secondary channel is above.
         ./uaputl.exe sys_cfg_channel_ext 40 1 4
                 Set AP primary radio channel to 40, band to 5GHz and secondary channel is below.
+        ./uaputl.exe sys_cfg_channel_ext 37 2 0x30
+                Set AP primary radio channel to 37, band to 6GHz and bandwidth 80MHz.
 
 sys_cfg_rates
 -------------
@@ -2191,8 +2282,10 @@ sys_cfg_11n
                Bit 15-13: Reserved set to 0
                Bit 12: DSS/CCK mode in 40MHz enable/disable
                Bit 11-10: Reserved set to 0
-               Bit 9-8: Reserved set to 0x01
-               Bit 7: STBC enable/disable
+               Bit 9-8: Rx STBC- support for the reception of PPDUs using STBC
+                        Bit 8: Enable/ Disable support for one spatial stream
+                        Bit 9: Reserved set to 0
+               Bit 7: Tx STBC- enable/disable
                Bit 6: Short GI in 40 Mhz enable/disable
                Bit 5: Short GI in 20 Mhz enable/disable
                Bit 4: Green field enable/disable
@@ -2732,9 +2825,9 @@ mgmtframectrl
     ./uaputl.exe mgmtframectrl 0x101
     Set management frame control mask to 0x101.
 
-restrict_client_mode
+sys_cfg_restrict_client_mode
 --------------------
-	"./uaputl.exe restrict_client_mode [<ENABLE> [MODE_CONFIG]]"
+	"./uaputl.exe sys_cfg_restrict_client_mode [<ENABLE> [MODE_CONFIG]]"
 
 	This command is used to set/get the mode in which the ex-Stations can connect to the uAP.
 	If no arguments are given, this command returns the current configuration.
@@ -2750,10 +2843,10 @@ restrict_client_mode
 		Bit 4:	AC only Mode.
 
 	Example:
-	./uaputl.exe restrict_client_mode 1 0x8.
+	./uaputl.exe sys_cfg_restrict_client_mode 1 0x8.
 	Only N mode clients will be able to connect. Association will fail for other clients.
 
-	./uaputl.exe restrict_client_mode 0.
+	./uaputl.exe sys_cfg_restrict_client_mode 0.
 	This feature is disabled.
 
 	Note:
@@ -2856,6 +2949,69 @@ beacon_stuck_detect
                 ./uaputl.exe beacon_stuck_detect 0  0
                 Disable the beacon stuck detect meachanism.
 
+    "./uaputl.exe sys_cfg_6e_inband_frames [<ENABLE> <TYPE> <INTERVAL>]"
+
+    This command is used to enable/disable 6E unsolicitated broadcast probe response frames.
+
+    <ENABLE>     0 - disable sending the broadcast probe response frames
+                 1 - enable sending the broadcast probe response frames
+    <TYPE>       1 - broadcast probe response
+                     others - reserved
+    <INTERVAL>   interval number of TUs
+
+    Examples:
+                ./uaputl.exe sys_cfg_6e_inband_frames 1 1 20
+                Enable sending broadcast probe response frames with 20 TU interval.
+                ./uaputl.exe sys_cfg_6e_inband_frames 0 1
+                Disable sending broadcast probe response frames
+                ./uaputl.exe sys_cfg_6e_inband_frames
+                Get current sending settings.
+
+vndr_cmd_dump
+-------------
+    "./uaputl vndr_cmd_dump [uaputl_cmd] [arguments]"
+
+    This command is used to get the dump for the uaputl commands, which are supported via the
+    netlink interface. The generated dump includes an OUI, subcmd id for supported cmd and its
+    arguments. This dump is printed in the required raw format as per iw/wpa_cli vendor cmd.
+
+    This dump will be used as input data to an iw or wpa_cli vendor cmd, which sends the private
+    vendor cmd to driver via netlink. The specific subcmd support required in the driver for that
+    cmd to work.
+
+    [uaputl_cmd]   :   uaputl cmd for which dump is generated and
+                       this cmd is supported in driver via the netlink
+    [arguments]    :   uaputl cmd arguments as per uaputl user manual,
+                       which is set as per end user requirements.
+
+    Examples:
+                // SET cmd:
+                ./uaputl.exe vndr_cmd_dump sys_cfg_80211d_country_ie country US
+                      - Display the corresponding cmd input data in the required hexdump formats
+                      - Generated hexdump can be directly used with the iw/wpa_cli vendor cmd
+                 Below iw/wpa_cli vendor cmd using the above hexdump to SET the custom country ie,
+                 iw dev uap0 vendor send 0x5043 0x202 0x81 0x02 0x14 0x00 0x00 0x00 0x00 0x00 0x01 0x00 0x07 0x00 0x06 0x00 0x55 0x53 0x20 0x01 0x0b 0x1e 0x00 0x00 0x00 0x00
+                 wpa_cli -i mlan0 vendor 5043 514 8102140000000000010007000600555320010b1e00000000 nested=0
+                      - iw/wpa_cli vendor cmd uses the hexdump to set that custom country_ie in beacons via netlink
+
+                 // CLEAR cmd:
+                 ./uaputl.exe vndr_cmd_dump sys_cfg_80211d_country_ie clear
+                      - Display the corresponding cmd input data in the required hexdump formats
+                      - Generated hexdump can be directly used with the iw/wpa_cli vendor cmd
+                 Below iw/wpa_cli vendor cmd using the above hexdump to CLEAR the custom country ie,
+                 iw dev uap0 vendor send 0x5043 0x202 0x81 0x02 0x0a 0x00 0x00 0x00 0x00 0x00 0x04 0x00 0x00 0x00 0x00 0x00
+                 wpa_cli -i mlan0 vendor 5043 514 81020a0000000000040000000000 nested=0
+                      - iw/wpa_cli vendor cmd uses the hexdump to clear the custom country_ie in beacons via netlink
+
+                 // GET cmd:
+                 ./uaputl.exe vndr_cmd_dump sys_cfg_80211d_country_ie
+                      - Display the corresponding cmd input data in the required hexdump formats
+                      - Genertaed hexdump can be directly used with the iw/wpa_cli vendor cmd,
+                  Below iw/wpa_cli vendor cmd using the above hexdump to GET the custom country ie,
+                  iw dev uap0 vendor send 0x5043 0x202 0x81 0x02 0x0a 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+                  wpa_cli -i mlan0 vendor 5043 514 81020a0000000000000000000000 nested=0
+                      - iw/wpa_cli vendor cmd uses the hexdump to get the custom country_ie from beacons via netlink
+                      - wpa_cli doesn't print the cmd response, even though the cmd was responded by driver
 
 ===============================================================================
         U S E R  M A N U A L  F O R  MLANEVENT

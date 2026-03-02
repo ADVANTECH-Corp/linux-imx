@@ -3,7 +3,7 @@
  * @brief This file contains wlan driver specific defines etc.
  *
  *
- * Copyright 2009-2022 NXP
+ * Copyright 2009-2025, NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -111,6 +111,11 @@ Change log:
 /** BSS RESET */
 #define UAP_BSS_RESET 2
 
+/* HE MAC Capabilities Information field BIT 1 for TWT Req */
+#define HE_MAC_CAP_TWT_REQ_SUPPORT MBIT(1)
+/* HE MAC Capabilities Information field BIT 2 for TWT Resp*/
+#define HE_MAC_CAP_TWT_RESP_SUPPORT MBIT(2)
+
 /** wapi_msg */
 typedef struct _wapi_msg {
 	/** message type */
@@ -161,6 +166,9 @@ typedef struct _tx_rate_cfg_t {
 	t_u16 bitmap_rates[MAX_BITMAP_RATES_SIZE];
 	/** Rate Setting */
 	t_u16 rate_setting;
+	/** Only set auto tx fix rate */
+	t_u16 auto_null_fixrate_enable;
+
 } tx_rate_cfg_t;
 
 /** ant_cfg structure */
@@ -173,6 +181,10 @@ typedef struct _ant_cfg_t {
 	int tx_mode;
 	/** RX mode configured */
 	int rx_mode;
+	/** TX mode 6G configured */
+	t_u8 tx_mode_6g;
+	/** RX mode 6G configured */
+	t_u8 rx_mode_6g;
 } ant_cfg_t;
 
 /** htstream_cfg structure */
@@ -618,12 +630,13 @@ int woal_uap_set_get_multi_ap_mode(moal_private *priv, struct iwreq *wrq);
 #endif
 #endif
 
-int woal_uap_set_11ac_status(moal_private *priv, t_u8 action, t_u8 vht20_40,
-			     IEEEtypes_VHTCap_t *vhtcap_ie);
+int woal_uap_set_11ac_status(moal_private *priv, t_u8 action, t_u8 band,
+			     t_u8 vht20_40,
+			     const IEEEtypes_VHTCap_t *vhtcap_ie);
 int woal_11ax_cfg(moal_private *priv, t_u8 action, mlan_ds_11ax_he_cfg *he_cfg,
 		  t_u8 wait_option);
 int woal_uap_set_11ax_status(moal_private *priv, t_u8 action, t_u8 band,
-			     IEEEtypes_HECap_t *hecap_ie);
+			     const IEEEtypes_HECap_t *hecap_ie);
 int woal_set_uap_ht_tx_cfg(moal_private *priv, Band_Config_t bandcfg,
 			   t_u16 ht_cap, t_u8 en);
 mlan_status woal_uap_set_11n_status(moal_private *priv,

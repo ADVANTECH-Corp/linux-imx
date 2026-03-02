@@ -4,7 +4,7 @@
  * functions defined in moal module
  *
  *
- * Copyright 2008-2021 NXP
+ * Copyright 2008-2021, 2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -79,6 +79,15 @@ mlan_status moal_malloc_consistent(t_void *pmoal, t_u32 size, t_u8 **ppbuf,
 				   t_pu64 pbuf_pa);
 mlan_status moal_mfree_consistent(t_void *pmoal, t_u32 size, t_u8 *pbuf,
 				  t_u64 buf_pa);
+
+mlan_status moal_malloc_cached(t_void *pmoal, t_u32 size, t_u8 **ppbuf,
+			       t_pu64 pbuf_pa);
+mlan_status moal_mfree_cached(t_void *pmoal, t_u32 size, t_u8 *pbuf,
+			      t_u64 buf_pa);
+mlan_status moal_dma_sync_to_cpu(t_void *pmoal, t_u32 size, t_u64 buf_pa,
+				 moal_dma_sync_direction_t direction);
+mlan_status moal_dma_sync_to_device(t_void *pmoal, t_u32 size, t_u64 buf_pa,
+				    moal_dma_sync_direction_t direction);
 mlan_status moal_map_memory(t_void *pmoal, t_u8 *pbuf, t_u64 *pbuf_pa,
 			    t_u32 size, t_u32 flag);
 mlan_status moal_unmap_memory(t_void *pmoal, t_u8 *pbuf, t_u64 buf_pa,
@@ -111,6 +120,7 @@ t_void moal_hist_data_add(t_void *pmoal, t_u32 bss_index, t_u16 rx_rate,
 
 t_void moal_updata_peer_signal(t_void *pmoal, t_u32 bss_index, t_u8 *peer_addr,
 			       t_s8 snr, t_s8 nflr);
+mlan_status moal_get_host_time_ns(t_u64 *time);
 t_u64 moal_do_div(t_u64 num, t_u32 base);
 
 mlan_status moal_init_timer(t_void *pmoal, t_void **pptimer,
@@ -133,5 +143,14 @@ void woal_request_busfreq_pmqos_add(t_void *pmhandle);
 /* pmqos busfreq remove handler*/
 void woal_release_busfreq_pmqos_remove(t_void *pmhandle);
 #endif
+mlan_status moal_calc_short_ssid(t_u8 *pssid, t_u32 ssid_len,
+				 t_u32 *pshort_ssid);
+
+inline t_u16 moal_read_unaligned_u16(const void *src);
+inline t_u32 moal_read_unaligned_u32(const void *src);
+inline void moal_write_unaligned_u16(void *dest, t_u16 val);
+inline void moal_write_unaligned_u32(void *dest, t_u32 val);
+
+t_u32 moal_crc32_be(t_u32 initial_crc, t_u8 const *data, unsigned long len);
 
 #endif /*_MOAL_H */

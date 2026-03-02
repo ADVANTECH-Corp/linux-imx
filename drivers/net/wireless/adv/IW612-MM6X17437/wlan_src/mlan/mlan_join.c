@@ -7,7 +7,7 @@
  *  to the firmware.
  *
  *
- *  Copyright 2008-2021 NXP
+ *  Copyright 2008-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -287,6 +287,11 @@ static mlan_status wlan_get_common_rates(mlan_private *pmpriv, t_u8 *rate1,
 
 	ENTER();
 
+	if (rate1_size > WLAN_SUPPORTED_RATES) {
+		PRINTM(MERROR, "Invalid rate buffer size\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
 	ret = pcb->moal_malloc(pmpriv->adapter->pmoal_handle, rate1_size,
 			       MLAN_MEM_DEF | MLAN_MEM_FLAG_ATOMIC, &tmp);
 	if (ret != MLAN_STATUS_SUCCESS || !tmp) {
@@ -299,10 +304,15 @@ static mlan_status wlan_get_common_rates(mlan_private *pmpriv, t_u8 *rate1,
 	memset(pmpriv->adapter, rate1, 0, rate1_size);
 
 	for (i = 0; rate2[i] && i < rate2_size; i++) {
+		/* tmp is already malloc'd above */
+		// coverity[cert_exp33_c_violation:SUPPRESS]
 		for (j = 0; tmp[j] && j < rate1_size; j++) {
 			/* Check common rate, excluding the bit
 			 * for basic rate */
 			if ((rate2[i] & 0x7F) == (tmp[j] & 0x7F)) {
+				/* i & j are restricted by rate2_size and
+				 * rate1_size resp */
+				// coverity[integer_overflow:SUPPRESS]
 				*rate1++ = tmp[j];
 				break;
 			}
@@ -315,7 +325,12 @@ static mlan_status wlan_get_common_rates(mlan_private *pmpriv, t_u8 *rate1,
 	PRINTM(MINFO, "Tx DataRate is set to 0x%X\n", pmpriv->data_rate);
 
 	if (!pmpriv->is_data_rate_auto) {
+		/* rate1_size is decremented in sync with ptr++ and loop exits
+		 * when rate1_size becomes 0 ensures no overflow */
+		// coverity[integer_overflow:SUPPRESS]
 		while (rate1_size && *ptr) {
+			/* loop exits when rate1_size becomes 0 */
+			// coverity[integer_overflow:SUPPRESS]
 			if ((*ptr & 0x7f) == pmpriv->data_rate) {
 				ret = MLAN_STATUS_SUCCESS;
 				goto done;
@@ -553,7 +568,7 @@ static int wlan_cmd_append_osen_ie(mlan_private *priv, t_u8 **ppbuffer)
 	LEAVE();
 	return retlen;
 }
-
+#if defined(STA_SUPPORT)
 /**
  *  @brief This function get the rsn_cap from RSN ie buffer.
  *
@@ -561,7 +576,7 @@ static int wlan_cmd_append_osen_ie(mlan_private *priv, t_u8 **ppbuffer)
  *  @param len          Length of ie rsn_ie data after IE header
  *  @param return       rsn_cap
  */
-static t_u16 wlan_get_rsn_cap(t_u8 *data, t_u8 len)
+static t_u16 wlan_get_rsn_cap(mlan_private *pmpriv, t_u8 *data, t_u8 len)
 {
 	t_u16 rsn_cap = 0;
 	t_u16 *ptr;
@@ -584,7 +599,8 @@ static t_u16 wlan_get_rsn_cap(t_u8 *data, t_u8 len)
 	 */
 	end_ptr = (t_u16 *)(data + len);
 	ptr = (t_u16 *)(data + sizeof(t_u16) + 4 * sizeof(t_u8));
-	pairwise_cipher_count = wlan_le16_to_cpu(*ptr);
+	pairwise_cipher_count =
+		wlan_le16_to_cpu(read_u16_unaligned(pmpriv->adapter, ptr));
 	ptr = (t_u16 *)(data + sizeof(t_u16) + 4 * sizeof(t_u8) +
 			sizeof(t_u16) +
 			pairwise_cipher_count * PAIRWISE_CIPHER_SUITE_LEN);
@@ -592,7 +608,8 @@ static t_u16 wlan_get_rsn_cap(t_u8 *data, t_u8 len)
 		PRINTM(MERROR, "RSNE: PAIRWISE_CIPHER not correct\n");
 		goto done;
 	}
-	akm_suite_count = wlan_le16_to_cpu(*ptr);
+	akm_suite_count =
+		wlan_le16_to_cpu(read_u16_unaligned(pmpriv->adapter, ptr));
 	ptr = (t_u16 *)(data + sizeof(t_u16) + 4 * sizeof(t_u8) +
 			sizeof(t_u16) +
 			pairwise_cipher_count * PAIRWISE_CIPHER_SUITE_LEN +
@@ -601,7 +618,7 @@ static t_u16 wlan_get_rsn_cap(t_u8 *data, t_u8 len)
 		PRINTM(MERROR, "RSNE: AKM Suite or RSNCAP not correct\n");
 		goto done;
 	}
-	rsn_cap = wlan_le16_to_cpu(*ptr);
+	rsn_cap = wlan_le16_to_cpu(read_u16_unaligned(pmpriv->adapter, ptr));
 
 done:
 	PRINTM(MCMND, "rsn_cap=0x%x\n", rsn_cap);
@@ -625,11 +642,11 @@ static t_u8 wlan_use_mfp(mlan_private *pmpriv, BSSDescriptor_t *pbss_desc)
 
 	if (pmpriv->wpa_ie[0] != RSN_IE)
 		return 0;
-	sta_rsn_cap =
-		wlan_get_rsn_cap(pmpriv->wpa_ie + 2, *(pmpriv->wpa_ie + 1));
+	sta_rsn_cap = wlan_get_rsn_cap(pmpriv, pmpriv->wpa_ie + 2,
+				       *(pmpriv->wpa_ie + 1));
 	if (!pbss_desc->prsn_ie)
 		return 0;
-	ap_rsn_cap = wlan_get_rsn_cap(pbss_desc->prsn_ie->data,
+	ap_rsn_cap = wlan_get_rsn_cap(pmpriv, pbss_desc->prsn_ie->data,
 				      pbss_desc->prsn_ie->ieee_hdr.len);
 	ap_mfpc = ((ap_rsn_cap & (0x1 << MFPC_BIT)) == (0x1 << MFPC_BIT));
 	ap_mfpr = ((ap_rsn_cap & (0x1 << MFPR_BIT)) == (0x1 << MFPR_BIT));
@@ -641,7 +658,7 @@ static t_u8 wlan_use_mfp(mlan_private *pmpriv, BSSDescriptor_t *pbss_desc)
 		return MFALSE;
 	return MTRUE;
 }
-
+#endif
 /********************************************************
 				Global Functions
 ********************************************************/
@@ -726,7 +743,8 @@ static int wlan_update_rsn_ie(mlan_private *pmpriv,
 	ptr = ptlv_rsn_ie->rsn_ie + sizeof(t_u16) + 4 * sizeof(t_u8);
 
 	pairwise_cipher_count_ptr = ptr;
-	pairwise_cipher_count = wlan_le16_to_cpu(*(t_u16 *)ptr);
+	pairwise_cipher_count =
+		wlan_le16_to_cpu(read_u16_unaligned(pmpriv->adapter, ptr));
 	ptr += sizeof(t_u16);
 
 	if ((pairwise_cipher_count == 0) ||
@@ -772,7 +790,8 @@ static int wlan_update_rsn_ie(mlan_private *pmpriv,
 	 */
 	ptr = ptlv_rsn_ie->rsn_ie + sizeof(t_u16) + 4 * sizeof(t_u8) +
 	      sizeof(t_u16) + pairwise_cipher_count * PAIRWISE_CIPHER_SUITE_LEN;
-	akm_suite_count = wlan_le16_to_cpu(*(t_u16 *)ptr);
+	akm_suite_count =
+		wlan_le16_to_cpu(read_u16_unaligned(pmpriv->adapter, ptr));
 	ptr += sizeof(t_u16); // move pointer to AKM suite
 
 	if ((akm_suite_count == 0) || (ptr + AKM_SUITE_LEN * akm_suite_count +
@@ -869,7 +888,8 @@ static int wlan_update_rsn_ie(mlan_private *pmpriv,
 	// PMKID
 	ptr += sizeof(t_u16);
 	if (end_ptr >= (ptr + sizeof(t_u16))) {
-		pmkid_count = wlan_le16_to_cpu(*(t_u16 *)ptr);
+		pmkid_count = wlan_le16_to_cpu(
+			read_u16_unaligned(pmpriv->adapter, ptr));
 		ptr += sizeof(t_u16);
 
 		if (pmkid_count &&
@@ -886,24 +906,25 @@ static int wlan_update_rsn_ie(mlan_private *pmpriv,
 	/* Compose new RSNE */
 	// pairwiase
 	ptr = pairwise_cipher_count_ptr;
-	*(t_u16 *)ptr = wlan_cpu_to_le16(1);
+	write_u16_unaligned(pmadapter, ptr, wlan_cpu_to_le16(1));
 	ptr += sizeof(t_u16);
 	oui[3] = cipher_selected_id;
-	*(t_u32 *)ptr = *(t_u32 *)oui;
+	write_u32_unaligned(pmadapter, ptr, *(t_u32 *)oui);
 	ptr += PAIRWISE_CIPHER_SUITE_LEN;
 	// akm
-	*(t_u16 *)ptr = wlan_cpu_to_le16(1);
+	write_u16_unaligned(pmadapter, ptr, wlan_cpu_to_le16(1));
 	ptr += sizeof(t_u16);
 	oui[3] = akm_type_id;
-	*(t_u32 *)ptr = *(t_u32 *)oui;
+	write_u32_unaligned(pmadapter, ptr, *(t_u32 *)oui);
 	ptr += AKM_SUITE_LEN;
 	// RSNCAP
-	*(t_u16 *)ptr = wlan_cpu_to_le16(*prsn_cap);
+	write_u16_unaligned(pmadapter, ptr, wlan_cpu_to_le16(*prsn_cap));
 	ptr += sizeof(t_u16);
 	// PMKID list
 	if (pmkid_list_ptr || group_mgmt_cipher_suite_ptr) {
 		// Add PMKID
-		*(t_u16 *)ptr = wlan_cpu_to_le16(pmkid_count);
+		write_u16_unaligned(pmadapter, ptr,
+				    wlan_cpu_to_le16(pmkid_count));
 		ptr += sizeof(t_u16);
 		if (pmkid_count) {
 			memcpy_ext(pmadapter, ptr, (t_u8 *)pmkid_list_ptr,
@@ -956,10 +977,12 @@ t_u8 wlan_ft_akm_is_used(mlan_private *pmpriv, t_u8 *rsn_ie)
 	 * PAIRWISE_CIPHER_SUITE_LEN (4) + 2 bytes akm_suite_count +
 	 * akm_suite_count * AKM_SUITE_LEN (4)
 	 */
-	count = *(t_u16 *)(rsn_ie + 2 + 2 + 4 * sizeof(t_u8));
+	count = read_u16_unaligned(pmadapter,
+				   rsn_ie + 2 + 2 + 4 * sizeof(t_u8));
 	pairwise_cipher_count = wlan_le16_to_cpu(count);
-	count = *(t_u16 *)(rsn_ie + 2 + 2 + 4 * sizeof(t_u8) + sizeof(t_u16) +
-			   pairwise_cipher_count * 4);
+	count = read_u16_unaligned(
+		pmadapter, rsn_ie + 2 + 2 + 4 * sizeof(t_u8) + sizeof(t_u16) +
+				   pairwise_cipher_count * 4);
 	akm_suite_count = wlan_le16_to_cpu(count);
 	temp = (t_u8 *)(rsn_ie + 2 + sizeof(t_u16) + 4 * sizeof(t_u8) +
 			sizeof(t_u16) + pairwise_cipher_count * 4 +
@@ -999,6 +1022,7 @@ static t_u8 wlan_find_ie(t_u8 *ie, t_u8 ie_len, t_u8 ie_type)
 	t_u8 *pos = MNULL;
 	t_s8 ret_len;
 	t_u8 ret = MFALSE;
+	t_u8 len = 0;
 
 	ENTER();
 
@@ -1006,8 +1030,8 @@ static t_u8 wlan_find_ie(t_u8 *ie, t_u8 ie_len, t_u8 ie_type)
 	ret_len = ie_len;
 	while (ret_len >= 2) {
 		pheader = (IEEEtypes_Header_t *)pos;
-		if ((t_s8)(pheader->len + sizeof(IEEEtypes_Header_t)) >
-		    ret_len) {
+		len = pheader->len + sizeof(IEEEtypes_Header_t);
+		if ((t_s8)len > ret_len) {
 			PRINTM(MMSG, "invalid IE length = %d left len %d\n",
 			       pheader->len, ret_len);
 			break;
@@ -1055,19 +1079,27 @@ mlan_status wlan_cmd_802_11_associate(mlan_private *pmpriv,
 	t_u32 rates_size;
 	t_u16 tmp_cap;
 	t_u8 *pos;
+	IEEEtypes_CapInfo_t *pcap_info;
 	t_u8 ft_akm = 0;
 	t_u8 oper_class;
+	t_u8 global_oper_class;
 	t_u8 oper_class_flag = MFALSE;
 	t_u8 akm_type = 0;
 	MrvlIEtypes_HostMlme_t *host_mlme_tlv = MNULL;
 	MrvlIEtypes_PrevBssid_t *prev_bssid_tlv = MNULL;
 	t_u8 zero_mac[MLAN_MAC_ADDR_LENGTH] = {0};
 	MrvlIEtypes_MultiAp_t *multi_ap_tlv = MNULL;
+	MrvlIETypes_VHTCap_t *pvhtcap = MNULL;
+	MrvlIEtypes_He_cap_t *phecap = MNULL;
+	MrvlIEtypesHeader_t *papInfo_tlv = MNULL;
+	MrvlIEtypesHeader_t *pvendorOUI_tlv;
+	t_u8 ie_len = 0;
+	t_s16 size = 0;
 
 	ENTER();
 
 	pbss_desc = (BSSDescriptor_t *)pdata_buf;
-	pos = (t_u8 *)passo;
+	pos = (t_u8 *)&cmd->params;
 
 	cmd->command = wlan_cpu_to_le16(HostCmd_CMD_802_11_ASSOCIATE);
 
@@ -1076,6 +1108,24 @@ mlan_status wlan_cmd_802_11_associate(mlan_private *pmpriv,
 	memcpy_ext(pmpriv->adapter, &pmpriv->curr_bss_params.attemp_bssid,
 		   pbss_desc->mac_address, MLAN_MAC_ADDR_LENGTH,
 		   MLAN_MAC_ADDR_LENGTH);
+	pmpriv->delay_link_lost = MFALSE;
+	/* back up previous AP's assoc_resp and assoc_req buffer*/
+	if (pmpriv->media_connected) {
+		memcpy_ext(pmpriv->adapter, &pmpriv->prev_bssid,
+			   pmpriv->curr_bss_params.bss_descriptor.mac_address,
+			   MLAN_MAC_ADDR_LENGTH, MLAN_MAC_ADDR_LENGTH);
+		memcpy_ext(pmadapter, pmpriv->prior_assoc_rsp,
+			   pmpriv->assoc_rsp_buf, pmpriv->assoc_rsp_size,
+			   ASSOC_RSP_BUF_SIZE);
+		memcpy_ext(pmadapter, pmpriv->prior_assoc_req,
+			   pmpriv->assoc_req_buf, pmpriv->assoc_req_size,
+			   ASSOC_RSP_BUF_SIZE);
+		pmpriv->prior_assoc_rsp_size = pmpriv->assoc_rsp_size;
+		pmpriv->prior_assoc_req_size = pmpriv->assoc_req_size;
+	} else {
+		pmpriv->prior_assoc_rsp_size = 0;
+		pmpriv->prior_assoc_req_size = 0;
+	}
 	/* clear assoc_rsp_size */
 	pmpriv->assoc_rsp_size = 0;
 	pmpriv->assoc_req_size = 0;
@@ -1155,6 +1205,10 @@ mlan_status wlan_cmd_802_11_associate(mlan_private *pmpriv,
 			pauth_tlv->auth_type =
 				wlan_cpu_to_le16(AssocAgentAuth_FastBss_Skip);
 		else if (pmpriv->sec_info.authentication_mode ==
+			 MLAN_AUTH_MODE_FILS)
+			pauth_tlv->auth_type =
+				wlan_cpu_to_le16(AssocAgentAuth_FILS);
+		else if (pmpriv->sec_info.authentication_mode ==
 			 MLAN_AUTH_MODE_SAE)
 			pauth_tlv->auth_type =
 				wlan_cpu_to_le16(AssocAgentAuth_Wpa3Sae);
@@ -1216,6 +1270,11 @@ mlan_status wlan_cmd_802_11_associate(mlan_private *pmpriv,
 
 		pchan_tlv->chan_scan_param[0].bandcfg.chanBand =
 			wlan_band_to_radio_type(pbss_desc->bss_band);
+		if (pbss_desc->bss_band == BAND_6G)
+			pchan_tlv->chan_scan_param[0].bandcfg.chanWidth =
+				wlan_get_6g_ap_bandconfig(
+					pbss_desc,
+					&pchan_tlv->chan_scan_param[0].bandcfg);
 		PRINTM(MINFO, "Assoc: TLV Bandcfg = %x\n",
 		       pchan_tlv->chan_scan_param[0].bandcfg);
 		pos += sizeof(pchan_tlv->header) + sizeof(ChanScanParamSet_t);
@@ -1258,6 +1317,7 @@ mlan_status wlan_cmd_802_11_associate(mlan_private *pmpriv,
 			psecurity_cfg_ie->header.type =
 				wlan_cpu_to_le16(TLV_TYPE_SECURITY_CFG);
 
+#if defined(STA_SUPPORT)
 			pmpriv->curr_bss_params.use_mfp =
 				wlan_use_mfp(pmpriv, pbss_desc);
 			PRINTM(MCMND, "use_mfp=%d\n",
@@ -1272,6 +1332,7 @@ mlan_status wlan_cmd_802_11_associate(mlan_private *pmpriv,
 			       psecurity_cfg_ie->header.len;
 			psecurity_cfg_ie->header.len =
 				wlan_cpu_to_le16(psecurity_cfg_ie->header.len);
+#endif
 		} else if (pmpriv->sec_info.ewpa_enabled ||
 			   (pbss_desc->owe_transition_mode ==
 			    OWE_TRANS_MODE_OWE) ||
@@ -1434,7 +1495,8 @@ mlan_status wlan_cmd_802_11_associate(mlan_private *pmpriv,
 				    pmpriv,
 				    pbss_desc->phy_param_set.ds_param_set
 					    .current_chan,
-				    pbss_desc->curr_bandwidth, &oper_class))
+				    pbss_desc->curr_bandwidth, &oper_class,
+				    &global_oper_class))
 				wlan_add_supported_oper_class_ie(pmpriv, &pos,
 								 oper_class);
 		}
@@ -1454,6 +1516,9 @@ mlan_status wlan_cmd_802_11_associate(mlan_private *pmpriv,
 	     IS_FW_SUPPORT_11AX(pmadapter))) {
 		PRINTM(MCMND, "STBC NOT supported, Will be disabled\n");
 	}
+	if ((IS_FW_SUPPORT_6G(pmadapter)) &&
+	    wlan_116e_bandconfig_allowed(pmpriv, pbss_desc))
+		wlan_cmd_append_116e_tlv(pmpriv, pbss_desc, &pos);
 
 	wlan_wmm_process_association_req(pmpriv, &pos, &pbss_desc->wmm_ie);
 	if (pmpriv->sec_info.wapi_enabled && pmpriv->wapi_ie_len)
@@ -1518,6 +1583,71 @@ mlan_status wlan_cmd_802_11_associate(mlan_private *pmpriv,
 		goto done;
 	}
 
+	/* pass AP's required capabilities */
+	if (pbss_desc->vendor_oui_count) {
+		papInfo_tlv = (MrvlIEtypesHeader_t *)pos;
+		papInfo_tlv->type = wlan_cpu_to_le16(TLV_TYPE_AP_INFO);
+		papInfo_tlv->len = 0;
+		pos += sizeof(MrvlIEtypesHeader_t);
+
+		/* append AP vht cap tlv */
+		if (pbss_desc->pvht_cap) {
+			ie_len = sizeof(MrvlIEtypesHeader_t) +
+				 sizeof(VHT_capa_t);
+			papInfo_tlv->len += ie_len;
+			pvhtcap = (MrvlIETypes_VHTCap_t *)pos;
+			pvhtcap->header.type = wlan_cpu_to_le16(VHT_CAPABILITY);
+			pvhtcap->header.len = sizeof(VHT_capa_t);
+			memcpy_ext(pmadapter,
+				   (t_u8 *)pvhtcap +
+					   sizeof(MrvlIEtypesHeader_t),
+				   (t_u8 *)pbss_desc->pvht_cap +
+					   sizeof(IEEEtypes_Header_t),
+				   sizeof(VHT_capa_t), sizeof(VHT_capa_t));
+			pos += ie_len;
+			pvhtcap->header.len =
+				wlan_cpu_to_le16(pvhtcap->header.len);
+		}
+
+		/* append AP he cap tlv */
+		if (pbss_desc->phe_cap) {
+			ie_len = sizeof(MrvlIEtypesHeader_t) +
+				 pbss_desc->phe_cap->ieee_hdr.len;
+			papInfo_tlv->len += ie_len;
+			phecap = (MrvlIEtypes_He_cap_t *)pos;
+			phecap->type = wlan_cpu_to_le16(EXTENSION);
+			phecap->len = pbss_desc->phe_cap->ieee_hdr.len;
+			memcpy_ext(pmadapter,
+				   (t_u8 *)phecap + sizeof(MrvlIEtypesHeader_t),
+				   (t_u8 *)pbss_desc->phe_cap +
+					   sizeof(IEEEtypes_Header_t),
+				   pbss_desc->phe_cap->ieee_hdr.len,
+				   pbss_desc->phe_cap->ieee_hdr.len);
+			pos += ie_len;
+			phecap->len = wlan_cpu_to_le16(phecap->len);
+		}
+
+		/* append AP vendor oui list tlv */
+		if (pbss_desc->vendor_oui_count) {
+			ie_len = sizeof(MrvlIEtypesHeader_t) +
+				 pbss_desc->vendor_oui_count * VENDOR_OUI_LEN;
+			papInfo_tlv->len += ie_len;
+			pvendorOUI_tlv = (MrvlIEtypesHeader_t *)pos;
+			pvendorOUI_tlv->type =
+				wlan_cpu_to_le16(VENDOR_IE_OUIS_TLV_ID);
+			pvendorOUI_tlv->len =
+				pbss_desc->vendor_oui_count * VENDOR_OUI_LEN;
+			pos += sizeof(MrvlIEtypesHeader_t);
+			memcpy_ext(pmadapter, pos,
+				   (t_u8 *)&pbss_desc->vendor_oui,
+				   pvendorOUI_tlv->len, pvendorOUI_tlv->len);
+			pos += pvendorOUI_tlv->len;
+			pvendorOUI_tlv->len =
+				wlan_cpu_to_le16(pvendorOUI_tlv->len);
+		}
+		papInfo_tlv->len = wlan_cpu_to_le16(papInfo_tlv->len);
+	}
+
 	/*
 	 * Call 11h join API after capability bits are set so adhoc/infra 11h
 	 * behavior can be properly triggered.  pos modified if data is appended
@@ -1526,12 +1656,17 @@ mlan_status wlan_cmd_802_11_associate(mlan_private *pmpriv,
 		pmpriv, &pos, &passo->cap_info, (t_u8)pbss_desc->bss_band,
 		pbss_desc->phy_param_set.ds_param_set.current_chan,
 		&pbss_desc->wlan_11h_bss_info);
-
-	cmd->size = wlan_cpu_to_le16((t_u16)(pos - (t_u8 *)passo) + S_DS_GEN);
+	size = pos - (t_u8 *)passo;
+	cmd->size = wlan_cpu_to_le16((t_u16)size + S_DS_GEN);
 
 	/* Set the Capability info at last */
 	memcpy_ext(pmadapter, &tmp_cap, &pbss_desc->cap_info,
 		   sizeof(passo->cap_info), sizeof(tmp_cap));
+
+	/* retain spectrum_mgmt capability */
+	pcap_info = &passo->cap_info;
+	if (pcap_info->spectrum_mgmt)
+		SPECTRUM_MGMT_ENABLED(tmp_cap);
 
 	if (pmpriv->config_bands == BAND_B)
 		SHORT_SLOT_TIME_DISABLED(tmp_cap);
@@ -1645,12 +1780,16 @@ mlan_status wlan_ret_802_11_associate(mlan_private *pmpriv,
 	mlan_ds_bss *bss;
 	IEEEtypes_MgmtHdr_t *hdr;
 	t_u16 sub_type = 0;
+	t_u16 assoc_rsp_size = 0;
 
 	ENTER();
 
 	hdr = (IEEEtypes_MgmtHdr_t *)&resp->params;
 	sub_type = IEEE80211_GET_FC_MGMT_FRAME_SUBTYPE(hdr->FrmCtl);
-	if (!memcmp(pmpriv->adapter, hdr->BssId,
+	assoc_rsp_size = resp->size - S_DS_GEN;
+	if ((assoc_rsp_size >=
+	     (sizeof(IEEEtypes_MgmtHdr_t) + sizeof(IEEEtypes_AssocRsp_t))) &&
+	    !memcmp(pmpriv->adapter, hdr->BssId,
 		    pmpriv->curr_bss_params.attemp_bssid,
 		    MLAN_MAC_ADDR_LENGTH) &&
 	    ((sub_type == SUBTYPE_ASSOC_RESP) ||
@@ -1662,6 +1801,7 @@ mlan_status wlan_ret_802_11_associate(mlan_private *pmpriv,
 	} else
 		passoc_rsp = (IEEEtypes_AssocRsp_t *)&resp->params;
 	passoc_rsp->status_code = wlan_le16_to_cpu(passoc_rsp->status_code);
+	pmpriv->delay_link_lost = MFALSE;
 	if (pmpriv->media_connected == MTRUE)
 		memcpy_ext(pmpriv->adapter, cur_mac,
 			   pmpriv->curr_bss_params.bss_descriptor.mac_address,
@@ -1672,8 +1812,9 @@ mlan_status wlan_ret_802_11_associate(mlan_private *pmpriv,
 	pmpriv->assoc_rsp_size =
 		MIN(resp->size - S_DS_GEN, sizeof(pmpriv->assoc_rsp_buf));
 
-	memcpy_ext(pmpriv->adapter, pmpriv->assoc_rsp_buf, &resp->params,
-		   pmpriv->assoc_rsp_size, pmpriv->assoc_rsp_size);
+	memcpy_ext(pmpriv->adapter, pmpriv->assoc_rsp_buf,
+		   &resp->params.assoc_rsp_buf, pmpriv->assoc_rsp_size,
+		   pmpriv->assoc_rsp_size);
 
 	if (pioctl_req != MNULL) {
 		bss = (mlan_ds_bss *)pioctl_req->pbuf;
@@ -1685,14 +1826,21 @@ mlan_status wlan_ret_802_11_associate(mlan_private *pmpriv,
 			   ASSOC_RSP_BUF_SIZE);
 	}
 	if (passoc_rsp->status_code) {
+		if (pmpriv->curr_bss_params.host_mlme &&
+		    (pmpriv->assoc_rsp_size < (sizeof(IEEEtypes_MgmtHdr_t) +
+					       sizeof(IEEEtypes_AssocRsp_t))))
+			wlan_recv_event(pmpriv, MLAN_EVENT_ID_DRV_ASSOC_FAILURE,
+					MNULL);
 		if (pmpriv->media_connected == MTRUE) {
 			if (pmpriv->port_ctrl_mode == MTRUE)
 				pmpriv->port_open = pmpriv->prior_port_status;
 			if (!memcmp(pmpriv->adapter, cur_mac,
 				    pmpriv->pattempted_bss_desc->mac_address,
-				    MLAN_MAC_ADDR_LENGTH))
+				    MLAN_MAC_ADDR_LENGTH) ||
+			    !pmpriv->prior_assoc_rsp_size) {
 				wlan_reset_connect_state(pmpriv, MTRUE);
-			else {
+			} else {
+				// fallback to previous AP
 				memcpy_ext(
 					pmpriv->adapter,
 					&pmpriv->curr_bss_params.attemp_bssid,
@@ -1704,6 +1852,24 @@ mlan_status wlan_ret_802_11_associate(mlan_private *pmpriv,
 					pmpriv,
 					MLAN_EVENT_ID_DRV_ASSOC_FAILURE_REPORT,
 					MNULL);
+				// update Assoc resp/req buf, if Assoc Rsp
+				// failure.
+				pmpriv->assoc_rsp_size =
+					pmpriv->prior_assoc_rsp_size;
+				memcpy_ext(pmadapter, pmpriv->assoc_rsp_buf,
+					   pmpriv->prior_assoc_rsp,
+					   pmpriv->assoc_rsp_size,
+					   ASSOC_RSP_BUF_SIZE);
+				pmpriv->assoc_req_size =
+					pmpriv->prior_assoc_req_size;
+				memcpy_ext(pmadapter, pmpriv->assoc_req_buf,
+					   pmpriv->prior_assoc_req,
+					   pmpriv->assoc_req_size,
+					   ASSOC_RSP_BUF_SIZE);
+
+				_memset(pmpriv->adapter,
+					pmpriv->curr_bss_params.prev_bssid, 0,
+					MLAN_MAC_ADDR_LENGTH);
 			}
 		} else
 			wlan_reset_connect_state(pmpriv, MTRUE);
@@ -1713,7 +1879,8 @@ mlan_status wlan_ret_802_11_associate(mlan_private *pmpriv,
 		       "ASSOC_RESP: Association Failed, "
 		       "status code = %d, error = 0x%x, a_id = 0x%x\n",
 		       passoc_rsp->status_code,
-		       wlan_le16_to_cpu(*(t_u16 *)&passoc_rsp->capability),
+		       wlan_le16_to_cpu(read_u16_unaligned(
+			       pmpriv->adapter, &passoc_rsp->capability)),
 		       wlan_le16_to_cpu(passoc_rsp->a_id));
 		memset(pmadapter, event_buf, 0, sizeof(event_buf));
 		pevent->bss_index = pmpriv->bss_index;
@@ -1830,6 +1997,15 @@ mlan_status wlan_ret_802_11_associate(mlan_private *pmpriv,
 			pmpriv->max_amsdu = MLAN_TX_DATA_BUF_SIZE_8K;
 		else
 			pmpriv->max_amsdu = MLAN_TX_DATA_BUF_SIZE_4K;
+	} else if (pbss_desc->phe_6g_cap) {
+		if (GET_6G_BAND_CAP_MAXMPDULEN(pbss_desc->phe_6g_cap->capa) ==
+		    2)
+			pmpriv->max_amsdu = MLAN_TX_DATA_BUF_SIZE_12K;
+		else if (GET_6G_BAND_CAP_MAXMPDULEN(
+				 pbss_desc->phe_6g_cap->capa) == 1)
+			pmpriv->max_amsdu = MLAN_TX_DATA_BUF_SIZE_8K;
+		else
+			pmpriv->max_amsdu = MLAN_TX_DATA_BUF_SIZE_4K;
 	}
 
 	wlan_save_curr_bcn(pmpriv);
@@ -1897,6 +2073,7 @@ mlan_status wlan_ret_802_11_associate(mlan_private *pmpriv,
 	memcpy_ext(pmpriv->adapter, (t_u8 *)assoc_succ->oui,
 		   pbss_desc->mac_address, MLAN_MAC_ADDR_LENGTH / 2,
 		   MLAN_MAC_ADDR_LENGTH / 2);
+	assoc_succ->ssid_len = pbss_desc->ssid.ssid_len;
 	memcpy_ext(pmpriv->adapter, (t_u8 *)assoc_succ->ssid,
 		   pbss_desc->ssid.ssid, pbss_desc->ssid.ssid_len,
 		   MLAN_MAX_SSID_LENGTH);
@@ -1910,8 +2087,9 @@ done:
 		if (ret != MLAN_STATUS_SUCCESS) {
 			if (passoc_rsp->status_code)
 				pioctl_req->status_code =
-					(wlan_le16_to_cpu(*(t_u16 *)&passoc_rsp
-								   ->capability)
+					(wlan_le16_to_cpu(read_u16_unaligned(
+						 pmpriv->adapter,
+						 &passoc_rsp->capability))
 					 << 16) +
 					passoc_rsp->status_code;
 			else
@@ -1956,10 +2134,6 @@ mlan_status wlan_associate(mlan_private *pmpriv, t_void *pioctl_buf,
 	memcpy_ext(pmpriv->adapter, &current_bssid,
 		   &pmpriv->curr_bss_params.bss_descriptor.mac_address,
 		   sizeof(current_bssid), sizeof(current_bssid));
-
-	/* Clear any past association response stored for application retrieval
-	 */
-	pmpriv->assoc_rsp_size = 0;
 
 	ret = wlan_prepare_cmd(pmpriv, HostCmd_CMD_802_11_ASSOCIATE,
 			       HostCmd_ACT_GEN_SET, 0, pioctl_buf, pbss_desc);
@@ -2045,6 +2219,9 @@ t_u8 wlan_band_to_radio_type(t_u16 band)
 	case BAND_A | BAND_AN:
 	case BAND_A | BAND_AN | BAND_AAC:
 		ret_radio_type = BAND_5GHZ;
+		break;
+	case BAND_6G:
+		ret_radio_type = BAND_6GHZ;
 		break;
 	case BAND_B:
 	case BAND_G:

@@ -1,7 +1,7 @@
 ===============================================================================
-			USER  MANUAL FOR MLANWLS APP
+		               USER  MANUAL FOR MLANWLS APP
 
- Copyright 2023 NXP
+                           Copyright 2025 NXP
 
 
 1) FOR MLANWLS APP ONLY BUILD
@@ -17,6 +17,7 @@
 		- Dot11az Non-Trigger based FTM ISTA mode
 		- Dot11az Non-Trigger based FTM RSTA mode
 		- Dot11az Trigger based ISTA
+		- STA-STA FTM
 
 3) Usage:
 	The app can be run in 2 different modes.
@@ -32,19 +33,31 @@
 				- mlanwls mlanX ftm session_cfg [<args>]
 				- mlanwls mlanX ftm session_ctrl [<args>]
 				- mlanwls mlanX ftm anqp_req [<args>]
-				- mlanwls mlanX dot11mc_unassoc_ftm_cfg
 
-		- Event monitoring mode
+
+		- Event monitoring mode (For uAP)
 			- In this mode, The app monitors the events received from WLAN FW and process it.
-			  Typical use case would be, in STA/AP which receives FTM Requests from Ex-AP / Ex-ISTA
-
-			- To Run the mlanwls driver app in event monitoring mode
-			  Command Format :
-				- mlanwls <interface> event
-			  Events Processed :
+			  Typical use case would be, in AP mode to receives CSI events for csi processing.
+			   Events Processed :
 				- CSI event from FW
 				- FTM Event with Radio Measurement Request
 				- FTM complete event to get measured distance
+
+			- To Run the mlanwls driver app in event monitoring mode
+			  Command Format :
+				- mlanwls <interface> event <wlan_device_number>
+				Where:
+					<interface> : uap0 / muap0 (for multiple mac chipset)
+					<wlan_device_number> : To capture the events from FW on the corresponding interface,
+					    user need to provide wifi device number argument for the selected <interface>,
+						0: mac1 / radio0 / mlan0 / uap0 interface,
+						1: mac2 / radio1 / mmlan0 /muap0 interface,
+						Default: 0 / if not specified,
+				eg:
+					./mlanwls uap0 event  - Capture the events for uap0 interface
+
+					For Multiple mac chipsets,
+					./mlanwls muap0 event 1  - Capture the events for muap0 interface
 
 4) Command To Configure FTM session
 
@@ -76,41 +89,52 @@ session_cfg
 session_ctrl
 
 	This sub command is used to start FTM session in specific mode.
-	-	Associated Secure Session
-	-	Associated Non secure Session
-	-	Unassociated Secure Session
-	-	Unassociated Non secure session
-
-	Note: Run session_cfg command before running session_ctrl to set the required protocol (11mc/11az) and
-	the corresponding ftm params.
-	In current implementation, STA FW default protocol is 11mc. So if we need to run 11az session multiple times,
-	each run needs session_cfg comman given before session_ctrl.
+	-	Associated with PMF Session
+	-	Associated without PMF Session
+	-	Unassociated with PMF Session
+	-	Unassociated without PMF session
 
 	Usage:
-		mlanwls mlanX ftm session_ctrl [<action> <chan> <mac_address> <loop_cnt>]
+		mlanwls <interface> ftm session_ctrl [<action> <chan> <mac_address> <loop_cnt> <wlan_device_number>]
 
 	Where:
+		<interface> : mlan0 / mmlan0(for multiple mac chipset)
 		<action> :
-		1: Start non-secure 11mc/11az FTM with associated Peer AP,
+		1: Start 11mc/11az FTM with associated Peer AP,
 		2: Stop FTM session
-		3: Start secure 11az FTM with associated Peer AP,
-		4: Start non-secure 11az/11mc FTM with unassoc Peer,
-		5: Start secure 11az FTM with unassociated & pre-authenticated Peer,
+		3: Start protected 11az FTM with associated Peer AP,
+		4: Start 11az/11mc FTM with unassoc Peer,
+		5: Start protected 11az FTM with unassoc Peer with PASN,
+		6: Start 11mc/11az FTM with unassociated Peer STA
 		<loop_cnt> : number of ftm sessions to run repeatedly ( default:1,  0:non-stop, n>1: n times).
 					 Note this <loop_cnt> option can be used only with 11mc config as 11az session needs explicit session_cfg command to be given before every session start.
 		<chan>     : Channel on which FTM must be started
+					For 6GHz channel, specify suffix 'e' to channel number. eg. '37e'
 		<mac_address> : Mac address of the associated peer with whom FTM session is required
+		<wlan_device_number> : wifi device number for the selected <interface>/<radio>,
+			0: mac1 / radio0 / mlan0 / uap0 interface,
+			1: mac2 / radio1 / mmlan0 /muap0 interface,
+			Default: 0 / if not specified,
+
+	Note:
+		- Run session_cfg command before running session_ctrl to set the required protocol (11mc/11az) and
+		the corresponding ftm params.
+		- In current implementation, STA FW default protocol is set to 11mc.
+		So if we need to run 11az session multiple times continuosly,each run needs session_cfg command given before session_ctrl.
+		For 11az session, run session_cfg every time before session_ctrl as below:
+				mlanwls mlan0 ftm session_cfg 1 config/ftm.conf 		- Sets dot11az Non Trigger Based (NTB)session params from config file
+				mlanwls mlan0 ftm session_ctrl <1/3/4/5> 6 00:50:43:20:bc:4  	- Run corresponding 11az FTM session
+		- If session_ctrl should be run on radio1 / mac2 interface for multiple mac chipsets, wlan_dev_number=1 should be given to bind the
+		netlink event socket to mac2 interface
 
 	eg:
 		mlanwls mlan0 ftm session_ctrl 1 6 00:50:43:20:bc:4  	- Run non-secure FTM session (11az/mc as configured by session_cfg command )
-		mlanwls mlan0 ftm session_ctrl 3 6 00:50:43:20:bc:4 	- Runs secure 11az FTM session ( TB/NTB as configured by session_cfg command )",
-		mlanwls mlan0 ftm session_ctrl 4 6 00:50:43:20:bc:4		- Runs non-secure FTM session with unassoc peer until user terminate",
-		mlanwls mlan0 ftm session_ctrl 5 6 00:50:43:20:bc:4  	- Runs Secure FTM session with unassociated Peer AP",
+		mlanwls mlan0 ftm session_ctrl 3 6 00:50:43:20:bc:4 	- Runs secure 11az FTM session ( TB/NTB as configured by session_cfg command ),
+		mlanwls mlan0 ftm session_ctrl 4 6 00:50:43:20:bc:4		- Runs non-secure FTM session with unassoc peer until user terminate,
+		mlanwls mlan0 ftm session_ctrl 5 6 00:50:43:20:bc:4  	- Runs Secure FTM session with unassociated Peer AP,
 		mlanwls mlan0 ftm session_ctrl 2						- Stop the FTM session
-
-		eg. Before starting 11az session, run session_cfg every time as below:
-			mlanwls mlan0 ftm session_cfg 1 config/ftm.conf 		- Sets dot11az Non Trigger Based (NTB)session params from config file
-			mlanwls mlan0 ftm session_ctrl <1/3/4/5> 6 00:50:43:20:bc:4  	- Run corresponding 11az FTM session
+		mlanwls mmlan0 ftm session_ctrl 1 11 00:50:43:20:bc:4 2 1	- Runs 2 associated FTM sessions on radio1 (11az/mc as configured ) without PMF on channel 11
+		mlanwls mlan0 ftm session_ctrl 1 37e 00:50:43:20:bc:4  	- Run non-secure FTM session on 6G channel 37 (11az/mc as configured by session_cfg command )
 
 6) Command To Send ANQP Request frame
 
@@ -136,19 +160,27 @@ dot11mc_unassoc_ftm_cfg
     DOT11MC FTM frames exchanges in un-associated state for STA or uAP
 
     Usage:
-        mlanutl <mlanX/uAPX> dot11mc_unassoc_ftm_cfg [enable]
+        mlanwls <mlanX/uAPX> ftm dot11mc_unassoc_ftm_cfg [enable]
 
         [enable]          : 0 - Disable unassociated state FTM
                             1 - Enable unassociated state FTM
 
     Examples:
-        mlanutl mlan0 dot11mc_unassoc_ftm_cfg
+        mlanwls mlan0 ftm dot11mc_unassoc_ftm_cfg
             - Get current state of unassociated state FTM cfg
-        mlanutl mlan0 dot11mc_unassoc_ftm_cfg 1
+        mlanwls mlan0 ftm dot11mc_unassoc_ftm_cfg 1
             - Set the unassociated state FTM cfg to Enabled
 
 ===============================================================================
-		REVISION LOG
+REVISION LOG
+V5.6  - For RMR FTM ranging, if measurement fails for any AP,
+		continue FTM session with remaining APs
+V5.5  - Added IFTM_TMO param as user configurable in ftm.conf
+V5.4  - Added status code to FTM complete event, Non-terminating NAN event mode
+V5.3  - CSI Header structure updated
+V5.2  - Added new error codes (Ref. WSW-46943)
+V5.1  - Added event mode support for mac2 (mmlan0) interface
+V5.0  - CSI processing code moved to libcsi
 V4.1  - Added Session_ctrl with action code 5 for Secure unassociated FTM session with PASN
 V4.0  - Added dedicated Session control Action Code for FTM session types
 V3.2  - Added support to send ANQP GAS Request frame

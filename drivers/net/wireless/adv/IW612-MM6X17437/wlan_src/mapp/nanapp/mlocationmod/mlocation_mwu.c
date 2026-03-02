@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2022 NXP
+ *  Copyright 2012-2022, 2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -118,6 +118,12 @@ extern void *os_zalloc(size_t size);
 	 MWU_KV_SZ_FLOAT01("distance") +                                       \
 	 MWU_KV_SZ_DEC32("next_update_timeout"))
 
+#define MLOCATION_EVENT_FTM_DISTANCE_SZ                                        \
+	(MLOCATION_EVENT_HDR_SZ + MWU_KV_SZ_DEC32("distance") +                \
+	 MWU_KV_SZ_MAC("mac_address") + MWU_KV_SZ_DEC32("tsf_low") +           \
+	 MWU_KV_SZ_FLOAT01("distance") +                                       \
+	 MWU_KV_SZ_DEC32("next_update_timeout"))
+
 #define MLOCATION_EVENT_RADIO_REPORT_RECVD_SZ                                  \
 	(MLOCATION_EVENT_HDR_SZ + MWU_KV_SZ_DEC32("rpt_distance") +            \
 	 MWU_KV_SZ_MAC("rpt_mac"))
@@ -134,6 +140,14 @@ extern void *os_zalloc(size_t size);
 	MWU_KV_FMT_MAC("mac_address")                                          \
 	MWU_KV_FMT_DEC32("AverageRTT")                                         \
 	MWU_KV_FMT_DEC32("AverageClockOffset")                                 \
+	MWU_KV_FMT_FLOAT01("distance")                                         \
+	MWU_KV_FMT_DEC32("next_update_timeout")
+
+#define MLOCATION_EVENT_DEV_FMT_DISTANCE                                       \
+	MLOCATION_EVENT_HDR_FMT                                                \
+	MWU_KV_FMT_DEC32("distance")                                           \
+	MWU_KV_FMT_MAC("mac_address")                                          \
+	MWU_KV_FMT_DEC32("tsf_low")                                            \
 	MWU_KV_FMT_FLOAT01("distance")                                         \
 	MWU_KV_FMT_DEC32("next_update_timeout")
 
@@ -370,6 +384,55 @@ fail:
 	return;
 }
 
+void nan_send_ftm_distance_event(ftm_distance_event *dev, char iface[])
+{
+	int ret;
+	struct mwu_msg *msg_event = NULL;
+	int update_timeout = 3600;
+	float distance = dev->distance;
+
+	ALLOC_MSG_OR_FAIL(msg_event, MLOCATION_EVENT_FTM_DISTANCE_SZ + 1,
+			  MLOCATION_EVENT_DEV_FMT_DISTANCE, iface,
+			  "ftm_burst_distance", dev->distance,
+			  UTIL_MAC2STR(dev->bssid), dev->tsf_low, distance,
+			  update_timeout);
+
+	if (msg_event) {
+		ret = mwu_internal_send(msg_event);
+		if (ret != MWU_ERR_SUCCESS)
+			goto fail;
+	}
+	return;
+
+fail:
+	FREE(msg_event);
+	return;
+}
+
+void nan_send_ftm_fail_event(mlocation_event *dev, char iface[], float distance)
+{
+	int ret;
+	struct mwu_msg *msg_event = NULL;
+	int update_timeout = 3600;
+
+	ALLOC_MSG_OR_FAIL(msg_event, MLOCATION_EVENT_DEV_SZ + 1,
+			  MLOCATION_EVENT_DEV_FMT, iface, "ftm_fail",
+			  dev->bssNum, dev->bssType,
+			  UTIL_MAC2STR(dev->mac_address), dev->AverageRTT,
+			  dev->AverageClockOffset, distance, update_timeout);
+
+	if (msg_event) {
+		ret = mwu_internal_send(msg_event);
+		if (ret != MWU_ERR_SUCCESS)
+			goto fail;
+	}
+	return;
+
+fail:
+	FREE(msg_event);
+	return;
+}
+
 enum mwu_error mlocation_handle_mwu(struct mwu_msg *msg, struct mwu_msg **resp)
 {
 	int ret;
@@ -436,6 +499,10 @@ enum mwu_error mlocation_handle_mwu(struct mwu_msg *msg, struct mwu_msg **resp)
 					  (int *)&cfg.burst_period) == 1) {
 				param_count++;
 				ERR("burst_period: %d", cfg.burst_period);
+			} else if (sscanf(kv, MWU_KV_FMT_DEC32("iftm_tmo"),
+					  (int *)&cfg.iftm_tmo) == 1) {
+				param_count++;
+				ERR("iftm_tmo: %d", cfg.iftm_tmo);
 			} else if (sscanf(kv, MWU_KV_FMT_U8("civic_location"),
 					  &cfg.civic_location) == 1) {
 				param_count++;

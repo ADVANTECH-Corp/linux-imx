@@ -4,7 +4,7 @@
  *  definitions used in MLAN and MOAL module.
  *
  *
- *  Copyright 2008-2022 NXP
+ *  Copyright 2008-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -37,6 +37,124 @@ Change log:
 
 #ifndef _MLAN_IEEE_H_
 #define _MLAN_IEEE_H_
+
+/* center frequency description */
+struct center_freq_desc {
+	t_u8 pri_chan;
+	t_u8 ch_40;
+	t_u8 ch_80;
+	t_u8 ch_160;
+};
+
+/* List of 5GHZ channels */
+static const struct center_freq_desc center_freq_idx_map_5g[] = {
+	{.pri_chan = 36, .ch_40 = 38, .ch_80 = 42, .ch_160 = 50},
+	{.pri_chan = 40, .ch_40 = 38, .ch_80 = 42, .ch_160 = 50},
+	{.pri_chan = 44, .ch_40 = 46, .ch_80 = 42, .ch_160 = 50},
+	{.pri_chan = 48, .ch_40 = 46, .ch_80 = 42, .ch_160 = 50},
+	{.pri_chan = 52, .ch_40 = 54, .ch_80 = 58, .ch_160 = 50},
+	{.pri_chan = 56, .ch_40 = 54, .ch_80 = 58, .ch_160 = 50},
+	{.pri_chan = 60, .ch_40 = 62, .ch_80 = 58, .ch_160 = 50},
+	{.pri_chan = 64, .ch_40 = 62, .ch_80 = 58, .ch_160 = 50},
+	{.pri_chan = 68, .ch_40 = 70, .ch_80 = 74, .ch_160 = 0},
+	{.pri_chan = 72, .ch_40 = 70, .ch_80 = 74, .ch_160 = 0},
+	{.pri_chan = 76, .ch_40 = 78, .ch_80 = 74, .ch_160 = 0},
+	{.pri_chan = 80, .ch_40 = 78, .ch_80 = 74, .ch_160 = 0},
+	{.pri_chan = 84, .ch_40 = 86, .ch_80 = 90, .ch_160 = 0},
+	{.pri_chan = 88, .ch_40 = 86, .ch_80 = 90, .ch_160 = 0},
+	{.pri_chan = 92, .ch_40 = 94, .ch_80 = 90, .ch_160 = 0},
+	{.pri_chan = 96, .ch_40 = 94, .ch_80 = 90, .ch_160 = 0},
+	{.pri_chan = 100, .ch_40 = 102, .ch_80 = 106, .ch_160 = 114},
+	{.pri_chan = 104, .ch_40 = 102, .ch_80 = 106, .ch_160 = 114},
+	{.pri_chan = 108, .ch_40 = 110, .ch_80 = 106, .ch_160 = 114},
+	{.pri_chan = 112, .ch_40 = 110, .ch_80 = 106, .ch_160 = 114},
+	{.pri_chan = 116, .ch_40 = 118, .ch_80 = 122, .ch_160 = 114},
+	{.pri_chan = 120, .ch_40 = 118, .ch_80 = 122, .ch_160 = 114},
+	{.pri_chan = 124, .ch_40 = 126, .ch_80 = 122, .ch_160 = 114},
+	{.pri_chan = 128, .ch_40 = 126, .ch_80 = 122, .ch_160 = 114},
+	{.pri_chan = 132, .ch_40 = 134, .ch_80 = 138, .ch_160 = 0},
+	{.pri_chan = 136, .ch_40 = 134, .ch_80 = 138, .ch_160 = 0},
+	{.pri_chan = 140, .ch_40 = 142, .ch_80 = 138, .ch_160 = 0},
+	{.pri_chan = 144, .ch_40 = 142, .ch_80 = 138, .ch_160 = 0},
+	{.pri_chan = 149, .ch_40 = 151, .ch_80 = 155, .ch_160 = 163},
+	{.pri_chan = 153, .ch_40 = 151, .ch_80 = 155, .ch_160 = 163},
+	{.pri_chan = 157, .ch_40 = 159, .ch_80 = 155, .ch_160 = 163},
+	{.pri_chan = 161, .ch_40 = 159, .ch_80 = 155, .ch_160 = 163},
+	{.pri_chan = 165, .ch_40 = 167, .ch_80 = 171, .ch_160 = 163},
+	{.pri_chan = 169, .ch_40 = 167, .ch_80 = 171, .ch_160 = 163},
+	{.pri_chan = 173, .ch_40 = 175, .ch_80 = 171, .ch_160 = 163},
+	{.pri_chan = 177, .ch_40 = 175, .ch_80 = 171, .ch_160 = 163},
+	{.pri_chan = 184, .ch_40 = 186, .ch_80 = 190, .ch_160 = 0},
+	{.pri_chan = 188, .ch_40 = 186, .ch_80 = 190, .ch_160 = 0},
+	{.pri_chan = 192, .ch_40 = 194, .ch_80 = 190, .ch_160 = 0},
+	{.pri_chan = 196, .ch_40 = 194, .ch_80 = 190, .ch_160 = 0},
+	{.pri_chan = 0, .ch_40 = 42 /* terminator with default cfreq */}};
+
+/* List of 6GHZ channels */
+static const struct center_freq_desc center_freq_idx_map_6g[] = {
+	{.pri_chan = 1, .ch_40 = 3, .ch_80 = 7, .ch_160 = 15},
+	{.pri_chan = 5, .ch_40 = 3, .ch_80 = 7, .ch_160 = 15},
+	{.pri_chan = 9, .ch_40 = 11, .ch_80 = 7, .ch_160 = 15},
+	{.pri_chan = 13, .ch_40 = 11, .ch_80 = 7, .ch_160 = 15},
+	{.pri_chan = 17, .ch_40 = 19, .ch_80 = 23, .ch_160 = 15},
+	{.pri_chan = 21, .ch_40 = 19, .ch_80 = 23, .ch_160 = 15},
+	{.pri_chan = 25, .ch_40 = 27, .ch_80 = 23, .ch_160 = 15},
+	{.pri_chan = 29, .ch_40 = 27, .ch_80 = 23, .ch_160 = 15},
+	{.pri_chan = 33, .ch_40 = 35, .ch_80 = 39, .ch_160 = 47},
+	{.pri_chan = 37, .ch_40 = 35, .ch_80 = 39, .ch_160 = 47},
+	{.pri_chan = 41, .ch_40 = 43, .ch_80 = 39, .ch_160 = 47},
+	{.pri_chan = 45, .ch_40 = 43, .ch_80 = 39, .ch_160 = 47},
+	{.pri_chan = 49, .ch_40 = 51, .ch_80 = 55, .ch_160 = 47},
+	{.pri_chan = 53, .ch_40 = 51, .ch_80 = 55, .ch_160 = 47},
+	{.pri_chan = 57, .ch_40 = 59, .ch_80 = 55, .ch_160 = 47},
+	{.pri_chan = 61, .ch_40 = 59, .ch_80 = 55, .ch_160 = 47},
+	{.pri_chan = 65, .ch_40 = 67, .ch_80 = 71, .ch_160 = 79},
+	{.pri_chan = 69, .ch_40 = 67, .ch_80 = 71, .ch_160 = 79},
+	{.pri_chan = 73, .ch_40 = 75, .ch_80 = 71, .ch_160 = 79},
+	{.pri_chan = 77, .ch_40 = 75, .ch_80 = 71, .ch_160 = 79},
+	{.pri_chan = 81, .ch_40 = 83, .ch_80 = 87, .ch_160 = 79},
+	{.pri_chan = 85, .ch_40 = 83, .ch_80 = 87, .ch_160 = 79},
+	{.pri_chan = 89, .ch_40 = 91, .ch_80 = 87, .ch_160 = 79},
+	{.pri_chan = 93, .ch_40 = 91, .ch_80 = 87, .ch_160 = 79},
+	{.pri_chan = 97, .ch_40 = 99, .ch_80 = 103, .ch_160 = 111},
+	{.pri_chan = 101, .ch_40 = 99, .ch_80 = 103, .ch_160 = 111},
+	{.pri_chan = 105, .ch_40 = 107, .ch_80 = 103, .ch_160 = 111},
+	{.pri_chan = 109, .ch_40 = 107, .ch_80 = 103, .ch_160 = 111},
+	{.pri_chan = 113, .ch_40 = 115, .ch_80 = 119, .ch_160 = 111},
+	{.pri_chan = 117, .ch_40 = 115, .ch_80 = 119, .ch_160 = 111},
+	{.pri_chan = 121, .ch_40 = 123, .ch_80 = 119, .ch_160 = 111},
+	{.pri_chan = 125, .ch_40 = 123, .ch_80 = 119, .ch_160 = 111},
+	{.pri_chan = 129, .ch_40 = 131, .ch_80 = 135, .ch_160 = 143},
+	{.pri_chan = 133, .ch_40 = 131, .ch_80 = 135, .ch_160 = 143},
+	{.pri_chan = 137, .ch_40 = 139, .ch_80 = 135, .ch_160 = 143},
+	{.pri_chan = 141, .ch_40 = 139, .ch_80 = 135, .ch_160 = 143},
+	{.pri_chan = 145, .ch_40 = 147, .ch_80 = 151, .ch_160 = 143},
+	{.pri_chan = 149, .ch_40 = 147, .ch_80 = 151, .ch_160 = 143},
+	{.pri_chan = 153, .ch_40 = 155, .ch_80 = 151, .ch_160 = 143},
+	{.pri_chan = 157, .ch_40 = 155, .ch_80 = 151, .ch_160 = 143},
+	{.pri_chan = 161, .ch_40 = 163, .ch_80 = 167, .ch_160 = 175},
+	{.pri_chan = 165, .ch_40 = 163, .ch_80 = 167, .ch_160 = 175},
+	{.pri_chan = 169, .ch_40 = 171, .ch_80 = 167, .ch_160 = 175},
+	{.pri_chan = 173, .ch_40 = 171, .ch_80 = 167, .ch_160 = 175},
+	{.pri_chan = 177, .ch_40 = 179, .ch_80 = 183, .ch_160 = 175},
+	{.pri_chan = 181, .ch_40 = 179, .ch_80 = 183, .ch_160 = 175},
+	{.pri_chan = 185, .ch_40 = 187, .ch_80 = 183, .ch_160 = 175},
+	{.pri_chan = 189, .ch_40 = 187, .ch_80 = 183, .ch_160 = 175},
+	{.pri_chan = 193, .ch_40 = 195, .ch_80 = 199, .ch_160 = 207},
+	{.pri_chan = 197, .ch_40 = 195, .ch_80 = 199, .ch_160 = 207},
+	{.pri_chan = 201, .ch_40 = 203, .ch_80 = 199, .ch_160 = 207},
+	{.pri_chan = 205, .ch_40 = 203, .ch_80 = 199, .ch_160 = 207},
+	{.pri_chan = 209, .ch_40 = 211, .ch_80 = 215, .ch_160 = 207},
+	{.pri_chan = 213, .ch_40 = 211, .ch_80 = 215, .ch_160 = 207},
+	{.pri_chan = 217, .ch_40 = 219, .ch_80 = 215, .ch_160 = 207},
+	{.pri_chan = 221, .ch_40 = 219, .ch_80 = 215, .ch_160 = 207},
+	{.pri_chan = 225, .ch_40 = 227, .ch_80 = 0, .ch_160 = 0},
+	{.pri_chan = 229, .ch_40 = 227, .ch_80 = 0, .ch_160 = 0},
+	{.pri_chan = 233, .ch_40 = 0, .ch_80 = 0, .ch_160 = 0},
+	{.pri_chan = 0, .ch_40 = 37 /* terminator with default cfreq */}};
+
+/** WLAN header size */
+#define IEEE80211_HEADER_SIZE 24
 
 /** FIX IES size in beacon buffer */
 #define WLAN_802_11_FIXED_IE_SIZE 12
@@ -77,6 +195,9 @@ typedef enum _WLAN_802_11_NETWORK_TYPE {
 typedef enum _IEEEtypes_Ext_ElementId_e {
 	HE_CAPABILITY = 35,
 	HE_OPERATION = 36,
+	MU_EDCA_PARAM_SET = 38,
+	MBSSID_CONFIG = 55,
+	NON_INHERITANCE = 56,
 	HE_6G_CAPABILITY = 59
 } IEEEtypes_Ext_ElementId_e;
 
@@ -126,6 +247,14 @@ typedef MLAN_PACK_START enum _IEEEtypes_ElementId_e {
 	AID_INFO = 197,
 	QUIET_CHAN = 198,
 	OPER_MODE_NTF = 199,
+	RNR = 201,
+	FILS_SESSION = 210,
+	FILS_PMKID_LIST = 211,
+	FILS_IP_REQ = 212,
+	FILS_IP_RESP = 213,
+	FILS_KEY_AUTH = 214,
+	FILS_KEY_DELIVERY = 215,
+	FILS_INDICATION = 240,
 
 	ERP_INFO = 42,
 
@@ -266,7 +395,7 @@ typedef MLAN_PACK_START struct _IEEEtypes_FastBssTransElement_t {
 	/** SNonce */
 	t_u8 s_nonce[32];
 	/** sub element */
-	t_u8 sub_element[1];
+	t_u8 sub_element[];
 } MLAN_PACK_END IEEEtypes_FastBssTransElement_t;
 
 /*Category for FT*/
@@ -553,7 +682,7 @@ typedef MLAN_PACK_START struct _IEEEtypes_AssocRsp_t {
 	/** Association ID */
 	IEEEtypes_AId_t a_id;
 	/** IE data buffer */
-	t_u8 ie_buffer[1];
+	t_u8 ie_buffer[];
 } MLAN_PACK_END IEEEtypes_AssocRsp_t, *pIEEEtypes_AssocRsp_t;
 
 /** 802.11 supported rates */
@@ -893,6 +1022,28 @@ typedef MLAN_PACK_START enum _IEEEtypes_WMM_Tspec_Action_e {
 
 } MLAN_PACK_END IEEEtypes_WMM_Tspec_Action_e;
 
+/** NAN SDF vendor oui size */
+#define NAN_SDF_VENDOR_SIZE 4
+/** NAN service descriptor attribute offset */
+#define NAN_SDA_OFFSET 5
+/** NAN service control type offset */
+#define NAN_SRVC_CTRL_OFFSET 11
+/** Service control field */
+#define NAN_SRV_CTRL_TYPE_MASK (BIT(0) | BIT(1))
+/** NAN service control type */
+#define NAN_PUBLISH 0
+#define NAN_FOLLOW_UP 2
+
+/** NAN Attribute ID list */
+typedef MLAN_PACK_START enum _Nan_AttrId_e {
+	NAN_ATTR_SDA = 0x03
+} MLAN_PACK_END Nan_AttrId_e;
+
+/** Public Action Codes */
+typedef MLAN_PACK_START enum _IEEEtypes_Public_ActionCategory_e {
+	IEEE_PUBLIC_ACTION_CATEGORY_VENDOR_SPECIFIC = 9
+} MLAN_PACK_END IEEEtypes_Public_ActionCategory_e;
+
 /** WMM TSPEC Category Action Base */
 typedef MLAN_PACK_START struct {
 	IEEEtypes_ActionCategory_e category;
@@ -969,7 +1120,7 @@ typedef MLAN_PACK_START struct _IEEEtypes_CountryInfoSet_t {
 	/** Country code */
 	t_u8 country_code[COUNTRY_CODE_LEN];
 	/** Set of subbands */
-	IEEEtypes_SubbandSet_t sub_band[1];
+	IEEEtypes_SubbandSet_t sub_band[];
 } MLAN_PACK_END IEEEtypes_CountryInfoSet_t, *pIEEEtypes_CountryInfoSet_t;
 
 /** Data structure for Country IE full set */
@@ -1135,6 +1286,18 @@ typedef MLAN_PACK_START struct _IEEEtypes_MultiBSSID_t {
 	/** Optional Subelement data*/
 	t_u8 sub_elem_data[];
 } MLAN_PACK_END IEEEtypes_MultiBSSID_t, *pIEEEtypes_MultiBSSID_t;
+
+/** Multi BSSID Configuration IE */
+typedef MLAN_PACK_START struct _IEEEtypes_MBSSID_Config_t {
+	/** Generic IE header */
+	IEEEtypes_Header_t ieee_hdr;
+	/** Element id extension */
+	t_u8 ext_id;
+	/** BSSID Count */
+	t_u8 bssid_cnt;
+	/** Full Set Rx Periodicity */
+	t_u8 fs_rx_periodicity;
+} MLAN_PACK_END IEEEtypes_MBSSID_Config_t, *pIEEEtypes_MBSSID_Config_t;
 /** 20/40 BSS Coexistence IE */
 typedef MLAN_PACK_START struct _IEEEtypes_2040BSSCo_t {
 	/** Generic IE header */
@@ -1450,6 +1613,78 @@ typedef MLAN_PACK_START struct _IEEEtypes_HeOp_t {
 	t_u8 option[9];
 } MLAN_PACK_END IEEEtypes_HeOp_t;
 
+/** MU EDCA Parameter Set */
+typedef MLAN_PACK_START struct _IEEEtypes_MUEDCAParamSet_t {
+	/** Generic IE header */
+	IEEEtypes_Header_t ieee_hdr;
+	/** Extended Tag */
+	t_u8 ext_tag;
+	/** QOS Information */
+	t_u8 qos_info;
+	/** MUAC BE Paramter Record */
+	t_u8 muac_be[3];
+	/** MUAC BK Paramter Record */
+	t_u8 muac_bk[3];
+	/** MUAC VI Paramter Record */
+	t_u8 muac_vi[3];
+	/** MUAC VO Paramter Record */
+	t_u8 muac_vo[3];
+} MLAN_PACK_END IEEEtypes_MUEDCAParamSet_t, *pIEEEtypes_MUEDCAParamSet_t;
+
+/** IEEE format IE */
+typedef MLAN_PACK_START struct _IEEEtypes_Element_t {
+	/** Generic IE header */
+	IEEEtypes_Header_t ieee_hdr;
+	/** IE data */
+	t_u8 data[];
+} MLAN_PACK_END IEEEtypes_Element_t, *pIEEEtypes_Element_t;
+
+typedef MLAN_PACK_START struct _IEEEtypes_6G_control_t {
+#ifdef BIG_ENDIAN_SUPPORT
+	/** reserved */
+	t_u8 reserved : 2; /* bit 6-7 */
+	/** regulatory info */
+	t_u8 regulatory_info : 3; /* bit 3-5 */
+	/** duplicate_beacon */
+	t_u8 duplicate_beacon : 1; /* bit 2 */
+	/** channel width */
+	t_u8 channel_width : 2; /* bit 0-1 */
+#else
+	/** channel width */
+	t_u8 channel_width : 2; /* bit 0-1 */
+	/** duplicate_beacon */
+	t_u8 duplicate_beacon : 1; /* bit 2 */
+	/** regulatory info */
+	t_u8 regulatory_info : 3; /* bit 3-5 */
+	/** reserved */
+	t_u8 reserved : 2; /* bit 6-7 */
+#endif
+} MLAN_PACK_END IEEEtypes_6G_control_t;
+
+/* IEEEtypes_He6GOpInfo_t */
+typedef MLAN_PACK_START struct _IEEEtypes_He6GOpInfo_t {
+	/** primary channel */
+	t_u8 primary_channel;
+	/** control */
+	IEEEtypes_6G_control_t control;
+	/** center freq0 */
+	t_u8 channel_center_freq0;
+	/** center freq1 */
+	t_u8 channel_center_freq1;
+	/** minimum rate */
+	t_u8 minimum_rate;
+} MLAN_PACK_END IEEEtypes_He6GOpInfo_t, *pIEEEtypes_He6GOpInfo_t;
+
+/* IEEEtypes_HE6GCap_t */
+typedef MLAN_PACK_START struct _IEEEtypes_HE6GCap_t {
+	/** Generic IE header */
+	IEEEtypes_Header_t ieee_hdr;
+	/** Element id extension */
+	t_u8 ext_id;
+	/** he 6g capability */
+	t_u16 capa;
+} MLAN_PACK_END IEEEtypes_HE6GCap_t, *pIEEEtypes_HE6GCap_t;
+
 /** default channel switch count */
 #define DEF_CHAN_SWITCH_COUNT 5
 
@@ -1705,7 +1940,7 @@ typedef MLAN_PACK_START struct {
 #define MAX_SCAN_RSP_BUF (16 * 1024)
 
 /** Maximum number of channels that can be sent in user scan config */
-#define WLAN_USER_SCAN_CHAN_MAX 50
+#define WLAN_USER_SCAN_CHAN_MAX 109
 /** Maximum length of SSID list */
 #define MRVDRV_MAX_SSID_LIST_LENGTH 10
 
@@ -1768,6 +2003,105 @@ typedef MLAN_PACK_START struct _ChanStatistics_t {
 	/** max rssi */
 	t_u8 max_rss;
 } MLAN_PACK_END ChanStatistics_t;
+
+#define MLAN_6G_CHAN_MAX 59
+#define MLAN_RNR_COLOC_AP_MAX MLAN_6G_CHAN_MAX
+#define WLAN_MAX_6G_SCAN_PARAMS_LIST 20
+#define SHORT_SSID_VALID MBIT(0)
+#define UNSOLICITED_PROBE MBIT(1)
+
+/**
+ *  IOCTL 6g scan params List sub-structure sent in wlan_ioctl_user_scan_cfg
+ */
+typedef MLAN_PACK_START struct _wlan_6g_scan_params {
+	/** scan channel */
+	t_u8 channel;
+	/** bit0: short_ssid_valid, bit1: unsolicited_probe */
+	t_u16 flags;
+	/** short ssid */
+	t_u32 short_ssid;
+	/** bssid */
+	t_u8 bssid[6];
+} MLAN_PACK_END wlan_6g_scan_params;
+
+/*
+ * Reduced Neighbor Report(RNR), based on 802.11ax-2021,
+ * section 9.4.2.170.
+ */
+#define IEEE80211_RNR_TBTT_INFO_OFFSET_BSSID_BSSPARAMS 9
+#define IEEE80211_RNR_TBTT_INFO_OFFSET_BSSID_SSSID_BSSPARAMS 13
+
+/** Get count of TBTT Information (bit 7:4) */
+#define GET_RNR_TBTT_INFO_HDR_COUNT(hdr) ((hdr >> 4) & 0x0f)
+#define GET_RNR_TBTT_INFO_BSSPARAMS_BIT(bss_params, bit)                       \
+	(bss_params >> bit) & 0x01
+
+/** RNR BSS parameters */
+typedef MLAN_PACK_START struct _IEEEtypes_RnrBssParams_t {
+#ifdef BIG_ENDIAN_SUPPORT
+	/** Reserved */
+	t_u8 rsrvd : 1;
+	/** Co-Located AP */
+	t_u8 colocated : 1;
+	/** Unsolicited Probe Responses Active */
+	t_u8 unsolicited_probe : 1;
+	/** Member Of ESS With 2.4/5 GHz Co-Located AP */
+	t_u8 colocated_ess : 1;
+	/** Transmitted BSSID */
+	t_u8 transmitted_bssid : 1;
+	/** Multiple BSSID */
+	t_u8 multi_bss : 1;
+	/** Same SSID */
+	t_u8 same_ssid : 1;
+	/** OCT Recommended */
+	t_u8 oct_recommended : 1;
+#else
+	/** OCT Recommended */
+	t_u8 oct_recommended : 1;
+	/** Same SSID */
+	t_u8 same_ssid : 1;
+	/** Multiple BSSID */
+	t_u8 multi_bss : 1;
+	/** Transmitted BSSID */
+	t_u8 transmitted_bssid : 1;
+	/** Member Of ESS With 2.4/5 GHz Co-Located AP */
+	t_u8 colocated_ess : 1;
+	/** Unsolicited Probe Responses Active */
+	t_u8 unsolicited_probe : 1;
+	/** Co-Located AP */
+	t_u8 colocated : 1;
+	/** Reserved */
+	t_u8 rsrvd : 1;
+#endif /* BIG_ENDIAN_SUPPORT */
+} MLAN_PACK_END IEEEtypes_RnrBssParams_t, *pIEEEtypes_RnrBssParams_t;
+
+/** structure for RNR Neighbor AP Information */
+typedef MLAN_PACK_START struct _IEEEtypes_RnrNeighborApInfo_t {
+	/* TBTT Information Header */
+	t_u8 tbtt_info_hdr;
+	/* TBTT Information Length */
+	t_u8 tbtt_info_len;
+	/** Operating Class */
+	t_u8 oper_class;
+	/** Channel Number */
+	t_u8 chan_number;
+} MLAN_PACK_END IEEEtypes_RnrNeighborApInfo_t, *pIEEEtypes_RnrNeighborApInfo_t;
+
+/** structure for RNR colocated ap */
+typedef MLAN_PACK_START struct _RnrColocatedAp_t {
+	/** BSSID */
+	t_u8 bssid[MLAN_MAC_ADDR_LENGTH];
+	/** SSID */
+	mlan_802_11_ssid ssid;
+	/** Short-SSID */
+	t_u32 short_ssid;
+	/** Operating Class */
+	t_u8 oper_class;
+	/** Channel Number */
+	t_u8 chan_number;
+	/** BSS parameters */
+	IEEEtypes_RnrBssParams_t bss_params;
+} MLAN_PACK_END RnrColocatedAp_t, *pRnrColocatedAp_t;
 
 /** Enhance ext scan type defination */
 typedef enum _MLAN_EXT_SCAN_TYPE {
@@ -1836,6 +2170,10 @@ typedef MLAN_PACK_START struct {
 	mlan_802_11_mac_addr bssid_list[MAX_BSSID_FILTER_LIST];
 	/** use scan setting from scan_cfg only  */
 	t_u8 scan_cfg_only;
+	/**num of 6g scan params for OOB scan */
+	t_u8 num_6g_scan_params;
+	/** 6g scan params for OOB scan */
+	wlan_6g_scan_params scan_param_list[WLAN_MAX_6G_SCAN_PARAMS_LIST];
 } MLAN_PACK_END wlan_user_scan_cfg;
 
 /** Default scan interval in millisecond*/
@@ -1858,13 +2196,16 @@ typedef MLAN_PACK_START struct {
 /**wait for all channel scan to complete to report scan result*/
 #define BG_SCAN_WAIT_ALL_CHAN_DONE 0x80000000
 
-#define CHAN_MAX_6G 0
+#define CHAN_MAX_6G 59 // reference from cfg80211_channels_6ghz table
 
 /** max bgscan chan number */
 #define WLAN_BG_SCAN_CHAN_MAX 38
 
 /** max bgscan chan number, include UNII_4 channel */
 #define WLAN_BG_SCAN_CHAN_MAX_UNII_4 41
+
+/** max bgscan chan number, 3 + 38 + 59 */
+#define WLAN_BG_SCAN_CHAN_MAX_6E 100
 
 /** Enumeration definition */
 /** EES MODE */
@@ -1962,6 +2303,8 @@ typedef MLAN_PACK_START struct {
 	/** Array of ees config struct */
 	ees_ssid_config ees_ssid_cfg[EES_MAX_SSIDS];
 	t_u8 random_mac[MLAN_MAC_ADDR_LENGTH];
+	/** 11ai indication */
+	t_u8 dot11ai;
 } MLAN_PACK_END wlan_bgscan_cfg;
 #endif /* STA_SUPPORT */
 
@@ -1969,6 +2312,9 @@ typedef MLAN_PACK_START struct {
 #define OWE_TRANS_MODE_OPEN 1
 /** The security AP in OWE trsnsition Mode */
 #define OWE_TRANS_MODE_OWE 2
+
+#define VENDOR_OUI_LEN 4
+#define MAX_VENDOR_OUI_NUM 10
 
 #ifdef PRAGMA_PACK
 #pragma pack(pop)
@@ -2078,6 +2424,10 @@ typedef struct _BSSDescriptor_t {
 	t_u8 multi_bssid_ap;
 	/** the mac address of multi-bssid AP */
 	mlan_802_11_mac_addr multi_bssid_ap_addr;
+	/** Multi BSSID Configuration IE */
+	IEEEtypes_MBSSID_Config_t *pmbssid_config;
+	/** Multi BSSID Configuration IE offset */
+	t_u16 mbssid_config_offset;
 	/** 20/40 BSS Coexistence IE */
 	IEEEtypes_2040BSSCo_t *pbss_co_2040;
 	/** 20/40 BSS Coexistence Offset */
@@ -2127,6 +2477,14 @@ typedef struct _BSSDescriptor_t {
 	IEEEtypes_Extension_t *phe_oprat;
 	/** HE operation IE offset */
 	t_u16 he_oprat_offset;
+	/** HE 6G Capability IE */
+	IEEEtypes_HE6GCap_t *phe_6g_cap;
+	/** HE 6G Capability IE offset */
+	t_u16 he_6g_cap_offset;
+	/** RNR IE */
+	IEEEtypes_Generic_t *prnr_ie;
+	/** RNR IE offset in the beacon buffer */
+	t_u16 rnr_offset;
 #ifdef STA_SUPPORT
 	/** Country information set */
 	IEEEtypes_CountryInfoFullSet_t country_info;
@@ -2158,7 +2516,10 @@ typedef struct _BSSDescriptor_t {
 	IEEEtypes_MobilityDomain_t *pmd_ie;
 	/** Mobility domain IE offset in the beacon buffer */
 	t_u16 md_offset;
-
+	/** MU EDCA Parameter IE */
+	IEEEtypes_MUEDCAParamSet_t *pmuedca_ie;
+	/** MU EDCA Parameter IE offset */
+	t_u16 muedca_offset;
 	/** Pointer to the returned scan response */
 	t_u8 *pbeacon_buf;
 	/** Length of the stored scan response */
@@ -2167,6 +2528,10 @@ typedef struct _BSSDescriptor_t {
 	t_u32 beacon_buf_size_max;
 	/** scan age in secs */
 	t_u32 age_in_secs;
+	/** vendor oui list */
+	t_u8 vendor_oui[VENDOR_OUI_LEN * MAX_VENDOR_OUI_NUM];
+	/** vendor OUI count */
+	t_u8 vendor_oui_count;
 } BSSDescriptor_t, *pBSSDescriptor_t;
 
 #endif /* !_MLAN_IEEE_H_ */

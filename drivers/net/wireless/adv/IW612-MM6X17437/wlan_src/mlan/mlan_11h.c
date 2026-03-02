@@ -3,7 +3,7 @@
  *  @brief This file contains functions for 802.11H.
  *
  *
- *  Copyright 2008-2021, 2024 NXP
+ *  Copyright 2008-2021, 2024-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -475,7 +475,7 @@ wlan_11h_set_supp_channels_ie(mlan_private *priv, t_u16 band,
  */
 static mlan_status wlan_11h_cmd_tpc_request(mlan_private *priv,
 					    HostCmd_DS_COMMAND *pcmd_ptr,
-					    const t_void *pinfo_buf)
+					    t_void *pinfo_buf)
 {
 	ENTER();
 
@@ -508,7 +508,7 @@ static mlan_status wlan_11h_cmd_tpc_request(mlan_private *priv,
  */
 static mlan_status wlan_11h_cmd_tpc_info(mlan_private *priv,
 					 HostCmd_DS_COMMAND *pcmd_ptr,
-					 const t_void *pinfo_buf)
+					 t_void *pinfo_buf)
 {
 	HostCmd_DS_802_11_TPC_INFO *ptpc_info = &pcmd_ptr->params.tpc_info;
 	MrvlIEtypes_LocalPowerConstraint_t *pconstraint =
@@ -552,7 +552,7 @@ static mlan_status wlan_11h_cmd_tpc_info(mlan_private *priv,
  */
 static mlan_status wlan_11h_cmd_chan_sw_ann(mlan_private *priv,
 					    HostCmd_DS_COMMAND *pcmd_ptr,
-					    const t_void *pinfo_buf)
+					    t_void *pinfo_buf)
 {
 	const HostCmd_DS_802_11_CHAN_SW_ANN *pch_sw_ann =
 		(HostCmd_DS_802_11_CHAN_SW_ANN *)pinfo_buf;
@@ -589,7 +589,7 @@ static mlan_status wlan_11h_cmd_chan_sw_ann(mlan_private *priv,
  */
 static mlan_status wlan_11h_cmd_chan_rpt_req(mlan_private *priv,
 					     HostCmd_DS_COMMAND *pcmd_ptr,
-					     const t_void *pinfo_buf)
+					     t_void *pinfo_buf)
 {
 	HostCmd_DS_CHAN_RPT_REQ *pchan_rpt_req =
 		(HostCmd_DS_CHAN_RPT_REQ *)pinfo_buf;
@@ -717,6 +717,7 @@ static t_u32 wlan_11h_set_local_power_constraint_tlv(
 	MrvlIEtypes_PowerCapability_t *pcap;
 	MrvlIEtypes_LocalPowerConstraint_t *pconstraint;
 	t_u8 *start_ptr = MNULL;
+	t_u32 ret_len = 0;
 
 	ENTER();
 
@@ -746,9 +747,10 @@ static t_u32 wlan_11h_set_local_power_constraint_tlv(
 	pconstraint->chan = channel;
 	pconstraint->constraint = power_constraint;
 	*ppbuffer += sizeof(MrvlIEtypesHeader_t) + 2;
+	ret_len = *ppbuffer - start_ptr;
 
 	LEAVE();
-	return (t_u32)(*ppbuffer - start_ptr);
+	return ret_len;
 }
 
 /**
@@ -1682,7 +1684,7 @@ static t_bool wlan_11h_is_slave_on_dfs_chan(mlan_private *priv)
  *  @return        MTRUE-dfs_master and dfs_slave interface on same DFS channel
  *
  */
-t_u8 static wlan_11h_check_dfs_channel(mlan_adapter *pmadapter)
+static t_u8 wlan_11h_check_dfs_channel(mlan_adapter *pmadapter)
 {
 	mlan_private *priv_master = MNULL;
 	mlan_private *priv_slave = MNULL;
@@ -1718,7 +1720,7 @@ t_u8 static wlan_11h_check_dfs_channel(mlan_adapter *pmadapter)
  *
  *  @return      MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
  */
-mlan_status static wlan_11h_disable_dfs(mlan_private *priv, t_void *pioctl_buf)
+static mlan_status wlan_11h_disable_dfs(mlan_private *priv, t_void *pioctl_buf)
 {
 	t_u32 enable = 0;
 	mlan_status ret = MLAN_STATUS_SUCCESS;
@@ -2542,7 +2544,7 @@ t_s32 wlan_11h_process_join(mlan_private *priv, t_u8 **ppbuffer,
  */
 mlan_status wlan_11h_cmd_process(mlan_private *priv,
 				 HostCmd_DS_COMMAND *pcmd_ptr,
-				 const t_void *pinfo_buf)
+				 t_void *pinfo_buf)
 {
 	mlan_status ret = MLAN_STATUS_SUCCESS;
 
@@ -2660,7 +2662,7 @@ mlan_status wlan_11h_process_bss_elem(mlan_adapter *pmadapter,
 				      const t_u8 *pelement)
 {
 	mlan_status ret = MLAN_STATUS_SUCCESS;
-	t_u8 element_len = *((t_u8 *)pelement + 1);
+	t_u8 element_len = *((const t_u8 *)pelement + 1);
 
 	ENTER();
 	switch (*pelement) {
@@ -3155,6 +3157,7 @@ mlan_status wlan_11h_ioctl_dfs_chan_report(mlan_private *priv,
 	LEAVE();
 	return ret;
 }
+
 /**
  *  @brief Check if channel is under NOP (Non-Occupancy Period)
  *  If so, the channel should not be used until the period expires.
@@ -3683,7 +3686,7 @@ mlan_status wlan_11h_radar_detected_handling(mlan_adapter *pmadapter,
 		pstate_rdh->max_bcn_dtim_ms = 0;
 		pstate_rdh->priv_curr_idx = RDH_STAGE_FIRST_ENTRY_PRIV_IDX;
 		pstate_rdh->stage = RDH_STOP_TRAFFIC;
-		/* fall through */
+		fallthrough;
 
 	case RDH_STOP_TRAFFIC:
 		PRINTM(MCMD_D, "%s(): stage(%d)=%s\n", __func__,
@@ -3696,7 +3699,7 @@ mlan_status wlan_11h_radar_detected_handling(mlan_adapter *pmadapter,
 
 		pstate_rdh->priv_curr_idx = RDH_STAGE_FIRST_ENTRY_PRIV_IDX;
 		pstate_rdh->stage = RDH_GET_INFO_CHANNEL;
-		/* fall through */
+		fallthrough;
 
 	case RDH_GET_INFO_CHANNEL:
 		PRINTM(MCMD_D, "%s(): stage(%d)=%s, priv_idx=%d\n", __func__,
@@ -3809,7 +3812,7 @@ mlan_status wlan_11h_radar_detected_handling(mlan_adapter *pmadapter,
 
 		pstate_rdh->priv_curr_idx = RDH_STAGE_FIRST_ENTRY_PRIV_IDX;
 		pstate_rdh->stage = RDH_GET_INFO_BEACON_DTIM;
-		/* fall through */
+		fallthrough;
 
 	case RDH_GET_INFO_BEACON_DTIM:
 		PRINTM(MCMD_D, "%s(): stage(%d)=%s, priv_idx=%d\n", __func__,
@@ -3882,7 +3885,7 @@ mlan_status wlan_11h_radar_detected_handling(mlan_adapter *pmadapter,
 		/* else */
 		pstate_rdh->priv_curr_idx = RDH_STAGE_FIRST_ENTRY_PRIV_IDX;
 		pstate_rdh->stage = RDH_SET_CUSTOM_IE;
-		/* fall through */
+		fallthrough;
 
 	case RDH_SET_CUSTOM_IE:
 		PRINTM(MCMD_D, "%s(): stage(%d)=%s, priv_idx=%d\n", __func__,
@@ -3933,7 +3936,7 @@ mlan_status wlan_11h_radar_detected_handling(mlan_adapter *pmadapter,
 		/* else */
 		pstate_rdh->priv_curr_idx = RDH_STAGE_FIRST_ENTRY_PRIV_IDX;
 		pstate_rdh->stage = RDH_REM_CUSTOM_IE;
-		/* fall through */
+		fallthrough;
 
 	case RDH_REM_CUSTOM_IE:
 		PRINTM(MCMD_D, "%s(): stage(%d)=%s, priv_idx=%d\n", __func__,
@@ -4000,7 +4003,7 @@ mlan_status wlan_11h_radar_detected_handling(mlan_adapter *pmadapter,
 		/* else */
 		pstate_rdh->priv_curr_idx = RDH_STAGE_FIRST_ENTRY_PRIV_IDX;
 		pstate_rdh->stage = RDH_STOP_INTFS;
-		/* fall through */
+		fallthrough;
 
 	case RDH_STOP_INTFS:
 		PRINTM(MCMD_D, "%s(): stage(%d)=%s, priv_idx=%d\n", __func__,
@@ -4047,7 +4050,7 @@ mlan_status wlan_11h_radar_detected_handling(mlan_adapter *pmadapter,
 			pstate_rdh->stage = RDH_RESTART_INTFS;
 			goto rdh_restart_intfs; /* skip next stage */
 		}
-		/* fall through */
+		fallthrough;
 
 	case RDH_SET_NEW_CHANNEL:
 		PRINTM(MCMD_D, "%s(): stage(%d)=%s, priv_idx=%d\n", __func__,
@@ -4089,7 +4092,7 @@ mlan_status wlan_11h_radar_detected_handling(mlan_adapter *pmadapter,
 		/* else */
 		pstate_rdh->priv_curr_idx = RDH_STAGE_FIRST_ENTRY_PRIV_IDX;
 		pstate_rdh->stage = RDH_RESTART_INTFS;
-		/* fall through */
+		fallthrough;
 
 	case RDH_RESTART_INTFS:
 	rdh_restart_intfs:
@@ -4132,7 +4135,7 @@ mlan_status wlan_11h_radar_detected_handling(mlan_adapter *pmadapter,
 		/* else */
 		pstate_rdh->priv_curr_idx = RDH_STAGE_FIRST_ENTRY_PRIV_IDX;
 		pstate_rdh->stage = RDH_RESTART_TRAFFIC;
-		/* fall through */
+		fallthrough;
 
 	case RDH_RESTART_TRAFFIC:
 		PRINTM(MCMD_D, "%s(): stage(%d)=%s\n", __func__,

@@ -2,7 +2,7 @@
  * SHA1 hash implementation and interface functions
  * Copyright (c) 2003-2005, Jouni Malinen <jkmaline@cc.hut.fi>
  *
- * Copyright 2012-2020, NXP
+ * Copyright 2012-2020, 2024 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to

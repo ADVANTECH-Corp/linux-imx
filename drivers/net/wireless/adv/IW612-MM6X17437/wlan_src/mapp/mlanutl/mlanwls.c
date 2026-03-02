@@ -343,8 +343,8 @@ static int process_ftm_hostcmd_resp(char *cmd_name, t_u8 *buf)
 			       phostcmd->cmd.ftm_session_cfg.tlv.cfg_11az
 				       .range_tlv.val.i2r_lmr_feedback);
 		} else if ((le16_to_cpu(phostcmd->cmd.ftm_session_cfg.tlv
-						.cfg_11mc.sess_tlv.type)) ==
-			   FTM_SESSION_CFG_INITATOR_TLV_ID) {
+						.cfg_11mc.sess_tlv.type) ==
+			    FTM_SESSION_CFG_INITATOR_TLV_ID)) {
 			if (le16_to_cpu(phostcmd->cmd.ftm_session_cfg.action) ==
 			    MLAN_ACT_GET) {
 				/* Get */

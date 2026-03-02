@@ -4,7 +4,7 @@
  *  function declarations of 802.11h
  *
  *
- *  Copyright 2008-2021 NXP
+ *  Copyright 2008-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -132,7 +132,7 @@ extern t_s32 wlan_11h_process_join(mlan_private *priv, t_u8 **ppbuffer,
 /** Complete the firmware command preparation for an 11h command function */
 extern mlan_status wlan_11h_cmd_process(mlan_private *priv,
 					HostCmd_DS_COMMAND *pcmd_ptr,
-					const t_void *pinfo_buf);
+					t_void *pinfo_buf);
 
 /** Process the response of an 11h firmware command */
 extern mlan_status wlan_11h_cmdresp_process(mlan_private *priv,

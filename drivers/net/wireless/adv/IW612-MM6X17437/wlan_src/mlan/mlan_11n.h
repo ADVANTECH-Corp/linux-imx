@@ -6,7 +6,7 @@
  *    implemented in mlan_11n.c.
  *
  *
- *  Copyright 2008-2021 NXP
+ *  Copyright 2008-2021,2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -187,6 +187,9 @@ static INLINE t_u8 is_station_ampdu_allowed(mlan_private *priv, raListTbl *ptr,
 {
 	sta_node *sta_ptr = MNULL;
 	sta_ptr = wlan_get_station_entry(priv, ptr->ra);
+	if (tid < 0 || tid >= MAX_NUM_TID) {
+		return MFALSE;
+	}
 	if (sta_ptr) {
 		if (GET_BSS_ROLE(priv) == MLAN_BSS_ROLE_UAP) {
 			if (priv->sec_info.wapi_enabled &&
@@ -247,6 +250,8 @@ static INLINE void reset_station_ampdu(mlan_private *priv, t_u8 tid, t_u8 *ra)
 static INLINE t_u8 wlan_is_ampdu_allowed(mlan_private *priv, raListTbl *ptr,
 					 int tid)
 {
+	if (tid < 0)
+		return MFALSE;
 	if (ptr->is_tdls_link)
 		return is_station_ampdu_allowed(priv, ptr, tid);
 	if (priv->adapter->tdls_status != TDLS_NOT_SETUP && !priv->txaggrctrl)
@@ -306,7 +311,7 @@ static INLINE t_u8 wlan_is_amsdu_allowed(mlan_private *priv, raListTbl *ptr,
 #ifdef UAP_SUPPORT
 	sta_node *sta_ptr = MNULL;
 #endif
-	if (priv->amsdu_disable)
+	if (priv->amsdu_disable || !ptr->max_amsdu || tid < 0)
 		return MFALSE;
 #ifdef UAP_SUPPORT
 	if (GET_BSS_ROLE(priv) == MLAN_BSS_ROLE_UAP) {
@@ -333,6 +338,23 @@ static INLINE t_u8 wlan_is_amsdu_allowed(mlan_private *priv, raListTbl *ptr,
 }
 
 /**
+ *  @brief This function gets max number of BA stream supported
+ *
+ *  @param pmadapter  A pointer to mlan_adapter
+ *
+ *  @return           number of BA streams
+ */
+static INLINE t_u32 wlan_get_bastream_limit(mlan_adapter *pmadapter)
+{
+	t_u32 bastreams = ISSUPP_GETTXBASTREAM(pmadapter->hw_dot_11n_dev_cap);
+
+	if (pmadapter->mclient_tx_supported)
+		return pmadapter->tx_ba_stream_limit;
+
+	return bastreams;
+}
+
+/**
  *  @brief This function checks whether a BA stream is available or not
  *
  *  @param priv     A pointer to mlan_private
@@ -351,7 +373,7 @@ static INLINE t_u8 wlan_is_bastream_avail(mlan_private *priv)
 			bastream_num += wlan_wmm_list_len(
 				(pmlan_list_head)&pmpriv->tx_ba_stream_tbl_ptr);
 	}
-	bastream_max = ISSUPP_GETTXBASTREAM(priv->adapter->hw_dot_11n_dev_cap);
+	bastream_max = wlan_get_bastream_limit(priv->adapter);
 	if (bastream_max == 0)
 		bastream_max = MLAN_MAX_TX_BASTREAM_DEFAULT;
 	return (bastream_num < bastream_max) ? MTRUE : MFALSE;
@@ -381,7 +403,7 @@ static INLINE t_u8 wlan_find_stream_to_delete(mlan_private *priv,
 	ptx_tbl = (TxBAStreamTbl *)util_peek_list(priv->adapter->pmoal_handle,
 						  &priv->tx_ba_stream_tbl_ptr,
 						  MNULL, MNULL);
-	if (!ptx_tbl) {
+	if (!ptx_tbl || ptr_tid < 0) {
 		LEAVE();
 		return ret;
 	}
@@ -390,6 +412,7 @@ static INLINE t_u8 wlan_find_stream_to_delete(mlan_private *priv,
 
 	while (ptx_tbl != (TxBAStreamTbl *)&priv->tx_ba_stream_tbl_ptr) {
 		if ((ptx_tbl->ba_status == BA_STREAM_SETUP_COMPLETE) &&
+		    (ptx_tbl->tid >= 0) &&
 		    (tid > priv->aggr_prio_tbl[ptx_tbl->tid].ampdu_user)) {
 			tid = priv->aggr_prio_tbl[ptx_tbl->tid].ampdu_user;
 			*ptid = ptx_tbl->tid;

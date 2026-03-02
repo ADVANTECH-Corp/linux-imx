@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -61,6 +61,8 @@
 #define DEFAULT_2G_OP_CHAN 6
 #define DEFAULT_5G_OP_CLASS 125
 #define DEFAULT_5G_OP_CHAN 149
+extern u8 g_5G_chan;
+extern u8 channel_config_err;
 #define DEFAULT_WINDOW_SIZE 512
 #define DEFAULT_BITMAP_LEN 32
 #define NAN_DEFAULT_BITMAP 0x0ffffe7e
@@ -75,6 +77,9 @@
 #define NAN_RANGE 2
 
 #define IPV6_IFACE_IDENTIFIER_LEN 8
+
+#define DEFAULT_6G_OP_CLASS 131
+#define DEFAULT_6G_OP_CHAN 37
 
 /* enum wifidir_error
  *
@@ -233,8 +238,8 @@ struct nan_state_info {
 	int cur_rfactor;
 	int hold_hop_cnt_flag;
 	int cur_hop_cnt;
-	int disable_2g_flag;
-	int disable_2g;
+	int reserved1;
+	int reserved2;
 };
 
 struct nan_params_cfg {
@@ -264,6 +269,7 @@ struct nan_params_cfg {
 	int ndpe_attr_trans_port;
 	int ndpe_attr_negative;
 	int ndp_attr_present;
+	int operating_mode_6g;
 };
 
 struct nan_params_fa {
@@ -437,6 +443,7 @@ typedef struct _peer_availability_info {
 	u8 ndc_changed : 1;
 	u8 single_band : 1;
 	u8 ndpe_attr_supported;
+	u8 support_6g : 1;
 } peer_availability_info;
 
 #define MAX_SUPPORTED_NDC 1
@@ -508,8 +515,8 @@ enum nan_error nan_send_ftm_report(struct module *mod, u32 distance,
 				   char *mac_addr);
 void nan_mwu_event_ftm_cb(struct event *event, void *priv);
 enum nan_error nan_ndp_terminate(struct module *mod);
-enum nan_error nan_ranging_initiate(struct module *mod,
-				    char peer_mac[ETH_ALEN]);
+enum nan_error nan_ranging_initiate(struct module *mod, char peer_mac[ETH_ALEN],
+				    u8 channel);
 enum nan_error nan_ranging_terminate(struct module *mod);
 enum nan_error nan_set_schedule_update(struct module *mod,
 				       struct nan_schedule *sched);

@@ -2,7 +2,7 @@
  * Copyright (c) 1991, 1993
  *	The Regents of the University of California.  All rights reserved.
  *
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to

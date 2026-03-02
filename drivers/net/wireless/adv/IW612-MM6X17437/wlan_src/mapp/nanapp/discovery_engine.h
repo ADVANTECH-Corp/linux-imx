@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -81,6 +81,7 @@
 #define SERVICE_CTRL_BITMAP_SUBSCRIBE (1 << 0)
 #define SERVICE_CTRL_BITMAP_FOLLOW_UP (1 << 1)
 
+#define SERVICE_CTRL_BITMAP_SI_PRESENT (1 << 4)
 #define SERVICE_CTRL_BITMAP_MF_PRESENT (1 << 2);
 #define SERVICE_CTRL_BITMAP_SRF_PRESENT (1 << 3);
 
@@ -110,6 +111,8 @@
 #define SDEA_CTRL_QOS_REQUIRED (1 << 5)
 
 #define SDEA_CTRL_BITMAP_SECURITY_REQUIRED (1 << 6)
+
+extern u8 service_info_tmp;
 /** HostCmd_CMD_WIFIDIR_ACTION_FRAME request */
 typedef struct _nan_sd_frame {
 	/** Peer mac address */
@@ -361,7 +364,7 @@ nan_start_unsolicited_subscribe(struct mwu_iface_info *cur_if,
 enum nan_error nan_parse_rx_sdf(struct mwu_iface_info *cur_if, u8 *buffer,
 				int size, struct nan_rx_sd_frame *rx_sdf,
 				u8 sdf_type);
-enum nan_error nan_start_ftm_session(unsigned char *mac);
+enum nan_error nan_start_ftm_session(unsigned char *mac, u8 channel);
 enum nan_error nan_set_ranging_bitmap(struct mwu_iface_info *cur_if,
 				      u32 ranging_bitmap);
 #endif

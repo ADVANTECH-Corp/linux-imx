@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -52,6 +52,7 @@
 
 #include "data_engine.h"
 
+u8 service_info_tmp = 0;
 struct module *nan_mod = NULL;
 // static enum nan_state __state = NAN_STATE_INIT;
 enum nan_error nan_send_sdf_event(struct mwu_iface_info *cur_if, u8 event_id,
@@ -209,7 +210,10 @@ static enum nan_error nan_do_stop(struct mwu_iface_info *cur_if)
 static enum nan_error nan_do_start(struct mwu_iface_info *cur_if)
 {
 	int ret = NAN_ERR_SUCCESS;
-
+	if (channel_config_err) {
+		ERR("Configured channel is not supported for NAN. Allowed operating channels in 5G are only 44, 149\n");
+		return NAN_ERR_INVAL;
+	}
 	ret = nancmd_set_mode_config(cur_if, NAN_MODE_START);
 	if (ret != NAN_ERR_SUCCESS) {
 		ERR("Failed to start NAN");
@@ -1145,7 +1149,8 @@ enum nan_error nan_ndp_terminate(struct module *mod)
 	return ret;
 }
 
-enum nan_error nan_ranging_initiate(struct module *mod, char peer_mac[ETH_ALEN])
+enum nan_error nan_ranging_initiate(struct module *mod, char peer_mac[ETH_ALEN],
+				    u8 channel)
 {
 	int ret = NAN_ERR_SUCCESS;
 	struct event *ui_cmd;
@@ -1173,6 +1178,9 @@ enum nan_error nan_ranging_initiate(struct module *mod, char peer_mac[ETH_ALEN])
 	ui_cmd->type = NAN_UI_CMD_RANGING_INITIATE;
 	ui_cmd->len = ETH_ALEN;
 	memcpy(ui_cmd->val, peer_mac, ETH_ALEN);
+	cur_if->pnan_info->ranging_channel = channel;
+	ERR("NAN Ranging on channel : %u\n\n",
+	    cur_if->pnan_info->ranging_channel);
 
 	ret = nan_state_machine(cur_if, (u8 *)ui_cmd, ui_cmd->len,
 				NAN_EVENTS_UI);
@@ -1745,8 +1753,8 @@ enum nan_error nan_handle_ndp_state(int event, struct mwu_iface_info *cur_if,
 				ERR("Failed to do security install");
 				return ret;
 			}
-			break;
 		}
+		break;
 
 	case NDP_CONNECTED:
 		if (event == NAN_EVENTS_DRIVER && type == NDP_REQ) {
@@ -1968,6 +1976,31 @@ int nan_state_machine(struct mwu_iface_info *cur_if, u8 *buffer, u16 size,
 
 		/* report an event up */
 		INFO("==> Follow up received. Report to upper layer..");
+		if (cur_state == NAN_STATE_INIT ||
+		    cur_state == NAN_STATE_IDLE) {
+			ERR("NAN is not started. Can not subscribe!");
+			return NAN_ERR_NOTREADY;
+		} else {
+			struct nan_follow_up followup;
+			followup.local_instance_id = 0x05;
+			service_info_tmp = 0;
+			followup.remote_instance_id = rx_sd_frame.instance_id;
+			if (rx_sd_frame
+				    .service_info[rx_sd_frame.service_info_len -
+						  2] == '|')
+				service_info_tmp =
+					(rx_sd_frame.service_info
+						 [rx_sd_frame.service_info_len -
+						  1]);
+			memcpy(followup.mac, rx_sd_frame.peer_mac, ETH_ALEN);
+			ret = nan_do_follow_up(
+				cur_if, (struct nan_follow_up *)&followup);
+			if (ret != NAN_ERR_SUCCESS) {
+				ERR("==> Could not send follow up");
+			} else {
+				ERR("==> Sent follow up message");
+			}
+		}
 		nan_send_sdf_event(cur_if, NAN_EVENT_FOLLOW_UP_RECVD,
 				   &rx_sd_frame, 0x5);
 	}
@@ -2250,7 +2283,8 @@ int nan_state_machine(struct mwu_iface_info *cur_if, u8 *buffer, u16 size,
 		if (es == NAN_EVENTS_UI && cmd->type == NAN_UI_CMD_FTM_INIT) {
 			INFO("Handling received FTM init");
 			ret = nan_start_ftm_session(
-				cur_if->pnan_info->peer_avail_info.peer_mac);
+				cur_if->pnan_info->peer_avail_info.peer_mac,
+				cur_if->pnan_info->ranging_channel);
 			if (ret != NAN_ERR_SUCCESS) {
 				ERR("Failed to start FTM session");
 			} else {
@@ -2277,6 +2311,7 @@ int nan_state_machine(struct mwu_iface_info *cur_if, u8 *buffer, u16 size,
 		    cmd->type == NAN_UI_CMD_RANGING_INITIATE) {
 			char peer_mac[ETH_ALEN];
 			memcpy(peer_mac, cmd->val, ETH_ALEN);
+
 			if (cur_if->pnan_info->peer_avail_info_published
 				    .peer_ranging_required) {
 				ret = nan_tx_ranging_request_frame(cur_if,
@@ -2516,7 +2551,8 @@ int nan_state_machine(struct mwu_iface_info *cur_if, u8 *buffer, u16 size,
 		if (es == NAN_EVENTS_UI && cmd->type == NAN_UI_CMD_FTM_INIT) {
 			INFO("Handling received FTM init");
 			ret = nan_start_ftm_session(
-				cur_if->pnan_info->peer_avail_info.peer_mac);
+				cur_if->pnan_info->peer_avail_info.peer_mac,
+				cur_if->pnan_info->ranging_channel);
 			if (ret != NAN_ERR_SUCCESS) {
 				ERR("Failed to start FTM session");
 			} else {
@@ -2543,6 +2579,7 @@ int nan_state_machine(struct mwu_iface_info *cur_if, u8 *buffer, u16 size,
 		    cmd->type == NAN_UI_CMD_RANGING_INITIATE) {
 			char peer_mac[ETH_ALEN];
 			memcpy(peer_mac, cmd->val, ETH_ALEN);
+
 			if (cur_if->pnan_info->peer_avail_info_published
 				    .peer_ranging_required) {
 				ret = nan_tx_ranging_request_frame(cur_if,

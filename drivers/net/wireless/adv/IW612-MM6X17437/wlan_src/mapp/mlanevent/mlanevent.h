@@ -3,7 +3,7 @@
  *  @brief Header file for mlanevent application
  *
  *
- * Copyright 2008-2021 NXP
+ * Copyright 2008-2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -283,6 +283,12 @@ typedef PACK_START struct _event_header {
 #define EVENT_IMD3_CAL_START 0x000000A0
 #define EVENT_IMD3_CAL_END 0x000000A1
 
+#define EVENT_DPD_CAL 0x000000A8
+
+#define EVENT_EMERGENCY_TEMP_REACHED 0x000000A9
+
+#define EVENT_TSP_CONFIG 0x000000AB
+
 /** WPA IE Tag */
 #define IEEE_WPA_IE 221
 /** RSN IE Tag */
@@ -461,6 +467,15 @@ enum {
 	CHAN_BW_40MHZ,
 	CHAN_BW_80MHZ,
 
+};
+
+enum {
+	TSP_STREAM_1X1 = 0,
+	DTM_DC_THROTTLE_START = 1,
+	TSP_PWR_BACKOFF_START = 2,
+	DTM_DC_THROTTLE_END = 3,
+	TSP_PWR_BACKOFF_END = 4,
+	TSP_STREAM_2X2 = 5
 };
 
 /** scan mode */

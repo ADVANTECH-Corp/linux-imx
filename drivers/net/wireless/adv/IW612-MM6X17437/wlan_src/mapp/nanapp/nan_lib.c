@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -157,14 +157,26 @@ enum nan_error nancmd_set_final_bitmap(struct mwu_iface_info *cur_if,
 						 .entry_committed[i]
 						 .start_offset[k] /
 					 512);
-				avail_map->op_class =
-					cur_if->pnan_info->self_avail_info
-						.entry_committed[i]
-						.op_class;
-				avail_map->op_chan =
-					cur_if->pnan_info->self_avail_info
-						.entry_committed[i]
-						.channels[0];
+				if ((cur_if->pnan_info->op6G < 4) &&
+				    (cur_if->pnan_info->op6G != -1)) {
+					avail_map->op_class =
+						cur_if->pnan_info
+							->self_avail_info
+							.entry_committed[i]
+							.op_class;
+					avail_map->op_chan = DEFAULT_6G_OP_CHAN;
+				} else {
+					avail_map->op_class =
+						cur_if->pnan_info
+							->self_avail_info
+							.entry_committed[i]
+							.op_class;
+					avail_map->op_chan =
+						cur_if->pnan_info
+							->self_avail_info
+							.entry_committed[i]
+							.channels[0];
+				}
 
 				// We don't want to set the DW window slots in
 				// the final bitmap as it may mess up with the
@@ -433,7 +445,6 @@ enum nan_error nancmd_get_state_info(struct mwu_iface_info *cur_if,
 		state->cur_rfactor = state_info->cur_rfactor;
 		state->hold_hop_cnt_flag = state_info->hold_hop_cnt_flag;
 		state->cur_hop_cnt = state_info->cur_hop_cnt;
-		state->disable_2g = state_info->disable_2g;
 	} else {
 		INFO("Failed to query state_info");
 	}
@@ -472,8 +483,7 @@ enum nan_error nancmd_set_state_info(struct mwu_iface_info *cur_if,
 	state_info->cur_rfactor = state->cur_rfactor;
 	state_info->hold_hop_cnt_flag = state->hold_hop_cnt_flag;
 	state_info->cur_hop_cnt = state->cur_hop_cnt;
-	state_info->disable_2g = state->disable_2g;
-
+	state_info->reserved1 = 0;
 	ret = nan_cmdbuf_send(cur_if, mrvl_cmd, mrvl_header_len);
 
 	FREE(mrvl_cmd);
@@ -607,8 +617,9 @@ enum nan_error nancmd_set_config(struct mwu_iface_info *cur_if,
 				 0 :
 				 sizeof(nan_warm_up_period_tlv)),
 		NAN_PARAMS_CONFIG_CMD, HostCmd_CMD_NAN_PARAMS_CONFIG);
-	if (!mrvl_cmd)
+	if (!mrvl_cmd) {
 		return NAN_ERR_NOMEM;
+	}
 
 	cmd = (mrvl_cmd_head_buf *)(mrvl_cmd->buf + mrvl_header_len);
 	nan_params = (nan_params_config *)cmd->cmd_data;
@@ -682,6 +693,14 @@ enum nan_error nancmd_set_config(struct mwu_iface_info *cur_if,
 
 	if (cfg->op_chan_a != -1) {
 		ERR("Op Channel in A band is %d", cfg->op_chan_a);
+		g_5G_chan = cfg->op_chan_a;
+		if ((g_5G_chan != 0) && (g_5G_chan != 44) &&
+		    (g_5G_chan != 149)) {
+			channel_config_err = 1;
+			ERR("NAN: Configured channel is not supported for NAN. Allowed operating channels in 5G are only 44, 149.\n");
+			return NAN_ERR_INVAL;
+		}
+		channel_config_err = 0;
 		op_chan_tlv =
 			(nan_op_chan_tlv *)(nan_params->tlvs + tlv_offset);
 		op_chan_tlv->tag = NAN_OP_CHAN_TLV_ID;
@@ -833,6 +852,23 @@ enum nan_error nancmd_set_config(struct mwu_iface_info *cur_if,
 	if (cfg->ndp_attr_present != -1) {
 		ERR("ndp_attr_present is %d", cfg->ndp_attr_present);
 		cur_if->pnan_info->ndp_attr_present = cfg->ndp_attr_present;
+	}
+
+	if (cfg->operating_mode_6g != -1) {
+		ERR("operating_mode_6g is %d", cfg->operating_mode_6g);
+		if (cur_if->pnan_info->op6G != cfg->operating_mode_6g) {
+			cur_if->pnan_info->op6G = cfg->operating_mode_6g;
+			if (cur_if->pnan_info->cur_ndp_state == NDP_CONNECTED) {
+				char peer_mac[ETH_ALEN];
+				memcpy(peer_mac,
+				       cur_if->pnan_info->ndc_info[0]
+					       .ndl_info[0]
+					       .peer_mac,
+				       ETH_ALEN);
+				nan_send_schedule_update(cur_if, NULL,
+							 peer_mac);
+			}
+		}
 	}
 
 	mwu_hexdump(MSG_ERROR, "nan params", (u8 *)nan_params,

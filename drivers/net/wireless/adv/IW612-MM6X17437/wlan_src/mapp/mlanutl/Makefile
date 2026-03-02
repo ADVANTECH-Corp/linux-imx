@@ -40,14 +40,14 @@ HEADERS = mlanutl.h
 
 
 
-OBJECTS := $(OBJECTS) mlanwls.o
-HEADERS := $(HEADERS) mlanwls.h
-
 exectarget=mlanutl
 TARGET := $(exectarget)
 
 build appsbuild default: $(TARGET)
 	@cp -f $(TARGET) $(INSTALLPATH)
+ifneq ("$(wildcard config)","")
+	@cp -rf config $(INSTALLPATH)
+endif
 
 all : tags default
 

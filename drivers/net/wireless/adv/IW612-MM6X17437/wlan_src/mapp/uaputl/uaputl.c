@@ -7,7 +7,7 @@
  * or		uaputl.exe [command] [params]
  *
  *
- * Copyright 2008-2022 NXP
+ * Copyright 2008-2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -50,7 +50,6 @@ Change log:
 #include <ctype.h>
 #include <linux/if.h>
 #include <sys/ioctl.h>
-#include <strings.h>
 #include <errno.h>
 #include "uaputl.h"
 #include "uapcmd.h"
@@ -73,6 +72,7 @@ int debug_level = MSG_NONE;
 
 static int get_bss_config(t_u8 *buf);
 
+#define MRVL_VENDOR_ID 0x005043
 /****************************************************************************
 	Global variables
 ****************************************************************************/
@@ -89,9 +89,13 @@ int max_mgmt_ie_print = 0;
 /** Flag to bypass re-route path */
 int uap_ioctl_no_reroute = 0;
 
+/** Flag to dump the cmd buffer for a private vendor cmd */
+int vndr_dump_flag = 0;
 /****************************************************************************
 	Local functions
 ****************************************************************************/
+/** This function declaration is required to avoid compilation issue */
+static int apcmd_vndr_cmd_dump(int argc, char *argv[]);
 /**
  *    @brief Convert char to hex integer
  *
@@ -276,6 +280,49 @@ unsigned int a2hex(char *s)
 	return val;
 }
 
+/**
+ *  @brief dump cmd buffer as per private vendor cmd input
+ *   This dump can be used with iw/wpa_cli vendor cmd
+ *
+ *  @param prompt	A pointer prompt buffer
+ *  @param vndr_subcmd	subcmd used to identify an operation in driver
+ *  @param buff_ptr	A pointer to cmd data buffer
+ *  @param len		The len of cmd data buffer
+ *  @param delim	Delim char
+ *  @return            	None
+ */
+void vndr_cmd_hexdump(char *prompt, t_u16 vndr_subcmd, void *buff_ptr, int len,
+		      char delim)
+{
+	int i;
+	unsigned char *s = buff_ptr;
+
+	if (!s)
+		printf("Invalid cmd buffer \n");
+
+	if (prompt) {
+		printf("cmd buffer dump format <OUI> <SUBCMD> <DATA> \n");
+		printf("\n%s: use this below dump with iw vendor cmd\n",
+		       prompt);
+	}
+
+	printf("0x%x ", MRVL_VENDOR_ID);
+	printf("0x%x ", vndr_subcmd);
+	for (i = 0; i < len; i++) {
+		if (i != len - 1)
+			printf("0x%02x%c", *s++, delim);
+		else
+			printf("0x%02x\n", *s);
+	}
+
+	printf("\n%s: use this below dump with wpa_cli vendor cmd\n", prompt);
+	printf("%x ", MRVL_VENDOR_ID);
+	printf("%d ", vndr_subcmd);
+	s = s - len + 1;
+	for (i = 0; i < len; i++)
+		printf("%02x", *s++);
+	printf(" nested=0\n");
+}
 /**
  *  @brief Dump hex data
  *
@@ -1919,7 +1966,7 @@ static int apcmd_sys_cfg_vht(int argc, char *argv[])
 	fw_info fw;
 	if (0 == get_fw_info(&fw)) {
 		/*check whether support 802.11AC through BAND_AAC bit*/
-		if (!(fw.fw_bands & BAND_AAC)) {
+		if (!(fw.fw_bands & BAND_AAC) && !(fw.fw_bands & BAND_GAC)) {
 			printf("ERR: No support 802 11AC.\n");
 			return UAP_FAILURE;
 		}
@@ -3423,6 +3470,7 @@ static int apcmd_sta_list(int argc, char *argv[])
 		       (list->info[i].bandmode == BAND_AAC) ? "5G_11ac," :
 		       (list->info[i].bandmode == BAND_GAX) ? "2.4G_11ax," :
 		       (list->info[i].bandmode == BAND_AAX) ? "5G_11ax," :
+		       (list->info[i].bandmode == BAND_6G)  ? "6G_11ax," :
 							      "unknown");
 		/** On some platform, s8 is same as unsigned char*/
 		rssi = (int)list->info[i].rssi;
@@ -4013,6 +4061,8 @@ static int apcmd_antcfg(int argc, char *argv[])
 	int opt;
 	int tx_val = 0;
 	int rx_val = 0;
+	int tx_val_6g = 0;
+	int rx_val_6g = 0;
 	ant_cfg_t antenna_config;
 	struct ifreq ifr;
 	t_s32 sockfd;
@@ -4028,7 +4078,7 @@ static int apcmd_antcfg(int argc, char *argv[])
 	argv += optind;
 
 	/* Check arguments */
-	if (argc > 2) {
+	if (argc > 4) {
 		printf("ERR:wrong arguments!\n");
 		print_antcfg_usage();
 		return UAP_FAILURE;
@@ -4049,6 +4099,24 @@ static int apcmd_antcfg(int argc, char *argv[])
 				print_antcfg_usage();
 				return UAP_FAILURE;
 			}
+			if (argc == 4) {
+				sscanf(argv[2], "%x",
+				       (unsigned int *)&tx_val_6g);
+				if (tx_val_6g < 1 || tx_val_6g > 0x3) {
+					printf("ERR:Illegal TX ANTENNA 6G parameter %s. Must be either '1', '2' or '3'.\n",
+					       argv[2]);
+					print_antcfg_usage();
+					return UAP_FAILURE;
+				}
+				sscanf(argv[3], "%x",
+				       (unsigned int *)&rx_val_6g);
+				if (rx_val_6g < 1 || rx_val_6g > 0x3) {
+					printf("ERR:Illegal RX ANTENNA 6G parameter %s. Must be either '1', '2' or '3'.\n",
+					       argv[3]);
+					print_antcfg_usage();
+					return UAP_FAILURE;
+				}
+			}
 		}
 	}
 	memset(&antenna_config, 0, sizeof(ant_cfg_t));
@@ -4061,6 +4129,10 @@ static int apcmd_antcfg(int argc, char *argv[])
 		} else {
 			antenna_config.tx_mode = tx_val;
 			antenna_config.rx_mode = rx_val;
+			if (argc == 4) {
+				antenna_config.tx_mode_6g = (t_u8)tx_val_6g;
+				antenna_config.rx_mode_6g = (t_u8)rx_val_6g;
+			}
 		}
 	}
 	/* Open socket */
@@ -4084,6 +4156,12 @@ static int apcmd_antcfg(int argc, char *argv[])
 	} else {
 		printf("TX Antenna mode is 0x%x.\n", antenna_config.tx_mode);
 		printf("RX Antenna mode is 0x%x.\n", antenna_config.rx_mode);
+		if (antenna_config.tx_mode_6g || antenna_config.rx_mode_6g) {
+			printf("TX Antenna mode 6G is 0x%x.\n",
+			       antenna_config.tx_mode_6g);
+			printf("RX Antenna mode 6G is 0x%x.\n",
+			       antenna_config.rx_mode_6g);
+		}
 	}
 	/* Close socket */
 	close(sockfd);
@@ -6619,6 +6697,11 @@ static int apcmd_uap_stats(int argc, char *argv[])
 					}
 				}
 				oid_size = uap_le16_to_cpu(tlv->len);
+				if (size < (sizeof(tlvbuf_header) + oid_size)) {
+					printf("apcmd uap stats: invalid tlv, size=%d,oid_size=%d\n",
+					       size, oid_size);
+					break;
+				}
 				switch (oid_size) {
 				case 1:
 					printf("%d",
@@ -8233,6 +8316,9 @@ int check_bss_config(t_u8 *buf)
 	}
 
 	bss_config = (bss_config_t *)buf;
+
+	if (bss_config->bandcfg.chanBand == BAND_6GHZ)
+		return UAP_SUCCESS;
 
 	ret = sg_snmp_mib(ACTION_GET, OID_80211D_ENABLE, sizeof(state_80211d),
 			  &state_80211d);
@@ -12836,8 +12922,12 @@ static command_table ap_command[] = {
 	 "\tConfigure WACP mode."},
 	{"sys_cfg_ext_cap_len", apcmd_sys_cfg_ext_cap_len,
 	 "\tConfigure AP Extended Capabilies IE Length."},
+	{"sys_cfg_6e_inband_frames", apcmd_sys_cfg_6e_inband_frames,
+	 "\tConfigure 6E unsolicitated in band frames."},
 	{"sys_cfg_80211d_country_ie", apcmd_cfg_80211d_country_ie,
 	 "\tSet/Get/Clear 802.11D beacon custom country IE info"},
+	{"vndr_cmd_dump", apcmd_vndr_cmd_dump,
+	 "\tGet the cmd buffer dump for the iw/wpa_cli vendor cmd, that uses the netlink"},
 	{NULL, NULL, 0}};
 
 /**
@@ -13042,6 +13132,16 @@ int is_input_valid(valid_inputs cmd, int argc, char *argv[])
 					ret = UAP_FAILURE;
 					break;
 				}
+				if (band == BAND_6GHZ) {
+					if ((chan_number < 1) ||
+					    (chan_number > 233)) {
+						printf("ERR: Invalid Channel %d in '6G' band!\n",
+						       chan_number);
+						ret = UAP_FAILURE;
+						break;
+					} else
+						continue;
+				}
 				if ((chan_number > MAX_CHANNELS_BG) &&
 				    !(is_valid_a_band_channel(chan_number))) {
 					printf("ERR: Invalid Channel in 'a' band!\n");
@@ -13189,6 +13289,18 @@ int is_input_valid(valid_inputs cmd, int argc, char *argv[])
 			printf("ERR: Incorrect arguments for channel_ext.\n");
 			ret = UAP_FAILURE;
 		} else {
+			if (argc > 1) {
+				ch = atoi(argv[0]);
+
+				if (atoi(argv[1]) == BAND_6GHZ) {
+					if ((ch < 1) || (ch > 233)) {
+						printf("ERR: Invalid Channel %d in '6G' band!\n",
+						       ch);
+						ret = UAP_FAILURE;
+					}
+					break;
+				}
+			}
 			if (argc == 3) {
 				if ((ISDIGIT(argv[2]) == 0) ||
 				    (atoi(argv[2]) & ~CHANNEL_MODE_MASK)) {
@@ -14970,6 +15082,43 @@ done_no_socket:
 	return UAP_SUCCESS;
 }
 
+/* Command and Subcmd Struct for vendor cmd */
+typedef struct {
+	t_u16 vndr_cmd;
+	t_u16 vndr_subcmd;
+} vndr_cmd_subcmd_map;
+
+/* cmd and subcmd matching table for the vendor cmd */
+static vndr_cmd_subcmd_map vndr_cmd_list[] = {{HostCmd_CMD_802_CUSTOM_BEACON_IE,
+					       0x202},
+					      {0, 0}};
+
+/**
+ *  @brief Return the matching subcmd for private vendor cmd
+ *  subcmd is an identifier in driver, handles the same functionality
+ *
+ *  @param cmd_id       Command id used for hostcmd or other function
+ *
+ *  @return subcmd      Subcmd id for the matching cmd id
+ */
+t_u16 vndr_get_subcmd(t_u16 cmd_id)
+{
+	t_u8 i = 0;
+	t_u16 subcmd_id = 0;
+
+	if (!cmd_id)
+		printf("Invalid cmd_id, can't the cmd buffer\n");
+	for (i = 0; vndr_cmd_list[i].vndr_cmd; ++i) {
+		if (vndr_cmd_list[i].vndr_cmd == cmd_id) {
+			printf("Found the match, vndr_cmd=0x%x, vndr_subcmd=0x%x\n",
+			       vndr_cmd_list[i].vndr_cmd,
+			       vndr_cmd_list[i].vndr_subcmd);
+			subcmd_id = vndr_cmd_list[i].vndr_subcmd;
+			break;
+		}
+	}
+	return subcmd_id;
+}
 /**
  *  @brief Performs the ioctl operation to send the command to
  *  the driver.
@@ -15011,6 +15160,20 @@ int uap_ioctl(t_u8 *cmd, t_u16 *size, t_u16 buf_size)
 		return UAP_FAILURE;
 	}
 	*(t_u32 *)cmd = buf_size - BUF_HEADER_SIZE;
+
+	if (vndr_dump_flag) {
+		t_u16 vndr_subcmd = 0;
+		t_u16 maincmd = 0;
+
+		memcpy(&maincmd, (cmd + sizeof(t_u32)), 2);
+		vndr_subcmd = vndr_get_subcmd(maincmd);
+		/* cmd buffer dump for the driver supported private vendor cmd
+		 * only */
+		if (vndr_subcmd)
+			vndr_cmd_hexdump("vndr_cmd_dump", vndr_subcmd,
+					 (void *)cmd + sizeof(t_u32), *size,
+					 ' ');
+	}
 
 	mrvl_header_len = strlen(CMD_NXP) + strlen(PRIV_CMD_HOSTCMD);
 	buf = (unsigned char *)malloc(buf_size + sizeof(mrvl_priv_cmd) +
@@ -15263,6 +15426,61 @@ int is_cipher_valid(int pairwisecipher, int groupcipher)
 	return UAP_FAILURE;
 }
 
+/**
+ *  @brief Show usage information for the vndr_cmd_dump command
+ *
+ *  $return         N/A
+ */
+static void print_apcmd_vndr_cmd_dump_usage(void)
+{
+	printf("\nUsage: ./uaputl.exe vndr_cmd_dump cmd + input parameters \n");
+	printf("\nExample: ./uaputl.exe vndr_cmd_dump sys_cfg_80211d_country_ie <clear | country Country_code>\n");
+	printf("\nTo SET: ./uaputl.exe vndr_cmd_dump sys_cfg_80211d_country_ie country US\n");
+	printf("\nTo CLEAR: ./uaputl.exe vndr_cmd_dump sys_cfg_80211d_country_ie clear\n");
+	printf("\nTo GET: ./uaputl.exe vndr_cmd_dump sys_cfg_80211d_country_ie\n");
+	printf("\n");
+}
+/**
+ *  @brief To get the cmd buffer dump for the private vendor cmd
+ *  Usage:
+ *  @param argc     Number of arguments
+ *  @param argv     Pointer to the arguments
+ *  @return         UAP_SUCCESS/UAP_FAILURE
+ */
+static int apcmd_vndr_cmd_dump(int argc, char *argv[])
+{
+	int opt = 0;
+	int i = 0;
+	int ret = UAP_SUCCESS;
+
+	while ((opt = getopt_long(argc, argv, "+", cmd_options, NULL)) != -1) {
+		switch (opt) {
+		default:
+			print_apcmd_vndr_cmd_dump_usage();
+			return UAP_SUCCESS;
+		}
+	}
+	argc -= optind;
+	argv += optind;
+
+	/* Process command */
+	for (i = 0; ap_command[i].cmd; i++) {
+		if (strncmp(ap_command[i].cmd, argv[0],
+			    strlen(ap_command[i].cmd)))
+			continue;
+		if (strlen(ap_command[i].cmd) != strlen(argv[0]))
+			continue;
+		if (!strncmp(argv[0], ap_command[i].cmd,
+			     strlen(ap_command[i].cmd))) {
+			vndr_dump_flag = 1;
+			printf("argc=%d, ap_command[%d]=%s \n", argc, i,
+			       ap_command[i].cmd);
+			ret = ap_command[i].func(argc, argv);
+			break;
+		}
+	}
+	return ret;
+}
 /**
  *  @brief The main function
  *

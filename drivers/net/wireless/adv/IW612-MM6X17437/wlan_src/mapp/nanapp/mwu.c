@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -79,51 +79,51 @@
 #endif
 #endif
 
+#if 0
 /*
  * Create an AF_INET Address:
  *
  * args
  * 1. ap        Ptr to area  where address is to be placed.
  * 2. addr      The input string format hostname, and port.
- *              Hostname and port are expected to be strictly numeric. Eg. -
- * 192.168.10.30:27018 port name must be a positive integer less than 32768
- * 3. protocol  The input string indicating the protocol being used. NULL is
- * tcp.
+ *              Hostname and port are expected to be strictly numeric. Eg. - 192.168.10.30:27018
+ *              port name must be a positive integer less than 32768
+ * 3. protocol  The input string indicating the protocol being used. NULL is tcp.
  *
  * return
  *  0 Success.
  * -1 Bad host part.
  * -2 Bad port part.
  */
-static int make_addr(struct sockaddr_in *ap, char *addr_in, char *protocol)
-{
-	char *host, *port;
-	char *addr = strdup(addr_in);
-	host = strtok(addr, ":");
-	port = strtok(NULL, "\n");
-	int pt;
+static int make_addr(struct sockaddr_in *ap, char *addr_in, char *protocol) {
+    char *host, *port;
+    char *addr = strdup(addr_in);
+    host = strtok(addr, ":" );
+    port = strtok(NULL, "\n" );
+    int pt;
 
-	/* Initialize address structure */
-	memset(ap, 0, sizeof(struct sockaddr_in));
-	ap->sin_family = AF_INET;
-	ap->sin_port = 0;
-	ap->sin_addr.s_addr = INADDR_ANY;
+    /* Initialize address structure */
+    memset(ap,0, sizeof(struct sockaddr_in));
+    ap->sin_family = AF_INET;
+    ap->sin_port = 0;
+    ap->sin_addr.s_addr = INADDR_ANY;
 
-	/* Fill in Numeric host IP address */
-	ap->sin_addr.s_addr = inet_addr(host);
-	if (!inet_aton(host, &ap->sin_addr)) {
-		return -1;
-	}
-	/* Process an optional Numeric port  */
-	pt = atoi(port);
-	if (pt < 0L || pt >= 32768) {
-		return -2;
-	}
-	ap->sin_port = htons((short)pt);
+    /* Fill in Numeric host IP address */
+        ap->sin_addr.s_addr = inet_addr(host);
+        if ( !inet_aton(host,&ap->sin_addr) ) {
+            return -1;
+        }
+    /* Process an optional Numeric port  */
+        pt = atoi(port);
+        if ( pt < 0L || pt >= 32768 ) {
+            return -2;
+        }
+        ap->sin_port = htons( (short)pt);
 
-	free(addr);
-	return 0;
+    free(addr);
+    return 0;
 }
+#endif
 
 struct mwu_module *registered_modules[MWU_MAX_MODULES];
 

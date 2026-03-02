@@ -1,7 +1,7 @@
 /* @file  includes.h
  * @brief This file contains definition for include files
  *
- * Copyright 2012-2020, NXP
+ * Copyright 2012-2020, 2024 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to

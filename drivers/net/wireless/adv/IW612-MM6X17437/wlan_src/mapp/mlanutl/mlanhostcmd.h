@@ -3,7 +3,7 @@
  * @brief This file contains command structures for mlanutl application
  *
  *
- * Copyright 2008-2021 NXP
+ * Copyright 2008-2021, 2024 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -121,10 +121,10 @@ Change log:
 
 /** mlan_ioctl_11h_tpc_resp */
 typedef struct {
-	int status_code; /**< Firmware command result status code */
-	int tx_power; /**< Reported TX Power from the TPC Report */
-	int link_margin; /**< Reported Link margin from the TPC Report */
-	int rssi; /**< RSSI of the received TPC Report frame */
+	t_u8 status_code; /**< Firmware command result status code */
+	t_u8 tx_power; /**< Reported TX Power from the TPC Report */
+	t_s8 link_margin; /**< Reported Link margin from the TPC Report */
+	t_s8 rssi; /**< RSSI of the received TPC Report frame */
 } __ATTRIB_PACK__ mlan_ioctl_11h_tpc_resp;
 
 /* Define general hostcmd data structure */

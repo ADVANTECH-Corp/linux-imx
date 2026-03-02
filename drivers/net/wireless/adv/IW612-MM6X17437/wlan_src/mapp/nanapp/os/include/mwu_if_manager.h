@@ -1,6 +1,6 @@
 /** @file mwu_if_manager.h
  *
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -1069,6 +1069,7 @@ struct NAN_INFO {
 	int ndp_id;
 	u32 immutable_bitmap;
 	char peer_mac[ETH_ALEN];
+	u8 ranging_channel;
 	struct nan_generic_buf *rx_ndp_req; /*Points to the copy of Rx NDP req*/
 	struct nan_generic_buf *rx_ndp_resp; /*Points to the copy of Rx NDP
 						resp*/
@@ -1114,6 +1115,7 @@ struct NAN_INFO {
 	u8 peer_ndp_attr[50];
 	nan_security_info nan_security;
 	NAN_FTM_PARAMS *nan_ftm_params;
+	int op6G;
 };
 
 /** Interface structure */

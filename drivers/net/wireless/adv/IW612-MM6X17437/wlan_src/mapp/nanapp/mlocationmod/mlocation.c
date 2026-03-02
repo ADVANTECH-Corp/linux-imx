@@ -1,3 +1,25 @@
+/*
+ *  Copyright 2024-2025 NXP
+ *
+ *  NXP CONFIDENTIAL
+ *  The source code contained or described herein and all documents related to
+ *  the source code ("Material") are owned by NXP or its
+ *  suppliers or licensors. Title to the Material remains with NXP
+ *  or its suppliers and licensors. The Material contains trade secrets and
+ *  proprietary and confidential information of NXP or its suppliers and
+ *  licensors. The Material is protected by worldwide copyright and trade secret
+ *  laws and treaty provisions. No part of the Material may be used, copied,
+ *  reproduced, modified, published, uploaded, posted, transmitted, distributed,
+ *  or disclosed in any way without NXP's prior express written permission.
+ *
+ *  No license under any patent, copyright, trade secret or other intellectual
+ *  property right is granted to or conferred upon you by disclosure or delivery
+ *  of the Materials, either expressly, by implication, inducement, estoppel or
+ *  otherwise. Any license under such intellectual property rights must be
+ *  express and approved by NXP in writing.
+ *
+ */
+
 #include "mlocation_api.h"
 #include "mlocation_lib.h"
 #include "mwu_internal.h"
@@ -163,6 +185,7 @@ mlocation_init_config(struct mwu_iface_info *cur_if,
 		init_tlv->asap = mlocation_config->asap;
 		init_tlv->mlocation_per_burst =
 			mlocation_config->mlocation_per_burst;
+		init_tlv->iftm_tmo = mlocation_config->iftm_tmo;
 		init_tlv->chan_spacing = mlocation_config->bw;
 		init_tlv->burst_period = mlocation_config->burst_period;
 		init_tlv->civic_req = mlocation_config->civic_location;
@@ -486,6 +509,7 @@ cmd_mlocation_session_ctrl(struct mwu_iface_info *cur_if,
 	ctrl = (mlocation_session_ctrl *)cmd->cmd_data;
 	ctrl->action = wlan_cpu_to_le16(mlocation_ctrl->action);
 	ctrl->channel = mlocation_ctrl->channel;
+	ctrl->chanband = mlocation_ctrl->chanband;
 	ctrl->ftm_for_nan_ranging = mlocation_ctrl->ftm_for_nan_ranging;
 	memcpy(ctrl->peer_mac, mlocation_ctrl->peer_mac, ETH_ALEN);
 
@@ -520,7 +544,11 @@ enum mlocation_error do_mlocation_session_ctrl(struct module *mod,
 	session.action = ctrl->action;
 	session.ftm_for_nan_ranging = nan_ranging;
 	session.channel = ctrl->channel;
+	session.chanband = (ctrl->channel < 32) ? 0 : 1;
 	memcpy(&session.peer_mac, ctrl->mac, ETH_ALEN);
+
+	ERR("[ISTA] FTM Session Ctrl on Channel :%d Chanband : %d",
+	    session.channel, session.chanband);
 
 	ret = cmd_mlocation_session_ctrl(cur_if, &session);
 
@@ -566,9 +594,8 @@ static void process_radio_request(struct mwu_iface_info *cur_if, u8 *evt_buffer)
 
 			process_len += 4;
 
+			INFO("FTM req: %d", *pos);
 			switch (*pos) {
-				INFO("FTM req: %d", *pos);
-			/*            if (*pos == FTM_RANGE_REQUEST) */
 			case FTM_RANGE_REQUEST: {
 				INFO("RANGE REQUEST");
 				old_pos = pos;
@@ -772,6 +799,21 @@ static void mlocation_event_parser(struct mwu_iface_info *cur_if,
 			}
 			break;
 		}
+		break;
+	}
+	case MLOCATION_FTM_DISTANCE: {
+		ERR("Received MLOCATION_FTM_DISTANCE");
+		event->type = MLOCATION_FTM_DISTANCE;
+		event->len = sizeof(ftm_distance_event);
+		strncpy(event->iface, cur_if->ifname, IFNAMSIZ);
+		break;
+	}
+
+	case MLOCATION_FTM_FAIL: {
+		ERR("Received MLOCATION_FTM_FAIL");
+		event->type = MLOCATION_FTM_FAIL;
+		event->len = sizeof(mlocation_event);
+		strncpy(event->iface, cur_if->ifname, IFNAMSIZ);
 		break;
 	}
 	default:

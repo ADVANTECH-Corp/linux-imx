@@ -3,7 +3,7 @@
  * @brief Header file for uaputl application
  *
  *
- * Copyright 2008-2022 NXP
+ * Copyright 2008-2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -766,8 +766,8 @@ typedef struct _ht_tx_cfg_para {
 
 /** Maximum channel number in bg mode */
 #define MAX_CHANNELS_BG 14
-/** Maximum channels */
-#define MAX_CHANNELS 177
+/** Maximum channel */
+#define MAX_CHANNELS 233
 #define DEFAULT_MAX_VALID_CHANNEL_BG 11
 
 /** MAX station count */
@@ -964,8 +964,12 @@ typedef PACK_START struct _tlvbuf_header {
 #define BITMAP_CHANNEL_ABOVE 0x02
 /** BITMAP for secondary channel below */
 #define BITMAP_CHANNEL_BELOW 0x04
+/** BITMAP for channel width bit4-5 */
+#define BITMAP_CHANNEL_WIDTH 0x30
+/** Bit offset for channel width */
+#define BITMAP_CHANNEL_WIDTH_OFFSET 4
 /** Channle mode mask */
-#define CHANNEL_MODE_MASK 0x07
+#define CHANNEL_MODE_MASK 0x37
 
 /** max primary channel support secondary channel above */
 #define MAX_CHANNEL_ABOVE 9
@@ -1176,6 +1180,10 @@ typedef PACK_START struct _ant_cfg_t {
 	int tx_mode;
 	/** RX mode configured */
 	int rx_mode;
+	/** TX mode 6G configured */
+	t_u8 tx_mode_6g;
+	/** RX mode 6G configured */
+	t_u8 rx_mode_6g;
 } PACK_END ant_cfg_t;
 
 /** htstream_cfg structure */
@@ -1988,6 +1996,20 @@ typedef struct _wep_param {
 	wep_key key3;
 } wep_param;
 
+/** IP address configuration for 11ai */
+typedef struct _ip_addr_cfg_t {
+	/** IP ADDR **/
+	t_u32 ip;
+	/** SUBNET Mask **/
+	t_u32 subnetMask;
+	/** Base IP **/
+	t_u32 baseIp;
+	/** DNS IP **/
+	t_u32 dnsIp;
+	/** MAX Clients **/
+	t_u16 maxClients;
+} Ip_addr_cfg_t;
+
 /** BSS config structure */
 typedef struct _bss_config_t {
 	/** AP mac addr */
@@ -2093,6 +2115,7 @@ typedef struct _bss_config_t {
 	scan_chan_list chan_list[MAX_CHANNELS];
 	/** Wmm parameters */
 	WmmParameter_t wmm_para;
+	Ip_addr_cfg_t ip_cfg;
 	/** uap host based config */
 	t_u32 uap_host_based_config;
 	/** multi ap flag */
@@ -2110,6 +2133,7 @@ enum _mlan_band_def {
 	BAND_AAC = 64,
 	BAND_GAX = 256,
 	BAND_AAX = 512,
+	BAND_6G = 1024,
 };
 
 /** station stats */
@@ -2247,6 +2271,18 @@ typedef PACK_START struct _apcmdbuf_pmf_params {
 		t_u8 rsvd : 5;
 	} PACK_END params;
 } PACK_END apcmdbuf_pmf_params;
+
+/** 6E inband frames tlv */
+typedef PACK_START struct _tlvbuf_6e_inband_frames_t {
+	/** Header */
+	TLVHEADER;
+	/** enable/diable */
+	t_u8 enabled;
+	/** frame type */
+	t_u8 frameType;
+	/** interval (TU) */
+	t_u16 interval;
+} PACK_END tlvbuf_6e_inband_frames_t;
 
 /** Host Command ID bit mask (bit 11:0) */
 #define HostCmd_CMD_ID_MASK 0x0fff
@@ -2438,11 +2474,11 @@ typedef PACK_START struct _apcmdbuf_pmf_params {
 /** TLV: HT_INFO */
 #define HT_INFO_TLV_ID 0x3d
 /** config mask for HT_CAP */
-#define HT_CAP_CONFIG_MASK 0x10f3
+#define HT_CAP_CONFIG_MASK 0x11f3
 /** default htcap value */
 #define DEFAULT_HT_CAP_VALUE 0x117e
 /** HT_CAP validity check */
-#define HT_CAP_CHECK_MASK 0x10c
+#define HT_CAP_CHECK_MASK 0x0c
 /** config mask for ampdu parameter */
 #define AMPDU_CONFIG_MASK 0x1f
 
@@ -2492,6 +2528,9 @@ typedef struct _tx_rate_cfg_t {
 	t_u16 bitmap_rates[MAX_BITMAP_RATES_SIZE];
 	/** Rate Setting */
 	t_u16 rate_setting;
+	/** Only set auto tx fix rate */
+	t_u16 auto_null_fixrate_enable;
+
 } tx_rate_cfg_t;
 
 /** Mask for 2X2 support*/

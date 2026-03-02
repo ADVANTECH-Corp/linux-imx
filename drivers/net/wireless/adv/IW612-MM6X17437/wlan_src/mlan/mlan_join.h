@@ -8,7 +8,7 @@
  *  both adhoc and infrastructure networks
  *
  *
- *  Copyright 2008-2021 NXP
+ *  Copyright 2008-2021, 2024 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to

@@ -3,7 +3,7 @@
  *  @brief This file declares the exported symbols from MLAN.
  *
  *
- *  Copyright 2008-2021 NXP
+ *  Copyright 2008-2021, 2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -53,6 +53,7 @@ EXPORT_SYMBOL(mlan_recv);
 #endif
 EXPORT_SYMBOL(mlan_send_packet);
 EXPORT_SYMBOL(mlan_ioctl);
+EXPORT_SYMBOL(mlan_set_driver_status);
 EXPORT_SYMBOL(mlan_main_process);
 EXPORT_SYMBOL(mlan_rx_process);
 EXPORT_SYMBOL(mlan_select_wmm_queue);

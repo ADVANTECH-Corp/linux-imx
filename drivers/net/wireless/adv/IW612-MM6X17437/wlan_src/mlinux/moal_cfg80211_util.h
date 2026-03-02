@@ -3,7 +3,7 @@
  * @brief This file contains the CFG80211 vendor specific defines.
  *
  *
- * Copyright 2015-2021 NXP
+ * Copyright 2015-2021, 2024-2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -248,20 +248,6 @@ typedef struct {
 	 */
 } __attribute__((packed)) wifi_ring_buffer_driver_connectivity_event;
 
-/** Assoc logger data structure */
-typedef struct _assoc_logger {
-	/** vendor specific */
-	t_u8 oui[3];
-	/** BSSID */
-	t_u8 bssid[MLAN_MAC_ADDR_LENGTH];
-	/** SSID */
-	t_u8 ssid[MLAN_MAX_SSID_LENGTH];
-	/** RSSI */
-	t_s32 rssi;
-	/** Channel */
-	t_u32 channel;
-} assoc_logger_data;
-
 int woal_ring_event_logger(moal_private *priv, int ring_id,
 			   pmlan_event pmevent);
 
@@ -425,67 +411,120 @@ int woal_packet_fate_monitor(moal_private *priv,
 /* Leave 0 opcode unused as it's a good indicator of accidental incorrect
  * execution (e.g. data).
  */
-/* Load 1 byte from immediate offset, e.g. "ldb R0, [5]" */
-#define NXP_LDB_OPCODE 1
-/* Load 2 bytes from immediate offset, e.g. "ldh R0, [5]" */
-#define NXP_LDH_OPCODE 2
-/* Load 4 bytes from immediate offset, e.g. "ldw R0, [5]" */
-#define NXP_LDW_OPCODE 3
-/* Load 1 byte from immediate offset plus register, e.g. "ldbx R0, [5]R0" */
-#define NXP_LDBX_OPCODE 4
-/* Load 2 byte from immediate offset plus register, e.g. "ldhx R0, [5]R0" */
-#define NXP_LDHX_OPCODE 5
-/* Load 4 byte from immediate offset plus register, e.g. "ldwx R0, [5]R0" */
-#define NXP_LDWX_OPCODE 6
-/* Add, e.g. "add R0,5" */
-#define NXP_ADD_OPCODE 7
-/* Multiply, e.g. "mul R0,5" */
-#define NXP_MUL_OPCODE 8
-/* Divide, e.g. "div R0,5" */
-#define NXP_DIV_OPCODE 9
-/* And, e.g. "and R0,5" */
-#define NXP_AND_OPCODE 10
-/* Or, e.g. "or R0,5" */
-#define NXP_OR_OPCODE 11
-/* Left shift, e.g, "sh R0, 5" or "sh R0, -5" (shifts right) */
-#define NXP_SH_OPCODE 12
-/* Load immediate, e.g. "li R0,5" (immediate encoded as signed value) */
-#define NXP_LI_OPCODE 13
-/* Unconditional jump, e.g. "jmp label" */
-#define NXP_JMP_OPCODE 14
-/* Compare equal and branch, e.g. "jeq R0,5,label" */
-#define NXP_JEQ_OPCODE 15
-/* Compare not equal and branch, e.g. "jne R0,5,label" */
-#define NXP_JNE_OPCODE 16
-/* Compare greater than and branch, e.g. "jgt R0,5,label" */
-#define NXP_JGT_OPCODE 17
-/* Compare less than and branch, e.g. "jlt R0,5,label" */
-#define NXP_JLT_OPCODE 18
-/* Compare any bits set and branch, e.g. "jset R0,5,label" */
-#define NXP_JSET_OPCODE 19
-/* Compare not equal byte sequence, e.g. "jnebs R0,5,label,0x1122334455" */
-#define NXP_JNEBS_OPCODE 20
-/* Immediate value is one of *_EXT_OPCODE
- * Extended opcodes. These all have an opcode of EXT_OPCODE
- * and specify the actual opcode in the immediate field.
- */
-#define NXP_EXT_OPCODE 21
-/* Load from memory, e.g. "ldm R0,5"
- * Values 0-15 represent loading the different memory slots.
- */
-#define NXP_LDM_EXT_OPCODE 0
-/* Store to memory, e.g. "stm R0,5" *
- * Values 16-31 represent storing to the different memory slots.
- */
-#define NXP_STM_EXT_OPCODE 16
-/* Not, e.g. "not R0" */
-#define NXP_NOT_EXT_OPCODE 32
-/* Negate, e.g. "neg R0" */
-#define NXP_NEG_EXT_OPCODE 33
-/* Swap, e.g. "swap R0,R1" */
-#define NXP_SWAP_EXT_OPCODE 34
-/* Move, e.g. "move R0,R1" */
-#define NXP_MOV_EXT_OPCODE 35
+
+/* === v6 return codes === */
+#define APF_V6_DROP 0
+#define APF_V6_PASS 1
+#define APF_V6_EXCEPTION 2
+
+/* === EXT opcodes (subset) === */
+/* Extended v6 opcodes */
+#define EWRITE1_EXT_OPCODE 38
+#define EWRITE2_EXT_OPCODE 39
+#define EWRITE4_EXT_OPCODE 40
+#define EPKTDATACOPYR1_EXT_OPCODE 42
+
+/* Core opcodes (top 5 bits of insn) */
+#ifndef PASSDROP_OPCODE
+#define PASSDROP_OPCODE 0 /* AOSP: pass/drop + optional counter */
+#endif
+#ifndef LDB_OPCODE
+#define LDB_OPCODE 1
+#define LDH_OPCODE 2
+#define LDW_OPCODE 3
+#define LDBX_OPCODE 4
+#define LDHX_OPCODE 5
+#define LDWX_OPCODE 6
+#define ADD_OPCODE 7
+#define MUL_OPCODE 8
+#define DIV_OPCODE 9
+#define AND_OPCODE 10
+#define OR_OPCODE 11
+#define SH_OPCODE 12
+#define LI_OPCODE 13
+#define JMP_OPCODE 14
+#define JEQ_OPCODE 15
+#define JNE_OPCODE 16
+#define JGT_OPCODE 17
+#define JLT_OPCODE 18
+#define JSET_OPCODE 19
+#define JBSMATCH_OPCODE 20 /* aka “JNEBS” in your code */
+#define EXT_OPCODE 21
+#define LDDW_OPCODE 22
+#define STDW_OPCODE 23
+#define WRITE_OPCODE 24
+#define PKTDATACOPY_OPCODE 25
+#endif
+
+/* Extended opcodes (imm when op == EXT_OPCODE) */
+#ifndef LDM_EXT_OPCODE
+#define LDM_EXT_OPCODE 0
+#define STM_EXT_OPCODE 16
+#define NOT_EXT_OPCODE 32
+#define NEG_EXT_OPCODE 33
+#define SWAP_EXT_OPCODE 34
+#define MOV_EXT_OPCODE 35
+#define ALLOCATE_EXT_OPCODE 36
+#define TRANSMIT_EXT_OPCODE 37
+#define EWRITE1_EXT_OPCODE 38 /* already defined above; keep same */
+#define EWRITE2_EXT_OPCODE 39
+#define EWRITE4_EXT_OPCODE 40
+#define EPKTDATACOPYIMM_EXT_OPCODE 41
+#define EPKTDATACOPYR1_EXT_OPCODE 42
+#define EXCEPTIONBUFFER_EXT_OPCODE 48
+#endif
+
+#ifndef NXP_PASSDROP_OPCODE
+#define NXP_PASSDROP_OPCODE PASSDROP_OPCODE
+#endif
+#ifndef NXP_LDB_OPCODE
+#define NXP_LDB_OPCODE LDB_OPCODE
+#define NXP_LDH_OPCODE LDH_OPCODE
+#define NXP_LDW_OPCODE LDW_OPCODE
+#define NXP_LDBX_OPCODE LDBX_OPCODE
+#define NXP_LDHX_OPCODE LDHX_OPCODE
+#define NXP_LDWX_OPCODE LDWX_OPCODE
+#define NXP_ADD_OPCODE ADD_OPCODE
+#define NXP_MUL_OPCODE MUL_OPCODE
+#define NXP_DIV_OPCODE DIV_OPCODE
+#define NXP_AND_OPCODE AND_OPCODE
+#define NXP_OR_OPCODE OR_OPCODE
+#define NXP_SH_OPCODE SH_OPCODE
+#define NXP_LI_OPCODE LI_OPCODE
+#define NXP_JMP_OPCODE JMP_OPCODE
+#define NXP_JEQ_OPCODE JEQ_OPCODE
+#define NXP_JNE_OPCODE JNE_OPCODE
+#define NXP_JGT_OPCODE JGT_OPCODE
+#define NXP_JLT_OPCODE JLT_OPCODE
+#define NXP_JSET_OPCODE JSET_OPCODE
+#define NXP_JNEBS_OPCODE JBSMATCH_OPCODE
+#define NXP_EXT_OPCODE EXT_OPCODE
+#define NXP_LDDW_OPCODE LDDW_OPCODE
+#define NXP_STDW_OPCODE STDW_OPCODE
+#define NXP_WRITE_OPCODE WRITE_OPCODE
+#define NXP_PKTDATACOPY_OPCODE PKTDATACOPY_OPCODE
+#define NXP_LDM_EXT_OPCODE LDM_EXT_OPCODE
+#define NXP_STM_EXT_OPCODE STM_EXT_OPCODE
+#define NXP_NOT_EXT_OPCODE NOT_EXT_OPCODE
+#define NXP_NEG_EXT_OPCODE NEG_EXT_OPCODE
+#define NXP_SWAP_EXT_OPCODE SWAP_EXT_OPCODE
+#define NXP_MOV_EXT_OPCODE MOV_EXT_OPCODE
+#endif
+
+/* Map the unprefixed EXT names used later in the switch to AOSP values */
+#ifndef LDM_EXT_OPCODE
+#define LDM_EXT_OPCODE LDM_EXT_OPCODE /* self-guard */
+#endif
+/* (others already defined above) */
+
+/* Keep your memory count symbol working if only MEM_ITEMS is local */
+#ifndef V6_MEMORY_ITEMS
+#ifdef MEM_ITEMS
+#define V6_MEMORY_ITEMS MEM_ITEMS
+#else
+#define V6_MEMORY_ITEMS 16
+#endif
+#endif
 
 #define GET_OPCODE(i) (((i) >> 3) & 31)
 #define GET_REGISTER(i) ((i)&1)
@@ -498,10 +537,28 @@ int woal_packet_fate_monitor(moal_private *priv,
  * Should be returned by wifi_get_packet_filter_info.
  */
 #if (defined(ANDROID_SDK_VERSION) && ANDROID_SDK_VERSION >= 34)
-#define APF_VERSION 4
+#define APF_VERSION 6000 // Updated to 6.0 for VSR compliance
 #else
-#define APF_VERSION 2
+#define APF_VERSION 4 // Updated to 4 for older SDKs
 #endif
+
+struct woal_apf_counters {
+	u32 dropped_ipv6_ns_invalid;
+	u32 passed_ipv6_icmp;
+};
+
+struct woal_apf_ctx {
+	spinlock_t lock;
+	u8 *ram; /* shadow APF RAM */
+	u32 ram_len; /* capability: max length (e.g., 2048) */
+	u32 prog_size; /* last installed program length */
+	ktime_t installed_at; /* for FILTER_AGE_SECONDS */
+	u32 pkts_since_install; /* NEW: counts packets after install */
+	/* simple mode flags for CTS: */
+	bool drop_icmp6_echo_reply_any; /* enable driver-drop for Echo Reply */
+
+	struct woal_apf_counters ctr;
+};
 
 /** =========== Define Copied from apf_interpreter.h END =========== */
 
@@ -520,7 +577,11 @@ int woal_packet_fate_monitor(moal_private *priv,
 
 /** depend on the format of skb->data */
 #define APF_FRAME_HEADER_SIZE 14
-#define PACKET_FILTER_MAX_LEN 1024
+#define PACKET_FILTER_MAX_LEN 2048
+
+#ifndef APF_TEST_MIRROR_BASE
+#define APF_TEST_MIRROR_BASE 500
+#endif
 
 enum {
 	PACKET_FILTER_STATE_INIT = 0,
@@ -528,14 +589,23 @@ enum {
 	PACKET_FILTER_STATE_START,
 };
 
-enum wifi_attr_packet_filter {
+/* Packet filter vendor attrs (SET / CAPA / READ) */
+enum nxp_attr_packet_filter {
 	ATTR_PACKET_FILTER_INVALID = 0,
-	ATTR_PACKET_FILTER_TOTAL_LENGTH,
-	ATTR_PACKET_FILTER_PROGRAM,
-	ATTR_PACKET_FILTER_VERSION,
-	ATTR_PACKET_FILTER_MAX_LEN,
-	ATTR_PACKET_FILTER_AFTER_LAST,
-	ATTR_PACKET_FILTER_MAX = ATTR_PACKET_FILTER_AFTER_LAST - 1
+	ATTR_PACKET_FILTER_TOTAL_LENGTH, /* u32 */
+	ATTR_PACKET_FILTER_PROGRAM, /* NLA_NUL_STRING (ASCII-hex) */
+	ATTR_PACKET_FILTER_VERSION, /* u32 (reply) */
+	ATTR_PACKET_FILTER_DATA, /* binary (reply for READ) */
+	ATTR_PACKET_FILTER_MAX_LEN, /* u32 (reply) */
+	ATTR_PACKET_FILTER_MAX,
+};
+
+/* READ sub-cmd specific attrs used by HAL */
+enum nxp_attr_apf_read {
+	NXP_ATTR_APF_READ_INVALID = 0,
+	NXP_ATTR_APF_SRC_OFFSET, /* u32 */
+	NXP_ATTR_APF_LENGTH, /* u32 */
+	NXP_ATTR_APF_READ_MAX,
 };
 
 /** Packet filter structure */
@@ -543,7 +613,7 @@ typedef struct _packet_filter {
 	spinlock_t lock;
 	t_u8 state;
 	t_u8 packet_filter_program[PACKET_FILTER_MAX_LEN];
-	t_u8 packet_filter_len;
+	t_u32 packet_filter_len;
 	t_u32 packet_filter_version;
 	t_u32 packet_filter_max_len;
 } packet_filter;
@@ -661,6 +731,103 @@ enum ATTR_FW_RELOAD {
 
 void woal_cfg80211_driver_hang_event(moal_private *priv, t_u8 reload_mode);
 
+enum ATTR_USABLE_CHANNEL {
+	ATTR_USABLE_CHANNEL_INVALID = 0,
+	ATTR_USABLE_CHANNEL_BAND = 1,
+	ATTR_USABLE_CHANNEL_IFACE_MODE = 2,
+	ATTR_USABLE_CHANNEL_FILTER = 3,
+	ATTR_USABLE_CHANNEL_MAX_SIZE = 4,
+	ATTR_USABLE_CHANNEL_SIZE = 5,
+	ATTR_USABLE_CHANNEL_LIST = 6,
+	ATTR_USABLE_CHANNEL_MAX,
+};
+
+/*
+ * enum wlan_mac_band - Band information corresponding to the WLAN MAC.
+ */
+typedef enum {
+	/* WLAN MAC Operates in 2.4 GHz Band */
+	WLAN_MAC_2_4_BAND = 1 << 0,
+	/* WLAN MAC Operates in 5 GHz Band */
+	WLAN_MAC_5_0_BAND = 1 << 1,
+	/* WLAN MAC Operates in 6 GHz Band */
+	WLAN_MAC_6_0_BAND = 1 << 2,
+	/* WLAN MAC Operates in 60 GHz Band */
+	WLAN_MAC_60_0_BAND = 1 << 3,
+} wlan_mac_band;
+
+typedef enum {
+	/* Interface operation mode is client. */
+	IFACE_MODE_STA = 1 << 0,
+	/* Interface operation mode is Hotspot. */
+	IFACE_MODE_SOFTAP = 1 << 1,
+	/* Interface operation mode is Ad-Hoc network. */
+	IFACE_MODE_IBSS = 1 << 2,
+	/* Interface operation mode is Wifi Direct Client. */
+	IFACE_MODE_P2P_CLIENT = 1 << 3,
+	/* Interface operation mode is Wifi Direct Group Owner. */
+	IFACE_MODE_P2P_GO = 1 << 4,
+	/* Interface operation mode is Aware. */
+	IFACE_MODE_NAN = 1 << 5,
+	/* Interface operation mode is Mesh network. */
+	IFACE_MODE_MESH = 1 << 6,
+	/* Interface operation mode is Tunneled Direct Link Setup. */
+	IFACE_MODE_TDLS = 1 << 7,
+} wifi_interface_mode;
+
+typedef enum {
+	/* Filter Wifi channels that should be avoided due to cellular coex
+	 * restrictions. Some Wifi channels can have extreme interference
+	 * from/to cellular due to short frequency separation with neighboring
+	 * cellular channels or when there is harmonic and intermodulation
+	 * interference. Channels which only have some performance degradation
+	 * (e.g. power back off is sufficient to deal with coexistence issue)
+	 * can be included and should not be filtered out.
+	 */
+	WIFI_USABLE_CHANNEL_FILTER_CELLULAR_COEXISTENCE = 1 << 0,
+	/* Filter channels due to concurrency state.
+	 * Examples:
+	 * - 5GHz SAP operation may be supported in standalone mode, but if
+	 *  there is STA connection on 5GHz DFS channel, none of the 5GHz
+	 *  channels are usable for SAP if device does not support DFS SAP mode.
+	 * - P2P GO may not be supported on indoor channels in EU during
+	 *  standalone mode but if there is a STA connection on indoor channel,
+	 *  P2P GO may be supported by some vendors on the same STA channel.
+	 */
+	WIFI_USABLE_CHANNEL_FILTER_CONCURRENCY = 1 << 1,
+	/* This Filter queries Wifi channels and bands that are supported for
+	 * NAN3.1 Instant communication mode. This filter should only be applied
+	 * to NAN interface. If 5G is supported default discovery channel 149/44
+	 * is considered, If 5G is not supported then channel 6 has to be
+	 * considered. Based on regulatory domain if channel 149 and 44 are
+	 * restricted, channel 6 should be considered for instant communication
+	 * channel
+	 */
+	WIFI_USABLE_CHANNEL_FILTER_NAN_INSTANT_MODE = 1 << 2,
+} wifi_usable_channel_filter;
+
+/*
+ * wifi_usable_channel specifies a channel frequency, bandwidth, and bitmask
+ * of modes allowed on the channel.
+ */
+typedef struct {
+	/* Channel frequency in MHz */
+	int freq;
+	/* Channel operating width (20, 40, 80, 160, 320 etc.) */
+	wifi_channel_width_t width;
+	/* BIT MASK of BIT(WIFI_INTERFACE_*) represented by
+	 * |wifi_interface_mode| Bitmask does not represent concurrency.
+	 * Examples:
+	 * - If a channel is usable only for STA, then only the
+	 * WIFI_INTERFACE_STA bit would be set for that channel.
+	 * - If 5GHz SAP is not allowed, then none of the 5GHz channels will
+	 * have WIFI_INTERFACE_SOFTAP bit set. Note: TDLS bit is set only if
+	 * there is a STA connection. TDLS bit is set on non-STA channels only
+	 * if TDLS off channel is supported.
+	 */
+	u32 iface_mode_mask;
+} wifi_usable_channel;
+
 /**vendor event*/
 enum vendor_event {
 	event_hang = 0,
@@ -742,8 +909,12 @@ enum vendor_sub_command {
 	sub_cmd_set_scan_band = 0x0008,
 	sub_cmd_secure_ranging_ctx = 0x0009,
 	sub_cmd_set_packet_filter = 0x0011,
-	sub_cmd_get_packet_filter_capability,
+	sub_cmd_get_packet_filter_capability = 0x0012,
+	sub_cmd_read_packet_filter_data = 0x0013,
 	sub_cmd_nd_offload = 0x0100,
+	SUBCMD_SET_GET_SCANCFG = 0x0200,
+	SUBCMD_SET_GET_ADDBAPARAMS = 0x0201,
+	SUBCMD_SET_GET_CLR_HOSTCMD = 0x0202,
 	SUBCMD_RTT_GET_CAPA = 0x1100,
 	SUBCMD_RTT_RANGE_REQUEST,
 	SUBCMD_RTT_RANGE_CANCEL,
@@ -768,15 +939,22 @@ enum vendor_sub_command {
 	sub_cmd_get_drv_mem_dump = 0x1407,
 	sub_cmd_start_packet_fate_monitor = 0x1408,
 	sub_cmd_rssi_monitor = 0x1500,
-	/*Sub-command for wifi hal*/
-	sub_cmd_get_roaming_capability = 0x1700,
-	sub_cmd_fw_roaming_enable = 0x1701,
-	sub_cmd_fw_roaming_config = 0x1702,
 	subcmd_cfr_request = 0x1900,
 	subcmd_cfr_cancel,
 	subcmd_get_csi_dump_path,
 	subcmd_get_csi_config,
 	subcmd_get_csi_capa,
+	subcmd_set_get_dmcs = 0x1920,
+	subcmd_set_get_edmac = 0x1921,
+	subcmd_set_get_aggrpriotbl = 0x1922,
+	subcmd_set_get_addbareject = 0x1923,
+	subcmd_set_get_tx_ampdu_prot_mode = 0x1924,
+	subcmd_twt_setup = 0x1925,
+	subcmd_twt_teardown = 0x1926,
+	subcmd_btwt_ap_config_set = 0x1927,
+	subcmd_btwt_ap_config_get = 0x1928,
+	// Get Usable channel list
+	subcmd_get_usable_channels = 0x1950,
 	sub_cmd_max,
 };
 
@@ -815,7 +993,6 @@ enum mkeep_alive_attributes {
 	MKEEP_ALIVE_ATTRIBUTE_AFTER_LAST,
 	MKEEP_ALIVE_ATTRIBUTE_MAX = MKEEP_ALIVE_ATTRIBUTE_AFTER_LAST - 1
 };
-
 int woal_roam_ap_info(moal_private *priv, t_u8 *data, int len);
 
 /*Attribute for wpa_supplicant*/
@@ -833,51 +1010,6 @@ enum mrvl_wlan_vendor_attr_roam_auth {
 	MRVL_WLAN_VENDOR_ATTR_ROAM_AUTH_AFTER_LAST,
 	MRVL_WLAN_VENDOR_ATTR_ROAM_AUTH_MAX =
 		MRVL_WLAN_VENDOR_ATTR_ROAM_AUTH_AFTER_LAST - 1
-};
-
-/** WiFi roaming capabilities structure */
-typedef struct {
-	/** max blacklist size */
-	u32 max_blacklist_size;
-	/** max whitelist size */
-	u32 max_whitelist_size;
-} wifi_roaming_capabilities;
-
-/** WiFi BSSID params structure */
-typedef struct {
-	/** Num of BSSID */
-	u32 num_bssid;
-	/** List of AP mac address */
-	t_u8 mac_addr[MAX_AP_LIST][MLAN_MAC_ADDR_LENGTH];
-} wifi_bssid_params;
-
-/** SSID structure */
-typedef struct {
-	/** Length */
-	u32 length;
-	/** SSID */
-	char ssid[MLAN_MAX_SSID_LENGTH];
-} ssid_t;
-
-/** WiFi SSID params structure */
-typedef struct {
-	/** No of SSID */
-	u32 num_ssid;
-	/** Whitelist SSID */
-	ssid_t whitelist_ssid[MAX_SSID_NUM];
-} wifi_ssid_params;
-
-/*Attribute for wifi hal*/
-enum mrvl_wlan_vendor_attr_fw_roaming {
-	MRVL_WLAN_VENDOR_ATTR_FW_ROAMING_INVALID = 0,
-	MRVL_WLAN_VENDOR_ATTR_FW_ROAMING_CAPA,
-	MRVL_WLAN_VENDOR_ATTR_FW_ROAMING_CONTROL,
-	MRVL_WLAN_VENDOR_ATTR_FW_ROAMING_CONFIG_BSSID,
-	MRVL_WLAN_VENDOR_ATTR_FW_ROAMING_CONFIG_SSID,
-	/* keep last */
-	MRVL_WLAN_VENDOR_ATTR_FW_ROAMING_AFTER_LAST,
-	MRVL_WLAN_VENDOR_ATTR_FW_ROAMING_MAX =
-		MRVL_WLAN_VENDOR_ATTR_FW_ROAMING_AFTER_LAST - 1
 };
 
 enum attr_rtt {

@@ -1,7 +1,7 @@
 /** @file wps_os.c
  *  @brief This file contains timer and socket read functions.
  *
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -392,6 +392,8 @@ static int get_netlink_num(char *cfg_path)
 	return netlink_num;
 }
 
+/** Socket */
+int sockfd;
 /**
  *  @brief Process event socket initialization
  *
@@ -418,6 +420,7 @@ int wps_event_init(char *cfg_path)
 		goto done;
 	}
 
+	sockfd = fd;
 	memset(&src_addr, 0, sizeof(src_addr));
 	src_addr.nl_family = AF_NETLINK;
 	src_addr.nl_pid = getpid();

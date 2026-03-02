@@ -1,7 +1,9 @@
-===============================================================================
+# MXM Wi-Fi Driver
+
+================================================================================
 			U S E R  M A N U A L
 
- Copyright 2008-2023 NXP
+ Copyright 2008-2025 NXP
 
 
 1) FOR DRIVER BUILD
@@ -9,9 +11,56 @@
 	Goto source code directory wlan_src/.
 	make [clean] build
 	The driver and utility binaries can be found in ../bin_xxxx directory.
-	The driver code supports Linux kernel from 2.6.32 to 6.7.0.
+	The driver source code is compatible with hosts running Linux kernel versions ranging from 2.6.32 to 6.17.0.
 
-2) FOR DRIVER INSTALL
+2) FOR INTEGRATING DRIVER INTO LINUX KERNEL (BUILT-IN SUPPORT)
+
+	a) mkdir -p <Linux_Kernel_Repo>/drivers/net/wireless/nxp
+	b) Clone the WLAN source code from nxp-imx/mwifiex repo to the drivers/net/wireless/nxp directory in the kernel repo.
+		cd <Linux_Kernel_Repo>/drivers/net/wireless/nxp
+		git clone https://github.com/nxp-imx/mwifiex.git
+	c) Make sure the directories mlan/, mlinux/ as well as the files Makefile, Kconfig are present in drivers/net/wireless/nxp/mwifiex.
+	d) In <Linux_Kernel_Repo>/drivers/net/wireless/Kconfig, add the following line:
+		'source "drivers/net/wireless/nxp/mwifiex/Kconfig"'
+	e) In <Linux_Kernel_Repo>/drivers/net/wireless/Makefile, add the following line:
+		'obj-$(CONFIG_WLAN_VENDOR_NXP) += nxp/mwifiex/'
+	f) Run make defconfig or menuconfig to enable support for NXP WLAN devices:
+		Device Drivers > Network device support > Wireless LAN
+			[*]		"NXP WLAN devices"
+	g) To configure the driver as a module:
+			<M>		"NXP WLAN Driver"
+	   Or to configure the driver as inbuilt:
+			<*>		"NXP WLAN Driver"
+	h) Save. Verify the kernel .config file for CONFIG_WLAN_VENDOR_NXP and CONFIG_NXP_WLAN_DRIVER flags.
+	i) source <toolchain>
+	j) make
+
+	There is a high chance that the inbuilt NXP WLAN driver would be loaded before rootfs is mounted.
+	In such scenario, the firmware files can also be added to the linux kernel Image using the following steps:
+	a) mkdir -p <Linux_Kernel_Repo>/kernel/firmware/nxp
+	b) Copy FW files to <Linux_Kernel_Repo>/kernel/firmware/nxp/
+	c) In kernel .config, add 2 new config flags:
+		i) CONFIG_EXTRA_FIRMWARE="nxp/wifi_mod_para.conf nxp/pcieuartaw693_combo_v1.bin nxp/sduart_nw61x_v1.bin.se"
+		ii) CONFIG_EXTRA_FIRMWARE_DIR="kernel/firmware"
+	d) make
+
+	To pass module parameters to the inbuilt NXP WLAN driver, append the kernel bootargs with:
+		moal.<param>=<value>
+	For Example:
+		moal.mod_para=nxp/wifi_mod_para.conf moal.ps_mode=2 moal.drvdbg=0x37
+
+	To speed up driver loading, WLAN interface creation and reduce boot time, append the kernel bootargs with:
+		loglevel=2
+
+	Performance Comparison - WLAN Interface Creation Time (Example measurements):
+		Test Platform: iMX8MQ + PCIE AW693 on Linux 6.12.32 iMX BSP
+		a) WLAN drivers as loadable modules (rc.local/init script):       10 seconds
+		b) WLAN drivers as auto-load modules (modprobe.d/modules-load.d):  7 seconds
+		c) WLAN drivers built into kernel:                                 5 seconds
+		d) WLAN drivers built into kernel with loglevel=2:                 3 seconds
+	Note: Option 2 is the default configuration in iMX Linux BSP from kernel version 6.12.xx onwards.
+
+3) FOR DRIVER INSTALL
 
 	a) Copy firmware image to /lib/firmware/nxp/, copy wifi_mod_para.conf to /lib/firmware/nxp/.
 	b) Install WLAN driver
@@ -21,14 +70,14 @@
 			Bit 1 :  uAP
 			Bit 2 :  WIFIDIRECT
 			Bit 4 :  NAN
-
+			Bit 7 :  Zero-Wait DFS
 		max_sta_bss: Maximum number of STA BSS (default 1, max 1)
 		sta_name: Name of the STA interface (default: "mlan")
 		max_uap_bss: Maximum number of uAP BSS (default 1, max 2)
 		uap_name: Name of the uAP interface (default: "uap")
 		max_wfd_bss: Maximum number of WIFIDIRECT BSS (default 1, max 1)
 		wfd_name: Name of the WIFIDIRECT interface (default: "wfd")
-		max_vir_bss: Number of Virtual interfaces (default 0)
+		max_vir_bss: Number of Virtual interfaces (default 1)
 		nan_name: Name of the NAN interface (default: "nan")
 		max_nan_bss: Number of NAN interfaces (default 1)
 		uap_oper_ctrl: uAP operation control when in-STA disconnect with ext-AP
@@ -44,6 +93,21 @@
 		rmmod moal
 		rmmod mlan
 
+	pref_dbc
+	This load time parameter is used to config preferred DBC mode and takes effect when dmcs is enabled
+	This parameter only used for AW693(BB)
+
+	Usage:
+		pref_dbc=[value]
+		insmod mlan.ko; insmod pcieaw693.ko fw_name=aw693w.bin dmcs=1 pref_dbc=1
+		<value = 0> : default preferred DBC mode
+		<value = 1> : Enable preferred DBC mode
+		<value = 2> : Disable preferred DBC mode
+
+	Example :
+		insmod mlan.ko; insmod pcieaw693.ko fw_name=aw693w.bin dmcs=1 pref_dbc=1 : Enable preferred DBC mode
+		insmod mlan.ko; insmod pcieaw693.ko fw_name=aw693w.bin dmcs=1 pref_dbc=2 : Disable preferred DBC mode
+
 	To load driver with MFG firmware file, use mfg_mode=1 when insmod WLAN driver and
 	specify MFG firmware name if needed.
 
@@ -51,74 +115,106 @@
 	This parameter only used for 9177(FC)
 
 	There are some other parameters for debugging purpose etc. Use modinfo to check details.
-	  drvdbg=<bit mask of driver debug message control>
-	  dev_cap_mask=<Bit mask of the device capability>
-	  mac_addr=xx:xx:xx:xx:xx:xx <override the MAC address (in hex)>
-	  auto_ds=0|1|2 <use MLAN default | enable auto deepsleep | disable auto deepsleep>
-	  ext_scan=0|1|2 <use MLAN default | Enable Extended Scan| Enable Enhanced Extended Scan>
-      net_rx=0|1 <use netif_rx_ni in rx | use netif_receive_skb in rx>
-      amsdu_deaggr=0|1 <buf copy in amsud deaggregation | avoid buf copy in amsud deaggregation (default)>
+	drvdbg=<bit mask of driver debug message control>
+	dev_cap_mask=<Bit mask of the device capability>
+	This load parameter is uses to configure device features support
+	Usage:
+		dev_cap_mask=<value to be configured>
+		<BIT0-BIT15> : Represents features supported
+		<BIT16>: Indicates support for 11AX
+		<BIT17>: Indicates support for 6G
+	Example:
+		To disable 11AX and 6G support: dev_cap_mask=0xfffcffff
 
-	  ps_mode=0|1|2 <use MLAN default | enable IEEE PS mode | disable IEEE PS mode>
-	  sched_scan=0|1 <disable sched_scan | enable sched_scan default>
-	  max_tx_buf=2048|4096|8192 <maximum AMSDU Tx buffer size>
-	  pm_keep_power=1|0 <PM keep power in suspend (default) | PM no power in suspend>
-	  shutdown_hs=1|0 <Enable HS when shutdown | No HS when shutdown (default)>
-	  cfg_11d=0|1|2 <use MLAN default | enable 11d | disable 11d>
-	  dts_enable=0|1 <Disable DTS | Enable DTS (default)>
-	  fw_name = <FW file name>
+	mac_addr=xx:xx:xx:xx:xx:xx <override the MAC address (in hex)>
+	auto_ds=0|1|2 <use MLAN default | enable auto deepsleep | disable auto deepsleep>
+	ext_scan=0|1|2 <use MLAN default | Enable Extended Scan| Enable Enhanced Extended Scan>
+	p2a_scan=0|1|2 <MLAN default | Enable passive to active scan for DFS channel | Disable passive to active scan for DFS channel>
+	scan_chan_gap=x <Time gap between two scans in milliseconds when connected to AP (max value 500ms)>
+	net_rx=0|1 <use netif_rx/netif_rx_ni in rx | use netif_receive_skb in rx (default)>
+	amsdu_deaggr=0|1 <buf copy in amsud deaggregation | avoid buf copy in amsud deaggregation (default)>
+	bootup_cal_ctrl=0|1 <disable boot time config default | enable boot time config>
+	ps_mode=0|1|2 <use MLAN default | enable IEEE PS mode | disable IEEE PS mode>
+	tcpackenh=0|1 <disable TCP ACK enhancement | enable TCP ACK enhancement (default)>
+	sched_scan=0|1 <disable sched_scan | enable sched_scan default>
+	max_tx_buf=2048|4096|8192 <maximum AMSDU Tx buffer size>
+	pm_keep_power=1|0 <PM keep power in suspend (default) | PM no power in suspend>
+	shutdown_hs=1|0 <Enable HS when shutdown | No HS when shutdown (default)>
+	cfg_11d=0|1|2 <use MLAN default | enable 11d | disable 11d>
+	disable_11h_tpc=0|1 <enable 80211h TPC (default) | disable 80211h TPC of uAP and STA both>
+	(Note: This feature will be supported for IW416 and IW610x chipsets with host_mlme=1 case as of now.)
+	tpe_ie_ignore=0|1 <obey TPE IEs from ex-AP (default) | ignore TPE IEs from ex-AP>
+	make_before_break=0|1, <No make before break during roam (default) | make_before_break during roam)>
+	dts_enable=0|1 <Disable DTS | Enable DTS (default)>
+	fw_name = <FW file name>
 		e.g. copy pcieuart9098_combo_v1.bin to firmware directory, fw_name=nxp/pcieuart9098_combo_v1.bin
-	  hw_name = <hardware name>
-	  reg_work=0|1 <Disable register work queue| Enable register work queue>
-	  hw_test=0|1 <Disable hardware test (default) | Enable hardware test>
-	  fw_serial=0|1 <support parallel download FW | support serial download FW (default)>
-	  req_fw_nowait=0|1 <use request_firmware API (default) | use request_firmware_nowait API>
-      dfs53cfg=0|1|2 <use Fw Default | New W53 | Old W53>
-	  mcs32=0|1 <disable HT MCS32 support | enable HT MCS32 (default)>
-	  SD8887: antcfg=0|1|2|0xffff <default | Tx/Rx antenna 1 | Tx/Rx antenna 2 | enable antenna diversity>
-	  SD8897/SD8997: antcfg=0x11|0x13|0x33 <Bit0:Rx Path A, Bit1:Rx Path B, Bit 4:Tx Path A, Bit 5:Tx Path B>
-	  slew_rate: Slew Rate Control value = 0|1|2|3 (0 is the slowest slew rate and 03 has the highest slew rate (default))
-	  init_cfg=<init config (MAC addresses, registers etc.) file name>
+	hw_name = <hardware name>
+	reg_work=0|1 <Disable register work queue| Enable register work queue>
+	hw_test=0|1 <Disable hardware test (default) | Enable hardware test>
+	fw_serial=0|1 <support parallel download FW | support serial download FW (default)>
+	req_fw_nowait=0|1 <use request_firmware API (default) | use request_firmware_nowait API>
+	dfs53cfg=0|1|2 <use Fw Default | New W53 | Old W53>
+	mcs32=0|1 <disable HT MCS32 support | enable HT MCS32 (default)>
+	For 9097/9098: antcfg=0x101|0x303|.. <Bit0: Tx/Rx Path A for 2G, Bit1: Tx/Rx Path B for 2G, Bit8: Tx/Rx Path A for 5G, Bit9: Tx/Rx Path B for 5G>
+	For IW624/AW693: antcfg=0x10101|0x30303|.. <Bit0: Tx/Rx Path A for 2G, Bit1: Tx/Rx Path B for 2G, Bit8: Tx/Rx Path A for 5G, Bit9: Tx/Rx Path B for 5G, Bit16: Tx/Rx Path A for 6G, Bit17: Tx/Rx Path B for 6G>
+		For AW693, it's recommended to use mod_para configuration file for antcfg as MAC1 supports 2x2 and MAC2 supports only 1x1.
+	For 8897/8997: antcfg=0x11|0x13|0x33 <Bit0:Rx Path A, Bit1:Rx Path B, Bit 4:Tx Path A, Bit 5:Tx Path B>
+	For others: antcfg=0|1|2|0xffff <default | Tx/Rx antenna 1 | Tx/Rx antenna 2 | enable antenna diversity>
+	  plinkstats=0|1|2 <Disable plinkstats (default) | Enable plinkstats | Restore plinkstats>
+	Example usage:
+		insmod moal.ko plinkstats=0            : Disable link statistics prints
+		insmod moal.ko plinkstats=1            : Enable link statistics prints
+		insmod moal.ko plinkstats=2            : Reset link statistics prints
+		insmod moal.ko plinkstats=1,0x7,5,0    : Enable Num TX Packets, Num RX Packets and Channel prints on dmesg.
+		insmod moal.ko plinkstats=1,0xf,5,1    : Enable Num TX Packets, Num RX Packets, Channel and Region prints on dmesg, and netlink event also enabled.
+	Note:
+		1. For more details about plinkstats parameters, refer plinkstats command details in README_MLAN file.
+		2. When changing drvdbg mask dynamically while running test, set MLSTATS bit(0x800) along with the change, if wifi logging feature is enabled.
+	slew_rate: Slew Rate Control value = 0|1|2|3 (0 is the slowest slew rate and 03 has the highest slew rate (default))
+	init_cfg=<init config (MAC addresses, registers etc.) file name>
 		e.g. copy init_cfg.conf to firmware directory, init_cfg=nxp/init_cfg.conf
-	  cal_data_cfg=<CAL data config file name>
+	cal_data_cfg=<CAL data config file name>
 		e.g. copy cal_data.conf to firmware directory, cal_data_cfg=nxp/cal_data.conf
-          Note: Loading driver with 8887 must include correct cal_data_cfg parameter.
-	 dpd_data_cfg=<DPD data config file name>
-	   e.g. copy dpd_data.conf to firmware directory, dpd_data_cfg=nxp/dpd_data.conf
-	  txpwrlimit_cfg=<Tx power limit config file name>
+		Note: Loading driver with 8887 must include correct cal_data_cfg parameter.
+	dpd_data_cfg=<DPD data config file name>
+		e.g. copy dpd_data.conf to firmware directory, dpd_data_cfg=nxp/dpd_data.conf
+	txpwrlimit_cfg=<Tx power limit config file name>
 		e.g. copy txpwrlimit_cfg_set.conf to firmware directory, txpwrlimit_cfg=nxp/txpwrlimit_cfg_set.conf
 		txpwrlimit_cfg_set.conf file should be the binary format file generate by mlanutl application
-
-      cntry_txpwr=0|1|2
+	cntry_txpwr=0|1|2
                   0: Disable setting tx power table of country (default)
                   1: Enable setting tx power table of country
                   2: Enable setting rgpower table of country
-	  init_hostcmd_cfg=<init hostcmd config file name>
+	init_hostcmd_cfg=<init hostcmd config file name>
 		e.g. copy init_hostcmd_cfg.conf to firmware directory, init_hostcmd_cfg=nxp/init_hostcmd_cfg.conf
-	  band_steer_cfg=<band steer config file name>
+	band_steer_cfg=<band steer config file name>
 		e.g. generate bscfg.conf by band_steer_cfg.conf, then copy bscfg.conf to firmware directory, band_steer_cfg=nxp/bscfg.conf
-	  sdio_rx_aggr=1|0 <Enable SDIO rx aggr (default) | Disable SDIO rx aggr>
-	  cfg80211_wext=<bit mask of CFG80211 and WEXT control>
+	sdio_rx_aggr=1|0 <Enable SDIO rx aggr (default) | Disable SDIO rx aggr>
+	cfg80211_wext=<bit mask of CFG80211 and WEXT control>
 		Bit 0: STA WEXT
 		Bit 1: uAP WEXT
 		Bit 2: STA CFG80211
 		Bit 3: uAP CFG80211
-	  cfg80211_drcs=1|0 <Enable DRCS support (default) | Disable DRCS support>
-	  reg_alpha2=<Regulatory alpha2 (default NULL)>
-	  skip_fwdnld=0|1 <enable FW download support (default) | disable FW download support>
-	  wq_sched_prio: Priority for work queue
-	  wq_sched_policy: Scheduling policy for work queue
+	cfg80211_drcs=1|0 <Enable DRCS support (default) | Disable DRCS support>
+	skip_fwdnld=0|1 <enable FW download support (default) | disable FW download support>
+	wq_sched_prio: Priority for work queue
+	wq_sched_policy: Scheduling policy for work queue
 		(0: SCHED_NORMAL, 1: SCHED_FIFO, 2: SCHED_RR, 3: SCHED_BATCH, 5: SCHED_IDLE)
 		Please note that, both wq_sched_prio and wq_sched_policy should be provided
 		as module parameters. If wq_sched_policy is (0, 3 or 5), then wq_sched_prio
 		must be 0. wq_sched_prio should be 1 to 99 otherwise.
-	  rx_work=0|1|2 <default | Enable rx_work_queue | Disable rx_work_queue>
-	  pcie_int_mode=0|1|2 <Legacy mode, MSI mode (default), MSI-X mode>
-	  pcie_int_mode=0|1 <Legacy mode, MSI mode (default)>
-      ring_size=32|64|128|256|512 <adma ring size for 9097/9098>
-	  aggrctrl=1|0 <enable Tx aggr | disable Tx aggr>
-	  usb_aggr=0|1|2 <use MLAN default (disabled) | enable USB aggr | disable USB aggr>
-	  low_power_mode_enable=0|1 <disable low power mode (default)| enable low power mode>
+	rx_work=0|1|2 <default (enabled for multi-core) | Enable rx_work_queue | Disable rx_work_queue>
+	tx_work=0|1 <Disable tx_work_queue | Enable tx_work_queue (default on iMX)>
+	tx_skb_clone=0|1 <Disable tx_skb_clone | Enable tx_skb_clone (default)>
+	pmqos=0|1 <Disable pmqos | Enable pmqos (default on iMX)>
+	rps=0|x <Disables rps | bit0-bit4 (0x1-0xf) Enables rps on specific cpu (0xf default)>
+	intmode=0|1 <SDIO Interrupt Mode (default) | GPIO Interrupt Mode>
+	gpiopin=0|x <GPIO pin number when intmode=1 (default 0, HW mapped intr on GPIO-21)>
+	pcie_int_mode=0|1 <Legacy mode, MSI mode (default)>
+	ring_size=32|64|128|256|512 <adma ring size for 9097/9098>
+	aggrctrl=1|0 <enable Tx aggr | disable Tx aggr>
+	usb_aggr=0|1|2 <use MLAN default (disabled) | enable USB aggr | disable USB aggr>
+	low_power_mode_enable=0|1 <disable low power mode (default)| enable low power mode>
 	  When low power mode is enabled, the output power will be clipped at ~+10dBm and the
 	  expected PA current is expected to be in the 80-90 mA range for b/g/n modes
 	wakelock_timeout=<set wakelock_timeout value (ms)>
@@ -129,7 +225,7 @@
 	hs_wake_interval=<Host sleep wakeup interval,it will round to nearest multiple dtim*beacon_period in fw>
 	disconnect_on_suspend=0|1 <Disable disconnect wifi on suspend (default) | Enable disconnect wifi on suspend>
 	hs_mimo_switch=0|1 <Disable dynamic MIMO-SISO switch during host sleep (default) | Enable dynamic MIMO-SISO switch during host sleep>
-    hs_auto_arp=0|1 <disable hs_auto_arp (default) | enable hs_auto_arp>
+	hs_auto_arp=0|1 <disable hs_auto_arp (default) | enable hs_auto_arp>
 	gtk_rekey_offload=0|1|2 <disable gtk_rekey_offload|enable gtk_rekey_offload (default) | enable gtk_rekey_offload in suspend mode only>
 	napi=0|1 <disable napi | enable napi>
 	fixed_beacon_buffer=0|1 <allocate default buffer size (default) | allocate max buffer size>
@@ -142,30 +238,53 @@
 	  Bit15~Bit8:Channel time for channel index1;
 	  Bit7~Bit0:mode for channel index1; 0|1 <PM1 | Null2Self>
 	roamoffload_in_hs=0|1 <always enable fw roaming (default) | enable fw roaming only when host suspend>
-	uap_max_sta: Maximum number of STA for UAP/GO (default 0, max 64)
-
-	auto_fw_reload=0|1|3 <disable|enable PCIE FLR|enable PCIE InBand Reset (default)>
-	auto_fw_reload=0|1 <disable|enable InBand Reset (default)>
-
-    dmcs=0|1 <disable (default)|enable dynamic mapping)>
-
+	uap_max_sta: Maximum number of STA for UAP/GO (default 0, max STA number for UAP/GO supported in FW)
+	wacp_mode=0|1|2 <disable WACP (default) | WACP mode 1 | WACP mode 2>
+	dfs_offload=0|1 <disable dfs offload (default) | enable dfs offload>
+	indrstcfg=x <high byte: GPIO pin number (255 default); low byte: IR mode (0: disable, 1: out-of-band, 2: in band)>
+	auto_fw_reload=0|1|3
+	  0: disable auto recovery feature
+	  1: default for SDIO, use SDIO InBandReset in auto recovery
+	  3: default for PCIE, use PCIE InBandReset in auto recovery
+	dmcs=0|1|2 <firmware default (default) | enable dynamic mapping | disable dynamic mapping>
 	host_mlme=0|1 <Operate in non-host_mlme mode | Operate in host_mlme mode (default)>
-	for supplicant/authenticator running on host side, WPA3 support is available only in host_mlme mode
-	for chipset 89xx FP-92, 90xx and later, host_mlme restricted to 1
-	country_ie_ignore=0|1 <Follow countryIE from AP and beacon hint enable (default) | Ignore countryIE from AP and beacon hint disable>
-	beacon_hints=0|1 <enable beacon hints(default) | disable beacon hints>
+		for supplicant/authenticator running on host side, WPA3 support is available only in host_mlme mode
+		for chipset 89xx FP-92, 90xx and later, host_mlme restricted to 1
+	cfg80211_eapol_offload=0|1 <Disable eapol offload (default) | Enable eapol offload>
+	disable_regd_by_driver=0|1 <reg domain set by driver enable | reg domain set by driver disable (default)>
+	reg_alpha2=<Regulatory alpha2 (default NULL)>
+	country_ie_ignore=0|1 <Follow countryIE from AP and beacon hint enable | Ignore countryIE from AP and beacon hint disable (default)>
+	beacon_hints=0|1 <enable beacon hints | disable beacon hints (default)>
+	mon_filter=x <Bit6:TX frames excluding control; Bit5:non-bss beacons; Bit3:unicast destined non-promiscuous frames only; Bit2:data frames; Bit1:control frames; Bit0:management frames>
 	edmac_ctrl=0|1 <Disable edmac EU adaptivity (default) | Enable edmac EU adaptivity>
-
 	chan_track=0|1 <restore channel tracking parameters(default) | set channel tracking new parameters> for 9098 only
 	keep_previous_scan=0|1, <Flush previous scan result before start scan | Keep previous scan result(default)>
 	auto_11ax=0|1, <disable auto_11ax | enable auto_11ax(default)>
+	dual_nb=0|1, <default combo FW name - single narrowband | default combo FW name - dual narrowband (default)>
+	fw_data_cfg=0|x <disable configuration for custom Fw data(default) | set configuration for custom Fw data>
+		Configurations for fw_data_cfg:
+		Bit 0: Configuration for Fw remapping addr
+		Bit 1: Configuration for USB endpoint
+		BIT 2: Configuration for DPD current optimizations
+	mclient_scheduling=0|1 <disable multi-client scheduling | enable multi-client scheduling (default)>
+	tx_budget=xxx <airtime tx budget for multi-client scheduling in usec, 0 - disable, 2600 - default>
+	reject_addba_req=0(default)|1|2|3 <set the conditions of rejecting addba request>
+		The conditions are:
+		Bit 0 : 1   -- reject the addba request when host sleep activated
+		Bit 1 : 1   -- reject the addba request when FW auto re-connect enabled
+		               this bit is only used with STA BSS
+		others      -- reserved
 
+	secure_host=0|1 <Disable secure host interface (default) | Enable secure host interface>
+	Note: For secure_host=1, Firmware image shall be secure host enabled.
+
+	bandctrl=0|1 <Disable bandctrl mode (default) | Enable bandctrl mode>
 
 	Note: On some platforms (e.g. PXA910/920) double quotation marks ("") need to used
 	for module parameters.
 		insmod sdxxx.ko "<para1> <para2> ..."
 
-3) FOR DRIVER PROC & DEBUG
+4) FOR DRIVER PROC & DEBUG
 
 	The following info are provided in /proc/net/mwlan/adapterX/mlanY|uapY|wfdY/info,
 	on kernel 2.6.24 or later, the entry is /proc/mwlan/adapterX/mlanY|uapY|wfdY/info.
@@ -319,6 +438,9 @@
 	        cat /proc/mwlan/adapter0/drv_dump > file_drv_dump     #save the drv dump to file_drv_dump
 	        cat /proc/mwlan/adapter0/fw_dump > file_fw_dump       #save the fw dump to file_fw_dump
             cat /proc/mwlan/adapter1/drv_dump > file_drv_dump_2   #save the adapter1 drv dump to file_drv_dump_2
+	To print fw dump on dmesg log, please enable 21'b bit (MFWDP_D) in drvdbg
+		insmod mlan.ko
+		insmod moal.ko mod_para=nxp/wifi_mod_para.conf [drvdbg=0x200000]
 
 	Use dmesg or cat /var/log/debug to check driver debug messages.
 
@@ -328,7 +450,7 @@
 	                                     will be printed to the console)
 	echo 15 > /proc/sys/kernel/printk   (all messages will be printed to console)
 
-4) FOR FW RELOAD
+5) FOR FW RELOAD
     a) Enable parallel firmware download in driver parameter
        insmod sdxxx.ko fw_serial=0
 
@@ -337,15 +459,15 @@
 
     c) Trigger FW reload
        echo "fw_reload=1" > /proc/mwlan/adapterX/config   trigger SDIO inband firmware reset and reload firmware
-       echo "fw_reload=2" > /proc/mwlan/adapterX/config   trigger firmware reload
-       echo "fw_reload=3" > /proc/mwlan/adapterX/config   set firmware reload flag in driver.
-       echo "fw_reload=4" > /proc/mwlan/config   trigger PCIe FLR and reload firmware.
-       echo "fw_reload=6" > /proc/mwlan/config   trigger PCIe inband firmware reset and reload firmware.
+       echo "fw_reload=2" > /proc/mwlan/adapterX/config   trigger firmware reload for GPIO based reset
+       echo "fw_reload=3" > /proc/mwlan/adapterX/config   This option is used for USB reset
+       echo "fw_reload=4" > /proc/mwlan/adapterX/config   trigger PCIe FLR and reload firmware.
+       echo "fw_reload=6" > /proc/mwlan/adapterX/config   trigger PCIe inband firmware reset and reload firmware.
 
-    (Note: This feature will be supported on Robin3 and KF2.
-           For CAC-A2, it only work with the board which supports parallel fw download)
+    (Note: This feature will be supported on IW416 and 8997.
+           For 8987, it only work with the board which supports parallel fw download)
 
-5) FOR RF test mode commands:
+6) FOR RF test mode commands:
 
     Following commands are used to perform RF testing of the wifi chipset.
     Please not that these test mode commands can only be issued while the
@@ -399,7 +521,7 @@
 
     Set Tx Power
 	This command will set power only if caldata is already loaded in the FW.
-	Power       (0 to 24 dBm)
+	Power       (-15 to 24 dBm)
 	Modulation  (0: CCK, 1:OFDM, 2:MCS)
 	Path ID     (0: PathA, 1:PathB, 2:PathA+B)
 	echo "tx_power=16 2 0" > /proc/mwlan/adapterX/config
@@ -449,21 +571,60 @@
 	GreenField Mode       (0:disable, 1:enable)
 	STBC                  (0:disable, 1:enable)
 	Signal Bw             (0: 20Mhz, 1: 40Mhz, 4:80Mhz, -1: Set to default)
-	NumPkt                (Set to default value -1)
-	MaxPktExt             (Set to default value -1)
-	BeamChange            (Set to default value -1)
-	DCM                   (Set to default value -1)
-	Doppler               (Set to default value -1)
-	MidamblePeriod        (Set to default value -1)
-	QNum                  (Set to default value  1)
+	NumPkt                (-1:Set to default value, 1 to 0xfffffffe to specify number of packaets to send)
+	MaxPktExt             (0|8|16us, -1:Set to default Value 2)
+	BeamChange            (0|1, -1:Set to default Value 1)
+	DCM                   (0|1, -1:Set to default Value 0)
+	Doppler               (0|1, -1:Set to default Value 0)
+	MidamblePeriod        (10|20, -1:Set to default Value 0)
+	QNum                  (0-12|17-20, -1:Set to default Value if 11ax QNum:17 else QNum:0)
 	BSSID                 (xx:xx:xx:xx:xx:xx)
+
+	Note: NumPkt, MaxPktExt, BeamChange,DCM , Doppler, MidamblePeriod and QNum are 11ax paramters
 
 	Example: To start Tx frame with duty cycle, first stop any ongoing Tx
         and then start Tx frame:
 	echo "tx_frame=0" > /proc/mwlan/adapterX/config
+	For 11ax chips:
 	echo "tx_frame=1 7 0xAAA 0x100 1 20 0 0 0 0 0 0 0 0 -1 -1 -1 -1 -1 -1 -1 05:43:3f:c4:51" > /proc/mwlan/adapterX/config
+	For non-11ax chips:
+	echo "tx_frame=1 7 0xAAA 0x100 1 20 0 0 0 0 0 0 0 0 05:43:3f:c4:51" > /proc/mwlan/adapterX/config
 
     Configure Trigger Frame
+    	Start                 	(0|1, 0:disable, 1:enable)
+    	standalone HETB			(0|1,  0:disable, 1:enable)
+		Frame Control Type		(1: Control frame)
+		Frame Control Sub-Type	(2: Trigger frame)
+		Duration				(0x156C , Max Duration time)
+		TriggerType				(0: Basic Trigger Frame)
+		UlLen					(UL Length)
+		MoreTF					(0|1, 0:FALSE, 1:TRUE)
+		CS Required				(0|1, 0:FALSE, 1:TRUE)
+		UL_bandwidth			(0: 20Mhz, 1: 40Mhz, 2:80Mhz, 3:80+80 MHz|160MHz -1:Set to default value)
+		LTF Type				(0: 1xLTF+1.6usGI, 1: 2xLTF+0.8usGI, 2: 2xLTF+1.6usGI, 3: 4xLTF+3.2usGI)
+		LTF Mode				(0|1, 0: Single stream pilots, 1: Mask LTF sequence of each spatial stream)
+		LTF symbol				(Number of LTF Symbols)
+		UL STBC					(0|1, 0:STBC encoding disable, 1:STBC encoding disable)
+		LDPC ESS				(0|1, 0:LDPC ESS disable, 1:LDPC ESS enable)
+		ApTxPwr					(0-61, 0-60:Values 0-61 maps to -20 dBm to 40 dBm)
+		PreFecPadFct			(1-4, a-factor)
+		Disambing				(0|1, 0:Set to Default)
+		Spatial Reuse			(65535 Default Value)
+		Doppler					(0|1, 0:disable, 1:enable)
+		HE SIG2					(0x1FF Default value)
+		AID12					(any 12 bit value)
+		RUAllocReg				(RU index, any 8 bit value)
+		RUAlloc					(0|1, 0: RU allocated is primary 80Mhz, 1: non-primary 80MHz)
+		Coding Type				(0|1, 0: BCC,1: LDPC)
+		UlMCS				    (Valid MCS Value)
+		UL DCM					(0|1, 0:disable, 1:enable)
+		SSAlloc					(Spatial streams, BITS[0-2]:Number of spatial streams BITS[3-5]:Starting spatial stream)
+		Target RSSI ID			(0-90, 0-90:Values 0-90 map to -100dBm to -20dBm)
+		MPDU MU SF				(0:Multiplier=1, 1:Multiplier=2 , 2:Multiplier=4, 3:Multiplier=8)
+		TID_AL					(0:Set to default Value)
+		AC_PL					(0|1, 0:disable, 1:enable)
+		Pref_AC				    (0:AC_VO, 1:AC_V1, 2:AC_BE, 3:AC_BK)
+
     Example: To configure Trigger frame:
     echo "trigger_frame=1 0 1 2 5484 0 256 0 0 2 1 0 0 0 1 60 1 0 65535 0 511 5 0 67 0 0 0 0 90 0 0 0 0"  > /proc/mwlan/adapter0/config
 
@@ -481,7 +642,7 @@
     echo "trigger_frame=1 0 1 2 5484 0 256 0 0 0 1 0 0 0 1 60 1 0 65535 0 511 5 0 61 0 0 0 0 90 0 0 0 0"  > /proc/mwlan/adapter0/config
     echo "tx_frame=1 0x1102 0xabababab 200" >/proc/mwlan/adapter0/config
 
-6) Set host sleep parameters
+7) Set host sleep parameters
 
     hssetpara
 	This command is used to set host sleep parameters.
@@ -489,7 +650,7 @@
         echo "hssetpara=2 0xff 0xc8 3 400" > /proc/mwlan/adapter0/config
         echo "hssetpara=2 1 0xc8 3 400 " > /proc/mwlan/adapter0/config
 
-7) For Antenna Diversity Command
+8) For Antenna Diversity Command
 
     antcfg
         This command is used to set/get the mode of Tx/Rx path.
@@ -502,20 +663,30 @@
         Bit 0   -- Tx Path A or Tx/Rx Path A if [n] is not provided
         Bit 1   -- Tx Path B or Tx/Rx Path B if [n] is not provided
         Bit 0-1 -- Tx Path A+B or Tx/Rx Path A+B if [n] is not provided
-        For 9097/9098/IW624, LOW BYTE for 2G setting
+        For 9097/9098/IW624/AW693, LOW BYTE for 2G setting
         Bit 8   -- Tx Path A or Tx/Rx Path A if [n] is not provided
         Bit 9   -- Tx Path B or Tx/Rx Path B if [n] is not provided
         Bit 8-9 -- Tx Path A+B or Tx/Rx Path A+B if [n] is not provided
-        For 9097/9098/IW624, HIGH BYTE for 5G setting
+        For 9097/9098/IW624/AW693, HIGH BYTE for 5G setting
     where value of n is:
         Bit 0   -- Rx Path A
         Bit 1   -- Rx Path B
         Bit 0-1 -- Rx Path A+B
-        For 9097/9098/IW624, LOW BYTE for 2G setting
+        For 9097/9098/IW624/AW693, LOW BYTE for 2G setting
         Bit 8   -- Rx Path A
         Bit 8   -- Rx Path B
         Bit 8-9 -- Rx Path A+B
-        For 9097/9098/IW624, HIGH BYTE for 5G setting
+        For 9097/9098/IW624/AW693, HIGH BYTE for 5G setting
+    where value of o is:
+        For IW624/AW693, 6G setting
+        Bit 0   -- Tx Path A
+        Bit 1   -- Tx Path B
+        Bit 0-1 -- Tx Path A+B
+    where value of p is:
+        For IW624/AW693, 6G setting
+        Bit 0   -- Rx Path A
+        Bit 1   -- Rx Path B
+        Bit 0-1 -- Rx Path A+B
     The Tx path setting (m) is used for both Tx and Rx if Rx path (n) is not provided.
 
     Examples:
@@ -525,6 +696,7 @@
 
         echo "antcfg=0x103" > /proc/mwlan/adapter0/config           : Set Tx and Rx path to A+B on 2G and Tx and Rx path to A on 5G
         echo "antcfg=0x103 0x103" > /proc/mwlan/adapter0/config     : Set Tx path to A+B and Rx path to A+B on 2G, and Tx and Rx path to A on 5G
+        echo "antcfg=0x103 0x103 2 2" > /proc/mwlan/adapter0/config   : Set both Tx and Rx path to A+B on 2G, both Tx and Rx path to A on 5G, both Tx and Rx path to B on 6G
 
         echo "antcfg=0x202" > /proc/mwlan/adapter0/config : Use 5GHz path B pin for 5G TX/RX and 2GHz path B pin for 2G TX/RX
 

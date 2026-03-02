@@ -2,7 +2,7 @@
  *  @brief This file contains definition for timer and socket read functions.
  *
  *
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -42,7 +42,7 @@ int wps_event_init(char *cfg_path);
  *
  *  @return             None
  */
-void wps_event_deinit();
+void wps_event_deinit(void);
 
 /**
  *  @brief Process main loop initialization
@@ -50,14 +50,14 @@ void wps_event_deinit();
  *  @param none
  *  @return         WPS_STATUS_SUCCESS--success, otherwise--fail
  */
-int wps_loop_init();
+int wps_loop_init(void);
 
 /**
  *  @brief Process main loop free
  *
  *  @return             None
  */
-void wps_loop_deinit();
+void wps_loop_deinit(void);
 
 /**
  *  @brief Main loop procedure for socket read and timer functions

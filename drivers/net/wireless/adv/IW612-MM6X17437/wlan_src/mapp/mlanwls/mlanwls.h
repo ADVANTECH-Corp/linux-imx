@@ -4,7 +4,7 @@
  * @brief 11mc/11az Wifi location services application
  *
  *
- * Copyright 2023 NXP
+ * Copyright 2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -33,10 +33,63 @@ Change log:
 #ifndef _WLS_H_
 #define _WLS_H_
 
-#include "wls_structure_defs.h"
+#include "../libcsi/wls_structure_defs.h"
+
+/** WLS application's version number */
+#define WLS_VER "5.7"
+
+/*Command arguments index*/
+#define NXP_ADDR "530 Holgerway SanJose"
+
+#define PROTO_DOT11AZ_NTB 1
+#define PROTO_DOT11AZ_TB 2
+#define PROTO_DOT11MC 0
+
+#define WLS_SUBCMD_INDEX 2
+#define FTM_SUBCMD_INDEX 3
+#define FTM_CFG_SET_CMD_LEN 6
+#define FTM_CFG_GET_CMD_LEN 4
+#define FTM_CFG_PROTOCOL_INDEX 4
+#define FTM_CFG_FILE_ARG_INDEX 5
+
+#define FTM_ACTION_START 1
+#define FTM_ACTION_STOP 2
+
+#define FTM_SESSION_SUBCMD_LEN_CONF 10
+#define FTM_SESSION_SUBCMD_LEN 9
+#define FTM_SESSION_SUBCMD_NONSTOP_LEN 7
+#define FTM_SESSION_SUBCMD_TERM_LEN 5
+#define FTM_SESSION_ACTION_OFFSET 4
+#define FTM_SESSION_CHANNEL_OFFSET 5
+#define FTM_SESSION_PEER_ADDR_OFFSET 6
+#define FTM_SESSION_LOOP_OFFSET 7
+#define FTM_SESSION_DEV_NUM_OFFSET 8
+#define FTM_CSI_CONF_OFFSET 9
+
+#define ANQP_NBOR_CMD_LEN 7
+#define ANQP_NBOR_CHANNEL_OFFSET 5
+#define ANQP_NBOR_MAC_OFFSET 6
+#define ANQP_NBOR_CFG_FILE_OFFSET 4
+
+#define PASN_CMD_LEN 5
+#define PASN_ACTION_OFFSET 3
+#define PASN_ACTION_START 1
+#define PASN_ACTION_STOP 2
+
+#define DOT11MC_UNASSOC_FTM_CFG_CMD_LEN 5
+
+#define FTM_SESSION_ASSOCIATED 1
+#define FTM_SESSION_ASSOCIATED_PMF 3
+#define FTM_SESSION_UNASSOCIATED 4
+#define FTM_SESSION_UNASSOCIATED_PASN 5
+#define FTM_SESSION_UNASSOCIATED_P2P 6
+
+#define DEF_CONFIG_FILE "ftm.conf"
 
 /** Size of command buffer */
 #define MRVDRV_SIZE_OF_CMD_BUFFER (3 * 1024)
+
+#define CUS_EVT_MLAN_CSI "EVENT=MLAN_CSI"
 
 /** MAC BROADCAST */
 #define MAC_BROADCAST 0x1FF
@@ -71,11 +124,14 @@ Change log:
 
 /** Events*/
 #define EVENT_WLS_GENERIC 0x00000086
+#define EVENT_CSI 0x0000008D
 #define WLS_SUB_EVENT_FTM_COMPLETE 0
 #define WLS_SUB_EVENT_RADIO_RECEIVED 1
 #define WLS_SUB_EVENT_RADIO_RPT_RECEIVED 2
 #define WLS_SUB_EVENT_ANQP_RESP_RECEIVED 3
 #define WLS_SUB_EVENT_RTT_RESULTS 4
+#define WLS_SUB_EVENT_FTM_FAIL 5
+#define WLS_SUB_EVENT_DISTANCE 6
 
 /** Radio Measurement Request Element IDs*/
 #define MEASUREMENT_REQUEST_ELEMENT_ID 0x26
@@ -130,6 +186,152 @@ enum radio_measurement_action {
 
 /** Action category: Public Action frame */
 #define WIFI_CATEGORY_PUBLIC_ACTION_FRAME 4
+
+/** Command buffer max length */
+#define BUFFER_LENGTH (4 * 1024)
+
+/** IOCTL number */
+#define MLAN_ETH_PRIV (SIOCDEVPRIVATE + 14)
+
+/** Size of HostCmd_DS_GEN */
+#define S_DS_GEN sizeof(HostCmd_DS_GEN)
+
+/** Command RET code, MSB is set to 1 */
+#define HostCmd_RET_BIT 0x8000
+
+/** NXP private command identifier */
+#define CMD_NXP "MRVL_CMD"
+
+/** The attribute pack used for structure packing */
+#ifndef __ATTRIB_PACK__
+#define __ATTRIB_PACK__ __attribute__((packed))
+#endif
+
+/** Length of ethernet address */
+#ifndef ETH_ALEN
+#define ETH_ALEN 6
+#endif
+
+/** Success */
+#define MLAN_STATUS_SUCCESS (0)
+/** Failure */
+#define MLAN_STATUS_FAILURE (-1)
+/** Not found */
+#define MLAN_STATUS_NOTFOUND (1)
+
+/** Find number of elements */
+#define NELEMENTS(x) (sizeof(x) / sizeof(x[0]))
+
+/** Netlink maximum payload size */
+#define NL_MAX_PAYLOAD (1024 * 3)
+/** Netlink multicast group number */
+#define NL_MULTICAST_GROUP 1
+
+/** Action field value: get */
+#define ACTION_GET 0
+
+/** Maximum length of lines in configuration file */
+#define MAX_CONFIG_LINE 1024 * 10
+
+/**
+ * Hex or Decimal to Integer
+ * @param   num string to convert into decimal or hex
+ */
+#define A2HEXDECIMAL(num)                                                      \
+	(strncasecmp("0x", (num), 2) ? (unsigned int)strtoll((num), NULL, 0) : \
+				       a2hex((num)))
+
+/** Convert to correct endian format */
+#if __BYTE_ORDER == __BIG_ENDIAN
+/** CPU to little-endian convert for 16-bit */
+#define cpu_to_le16(x) swap_byte_16(x)
+/** CPU to little-endian convert for 32-bit */
+#define cpu_to_le32(x) swap_byte_32(x)
+/** Little-endian to CPU convert for 16-bit */
+#define le16_to_cpu(x) swap_byte_16(x)
+/** Little-endian to CPU convert for 32-bit */
+#define le32_to_cpu(x) swap_byte_32(x)
+#endif
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+/** Do nothing */
+#define cpu_to_le16(x) (x)
+/** Do nothing */
+#define cpu_to_le32(x) (x)
+/** Do nothing */
+#define le16_to_cpu(x) (x)
+/** Do nothing */
+#define le32_to_cpu(x) (x)
+#endif
+
+/** Type definition: boolean */
+typedef enum { FALSE, TRUE } boolean;
+
+/** Unsigned character, 1 byte */
+typedef unsigned char t_u8;
+
+/** Unsigned short integer */
+typedef unsigned short t_u16;
+
+/** Integer */
+typedef signed int t_s32;
+/** Unsigned integer */
+typedef unsigned int t_u32;
+
+/** Long long integer */
+typedef signed long long t_s64;
+
+/** Void pointer (4-bytes) */
+typedef void t_void;
+
+enum _mlan_act_ioctl {
+	MLAN_ACT_SET = 1,
+	MLAN_ACT_GET,
+	MLAN_ACT_CANCEL,
+	MLAN_ACT_CLEAR,
+	MLAN_ACT_RESET,
+	MLAN_ACT_DEFAULT
+};
+
+/** HostCmd_DS_GEN */
+typedef struct MAPP_HostCmd_DS_GEN {
+	/** Command */
+	t_u16 command;
+	/** Size */
+	t_u16 size;
+	/** Sequence number */
+	t_u16 seq_num;
+	/** Result */
+	t_u16 result;
+} __ATTRIB_PACK__ HostCmd_DS_GEN;
+
+/** Event header */
+typedef struct _event_header {
+	/** Event ID */
+	t_u32 event_id;
+	/** Event data */
+	t_u8 event_data[];
+} __ATTRIB_PACK__ event_header;
+
+/** Private command structure */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+struct eth_priv_cmd {
+	/** Command buffer pointer */
+	t_u64 buf;
+	/** buffer updated by driver */
+	int used_len;
+	/** buffer sent by application */
+	int total_len;
+} __ATTRIB_PACK__;
+#else
+struct eth_priv_cmd {
+	/** Command buffer */
+	t_u8 *buf;
+	/** Used length */
+	int used_len;
+	/** Total length */
+	int total_len;
+};
+#endif
 
 /** Structure of command table*/
 typedef struct {
@@ -187,6 +389,8 @@ typedef struct _ftm_session_cfg {
 	t_u8 channel_spacing;
 	/**Indicates the interval between two consecutive burst instances*/
 	t_u16 burst_period;
+	/**Indicates the interval between two consecutive burst instances*/
+	t_u8 iftm_tmo;
 } __ATTRIB_PACK__ ftm_session_cfg_t;
 
 /** Structure for FTM_SESSION_CFG_LOCATION_CIVIC TLV data*/
@@ -275,6 +479,12 @@ typedef struct _dot11mc_ftm_cfg {
 	civic_loc_tlv_t civic_tlv;
 
 } __ATTRIB_PACK__ dot11mc_ftm_cfg_t;
+
+/** dot11mc_unassoc_ftm_cfg parameters */
+typedef struct _dot11mc_unassoc_ftm_cfg_para {
+	/** set state */
+	int state;
+} dot11mc_unassoc_ftm_cfg_para;
 
 /** Structure for DOT11AZ FTM_SESSION_CFG */
 typedef struct _dot11az_ftmcfg_ntb_t {
@@ -521,13 +731,34 @@ typedef struct _wls_subevent_ftm_complete {
 	t_u8 bssType;
 	/** MAC address of the responder */
 	t_u8 mac[ETH_ALEN];
-	/** Average RTT */
-	t_u32 avg_rtt;
 	/** Average Clock offset */
 	t_u32 avg_clk_offset;
+	/** Average ToF */
+	t_u32 avg_tof;
 	/** Measure start timestamp */
 	t_u32 meas_start_tsf;
+	/** 11mc/11az indication */
+	t_u8 protocol_type;
+	/** negotation success? */
+	t_u8 protocol_state;
+	/** 11mc: number of bursts, 11az: number of attemped measurements */
+	t_u8 protocol_num_bursts;
+	/** number of successful measurements */
+	t_u8 protocol_num_measurements;
+	/** Status code of FTM session */
+	t_u8 status_code;
+
 } __ATTRIB_PACK__ wls_subevent_ftm_complete_t;
+
+/**Structure for FTM distance subevent*/
+typedef struct wls_subevent_ftm_distance {
+	/** distance in 32.8 meters */
+	t_s32 distance;
+	/** MAC address of the responder */
+	t_u8 mac[ETH_ALEN];
+	/** Measure start timestamp */
+	t_u32 meas_start_tsf;
+} __ATTRIB_PACK__ wls_subevent_ftm_distance_t;
 
 /**  FTM range request data */
 typedef struct _ftm_range_req {
@@ -786,6 +1017,7 @@ typedef struct _wls_event_t {
 	union {
 		/** FTM Complete Sub event*/
 		wls_subevent_ftm_complete_t ftm_complete;
+		wls_subevent_ftm_distance_t ftm_distance;
 		wls_subevent_radio_meas_req_t radio_req;
 		anqp_resp_event_t anqp_resp;
 	} e;
@@ -887,11 +1119,8 @@ typedef struct _wls_app_data {
 	lci_cfg_t lci_cfg;
 	/** civic cfg data - this should be last field*/
 	civic_loc_cfg_t civic_cfg;
-	/**CSI processing config*/
-	hal_wls_processing_input_params_t wls_processing_input;
 } wls_app_data_t;
 
-int mlanwls_main(int argc, char *argv[]);
 extern int process_wls_generic_event(t_u8 *buffer, t_u16 size, char *if_name);
 
 #endif /* _WLS_H_ */

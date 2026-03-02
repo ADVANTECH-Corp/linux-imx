@@ -475,6 +475,15 @@ Change log:
 /** Max interrupt status register read limit */
 #define MAX_READ_REG_RETRY 10000
 
+/* check TX done ring on every X pushed packets */
+#define TX_DONE_POLL_DISTANCE 16
+
+/* Rx RD/WR ptr update action */
+enum RX_UPDATE_ACTION {
+	RX_RD_UPDATE = MBIT(0),
+	RX_WR_UPDATE = MBIT(1),
+};
+
 extern mlan_adapter_operations mlan_pcie_ops;
 
 /* Get pcie device from card type */
@@ -490,6 +499,13 @@ mlan_status wlan_cmd_pcie_host_buf_cfg(pmlan_private pmpriv,
 				       t_u16 cmd_action, t_pvoid pdata_buf);
 #endif
 
+#if defined(PCIE)
+/** Prepare command PCIE host buffer config */
+mlan_status wlan_cmd_pcie_adma_init(pmlan_private pmpriv,
+				    pHostCmd_DS_COMMAND cmd, t_u16 cmd_action,
+				    t_pvoid pdata_buf);
+#endif
+
 /** Wakeup PCIE card */
 mlan_status wlan_pcie_wakeup(pmlan_adapter pmadapter);
 
@@ -499,7 +515,6 @@ mlan_status wlan_set_drv_ready_reg(mlan_adapter *pmadapter, t_u32 val);
 mlan_status wlan_pcie_init(mlan_adapter *pmadapter);
 
 /** Read interrupt status */
-mlan_status wlan_process_msix_int(mlan_adapter *pmadapter);
 /** Transfer data to card */
 mlan_status wlan_pcie_host_to_card(pmlan_private pmpriv, t_u8 type,
 				   mlan_buffer *mbuf, mlan_tx_param *tx_param);

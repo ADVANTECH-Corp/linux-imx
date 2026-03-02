@@ -3,7 +3,7 @@
  * @brief This file contains functions for debug proc file.
  *
  *
- * Copyright 2008-2022 NXP
+ * Copyright 2008-2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -86,6 +86,14 @@ static struct debug_data items[] = {
 	 item_addr(mlan_rx_processing), INFO_ADDR},
 	{"rx_pkts_queued", item_size(rx_pkts_queued), item_addr(rx_pkts_queued),
 	 INFO_ADDR},
+#ifdef PCIE
+	{"pcie_event_processing", item_size(pcie_event_processing),
+	 item_addr(pcie_event_processing), INFO_ADDR},
+	{"pcie_rx_processing", item_size(pcie_rx_processing),
+	 item_addr(pcie_rx_processing), INFO_ADDR},
+	{"pcie_tx_processing", item_size(pcie_tx_processing),
+	 item_addr(pcie_tx_processing), INFO_ADDR},
+#endif
 	{"wmm_ac_vo", item_size(wmm_ac_vo), item_addr(wmm_ac_vo), INFO_ADDR},
 	{"wmm_ac_vi", item_size(wmm_ac_vi), item_addr(wmm_ac_vi), INFO_ADDR},
 	{"wmm_ac_be", item_size(wmm_ac_be), item_addr(wmm_ac_be), INFO_ADDR},
@@ -294,6 +302,14 @@ static struct debug_data uap_items[] = {
 	 item_addr(mlan_rx_processing), INFO_ADDR},
 	{"rx_pkts_queued", item_size(rx_pkts_queued), item_addr(rx_pkts_queued),
 	 INFO_ADDR},
+#ifdef PCIE
+	{"pcie_event_processing", item_size(pcie_event_processing),
+	 item_addr(pcie_event_processing), INFO_ADDR},
+	{"pcie_rx_processing", item_size(pcie_rx_processing),
+	 item_addr(pcie_rx_processing), INFO_ADDR},
+	{"pcie_tx_processing", item_size(pcie_tx_processing),
+	 item_addr(pcie_tx_processing), INFO_ADDR},
+#endif
 	{"wmm_ac_vo", item_size(wmm_ac_vo), item_addr(wmm_ac_vo), INFO_ADDR},
 	{"wmm_ac_vi", item_size(wmm_ac_vi), item_addr(wmm_ac_vi), INFO_ADDR},
 	{"wmm_ac_be", item_size(wmm_ac_be), item_addr(wmm_ac_be), INFO_ADDR},
@@ -1099,6 +1115,7 @@ static int woal_debug_read(struct seq_file *sfp, void *data)
 	seq_printf(sfp, "tcp_ack_drop_cnt=%d\n", priv->tcp_ack_drop_cnt);
 	seq_printf(sfp, "tcp_ack_cnt=%d\n", priv->tcp_ack_cnt);
 	seq_printf(sfp, "tcp_ack_payload=%d\n", priv->tcp_ack_payload);
+	seq_printf(sfp, "tcp_sess_cnt=%d\n", priv->tcp_sess_cnt);
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 29)
 	for (i = 0; i < 4; i++)
 		seq_printf(sfp, "wmm_tx_pending[%d]:%d\n", i,
@@ -1450,8 +1467,10 @@ void woal_debug_entry(moal_private *priv)
 		     i++) {
 			priv->hist_proc[i].ant_idx = i;
 			priv->hist_proc[i].priv = priv;
-			snprintf(hist_entry, sizeof(hist_entry), "wlan-ant%d",
-				 i);
+			if (snprintf(hist_entry, sizeof(hist_entry),
+				     "wlan-ant%d", i) <= 0)
+				PRINTM(MERROR,
+				       "Fail to print ant index in histogram entry\n");
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 26)
 			r = proc_create_data(hist_entry, 0644, priv->hist_entry,
 					     &histogram_proc_fops,
@@ -1515,8 +1534,11 @@ void woal_debug_remove(moal_private *priv)
 	    priv->bss_type == MLAN_BSS_TYPE_UAP) {
 		for (i = 0; i < priv->phandle->card_info->histogram_table_num;
 		     i++) {
-			snprintf(hist_entry, sizeof(hist_entry), "wlan-ant%d",
-				 i);
+			if (snprintf(hist_entry, sizeof(hist_entry),
+				     "wlan-ant%d", i) <= 0) {
+				PRINTM(MERROR, "Failed to write wlan-ant%d\n",
+				       i);
+			}
 			remove_proc_entry(hist_entry, priv->hist_entry);
 		}
 		remove_proc_entry("histogram", priv->proc_entry);
@@ -1525,4 +1547,53 @@ void woal_debug_remove(moal_private *priv)
 
 	LEAVE();
 }
+
+#ifdef DEBUG_LEVEL1
+
+#define ENUM_ELEMENT(_name, _id)                                               \
+	{                                                                      \
+		.id = _id, .name = #_name                                      \
+	}
+#define ENUM_ELEMENT_LAST(name)                                                \
+	{                                                                      \
+		0xFFFF, 0                                                      \
+	}
+static const struct reflective_enum_element host_error_code_names[] = {
+#include "ioctl_error_codes.h"
+};
+#undef ENUM_ELEMENT
+#undef ENUM_ELEMENT_LAST
+
+#endif /* DEBUG_LEVEL1 */
+
+static INLINE const char *
+reflective_enum_lookup_name(const struct reflective_enum_element *elements,
+			    int id)
+{
+	const struct reflective_enum_element *elem = elements;
+
+	// The elements array is guaranteed to be NULL-terminated.
+	// coverity[overflow_sink:SUPPRESS]
+	while (elem->name && elem->id != id) {
+		elem++;
+	}
+	// The elements array is guaranteed to be NULL-terminated.
+	// coverity[overflow_sink:SUPPRESS]
+	return elem->name;
+}
+
+const char *wlan_errorcode_get_name(enum host_error_code_id id)
+{
+#ifdef DEBUG_LEVEL1
+	const char *name =
+		reflective_enum_lookup_name(host_error_code_names, id);
+
+	if (name) {
+		return name;
+	}
+#endif
+
+	return "???";
+}
+
 #endif

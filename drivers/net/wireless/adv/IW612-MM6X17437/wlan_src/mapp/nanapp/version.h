@@ -1,6 +1,6 @@
 /** @file version.h
  *
- *  Copyright 2012-2022 NXP
+ *  Copyright 2012-2022, 2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -28,6 +28,6 @@
 #undef VERSION
 #endif
 
-#define VERSION "M1.000"
+#define VERSION "M3.002"
 
 #endif

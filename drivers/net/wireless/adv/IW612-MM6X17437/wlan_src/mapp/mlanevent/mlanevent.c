@@ -6,7 +6,7 @@
  *  Usage: mlanevent.exe [-option]
  *
  *
- * Copyright 2008-2021 NXP
+ * Copyright 2008-2024 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -1881,6 +1881,7 @@ static void print_event_debug(t_u8 *buffer, t_u16 size)
 static void print_event(event_header *event, t_u16 size, char *if_name)
 {
 	t_u32 event_id = event->event_id;
+	t_u8 tsp_status = 0;
 	switch (event_id) {
 	case MICRO_AP_EV_ID_STA_DEAUTH:
 		print_event_sta_deauth(event->event_data, size - EVENT_ID_LEN);
@@ -1959,6 +1960,35 @@ static void print_event(event_header *event, t_u16 size, char *if_name)
 		break;
 	case EVENT_IMD3_CAL_END:
 		printf("EVENT: EVENT_IMD3_CAL_END\n");
+		break;
+	case EVENT_EMERGENCY_TEMP_REACHED:
+		printf("EVENT: EVENT_EMERGENCY_TEMP_REACHED\n");
+		break;
+
+	case EVENT_TSP_CONFIG:
+		tsp_status = (t_u8)(event->event_data[4]);
+		switch (tsp_status) {
+		case TSP_PWR_BACKOFF_START:
+			printf("EVENT: EVENT_TSP_PWR_BACKOFF_START\n");
+			break;
+		case TSP_PWR_BACKOFF_END:
+			printf("EVENT: EVENT_TSP_PWR_BACKOFF_END\n");
+			break;
+		case TSP_STREAM_1X1:
+			printf("EVENT: EVENT_NOTIFY_STREAM_1X1\n");
+			break;
+		case TSP_STREAM_2X2:
+			printf("EVENT: EVENT_NOTIFY_STREAM_2X2\n");
+			break;
+		case DTM_DC_THROTTLE_START:
+			printf("EVENT: EVENT_DTM_DC_THROTTLE_ENABLE\n");
+			break;
+		case DTM_DC_THROTTLE_END:
+			printf("EVENT: EVENT_DTM_DC_THROTTLE_DISABLE\n");
+			break;
+		default:
+			break;
+		}
 		break;
 	default:
 		/* Handle string based events */

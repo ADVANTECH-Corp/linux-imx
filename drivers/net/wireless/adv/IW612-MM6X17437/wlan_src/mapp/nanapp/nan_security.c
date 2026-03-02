@@ -1,3 +1,25 @@
+/*
+ *  Copyright 2024-2025 NXP
+ *
+ *  NXP CONFIDENTIAL
+ *  The source code contained or described herein and all documents related to
+ *  the source code ("Material") are owned by NXP or its
+ *  suppliers or licensors. Title to the Material remains with NXP
+ *  or its suppliers and licensors. The Material contains trade secrets and
+ *  proprietary and confidential information of NXP or its suppliers and
+ *  licensors. The Material is protected by worldwide copyright and trade secret
+ *  laws and treaty provisions. No part of the Material may be used, copied,
+ *  reproduced, modified, published, uploaded, posted, transmitted, distributed,
+ *  or disclosed in any way without NXP's prior express written permission.
+ *
+ *  No license under any patent, copyright, trade secret or other intellectual
+ *  property right is granted to or conferred upon you by disclosure or delivery
+ *  of the Materials, either expressly, by implication, inducement, estoppel or
+ *  otherwise. Any license under such intellectual property rights must be
+ *  express and approved by NXP in writing.
+ *
+ */
+
 #include "nan_security_api.h"
 
 int nan_omac1_aes_vector(const u8 *key, size_t key_len, size_t num_elem,
@@ -93,11 +115,11 @@ int nan_openssl_hmac_vector(const EVP_MD *type, const u8 *key, size_t key_len,
 #endif
 
 #if OPENSSL_VERSION_NUMBER < 0x00909000
-	HMAC_Final(ctx, mac, &mdlen);
+	HMAC_Final(ctx, mac, (unsigned int *)&mdlen);
 	res = 1;
 #else
 #if OPENSSL_VERSION_NUMBER < 0x30000000
-	res = HMAC_Final(ctx, mac, &mdlen);
+	res = HMAC_Final(ctx, mac, (unsigned int *)&mdlen);
 #else
 	res = EVP_MAC_final(ctx, mac, &mdlen, mdlen);
 #endif

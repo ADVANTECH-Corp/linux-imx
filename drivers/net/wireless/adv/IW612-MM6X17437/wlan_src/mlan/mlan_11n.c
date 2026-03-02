@@ -3,7 +3,7 @@
  *  @brief This file contains functions for 11n handling.
  *
  *
- *  Copyright 2008-2021 NXP
+ *  Copyright 2008-2021, 2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -42,6 +42,7 @@ Change log:
 #include "mlan_wmm.h"
 #include "mlan_11n.h"
 #include "mlan_11ac.h"
+#include "mlan_11ax.h"
 
 /********************************************************
 			Local Variables
@@ -519,7 +520,14 @@ static mlan_status wlan_11n_ioctl_addba_param(pmlan_adapter pmadapter,
 		cfg->param.addba_param.rxamsdu = pmpriv->add_ba_param.rx_amsdu;
 	} else {
 		timeout = pmpriv->add_ba_param.timeout;
-		pmpriv->add_ba_param.timeout = cfg->param.addba_param.timeout;
+		/* WACP supports the MAX TX ba timeout */
+		if (pmadapter->tx_ba_timeout_support ||
+		    pmadapter->init_para.wacp_mode) {
+			pmpriv->add_ba_param.timeout =
+				cfg->param.addba_param.timeout;
+		} else {
+			pmpriv->add_ba_param.timeout = 0;
+		}
 		pmpriv->add_ba_param.tx_win_size =
 			cfg->param.addba_param.txwinsize;
 
@@ -1633,8 +1641,9 @@ void wlan_show_dot11ndevcap(pmlan_adapter pmadapter, t_u32 cap)
 	PRINTM(MINFO, "GET_HW_SPEC: LDPC coded packet receive %s\n",
 	       (ISSUPP_RXLDPC(cap) ? "supported" : "not supported"));
 
-	PRINTM(MINFO, "GET_HW_SPEC: Number of Tx BA streams supported = %d\n",
-	       ISSUPP_GETTXBASTREAM(cap));
+	PRINTM(MINFO,
+	       "GET_HW_SPEC: Number of Tx BA streams supported = %d/%d\n",
+	       ISSUPP_GETTXBASTREAM(cap), wlan_get_bastream_limit(pmadapter));
 	PRINTM(MINFO, "GET_HW_SPEC: 40 Mhz channel width %s\n",
 	       (ISSUPP_CHANWIDTH40(cap) ? "supported" : "not supported"));
 	PRINTM(MINFO, "GET_HW_SPEC: 20 Mhz channel width %s\n",
@@ -1774,6 +1783,11 @@ mlan_status wlan_ret_11n_addba_req(mlan_private *priv, HostCmd_DS_COMMAND *resp)
 
 	tid = (padd_ba_rsp->block_ack_param_set & BLOCKACKPARAM_TID_MASK) >>
 	      BLOCKACKPARAM_TID_POS;
+	if (tid >= 8) {
+		PRINTM(MERROR, "Invalid TID value: %d\n", tid);
+		LEAVE();
+		return MLAN_STATUS_FAILURE;
+	}
 	tid_down = wlan_get_wmm_tid_down(priv, tid);
 	ra_list = wlan_wmm_get_ralist_node(priv, tid_down,
 					   padd_ba_rsp->peer_mac_addr);
@@ -1890,7 +1904,7 @@ mlan_status wlan_cmd_recfg_tx_buf(mlan_private *priv, HostCmd_DS_COMMAND *cmd,
 {
 	HostCmd_DS_TXBUF_CFG *ptx_buf = &cmd->params.tx_buf;
 	t_u16 action = (t_u16)cmd_action;
-	t_u16 buf_size = *((t_u16 *)pdata_buf);
+	t_u16 buf_size = read_u16_unaligned(priv->adapter, pdata_buf);
 
 	ENTER();
 	cmd->command = wlan_cpu_to_le16(HostCmd_CMD_RECONFIGURE_TX_BUFF);
@@ -2629,6 +2643,8 @@ int wlan_cmd_append_11n_tlv(mlan_private *pmpriv, BSSDescriptor_t *pbss_desc,
 			RESET_EXTCAP_EXT_CHANNEL_SWITCH(pext_cap->ext_cap);
 		else
 			SET_EXTCAP_EXT_CHANNEL_SWITCH(pext_cap->ext_cap);
+		if (wlan_check_11ax_twt_supported(pmpriv, pbss_desc))
+			SET_EXTCAP_TWT_REQ(pext_cap->ext_cap);
 
 		HEXDUMP("Extended Capabilities IE", (t_u8 *)pext_cap,
 			sizeof(MrvlIETypes_ExtCap_t));
@@ -2966,6 +2982,10 @@ int wlan_send_addba(mlan_private *priv, int tid, t_u8 *peer_mac)
 
 	ENTER();
 
+	if (tid < 0) {
+		LEAVE();
+		return MLAN_STATUS_FAILURE;
+	}
 	PRINTM(MCMND, "Send addba: TID %d, " MACSTR "\n", tid,
 	       MAC2STR(peer_mac));
 
@@ -3149,7 +3169,7 @@ int wlan_get_txbastream_tbl(mlan_private *priv, tx_ba_stream_tbl *buf)
 		LEAVE();
 		return count;
 	}
-	bastream_max = ISSUPP_GETTXBASTREAM(priv->adapter->hw_dot_11n_dev_cap);
+	bastream_max = wlan_get_bastream_limit(priv->adapter);
 	if (bastream_max == 0)
 		bastream_max = MLAN_MAX_TX_BASTREAM_DEFAULT;
 
@@ -3180,6 +3200,9 @@ int wlan_get_txbastream_tbl(mlan_private *priv, tx_ba_stream_tbl *buf)
  */
 t_u8 wlan_11n_bandconfig_allowed(mlan_private *pmpriv, t_u16 bss_band)
 {
+	if (bss_band & BAND_6G)
+		return 0;
+
 	{
 		if (bss_band & BAND_G)
 			return (pmpriv->config_bands & BAND_GN);

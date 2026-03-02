@@ -1,3 +1,25 @@
+/*
+ *  Copyright 2024-2025 NXP
+ *
+ *  NXP CONFIDENTIAL
+ *  The source code contained or described herein and all documents related to
+ *  the source code ("Material") are owned by NXP or its
+ *  suppliers or licensors. Title to the Material remains with NXP
+ *  or its suppliers and licensors. The Material contains trade secrets and
+ *  proprietary and confidential information of NXP or its suppliers and
+ *  licensors. The Material is protected by worldwide copyright and trade secret
+ *  laws and treaty provisions. No part of the Material may be used, copied,
+ *  reproduced, modified, published, uploaded, posted, transmitted, distributed,
+ *  or disclosed in any way without NXP's prior express written permission.
+ *
+ *  No license under any patent, copyright, trade secret or other intellectual
+ *  property right is granted to or conferred upon you by disclosure or delivery
+ *  of the Materials, either expressly, by implication, inducement, estoppel or
+ *  otherwise. Any license under such intellectual property rights must be
+ *  express and approved by NXP in writing.
+ *
+ */
+
 #ifndef __DATA_ENGINE_H__
 #define __DATA_ENGINE_H__
 
@@ -16,6 +38,12 @@
 #define NAN_SEC_CONTEXT_INFO_ATTR 0x23
 #define NAN_SHARED_KEY_DESC_ATTR 0x24
 #define NAN_NDP_EXT_ATTR 0x29
+
+#define NAN_DEVICE_CAPABILITY_EXT_ATTR 0x2A
+#define NAN_TX_POWER_ENV_ATTR 0x2E
+
+#define NAN_TX_PWR_PAYLOAD_ID 0xC3
+
 /*flags used in scehdule bitmaps*/
 #define NDP_DEFAULT_DILOGUE_TOKEN 0x1
 
@@ -286,6 +314,55 @@ typedef struct _nan_ndl_qos_attr {
 	u8 max_latency[2];
 } __ATTRIB_PACK__ nan_ndl_qos_attr;
 
+typedef struct _nan_device_capability_extension_attr {
+	u8 attribute_id;
+	u16 len;
+	struct {
+		u16 regulatory_info : 1;
+		u16 opMode : 3; // 0-LPI(Indoor), 1-SP(Standard Power),
+				// 2-VLP(Very Low Power),
+				// 3-c2c(Client-to-Client)
+		u16 rsvd : 3;
+		u16 pairing_setup : 1;
+		u16 pair_caching : 1; // Set if NPK/NIK caching is enabled
+				      // (valid if pairing_setup is set)
+		u16 rsvd1 : 7;
+	} capability;
+} __ATTRIB_PACK__ nan_device_capability_extension_attr;
+
+/* Schedule Entry format for the NDC attribute */
+typedef struct __sched_entry {
+	u8 map_id;
+	time_bitmap_control time_bitmap_ctrl;
+	u8 time_bitmap_len;
+	u8 bitmap[0];
+} sched_entry;
+
+/* TPE Payload */
+typedef struct __tpe_payload {
+	u8 elem_id;
+	u8 len;
+	struct {
+		u8 maxTpCount : 3;
+		u8 maxTpInterpret : 3;
+		u8 maxTpCategory : 2;
+	} tpInfo;
+	u8 localPwrConstraint[3];
+} __ATTRIB_PACK__ tpe_payload;
+
+/* TPE Entry List */
+typedef struct __tpe_entry_list {
+	tpe_payload tpePayload;
+	sched_entry schedEntry;
+} tpe_entry_list;
+
+/* Transmit Power Envelope Attribute */
+typedef struct __nan_transmit_power_envelope_attr {
+	u8 attribute_id;
+	u16 len;
+	tpe_entry_list tpeList;
+} __ATTRIB_PACK__ nan_transmit_power_envelope_attr;
+
 // Nachiket changes
 typedef struct {
 	u8 entry_type : 1;
@@ -480,5 +557,9 @@ void nan_send_ndpe_data_event(struct mwu_iface_info *cur_if,
 			      ipv6_link_local_tlv *ipv6_tlv,
 			      transport_port_sub_attr *tport_sub_attr,
 			      transport_protocol_sub_attr *tprotocol_sub_attr);
+u8 nan_get_opclass(u8 channel, u8 bw);
+
+void nan_update_txPwr_envelope(struct mwu_iface_info *cur_if,
+			       tpe_entry_list *TpeList);
 
 #endif //__DATA_ENGINE_H__

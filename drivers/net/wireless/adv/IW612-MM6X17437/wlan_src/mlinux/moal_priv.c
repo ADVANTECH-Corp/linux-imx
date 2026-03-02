@@ -3,7 +3,7 @@
  * @brief This file contains standard ioctl functions
  *
  *
- * Copyright 2008-2024 NXP
+ * Copyright 2008-2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -133,11 +133,13 @@ static int woal_associate_ssid_bssid(moal_private *priv, struct iwreq *wrq)
 			mac_idx++;
 		} else {
 			if (mac_idx < ETH_ALEN) {
-				// coverity[tainted_data: SUPPRESS]
+				/* Data inside buf is copied from user space and
+				 * its length is bounded and validated before
+				 * use */
+				// coverity[misra_c_2012_directive_4_14_violation:SUPPRESS]
 				ssid_bssid->bssid[mac_idx] =
 					(t_u8)woal_atox(buf + i);
 			}
-
 			while ((i < buflen) && (isxdigit(buf[i + 1]))) {
 				/* Skip entire hex value */
 				i++;
@@ -294,7 +296,7 @@ static int woal_get_signal(moal_private *priv, struct iwreq *wrq)
 			ret = -EINVAL;
 			goto done;
 		}
-		/* Fall through */
+		fallthrough;
 	case 1: /* Check type range */
 		if (in_data[0] < 1 || in_data[0] > 3) {
 			ret = -EINVAL;
@@ -1776,144 +1778,6 @@ done:
 }
 
 /**
- *  @brief Set/Get network monitor configurations
- *
- *  @param priv         A pointer to moal_private structure
- *  @param wrq          A pointer to iwreq structure
- *
- *  @return             0 --success, otherwise fail
- */
-static int woal_net_monitor_ioctl(moal_private *priv, struct iwreq *wrq)
-{
-	int user_data_len = wrq->u.data.length;
-	int data[5] = {0}, copy_len;
-	int ret = 0;
-	mlan_ioctl_req *req = NULL;
-	mlan_ds_misc_cfg *misc = NULL;
-	mlan_ds_misc_net_monitor *net_mon = NULL;
-	mlan_status status = MLAN_STATUS_SUCCESS;
-
-	ENTER();
-
-	copy_len = MIN(sizeof(data), sizeof(int) * user_data_len);
-	req = woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_misc_cfg));
-	if (req == NULL) {
-		LEAVE();
-		return -ENOMEM;
-	}
-	misc = (mlan_ds_misc_cfg *)req->pbuf;
-	net_mon = (mlan_ds_misc_net_monitor *)&misc->param.net_mon;
-	misc->sub_command = MLAN_OID_MISC_NET_MONITOR;
-	req->req_id = MLAN_IOCTL_MISC_CFG;
-
-	if (!user_data_len) {
-		req->action = MLAN_ACT_GET;
-	} else if (user_data_len == 1 || user_data_len == 4 ||
-		   user_data_len == 5) {
-		if (copy_from_user(data, wrq->u.data.pointer, copy_len)) {
-			PRINTM(MERROR, "Copy from user failed\n");
-			ret = -EFAULT;
-			goto done;
-		}
-		if (data[0] != MTRUE && data[0] != MFALSE) {
-			PRINTM(MERROR,
-			       "NET_MON: Activity should be enable(=1)/disable(=0)\n");
-			ret = -EINVAL;
-			goto done;
-		}
-		net_mon->enable_net_mon = data[0];
-		if (data[0] == MTRUE) {
-			int i;
-			if (user_data_len != 4 && user_data_len != 5) {
-				PRINTM(MERROR,
-				       "NET_MON: Invalid number of args!\n");
-				ret = -EINVAL;
-				goto done;
-			}
-			/* Supported filter flags */
-			if (!data[1] || data[1] & ~(MLAN_NETMON_DATA |
-						    MLAN_NETMON_MANAGEMENT |
-						    MLAN_NETMON_CONTROL)) {
-				PRINTM(MERROR,
-				       "NET_MON: Invalid filter flag\n");
-				ret = -EINVAL;
-				goto done;
-			}
-			/* Supported bands */
-			for (i = 0; i < (int)sizeof(SupportedInfraBand); i++)
-				if (data[2] == SupportedInfraBand[i])
-					break;
-			if (i == sizeof(SupportedInfraBand)) {
-				PRINTM(MERROR, "NET_MON: Invalid band\n");
-				ret = -EINVAL;
-				goto done;
-			}
-			/* Supported channel */
-			if (data[3] < 1 || data[3] > MLAN_MAX_CHANNEL) {
-				PRINTM(MERROR,
-				       "NET_MON: Invalid channel number\n");
-				ret = -EINVAL;
-				goto done;
-			}
-			if (user_data_len == 5) {
-				/* Secondary channel offset */
-				if (!(data[2] & (BAND_GN | BAND_AN))) {
-					PRINTM(MERROR,
-					       "No 11n in band, can not set "
-					       "secondary channel offset\n");
-					ret = -EINVAL;
-					goto done;
-				}
-				if ((data[4] != CHANNEL_BW_20MHZ) &&
-				    (data[4] != CHANNEL_BW_40MHZ_ABOVE) &&
-				    (data[4] != CHANNEL_BW_40MHZ_BELOW) &&
-				    (data[4] != CHANNEL_BW_80MHZ)) {
-					PRINTM(MERROR,
-					       "Invalid secondary channel bandwidth, "
-					       "only allowed 0, 1, 3 or 4\n");
-					ret = -EINVAL;
-					goto done;
-				}
-				net_mon->chan_bandwidth = data[4];
-			}
-			net_mon->filter_flag = data[1];
-			net_mon->band = data[2];
-			net_mon->channel = data[3];
-		}
-		req->action = MLAN_ACT_SET;
-	} else {
-		PRINTM(MERROR, "NET_MON: Invalid number of args!\n");
-		ret = -EINVAL;
-		goto done;
-	}
-
-	status = woal_request_ioctl(priv, req, MOAL_IOCTL_WAIT);
-	if (status != MLAN_STATUS_SUCCESS) {
-		ret = -EFAULT;
-		goto done;
-	}
-
-	data[0] = net_mon->enable_net_mon;
-	data[1] = net_mon->filter_flag;
-	data[2] = net_mon->band;
-	data[3] = net_mon->channel;
-	data[4] = net_mon->chan_bandwidth;
-	wrq->u.data.length = 5;
-	if (copy_to_user(wrq->u.data.pointer, data,
-			 sizeof(int) * wrq->u.data.length)) {
-		PRINTM(MERROR, "Copy to user failed\n");
-		ret = -EFAULT;
-		goto done;
-	}
-
-done:
-	if (status != MLAN_STATUS_PENDING)
-		kfree(req);
-	LEAVE();
-	return ret;
-}
-
-/**
  *  @brief Get LOG
  *
  *  @param priv         A pointer to moal_private structure
@@ -2751,6 +2615,10 @@ static int woal_drv_dbg(moal_private *priv, struct iwreq *wrq)
 #endif
 	printk(KERN_ALERT "MMPA_D (%08x) %s\n", MMPA_D,
 	       (drvdbg & MMPA_D) ? "X" : "");
+#ifdef SECURE_HOST
+	printk(KERN_ALERT "MSHC_D (%08x) %s\n", MSHC_D,
+	       (drvdbg & MSHC_D) ? "X" : "");
+#endif
 	printk(KERN_ALERT "MIF_D  (%08x) %s\n", MIF_D,
 	       (drvdbg & MIF_D) ? "X" : "");
 	printk(KERN_ALERT "MFW_D  (%08x) %s\n", MFW_D,
@@ -2761,8 +2629,12 @@ static int woal_drv_dbg(moal_private *priv, struct iwreq *wrq)
 	       (drvdbg & MCMD_D) ? "X" : "");
 	printk(KERN_ALERT "MDAT_D (%08x) %s\n", MDAT_D,
 	       (drvdbg & MDAT_D) ? "X" : "");
+	printk(KERN_ALERT "MREG   (%08x) %s\n", MREG,
+	       (drvdbg & MREG) ? "X" : "");
 	printk(KERN_ALERT "MREG_D (%08x) %s\n", MREG_D,
 	       (drvdbg & MREG_D) ? "X" : "");
+	printk(KERN_ALERT "MLSTATS (%08x) %s\n", MLSTATS,
+	       (drvdbg & MLSTATS) ? "X" : "");
 	printk(KERN_ALERT "MIOCTL (%08x) %s\n", MIOCTL,
 	       (drvdbg & MIOCTL) ? "X" : "");
 	printk(KERN_ALERT "MINTR  (%08x) %s\n", MINTR,
@@ -2959,6 +2831,94 @@ static int woal_sleep_pd(moal_private *priv, struct iwreq *wrq)
 			goto done;
 		}
 		wrq->u.data.length = 1;
+	}
+
+done:
+	if (status != MLAN_STATUS_PENDING)
+		kfree(req);
+	LEAVE();
+	return ret;
+}
+
+/**
+ * @brief Set/Get module configuration
+ *
+ * @param priv     A pointer to moal_private structure
+ * @param wrq      A pointer to iwreq structure
+ *
+ * @return         0 --success, otherwise fail
+ */
+static int woal_fw_wakeup_method(moal_private *priv, struct iwreq *wrq)
+{
+	int ret = 0, data[2];
+	mlan_ds_pm_cfg *pm_cfg = NULL;
+	mlan_ioctl_req *req = NULL;
+	mlan_status status = MLAN_STATUS_SUCCESS;
+
+	ENTER();
+
+	req = woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_pm_cfg));
+	if (req == NULL) {
+		ret = -ENOMEM;
+		goto done;
+	}
+	pm_cfg = (mlan_ds_pm_cfg *)req->pbuf;
+
+	if (wrq->u.data.length > 2) {
+		ret = -EINVAL;
+		goto done;
+	}
+	if (!wrq->u.data.length) {
+		req->action = MLAN_ACT_GET;
+	} else {
+		req->action = MLAN_ACT_SET;
+		if (copy_from_user(data, wrq->u.data.pointer,
+				   sizeof(int) * wrq->u.data.length)) {
+			PRINTM(MINFO, "Copy from user failed\n");
+			ret = -EFAULT;
+			goto done;
+		}
+		if (data[0] != FW_WAKEUP_METHOD_INTERFACE &&
+		    data[0] != FW_WAKEUP_METHOD_GPIO) {
+			PRINTM(MERROR, "Invalid FW wake up method:%d\n",
+			       data[0]);
+			ret = -EINVAL;
+			goto done;
+		}
+		if (data[0] == FW_WAKEUP_METHOD_GPIO) {
+			if (wrq->u.data.length == 1) {
+				PRINTM(MERROR,
+				       "Please provide gpio pin number for FW_WAKEUP_METHOD gpio\n");
+				ret = -EINVAL;
+				goto done;
+			}
+			pm_cfg->param.fw_wakeup_params.gpio_pin = data[1];
+		}
+
+		pm_cfg->param.fw_wakeup_params.method = data[0];
+	}
+
+	pm_cfg->sub_command = MLAN_OID_PM_CFG_FW_WAKEUP_METHOD;
+	req->req_id = MLAN_IOCTL_PM_CFG;
+
+	status = woal_request_ioctl(priv, req, MOAL_IOCTL_WAIT);
+	if (status != MLAN_STATUS_SUCCESS) {
+		ret = -EFAULT;
+		goto done;
+	}
+
+	data[0] = ((mlan_ds_pm_cfg *)req->pbuf)->param.fw_wakeup_params.method;
+	data[1] =
+		((mlan_ds_pm_cfg *)req->pbuf)->param.fw_wakeup_params.gpio_pin;
+
+	if (data[0] == FW_WAKEUP_METHOD_INTERFACE)
+		wrq->u.data.length = 1;
+	else
+		wrq->u.data.length = 2;
+	if (copy_to_user(wrq->u.data.pointer, data,
+			 sizeof(int) * wrq->u.data.length)) {
+		ret = -EFAULT;
+		goto done;
 	}
 
 done:
@@ -4141,6 +4101,9 @@ static int woal_set_get_ip_addr(moal_private *priv, struct iwreq *wrq)
 		misc->param.ipaddr_cfg.ip_addr_num = 1;
 		misc->param.ipaddr_cfg.ip_addr_type = IPADDR_TYPE_IPV4;
 	}
+	/* Data inside buf is copied from userspace and it's length is validated
+	 * before use */
+	// coverity[misra_c_2012_directive_4_14_violation:SUPPRESS]
 	if (woal_atoi(&op_code, buf) != MLAN_STATUS_SUCCESS) {
 		ret = -EINVAL;
 		goto done;
@@ -5140,19 +5103,19 @@ static int woal_do_sdio_mpa_ctrl(moal_private *priv, struct iwreq *wrq)
 	switch (data_length) {
 	case 6:
 		misc->param.mpa_ctrl.rx_max_ports = data[5];
-		/* fall through */
+		fallthrough;
 	case 5:
 		misc->param.mpa_ctrl.tx_max_ports = data[4];
-		/* fall through */
+		fallthrough;
 	case 4:
 		misc->param.mpa_ctrl.rx_buf_size = data[3];
-		/* fall through */
+		fallthrough;
 	case 3:
 		misc->param.mpa_ctrl.tx_buf_size = data[2];
-		/* fall through */
+		fallthrough;
 	case 2:
 		misc->param.mpa_ctrl.rx_enable = data[1];
-		/* fall through */
+		fallthrough;
 	case 1:
 		/* Set cmd */
 		req->action = MLAN_ACT_SET;
@@ -6380,7 +6343,15 @@ static int woal_set_get_tx_rx_ant(moal_private *priv, struct iwreq *wrq)
 
 		if (priv->phandle->feature_control & FEATURE_CTRL_STREAM_2X2) {
 			radio->param.ant_cfg.tx_antenna = data[0];
-			radio->param.ant_cfg.rx_antenna = data[0];
+			if (data[0] == RF_ANTENNA_AUTO) {
+				radio->param.ant_cfg.rx_antenna = 0;
+				if (data[1] > 0xffff) {
+					ret = -EINVAL;
+					goto done;
+				}
+			} else {
+				radio->param.ant_cfg.rx_antenna = data[0];
+			}
 			if (wrq->u.data.length == 2)
 				radio->param.ant_cfg.rx_antenna = data[1];
 		} else {
@@ -6623,6 +6594,9 @@ int woal_wext_do_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
 		case WOAL_SLEEP_PD:
 			ret = woal_sleep_pd(priv, wrq);
 			break;
+		case WOAL_FW_WAKEUP_METHOD:
+			ret = woal_fw_wakeup_method(priv, wrq);
+			break;
 		case WOAL_AUTH_TYPE:
 			ret = woal_auth_type(priv, wrq);
 			break;
@@ -6734,9 +6708,6 @@ int woal_wext_do_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
 			break;
 		case WOAL_SLEEP_PARAMS:
 			ret = woal_sleep_params_ioctl(priv, wrq);
-			break;
-		case WOAL_NET_MONITOR:
-			ret = woal_net_monitor_ioctl(priv, wrq);
 			break;
 		case WOAL_DFS_TESTING:
 			ret = woal_dfs_testing(priv, wrq);

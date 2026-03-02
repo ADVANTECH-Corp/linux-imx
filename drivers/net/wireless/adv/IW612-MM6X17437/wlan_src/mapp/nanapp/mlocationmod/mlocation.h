@@ -1,3 +1,25 @@
+/*
+ *  Copyright 2024-2025 NXP
+ *
+ *  NXP CONFIDENTIAL
+ *  The source code contained or described herein and all documents related to
+ *  the source code ("Material") are owned by NXP or its
+ *  suppliers or licensors. Title to the Material remains with NXP
+ *  or its suppliers and licensors. The Material contains trade secrets and
+ *  proprietary and confidential information of NXP or its suppliers and
+ *  licensors. The Material is protected by worldwide copyright and trade secret
+ *  laws and treaty provisions. No part of the Material may be used, copied,
+ *  reproduced, modified, published, uploaded, posted, transmitted, distributed,
+ *  or disclosed in any way without NXP's prior express written permission.
+ *
+ *  No license under any patent, copyright, trade secret or other intellectual
+ *  property right is granted to or conferred upon you by disclosure or delivery
+ *  of the Materials, either expressly, by implication, inducement, estoppel or
+ *  otherwise. Any license under such intellectual property rights must be
+ *  express and approved by NXP in writing.
+ *
+ */
+
 #ifndef __MLOCATION_H__
 #define __MLOCATION_H__
 
@@ -70,6 +92,9 @@ enum mlocation_event_type {
 	MLOCATION_RADIO_REQUEST_RECEIVED,
 	MLOCATION_RADIO_REPORT_RECEIVED,
 	MLOCATION_ANQP_RESP_RECEIVED,
+	MLOCATION_RTT_RESULTS,
+	MLOCATION_FTM_FAIL,
+	MLOCATION_FTM_DISTANCE,
 };
 
 enum radio_measurement_action {
@@ -123,6 +148,8 @@ struct mlocation_cfg {
 	u8 mlocation_per_burst;
 	u8 bw;
 	u16 burst_period;
+	u8 iftm_tmo; // Max time within which IFTM should be received by ISTA
+		     // (default=10ms)
 	u8 format_bw;
 	u8 max_i2r_sts_upto80;
 	u8 max_r2i_sts_upto80;
@@ -167,6 +194,12 @@ typedef struct _mlocation_event {
 	char ca_value[MAX_CA_VALUES];
 } __ATTRIB_PACK__ mlocation_event;
 
+typedef struct _ftm_distance_event {
+	u32 distance;
+	u8 bssid[6];
+	u32 tsf_low;
+} __ATTRIB_PACK__ ftm_distance_event;
+
 typedef struct _mlocation_radio_receive_event {
 	u32 tsf_low;
 	u8 bssid[6];
@@ -190,6 +223,7 @@ typedef struct _mlocation_generic_event {
 	union {
 		mlocation_radio_receive_event rm_evt;
 		mlocation_event mlocation_event;
+		ftm_distance_event ftm_distance;
 		mlocation_radio_report_event rm_rpt;
 		mlocation_anqp_resp_event anqp_rsp;
 	} __ATTRIB_PACK__ u;
@@ -232,6 +266,7 @@ typedef struct _mlocation_session_ctrl { /** Action */
 	u8 ftm_for_nan_ranging;
 	u8 peer_mac[ETH_ALEN];
 	u8 channel;
+	u8 chanband;
 } __ATTRIB_PACK__ mlocation_session_ctrl;
 
 typedef struct _mlocation_neighbor_req { /** Action */
@@ -253,6 +288,7 @@ typedef struct _mlocation_init_tlv {
 	u16 burst_period;
 	u8 civic_req;
 	u8 lci_req;
+	u8 iftm_tmo;
 } __ATTRIB_PACK__ mlocation_init_tlv;
 
 typedef struct _mlocation_Ranging_NTB_Params_tlv {
@@ -485,5 +521,8 @@ typedef struct _measurement_request_element
 
 void nan_send_ftm_complete_event(mlocation_event *dev, char iface[],
 				 float distance);
+void nan_send_ftm_distance_event(ftm_distance_event *dev, char iface[]);
+void nan_send_ftm_fail_event(mlocation_event *dev, char iface[],
+			     float distance);
 
 #endif

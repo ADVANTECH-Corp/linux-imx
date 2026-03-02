@@ -3,7 +3,7 @@
  * @brief This file contains definition for private IOCTL call.
  *
  *
- * Copyright 2008-2024 NXP
+ * Copyright 2008-2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -87,6 +87,7 @@ Change log:
 #ifdef UAP_SUPPORT
 #define PRIV_CMD_AP_DEAUTH "apdeauth"
 #define PRIV_CMD_GET_STA_LIST "getstalist"
+#define PRIV_CMD_PRINT_LINK_STATS "plinkstats"
 #define PRIV_CMD_BSS_CONFIG "bssconfig"
 #endif
 #if defined(UAP_SUPPORT)
@@ -134,6 +135,7 @@ typedef struct _chan_stats {
 #define PRIV_CMD_HSSETPARA "hssetpara"
 #define PRIV_CMD_MGMT_FILTER "mgmtfilter"
 #define PRIV_CMD_SCANCFG "scancfg"
+#define PRIV_CMD_6GSCANCFG "6gscancfg"
 #define PRIV_CMD_GETNLNUM "getnlnum"
 #define PRIV_CMD_AGGRCTRL "aggrctrl"
 #ifdef USB
@@ -245,6 +247,7 @@ typedef struct _chan_stats {
 #define PRIV_CMD_TX_BF_CFG "httxbfcfg"
 #define PRIV_CMD_PORT_CTRL "port_ctrl"
 #define PRIV_CMD_PB_BYPASS "pb_bypass"
+#define PRIV_CMD_FW_WAKEUP_METHOD "fwwakeupmethod"
 #ifdef SDIO
 #define PRIV_CMD_SD_CMD53_RW "sdcmd53rw"
 #endif
@@ -312,8 +315,11 @@ typedef struct _chan_stats {
 #define PRIV_CMD_CH_LOAD "getchload"
 #define PRIV_CMD_CH_LOAD_RESULTS "getloadresults"
 #define PRIV_CMD_CROSS_CHIP_SYNCH "crosssynch"
+#define PRIV_CMD_TSP_CFG "wlan_tsp_cfg"
 
 #define PRIV_CMD_ARB_CFG "arb"
+
+#define PRIV_CMD_FOUNDRY_TYPE "foundry_type"
 
 /**Private command to configure static rx abort config */
 #define PRIV_CMD_RX_ABORT_CFG "rx_abort_cfg"
@@ -323,6 +329,8 @@ typedef struct _chan_stats {
 #define PRIV_CMD_RX_ABORT_CFG_EXT "rx_abort_cfg_ext"
 /** configure NAV mitigation parameters. */
 #define PRIV_CMD_NAV_MITIGATION "nav_mitigation"
+/** configure HW based NAV mitigation parameters. */
+#define PRIV_CMD_NAV_MITIGATION_HW "nav_mitigation_hw"
 #define PRIV_CMD_LED "led"
 #define TX_AMPDU_RTS_CTS 0
 #define TX_AMPDU_CTS_2_SELF 1
@@ -330,6 +338,8 @@ typedef struct _chan_stats {
 #define TX_AMPDU_DYNAMIC_RTS_CTS 3
 /**Private command to set tx ampdu protection mode */
 #define PRIV_CMD_TX_AMPDU_PROT_MODE "tx_ampdu_prot_mode"
+/**Private command to enable preamble pwr boost feature */
+#define PRIV_CMD_PREAMBLE_PWR_BOOST "preamble_pwr_boost"
 /**Private command to configure tx rate adapt config */
 #define PRIV_CMD_RATE_ADAPT_CFG "rate_adapt_cfg"
 #define CCK_DESENSE_MODE_DISABLED 0
@@ -363,6 +373,9 @@ typedef struct _chan_stats {
 #define PRIV_CMD_ROBUSTCOEX "robustcoex"
 
 #define PRIV_CMD_DMCS "dmcs"
+
+/**Private command to configure per_band_txpwr_cap */
+#define PRIV_CMD_PER_BAND_TXPWR_CAP "per_band_txpwr_cap"
 
 #if defined(PCIE)
 #define PRIV_CMD_SSU "ssu"
@@ -400,6 +413,21 @@ typedef struct _ssu_params_cfg {
 /** Private command to get secure boot uuid */
 #define PRIV_CMD_GET_SB_UUID "getuuid"
 
+#define FILS_IP_CONFIG "FILSIPCONFIG"
+#define FILS_PSK_CONFIG "FILSPSKCONFIG"
+#define FILS_IP_STR "ip"
+#define FILS_MASK_STR "mask"
+#define FILS_BASE_IP_STR "base_ip"
+#define FILS_DNS_STR "dns"
+#define FILS_COUNT_STR "max"
+#define FILS_KEY "key"
+#define FILS_BSSID "bssid"
+
+mlan_status woal_set_fils_psk(moal_private *priv, char *data);
+#ifdef UAP_SUPPORT
+mlan_status woal_set_fils_ip_cfg(moal_private *priv, char *data);
+#endif
+
 /** Private command: 11AX Cfg */
 #define PRIV_CMD_11AXCFG "11axcfg"
 /** Private command: 11AX Cmd */
@@ -414,8 +442,14 @@ typedef struct _ssu_params_cfg {
 #define PRIV_CMD_TWT_REPORT "twt_report"
 /** Private command: TWT Information Cfg */
 #define PRIV_CMD_TWT_INFORMATION "twt_information"
+/** Private command: BTWT AP Cfg Set */
+#define PRIV_CMD_BTWT_AP_CONFIG_SET "btwt_AP_config_set"
+/** Private command: BTWT AP Cfg Get */
+#define PRIV_CMD_BTWT_AP_CONFIG_GET "btwt_AP_config_get"
 
 #define PRIV_CMD_LPM "lpm"
+/** Private command: auth/assoc timeout cfg*/
+#define PRIV_CMD_AUTH_ASSOC_TIMEOUT_CFG "auth_assoc_timeout_cfg"
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
 int woal_do_ioctl(struct net_device *dev, struct ifreq *req, void __user *data,
@@ -775,4 +809,9 @@ typedef struct {
 } __ATTRIB_PACK__ wlan_ieee80211_chan_list;
 
 #define PRIV_CMD_TP_STATE "tp_state"
+
+#ifdef UAP_SUPPORT
+#define PRIV_CMD_AGCS "agcs"
+#endif
+
 #endif /* _WOAL_ETH_PRIV_H_ */

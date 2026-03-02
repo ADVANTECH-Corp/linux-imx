@@ -4,7 +4,7 @@
  *  driver.
  *
  *
- * Copyright 2008-2021 NXP
+ * Copyright 2008-2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -85,7 +85,7 @@ Change log:
 
 /** Default firmware name */
 #ifdef PCIE8997
-#define PCIE8997_DEFAULT_COMBO_FW_NAME "nxp/pcieusb8997_combo_v4.bin"
+#define PCIE8997_DEFAULT_COMBO_FW_NAME "nxp/pcieuart8997_combo_v4.bin"
 #define PCIEUART8997_DEFAULT_COMBO_FW_NAME "nxp/pcieuart8997_combo_v4.bin"
 #define PCIEUSB8997_DEFAULT_COMBO_FW_NAME "nxp/pcieusb8997_combo_v4.bin"
 #define PCIE8997_DEFAULT_WLAN_FW_NAME "nxp/pcie8997_wlan_v4.bin"
@@ -95,14 +95,19 @@ Change log:
 #endif /* PCIE8997 */
 
 #ifdef PCIE8897
-#define PCIE8897_DEFAULT_COMBO_FW_NAME "nxp/pcie8897_uapsta.bin"
+#define PCIE8897_DEFAULT_COMBO_FW_NAME "nxp/pcieuart8897_combo.bin"
 #define PCIE8897_DEFAULT_WLAN_FW_NAME "nxp/pcie8897_wlan.bin"
 #endif /* PCIE8897*/
 
 #ifdef PCIEAW693
 #define PCIEUARTAW693_DEFAULT_COMBO_FW_NAME "nxp/pcieuartaw693_combo.bin"
 #define PCIEAW693_DEFAULT_COMBO_FW_NAME "nxp/pcieuartaw693_combo.bin"
+#define PCIEUARTAW693_COMBO_V1_FW_NAME "nxp/pcieuartaw693_combo_v1.bin.se"
+#define PCIEAW693_COMBO_V1_FW_NAME "nxp/pcieuartaw693_combo_v1.bin.se"
 #define PCIEAW693_DEFAULT_WLAN_FW_NAME "nxp/pcieaw693_wlan.bin"
+#define PCIEAW693_WLAN_V1_FW_NAME "nxp/pcieaw693_wlan_v1.bin.se"
+#define PCIEAW693_A0 0x00
+#define PCIEAW693_A1 0x01
 #endif /* PCIEAW693*/
 
 #ifdef PCIE9098
@@ -110,7 +115,7 @@ Change log:
 #define PCIE9098_A0 0x01
 #define PCIE9098_A1 0x02
 #define PCIE9098_A2 0x03
-#define PCIE9098_DEFAULT_COMBO_FW_NAME "nxp/pcieusb9098_combo.bin"
+#define PCIE9098_DEFAULT_COMBO_FW_NAME "nxp/pcieuart9098_combo.bin"
 #define PCIEUART9098_DEFAULT_COMBO_FW_NAME "nxp/pcieuart9098_combo.bin"
 #define PCIEUSB9098_DEFAULT_COMBO_FW_NAME "nxp/pcieusb9098_combo.bin"
 #define PCIEPCIE9098_DEFAULT_COMBO_FW_NAME "nxp/pciepcie9098_combo.bin"
@@ -125,7 +130,7 @@ Change log:
 #define PCIE9097_A0 0x00
 #define PCIE9097_B0 0x01
 #define PCIE9097_B1 0x02
-#define PCIE9097_DEFAULT_COMBO_FW_NAME "nxp/pcieusbiw620_combo.bin"
+#define PCIE9097_DEFAULT_COMBO_FW_NAME "nxp/pcieuartiw620_combo.bin"
 #define PCIEUART9097_DEFAULT_COMBO_FW_NAME "nxp/pcieuartiw620_combo.bin"
 #define PCIEUSB9097_DEFAULT_COMBO_FW_NAME "nxp/pcieusbiw620_combo.bin"
 #define PCIEUART9097_COMBO_V1_FW_NAME "nxp/pcieuartiw620_combo_v1.bin"
@@ -135,7 +140,7 @@ Change log:
 #endif /* PCIE9097 */
 
 #ifdef PCIEIW624
-#define PCIEIW624_DEFAULT_COMBO_FW_NAME "nxp/pcieusbiw624_combo.bin"
+#define PCIEIW624_DEFAULT_COMBO_FW_NAME "nxp/pcieuartiw624_combo.bin"
 #define PCIEUARTIW624_DEFAULT_COMBO_FW_NAME "nxp/pcieuartiw624_combo.bin"
 #define PCIEUSBIW624_DEFAULT_COMBO_FW_NAME "nxp/pcieusbiw624_combo.bin"
 #define PCIEUARTUARTIW624_DEFAULT_COMBO_FW_NAME                                \
@@ -144,20 +149,6 @@ Change log:
 #define PCIEUSBUSBIW624_DEFAULT_COMBO_FW_NAME "nxp/pcieusbusbiw624_combo.bin"
 #define PCIEIW624_DEFAULT_WLAN_FW_NAME "nxp/pcieiw624_wlan.bin"
 #endif /* PCIEIW624 */
-
-#if defined(PCIE9098) || defined(PCIE9097) || defined(PCIEAW693) ||            \
-	defined(PCIEIW624)
-#define PCIE_NUM_MSIX_VECTORS 32
-#else
-#define PCIE_NUM_MSIX_VECTORS 4
-#endif
-
-typedef struct _msix_context {
-	/** pci_dev structure pointer */
-	struct pci_dev *dev;
-	/** message id related to msix vector */
-	t_u16 msg_id;
-} msix_context;
 
 /** Structure: PCIE service card */
 typedef struct _pcie_service_card {
@@ -173,10 +164,7 @@ typedef struct _pcie_service_card {
 	void __iomem *pci_mmap;
 	/** I/O memory regions pointer to the bus */
 	void __iomem *pci_mmap1;
-#if defined(PCIE)
-	struct msix_entry msix_entries[PCIE_NUM_MSIX_VECTORS];
-	msix_context msix_contexts[PCIE_NUM_MSIX_VECTORS];
-#endif
+	t_u32 cache_alignment_mask;
 } pcie_service_card, *ppcie_service_card;
 
 /** Register to bus driver function */

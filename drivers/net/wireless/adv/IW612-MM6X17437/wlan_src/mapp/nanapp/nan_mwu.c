@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -97,7 +97,8 @@ int hex2num(s8 c);
 
 #define NAN_CMD_RANGING_INIT_SCAN                                              \
 	NAN_CMD_HDR_SCAN                                                       \
-	MWU_KV_FMT_MAC("peer_mac")
+	MWU_KV_FMT_MAC("peer_mac")                                             \
+	MWU_KV_FMT_U8("channel")
 
 #define NAN_CMD_SCHED_REQ_SCAN                                                 \
 	NAN_CMD_HDR_SCAN                                                       \
@@ -404,10 +405,11 @@ enum mwu_error nan_handle_mwu(struct mwu_msg *msg, struct mwu_msg **resp)
 	} else if (strcmp(cmd, "nan_ranging_initiate") == 0) {
 		INFO("Got nan_ranging_initiate command");
 		char peer_mac[ETH_ALEN];
+		u8 channel;
 		ret = sscanf(msg->data, NAN_CMD_RANGING_INIT_SCAN, iface, cmd,
-			     UTIL_MAC2SCAN(peer_mac));
+			     UTIL_MAC2SCAN(peer_mac), &channel);
 		strncpy(nan_mod.iface, iface, IFNAMSIZ);
-		status = nan_ranging_initiate(&nan_mod, peer_mac);
+		status = nan_ranging_initiate(&nan_mod, peer_mac, channel);
 		ALLOC_STATUS_MSG_OR_FAIL(*resp, status);
 
 	} else if (strcmp(cmd, "nan_ftm_init") == 0) {
@@ -631,6 +633,7 @@ enum mwu_error nan_handle_mwu(struct mwu_msg *msg, struct mwu_msg **resp)
 		nan_cfg.ndpe_attr_trans_port = -1;
 		nan_cfg.ndpe_attr_negative = -1;
 		nan_cfg.ndp_attr_present = -1;
+		nan_cfg.operating_mode_6g = -1;
 
 		for (;;) {
 			kv = strtok_r(NULL, "\n", &current);
@@ -746,6 +749,11 @@ enum mwu_error nan_handle_mwu(struct mwu_msg *msg, struct mwu_msg **resp)
 				INFO("ndp_present= %d",
 				     nan_cfg.ndp_attr_present);
 				update = 1;
+			} else if (sscanf(kv, "operating_mode_6g=%d\n",
+					  &nan_cfg.operating_mode_6g) == 1) {
+				INFO("operating_mode_6g= %d",
+				     nan_cfg.operating_mode_6g);
+				update = 1;
 			} else {
 				INFO("Ignoring key-value: %s", kv);
 			}
@@ -797,13 +805,12 @@ enum mwu_error nan_handle_mwu(struct mwu_msg *msg, struct mwu_msg **resp)
 			"hold_role_flag=%x\ncur_role=%x\n"
 			"hold_master_pref_flag=%x\ncur_master_pref=%x\n"
 			"hold_rfactor_flag=%x\ncur_rfactor=%x\n"
-			"hold_hop_cnt_flag=%x\ncur_hop_cnt=%x\n"
-			"disable_2g=%x\n",
+			"hold_hop_cnt_flag=%x\ncur_hop_cnt=%x\n",
 			nan_state.hold_role_flag, nan_state.cur_role,
 			nan_state.hold_master_pref_flag,
 			nan_state.cur_master_pref, nan_state.hold_rfactor_flag,
 			nan_state.cur_rfactor, nan_state.hold_hop_cnt_flag,
-			nan_state.cur_hop_cnt, nan_state.disable_2g);
+			nan_state.cur_hop_cnt);
 
 		/* Prepare the response buffer */
 		*resp = malloc(sizeof(struct mwu_msg) + strlen(resp_data) + 1);
@@ -849,12 +856,6 @@ enum mwu_error nan_handle_mwu(struct mwu_msg *msg, struct mwu_msg **resp)
 				     nan_state.cur_hop_cnt);
 				nan_state.hold_hop_cnt_flag = 1;
 				update = 1;
-			} else if (sscanf(kv, "disable_2g=%x\n",
-					  &nan_state.disable_2g) == 1) {
-				INFO("Disable_2g: %x", nan_state.disable_2g);
-				nan_state.disable_2g_flag = 1;
-				update = 1;
-
 			} else {
 				INFO("Ignoring key-value: %s", kv);
 			}
@@ -1401,6 +1402,7 @@ void nan_mwu_event_ftm_cb(struct event *event, void *priv)
 {
 	int type;
 	mlocation_event *dev;
+	ftm_distance_event *dis_event;
 	float distance;
 
 	ENTER();
@@ -1414,12 +1416,25 @@ void nan_mwu_event_ftm_cb(struct event *event, void *priv)
 	case MLOCATION_EVENT_SESSION_COMPLETE:
 		dev = (mlocation_event *)event->val;
 		distance = (dev->AverageClockOffset / 2) * 0.3 / 1000;
-		ERR("==> Got MLOCATION_EVENT_SESSION_COMPLETE, distane = %f\n",
+		ERR("==> Got MLOCATION_EVENT_SESSION_COMPLETE, distance = %f\n",
 		    distance);
 		nan_send_ftm_report(&nan_mod, distance,
 				    (char *)dev->mac_address);
 		nan_send_ftm_complete_event(dev, event->iface, distance);
+		break;
 
+	case MLOCATION_FTM_DISTANCE:
+		dis_event = (ftm_distance_event *)event->val;
+		ERR("==> Got MLOCATION_FTM_DISTANCE, distance = %d\n",
+		    dis_event->distance);
+		nan_send_ftm_distance_event(dis_event, event->iface);
+		break;
+
+	case MLOCATION_FTM_FAIL:
+		dev = (mlocation_event *)event->val;
+		ERR("==> Got MLOCATION_FTM_FAIL\n");
+		// todo : Populate FTM status fields.
+		nan_send_ftm_fail_event(dev, event->iface, 0);
 		break;
 	}
 

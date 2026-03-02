@@ -4,7 +4,7 @@
  *  @brief This file contains the handling of TX/RX in MLAN
  *
  *
- *  Copyright 2009-2021, 2024 NXP
+ *  Copyright 2009-2021, 2024-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -79,6 +79,7 @@ mlan_status wlan_handle_rx_packet(pmlan_adapter pmadapter, pmlan_buffer pmbuf)
 	ENTER();
 
 	prx_pd = (RxPD *)(pmbuf->pbuf + pmbuf->data_offset);
+
 	/* Get the BSS number from RxPD, get corresponding priv */
 	priv = wlan_get_priv_by_id(pmadapter, prx_pd->bss_num & BSS_NUM_MASK,
 				   prx_pd->bss_type);
@@ -88,6 +89,7 @@ mlan_status wlan_handle_rx_packet(pmlan_adapter pmadapter, pmlan_buffer pmbuf)
 		ret = MLAN_STATUS_FAILURE;
 		goto done;
 	}
+
 	pmbuf->bss_index = priv->bss_index;
 	PRINTM_GET_SYS_TIME(MDATA, &sec, &usec);
 	PRINTM_NETINTF(MDATA, priv);
@@ -124,8 +126,8 @@ static void wlan_drv_mcast_cycle_delay_calulation(pmlan_adapter pmadapter,
 	static t_u32 prev_mcast_usec = 0;
 	t_u32 curr_ts_sec = 0;
 	t_u32 curr_ts_usec = 0;
-	t_u64 cycle_delta = 0;
-	t_u64 profile_delta = 0;
+	t_s64 cycle_delta = 0;
+	t_s64 profile_delta = 0;
 
 	if (mcast_drv_update_allow_flag == MFALSE)
 		return;
@@ -140,7 +142,7 @@ static void wlan_drv_mcast_cycle_delay_calulation(pmlan_adapter pmadapter,
 	if (curr_ts_sec || curr_ts_usec) {
 		/* Calculate profile delta */
 		profile_delta = (curr_ts_sec - pmbuf->in_ts_sec) * 1000000;
-		profile_delta += (t_s32)(curr_ts_usec - pmbuf->in_ts_usec);
+		profile_delta += curr_ts_usec - pmbuf->in_ts_usec;
 
 		if ((profile_delta >= 0) && (profile_delta <= 1000))
 			gmcast_stats.spent_time_under_1000usec++;
@@ -152,8 +154,9 @@ static void wlan_drv_mcast_cycle_delay_calulation(pmlan_adapter pmadapter,
 			gmcast_stats.spent_time_over_3000usec++;
 	}
 	/* Process the start cycle data */
-	cycle_delta = (pmbuf->in_ts_sec - prev_mcast_sec) * 1000000;
-	cycle_delta += (t_s32)(pmbuf->in_ts_usec - prev_mcast_usec);
+	cycle_delta = ((t_s64)pmbuf->in_ts_sec - (t_s64)prev_mcast_sec) *
+		      (t_s64)1000000;
+	cycle_delta += pmbuf->in_ts_usec - prev_mcast_usec;
 
 	/* If start cycle delta is more than 5 sec ignore*/
 	if ((pmbuf->u.mc_tx_info.mc_pkt_flags & (1 << CYCLE_START)) &&
@@ -212,8 +215,8 @@ mlan_status wlan_process_tx(pmlan_private priv, pmlan_buffer pmbuf,
 	if (GET_BSS_ROLE(priv) == MLAN_BSS_ROLE_STA)
 		plocal_tx_pd = (TxPD *)(head_ptr + priv->intf_hr_len);
 #endif
-	dest_mac_first_octet = *(head_ptr + priv->intf_hr_len + sizeof(TxPD) +
-				 DEST_MAC_OFFSET);
+	dest_mac_first_octet = *(head_ptr + priv->intf_hr_len +
+				 Tx_PD_SIZEOF(pmadapter) + DEST_MAC_OFFSET);
 
 	if (dest_mac_first_octet & 0x01)
 		wlan_drv_mcast_cycle_delay_calulation(pmadapter, pmbuf);
@@ -232,7 +235,7 @@ done:
 	case MLAN_STATUS_PRESOURCE:
 		PRINTM(MINFO, "MLAN_STATUS_PRESOURCE is returned\n");
 		DBG_HEXDUMP(MDAT_D, "Tx", head_ptr + priv->intf_hr_len,
-			    MIN(pmbuf->data_len + sizeof(TxPD),
+			    MIN(pmbuf->data_len + Tx_PD_SIZEOF(pmadapter),
 				MAX_DATA_DUMP_LEN));
 		break;
 #endif
@@ -255,12 +258,12 @@ done:
 		break;
 	case MLAN_STATUS_PENDING:
 		DBG_HEXDUMP(MDAT_D, "Tx", head_ptr + priv->intf_hr_len,
-			    MIN(pmbuf->data_len + sizeof(TxPD),
+			    MIN(pmbuf->data_len + Tx_PD_SIZEOF(pmadapter),
 				MAX_DATA_DUMP_LEN));
 		break;
 	case MLAN_STATUS_SUCCESS:
 		DBG_HEXDUMP(MDAT_D, "Tx", head_ptr + priv->intf_hr_len,
-			    MIN(pmbuf->data_len + sizeof(TxPD),
+			    MIN(pmbuf->data_len + Tx_PD_SIZEOF(pmadapter),
 				MAX_DATA_DUMP_LEN));
 		wlan_write_data_complete(pmadapter, pmbuf, ret);
 		break;

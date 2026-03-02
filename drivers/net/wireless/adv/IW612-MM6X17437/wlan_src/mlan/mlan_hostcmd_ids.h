@@ -3,7 +3,7 @@
  *  @brief This file contains host command ID definitions.
  *
  *
- *  Copyright 2023 NXP
+ *  Copyright 2023-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -135,6 +135,8 @@ ENUM_ELEMENT(HostCmd_CMD_GET_HW_SPEC, 0x0003),
 	/** Host Command ID : 802.11 get status */
 	ENUM_ELEMENT(HostCmd_CMD_WMM_GET_STATUS, 0x0071),
 
+	/** Host Command ID : 802.11 firmware wakeup method */
+	ENUM_ELEMENT(HostCmd_CMD_802_11_FW_WAKE_METHOD, 0x0074),
 	/** Host Command ID : 802.11 subscribe event */
 	ENUM_ELEMENT(HostCmd_CMD_802_11_SUBSCRIBE_EVENT, 0x0075),
 
@@ -270,6 +272,8 @@ ENUM_ELEMENT(HostCmd_CMD_GET_HW_SPEC, 0x0003),
 
 	/** Host Command ID: CROSS CHIP SYNCH */
 	ENUM_ELEMENT(HostCmd_CMD_CROSS_CHIP_SYNCH, 0x027d),
+
+	ENUM_ELEMENT(HostCmd_CMD_TSP_CFG, 0x0280),
 
 	/** Host Command ID : TDLS configuration */
 	ENUM_ELEMENT(HostCmd_CMD_TDLS_CONFIG, 0x0100),
@@ -459,6 +463,10 @@ ENUM_ELEMENT(HostCmd_CMD_GET_HW_SPEC, 0x0003),
 	/** Host Command ID : IPS Config */
 	ENUM_ELEMENT(HostCmd_CMD_IPS_CONFIG, 0x0279),
 	ENUM_ELEMENT(HostCmd_CMD_OFDM_DESENSE_CFG, 0x027f),
+#ifdef UAP_SUPPORT
+	/** Host Command ID : BCN country ie information */
+	ENUM_ELEMENT(HostCmd_CMD_802_CUSTOM_BEACON_IE, 0x0281),
+#endif
 	ENUM_ELEMENT(HostCmd_CMD_NAV_MITIGATION_CFG, 0x0282),
 
 	/** Host Command ID: Tx Frame */
@@ -466,5 +474,37 @@ ENUM_ELEMENT(HostCmd_CMD_GET_HW_SPEC, 0x0003),
 	/** Host Command ID: PCIE ADMA INIT */
 	ENUM_ELEMENT(HostCmd_CMD_PCIE_ADMA_INIT, 0x0284),
 
+	/** Host Command ID: query of current TX rate to the peer */
+	ENUM_ELEMENT(HostCmd_CMD_PEER_TX_RATE_QUERY, 0x0285),
+
+	/** Host Command ID: multi-client TX scheduling configuration */
+	ENUM_ELEMENT(HostCmd_CMD_MCLIENT_SCHEDULE_CFG, 0x0286),
+
+	/** Host Command ID : WMM HOST ADDTS req */
+	ENUM_ELEMENT(HostCmd_CMD_WMM_HOST_ADDTS_REQ, 0x0287),
+	/** Host Command ID : WMM HOST DELTS req */
+	ENUM_ELEMENT(HostCmd_CMD_WMM_HOST_DELTS_REQ, 0x0288),
+
+	/** Host Command ID : Auth, Assoc timeout configuration */
+	ENUM_ELEMENT(HostCmd_CMD_AUTH_ASSOC_TIMEOUT_CFG, 0x0289),
+
+	/** Host Command ID : HS Event masking configuration */
+	ENUM_ELEMENT(HostCmd_CMD_HS_EVENT_MASK, 0x028a),
+	/** Host Command ID : Get foundry type */
+	ENUM_ELEMENT(HostCmd_CMD_DS_GET_FOUNDRY_TYPE, 0X028c),
+
+#ifdef UAP_SUPPORT
+	/** Host Command ID : Agiled channel switch configuration */
+	ENUM_ELEMENT(HostCmd_CMD_APCMD_AGCS_CFG, 0x0293),
+#endif
+
+	ENUM_ELEMENT(HostCmd_CMD_NAV_MITIGATION_HW_CFG, 0x0294),
+
+#ifdef SECURE_HOST
+	ENUM_ELEMENT(HostCmd_CMD_SECURE_HOST, 0x0295),
+#endif
+
+	/** Host Command ID : To enable/disable/force-enable PPB feature */
+	ENUM_ELEMENT(HostCmd_CMD_PREAMBLE_PWR_BOOST, 0x0296),
 	/* Always keep this last */
 	ENUM_ELEMENT_LAST(__HostCmd_CMD_Last)

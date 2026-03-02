@@ -4,7 +4,7 @@
  *  spinlock and timer defines.
  *
  *
- *  Copyright 2008-2021 NXP
+ *  Copyright 2008-2021, 2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -78,6 +78,19 @@ static INLINE t_void util_init_list(pmlan_linked_list phead)
 }
 
 /**
+ *  @brief This function initializes a list head without locking
+ *
+ *  @param phead		List head
+ *
+ *  @return			N/A
+ */
+static INLINE t_void util_list_head_reset(pmlan_list_head phead)
+{
+	/* Both next and prev point to self */
+	phead->pprev = phead->pnext = (pmlan_linked_list)phead;
+}
+
+/**
  *  @brief This function initializes a list
  *
  *  @param phead		List head
@@ -116,6 +129,24 @@ static INLINE t_void util_free_list_head(
 }
 
 /**
+ *  @brief This function peeks into a list without lock
+ *
+ *  @param phead		List head
+ *
+ *  @return			List node
+ */
+static INLINE pmlan_linked_list util_peek_list_nl(t_void *pmoal_handle,
+						  pmlan_list_head phead)
+{
+	pmlan_linked_list pnode = MNULL;
+
+	if (phead->pnext != (pmlan_linked_list)phead)
+		pnode = phead->pnext;
+
+	return pnode;
+}
+
+/**
  *  @brief This function peeks into a list
  *
  *  @param phead		List head
@@ -133,11 +164,31 @@ util_peek_list(t_void *pmoal_handle, pmlan_list_head phead,
 
 	if (moal_spin_lock)
 		moal_spin_lock(pmoal_handle, phead->plock);
-	if (phead->pnext != (pmlan_linked_list)phead)
-		pnode = phead->pnext;
+
+	pnode = util_peek_list_nl(pmoal_handle, phead);
+
 	if (moal_spin_unlock)
 		moal_spin_unlock(pmoal_handle, phead->plock);
 	return pnode;
+}
+
+/**
+ *  @brief This function queues a node at the list tail without taking any lock
+ *
+ *  @param phead		List head
+ *  @param pnode		List node to queue
+ *
+ *  @return			N/A
+ */
+static INLINE t_void util_enqueue_list_tail_nl(t_void *pmoal_handle,
+					       pmlan_list_head phead,
+					       pmlan_linked_list pnode)
+{
+	pmlan_linked_list pold_last = phead->pprev;
+	pnode->pprev = pold_last;
+	pnode->pnext = (pmlan_linked_list)phead;
+
+	phead->pprev = pold_last->pnext = pnode;
 }
 
 /**
@@ -155,15 +206,11 @@ static INLINE t_void util_enqueue_list_tail(
 	mlan_status (*moal_spin_lock)(t_void *handle, t_void *plock),
 	mlan_status (*moal_spin_unlock)(t_void *handle, t_void *plock))
 {
-	pmlan_linked_list pold_last;
-
 	if (moal_spin_lock)
 		moal_spin_lock(pmoal_handle, phead->plock);
-	pold_last = phead->pprev;
-	pnode->pprev = pold_last;
-	pnode->pnext = (pmlan_linked_list)phead;
 
-	phead->pprev = pold_last->pnext = pnode;
+	util_enqueue_list_tail_nl(pmoal_handle, phead, pnode);
+
 	if (moal_spin_unlock)
 		moal_spin_unlock(pmoal_handle, phead->plock);
 }
@@ -197,6 +244,89 @@ static INLINE t_void util_enqueue_list_head(
 }
 
 /**
+ *  @brief This function checks if the node points to itself
+ *
+ *  @param pnode		List node to check
+ *
+ *  @return			MTRUE if node points to itself only
+ */
+static INLINE t_bool util_is_node_itself(pmlan_linked_list pnode)
+{
+	return pnode->pprev == pnode && pnode->pnext == pnode;
+}
+
+/**
+ *  @brief This function checks if the node in some list
+ *
+ *  @param pnode		List node to check
+ *
+ *  @return			MTRUE if node is enqueued into some list
+ */
+static INLINE t_bool util_is_node_in_list(pmlan_linked_list pnode)
+{
+	return pnode->pprev && pnode->pnext && !util_is_node_itself(pnode);
+}
+
+/**
+ *  @brief This function checks if the pnode is valid node of list
+ *
+ *  @param phead		List`s head
+ *  @param pnode		List node to check
+ *
+ *  @return			MTRUE if node is enqueued into some list
+ */
+static INLINE t_bool util_is_list_node(pmlan_list_head phead,
+				       pmlan_linked_list pnode)
+{
+	return pnode && (pmlan_linked_list)phead != pnode;
+}
+
+/**
+ *  @brief This function removes a node from the list if the node was in the
+ * list
+ *
+ *  @param pnode		List node to remove
+ *
+ *  @return			N/A
+ */
+static INLINE t_void util_unlink_list_safe_nl(t_void *pmoal_handle,
+					      pmlan_linked_list pnode)
+{
+	if (util_is_node_in_list(pnode)) {
+		pmlan_linked_list pmy_prev;
+		pmlan_linked_list pmy_next;
+
+		pmy_prev = pnode->pprev;
+		pmy_next = pnode->pnext;
+		pmy_next->pprev = pmy_prev;
+		pmy_prev->pnext = pmy_next;
+
+		pnode->pnext = pnode->pprev = MNULL;
+	}
+}
+
+/**
+ *  @brief This function removes a node from the list
+ *
+ *  @param pnode		List node to remove
+ *
+ *  @return			N/A
+ */
+static INLINE t_void util_unlink_list_nl(t_void *pmoal_handle,
+					 pmlan_linked_list pnode)
+{
+	pmlan_linked_list pmy_prev;
+	pmlan_linked_list pmy_next;
+
+	pmy_prev = pnode->pprev;
+	pmy_next = pnode->pnext;
+	pmy_next->pprev = pmy_prev;
+	pmy_prev->pnext = pmy_next;
+
+	pnode->pnext = pnode->pprev = MNULL;
+}
+
+/**
  *  @brief This function removes a node from the list
  *
  *  @param phead		List head
@@ -211,17 +341,11 @@ static INLINE t_void util_unlink_list(
 	mlan_status (*moal_spin_lock)(t_void *handle, t_void *plock),
 	mlan_status (*moal_spin_unlock)(t_void *handle, t_void *plock))
 {
-	pmlan_linked_list pmy_prev;
-	pmlan_linked_list pmy_next;
-
 	if (moal_spin_lock)
 		moal_spin_lock(pmoal_handle, phead->plock);
-	pmy_prev = pnode->pprev;
-	pmy_next = pnode->pnext;
-	pmy_next->pprev = pmy_prev;
-	pmy_prev->pnext = pmy_next;
 
-	pnode->pnext = pnode->pprev = MNULL;
+	util_unlink_list_nl(pmoal_handle, pnode);
+
 	if (moal_spin_unlock)
 		moal_spin_unlock(pmoal_handle, phead->plock);
 }
@@ -420,24 +544,29 @@ static INLINE t_void util_scalar_decrement(
  *  @return			Value after offset or 0 if (scalar_value + offset)
  * overflows
  */
+#ifdef ANDROID_SDK_VERSION
 #define INT_MAX 2147483647
+#else
+#ifndef CONFIG_KASAN
+#define INT_MAX 2147483647
+#endif
+#endif
 static INLINE t_s32 util_scalar_offset(
 	t_void *pmoal_handle, pmlan_scalar pscalar, t_s32 offset,
 	mlan_status (*moal_spin_lock)(t_void *handle, t_void *plock),
 	mlan_status (*moal_spin_unlock)(t_void *handle, t_void *plock))
 {
-	t_s32 newval;
+	t_s64 newval;
 
 	if (moal_spin_lock)
 		moal_spin_lock(pmoal_handle, pscalar->plock);
-	if (pscalar->value < (INT_MAX - offset))
-		newval = (pscalar->value += offset);
-	else
+	newval = (pscalar->value += offset);
+	if (newval > SINT32_MAX || newval < SINT32_MIN)
 		newval = 0;
 	if (moal_spin_unlock)
 		moal_spin_unlock(pmoal_handle, pscalar->plock);
 
-	return newval;
+	return (t_s32)newval;
 }
 
 /**
@@ -522,6 +651,29 @@ reflective_enum_lookup_name(const struct reflective_enum_element *elements,
 	}
 
 	return elem->name;
+}
+
+#define util_offsetof(struct_type, member_name)                                \
+	((t_ptr) & ((struct_type *)0)->member_name)
+
+#define util_container_of(ptr, struct_type, member_name)                       \
+	((struct_type *)((t_u8 *)(ptr)-util_offsetof(struct_type, member_name)))
+
+/**
+ *  @brief This function checks if t1 timestamp is before t2 timestamp
+ *
+ *  @param t1   t1 timestamp
+ *  @param t2   t2 timestamp
+ *
+ *  @return     MTRUE if t1 is before t2
+ */
+static INLINE t_bool util_is_time_before(t_u64 t1, t_u64 t2)
+{
+	t_s64 delta = t2 - t1;
+
+	/* The subtraction is safe */
+	// coverity[integer_overflow:SUPPRESS]
+	return delta > 0;
 }
 
 #endif /* !_MLAN_UTIL_H_ */

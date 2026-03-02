@@ -80,4 +80,5 @@ int apcmd_sys_cfg_2040_coex(int argc, char *argv[]);
 int apcmd_sys_cfg_restrict_client_mode(int argc, char *argv[]);
 int apcmd_sys_cfg_wacp_mode(int argc, char *argv[]);
 int apcmd_sys_cfg_ext_cap_len(int argc, char *argv[]);
+int apcmd_sys_cfg_6e_inband_frames(int argc, char *argv[]);
 #endif /* _UAP_H */

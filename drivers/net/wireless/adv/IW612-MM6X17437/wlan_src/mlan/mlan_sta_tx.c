@@ -4,7 +4,7 @@
  *  transmission in MLAN module.
  *
  *
- *  Copyright 2008-2021 NXP
+ *  Copyright 2008-2021, 2024-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -73,6 +73,7 @@ t_void *wlan_ops_sta_process_txpd(t_void *priv, pmlan_buffer pmbuf)
 	t_u8 *head_ptr = MNULL;
 	t_u32 pkt_type;
 	t_u32 tx_control;
+	t_s32 offset = 0;
 
 	ENTER();
 
@@ -94,22 +95,24 @@ t_void *wlan_ops_sta_process_txpd(t_void *priv, pmlan_buffer pmbuf)
 	}
 
 	if (pmbuf->data_offset <
-	    (sizeof(TxPD) + pmpriv->intf_hr_len + DMA_ALIGNMENT)) {
+	    (Tx_PD_SIZEOF(pmadapter) + pmpriv->intf_hr_len + DMA_ALIGNMENT)) {
 		PRINTM(MERROR,
 		       "not enough space for TxPD: headroom=%d pkt_len=%d, required=%d\n",
 		       pmbuf->data_offset, pmbuf->data_len,
-		       sizeof(TxPD) + pmpriv->intf_hr_len + DMA_ALIGNMENT);
+		       Tx_PD_SIZEOF(pmadapter) + pmpriv->intf_hr_len +
+			       DMA_ALIGNMENT);
 		pmbuf->status_code = MLAN_ERROR_PKT_SIZE_INVALID;
 		goto done;
 	}
 
 	/* head_ptr should be aligned */
-	head_ptr = pmbuf->pbuf + pmbuf->data_offset - sizeof(TxPD) -
+	head_ptr = pmbuf->pbuf + pmbuf->data_offset - Tx_PD_SIZEOF(pmadapter) -
 		   pmpriv->intf_hr_len;
+	// Typecasting is done for alignment of head_ptr
+	// coverity[misra_c_2012_rule_10_8_violation:SUPPRESS]
 	head_ptr = (t_u8 *)((t_ptr)head_ptr & ~((t_ptr)(DMA_ALIGNMENT - 1)));
-
 	plocal_tx_pd = (TxPD *)(head_ptr + pmpriv->intf_hr_len);
-	memset(pmadapter, plocal_tx_pd, 0, sizeof(TxPD));
+	_memset(pmadapter, plocal_tx_pd, 0, Tx_PD_SIZEOF(pmadapter));
 	/* Set the BSS number to TxPD */
 	plocal_tx_pd->bss_num = GET_BSS_NUM(pmpriv);
 	plocal_tx_pd->bss_type = pmpriv->bss_type;
@@ -218,7 +221,8 @@ t_void *wlan_ops_sta_process_txpd(t_void *priv, pmlan_buffer pmbuf)
 
 	/* Adjust the data offset and length to include TxPD in pmbuf */
 	pmbuf->data_len += pmbuf->data_offset;
-	pmbuf->data_offset = (t_u32)(head_ptr - pmbuf->pbuf);
+	offset = head_ptr - pmbuf->pbuf;
+	pmbuf->data_offset = (t_u32)offset;
 	pmbuf->data_len -= pmbuf->data_offset;
 
 done:
@@ -239,7 +243,7 @@ mlan_status wlan_send_null_packet(pmlan_private priv, t_u8 flags)
 {
 	pmlan_adapter pmadapter = MNULL;
 	TxPD *ptx_pd;
-/* sizeof(TxPD) + Interface specific header */
+/* Tx_PD_SIZEOF(pmadapter) + Interface specific header */
 #define NULL_PACKET_HDR 256
 	t_u32 data_len = NULL_PACKET_HDR;
 	pmlan_buffer pmbuf = MNULL;
@@ -289,18 +293,19 @@ mlan_status wlan_send_null_packet(pmlan_private priv, t_u8 flags)
 	pmbuf->buf_type = MLAN_BUF_TYPE_DATA;
 	pmbuf->flags |= MLAN_BUF_FLAG_NULL_PKT;
 	ptr = pmbuf->pbuf + pmbuf->data_offset;
-	pmbuf->data_len = sizeof(TxPD) + priv->intf_hr_len;
+	pmbuf->data_len = Tx_PD_SIZEOF(pmadapter) + priv->intf_hr_len;
 	ptx_pd = (TxPD *)(ptr + priv->intf_hr_len);
 	ptx_pd->tx_control = priv->pkt_tx_ctrl;
 	ptx_pd->flags = flags;
 	ptx_pd->priority = WMM_HIGHEST_PRIORITY;
-	ptx_pd->tx_pkt_offset = sizeof(TxPD);
+	ptx_pd->tx_pkt_offset = Tx_PD_SIZEOF(pmadapter);
 	/* Set the BSS number to TxPD */
 	ptx_pd->bss_num = GET_BSS_NUM(priv);
 	ptx_pd->bss_type = priv->bss_type;
 
 	endian_convert_TxPD(ptx_pd);
-
+	/* Here pmadapter->ops.host_to_card is not a null pointer. */
+	// coverity[cert_exp34_c_violation:SUPPRESS]
 	ret = pmadapter->ops.host_to_card(priv, MLAN_TYPE_DATA, pmbuf, MNULL);
 
 	switch (ret) {
@@ -334,7 +339,8 @@ mlan_status wlan_send_null_packet(pmlan_private priv, t_u8 flags)
 	PRINTM_GET_SYS_TIME(MDATA, &sec, &usec);
 	PRINTM_NETINTF(MDATA, priv);
 	PRINTM(MDATA, "%lu.%06lu : Null data => FW\n", sec, usec);
-	DBG_HEXDUMP(MDAT_D, "Null data", ptr, sizeof(TxPD) + priv->intf_hr_len);
+	DBG_HEXDUMP(MDAT_D, "Null data", ptr,
+		    Tx_PD_SIZEOF(pmadapter) + priv->intf_hr_len);
 done:
 	LEAVE();
 	return ret;

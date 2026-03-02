@@ -1,43 +1,30 @@
-/*-
- *  COPYRIGHT (C) 1986 Gary S. Brown.  You may use this program, or
- *  code or tables extracted from it, as desired without restriction.
+/*
+ *  Copyright 2012-2020, 2024 NXP
  *
- *  First, the polynomial itself and its table of feedback terms.  The
- *  polynomial is
- *  X^32+X^26+X^23+X^22+X^16+X^12+X^11+X^10+X^8+X^7+X^5+X^4+X^2+X^1+X^0
+ *  NXP CONFIDENTIAL
+ *  The source code contained or described herein and all documents related to
+ *  the source code ("Material") are owned by NXP or its
+ *  suppliers or licensors. Title to the Material remains with NXP
+ *  or its suppliers and licensors. The Material contains trade secrets and
+ *  proprietary and confidential information of NXP or its suppliers and
+ *  licensors. The Material is protected by worldwide copyright and trade secret
+ *  laws and treaty provisions. No part of the Material may be used, copied,
+ *  reproduced, modified, published, uploaded, posted, transmitted, distributed,
+ *  or disclosed in any way without NXP's prior express written permission.
  *
- *  Note that we take it "backwards" and put the highest-order term in
- *  the lowest-order bit.  The X^32 term is "implied"; the LSB is the
- *  X^31 term, etc.  The X^0 term (usually shown as "+1") results in
- *  the MSB being 1
+ *  No license under any patent, copyright, trade secret or other intellectual
+ *  property right is granted to or conferred upon you by disclosure or delivery
+ *  of the Materials, either expressly, by implication, inducement, estoppel or
+ *  otherwise. Any license under such intellectual property rights must be
+ *  express and approved by NXP in writing.
  *
- *  Note that the usual hardware shift register implementation, which
- *  is what we're using (we're merely optimizing it by doing eight-bit
- *  chunks at a time) shifts bits into the lowest-order term.  In our
- *  implementation, that means shifting towards the right.  Why do we
- *  do it this way?  Because the calculated CRC must be transmitted in
- *  order from highest-order term to lowest-order term.  UARTs transmit
- *  characters in order from LSB to MSB.  By storing the CRC this way
- *  we hand it to the UART in the order low-byte to high-byte; the UART
- *  sends each low-bit to hight-bit; and the result is transmission bit
- *  by bit from highest- to lowest-order term without requiring any bit
- *  shuffling on our part.  Reception works similarly
+ */
+
+/* discovery_engine.c: implementation of the discovery engine of NAN
  *
- *  The feedback terms table consists of 256, 32-bit entries.  Notes
- *
- *      The table can be generated at runtime if desired; code to do so
- *      is shown later.  It might not be obvious, but the feedback
- *      terms simply represent the results of eight shift/xor opera
- *      tions for all combinations of data and CRC register values
- *
- *      The values must be right-shifted by eight bits by the "updcrc
- *      logic; the shift must be unsigned (bring in zeroes).  On some
- *      hardware you could probably optimize the shift in assembler by
- *      using byte-swap instructions
- *      polynomial $edb88320
- *
- *
- * CRC32 code derived from work by Gary S. Brown.
+ * The core of discovery engine is implemented here. Most of the helper
+ * functions also implemented in this file. Pls note that, the dicovery engine
+ * still shares the common NAN state machine implemented in nan/nan.c
  */
 
 #include <sys/param.h>

@@ -51,10 +51,13 @@
 #include "queue.h"
 #include "mwu_if_manager.h"
 
+#include "mlocation_mwu.h"
+
+#include "event.h"
+
 #if 0
 #include "wps_def.h"
 #include "wps_msg.h"
-#include "mlocation_mwu.h"
 #include "mwu_test.h"
 #include "wlan_wifidir.h"
 #include "wifidir_mwu.h"
@@ -89,6 +92,8 @@ char *wps_init_cfg_file;
 char *wifidir_cfg_file;
 
 struct EVENT_INFO evt_info;
+
+wls_csi_cfg_t gwls_csi_cfg;
 
 /** Option string for the app*/
 #define OPTSTR "hiBl:Vv"
@@ -162,6 +167,43 @@ extern int optind, opterr, optopt;
 int cli_exit = 0;
 int cli_main(int argc, char **argv);
 
+/**
+ *  @brief Initialize ftm command private data
+ *  @return     MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int wls_csi_init(void)
+{
+	int ret = MLAN_STATUS_SUCCESS;
+
+	memset(&gwls_csi_cfg, 0, sizeof(wls_csi_cfg_t));
+
+	gwls_csi_cfg.channel = 0;
+
+	/*CSI processing config*/
+	gwls_csi_cfg.wls_processing_input.enableCsi = 1; // turn on CSI
+							 // processing
+	gwls_csi_cfg.wls_processing_input.enableAoA =
+		AOA_DEFAULT; // turn on AoA (req. enableCsi==1)
+	gwls_csi_cfg.wls_processing_input.nTx = MAX_TX; // limit # tx streams to
+							// process
+	gwls_csi_cfg.wls_processing_input.nRx = MAX_RX; // limit # rx to process
+	gwls_csi_cfg.wls_processing_input.selCal = 0; // choose cal values
+	gwls_csi_cfg.wls_processing_input.dumpMul = 0; // dump extra peaks in
+						       // AoA
+	gwls_csi_cfg.wls_processing_input.enableAntCycling = 0; // enable
+								// antenna
+								// cycling
+	gwls_csi_cfg.wls_processing_input.dumpRawAngle = 0; // Dump Raw Angle
+	gwls_csi_cfg.wls_processing_input.useToaMin =
+		TOA_MIN_DEFAULT; // 1: use min combining, 0: power combining;
+	gwls_csi_cfg.wls_processing_input.useSubspace =
+		SUBSPACE_DEFAULT; // 1: use subspace algo; 0: no;
+	gwls_csi_cfg.wls_processing_input.useFindAngleDelayPeaks =
+		ENABLE_DELAY_PEAKS; // use this algorithm for AoA
+
+	return ret;
+}
+
 int main(int argc, char *argv[])
 {
 	int exitcode;
@@ -200,6 +242,7 @@ int main(int argc, char *argv[])
 	wifidir_cfg_file = NULL;
 	wps_init_cfg_file = FILE_WPSINIT_CONFIG_NAME;
 	memset(&evt_info, 0, sizeof(evt_info));
+
 	opt = getopt(argc, argv, OPTSTR);
 	do {
 		switch ((char)opt) {
@@ -263,7 +306,7 @@ int main(int argc, char *argv[])
 	}
 
 	wps_loop_init();
-
+	wls_csi_init();
 	mwu_set_signal_handler();
 
 #if 1

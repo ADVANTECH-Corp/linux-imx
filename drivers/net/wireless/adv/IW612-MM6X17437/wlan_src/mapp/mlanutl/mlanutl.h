@@ -3,7 +3,7 @@
  * @brief This file contains definitions for application
  *
  *
- * Copyright 2011-2022 NXP
+ * Copyright 2011-2024, 2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -63,6 +63,14 @@ typedef enum { FALSE, TRUE } boolean;
 		 (((t_u32)(x)&0x00ff0000UL) >> 8) |                            \
 		 (((t_u32)(x)&0xff000000UL) >> 24)))
 
+/**
+ * Hex or Decimal to Integer
+ * @param   num string to convert into decimal or hex
+ */
+#define A2HEXDECIMAL(num)                                                      \
+	(strncasecmp("0x", (num), 2) ? (unsigned int)strtoll((num), NULL, 0) : \
+				       a2hex((num)))
+
 /** Convert to correct endian format */
 #ifdef BIG_ENDIAN_SUPPORT
 /** CPU to little-endian convert for 16-bit */
@@ -92,6 +100,16 @@ typedef enum { FALSE, TRUE } boolean;
 
 /** Length of TLV header */
 #define TLVHEADER_LEN 4
+
+#ifndef fallthrough
+#if defined(__GNUC__) && __GNUC__ >= 7
+#define fallthrough __attribute__((fallthrough))
+#elif defined(__clang__) && __clang_major__ >= 10
+#define fallthrough __attribute__((fallthrough))
+#else
+#define fallthrough /* fall through */
+#endif
+#endif
 
 /** Character, 1 byte */
 typedef signed char t_s8;
@@ -126,6 +144,7 @@ enum _mlan_act_ioctl {
 	MLAN_ACT_RESET,
 	MLAN_ACT_DEFAULT
 };
+#define MLAN_ACT_GET_6G_CFP_TBL (0x6)
 /** The attribute pack used for structure packing */
 #ifndef __ATTRIB_PACK__
 #define __ATTRIB_PACK__ __attribute__((packed))
@@ -185,6 +204,9 @@ extern char dev_name[IFNAMSIZ];
 
 /** NXP private command identifier */
 #define CMD_NXP "MRVL_CMD"
+
+/** Private command: Band cfg */
+#define PRIV_CMD_BANDCFG "bandcfg"
 
 struct command_node {
 	char *name;
@@ -383,6 +405,8 @@ struct eth_priv_get_log {
 	t_u32 gdma_abort_cnt;
 	/** Rx Reset MAC Count */
 	t_u32 g_reset_rx_mac_cnt;
+	/** SDMA FSM stuck Count*/
+	t_u32 SdmaStuckCnt;
 	// Ownership error counters
 	/*Error Ownership error count*/
 	t_u32 dwCtlErrCnt;
@@ -392,6 +416,8 @@ struct eth_priv_get_log {
 	t_u32 dwMgtErrCnt;
 	/*Control Ownership error count*/
 	t_u32 dwDatErrCnt;
+	/*Rx 20MHz UL OFDM error count*/
+	t_u32 Rx2040BWError;
 	/*BIGTK MME good count*/
 	t_u32 bigtk_mmeGoodCnt;
 	/*BIGTK Replay error count*/
@@ -400,6 +426,18 @@ struct eth_priv_get_log {
 	t_u32 bigtk_micErrCnt;
 	/*BIGTK MME not included count*/
 	t_u32 bigtk_mmeNotFoundCnt;
+	/** Current SOC Temperature*/
+	t_u32 currTemp;
+	/** TX Power Control Method*/
+	t_u32 TXpwrMethod;
+	/** DPD training status*/
+	t_u32 isDPDdone;
+	/*CCA count*/
+	t_u64 cca_cnt_us;
+	/*RX airtime count*/
+	t_u64 rxAirtime_us;
+	/*TX airtime count*/
+	t_u64 txAirtime_us;
 };
 
 /** MLAN MAC Address Length */
@@ -651,7 +689,7 @@ typedef struct _Band_Config_t {
 } __ATTRIB_PACK__ Band_Config_t;
 
 /** Maximum length of lines in configuration file */
-#define MAX_CONFIG_LINE 1024
+#define MAX_CONFIG_LINE 1024 * 10
 /** MAC BROADCAST */
 #define MAC_BROADCAST 0x1FF
 /** MAC MULTICAST */
@@ -680,7 +718,7 @@ typedef struct _mod_group_setting {
 	/** modulation group */
 	t_u8 mod_group;
 	/** power */
-	t_u8 power;
+	t_s8 power;
 } __ATTRIB_PACK__ mod_group_setting;
 
 /** chan trpc config */
@@ -737,7 +775,6 @@ struct eth_priv_htcapinfo {
 	t_u32 ht_cap_info_bg;
 	t_u32 ht_cap_info_a;
 };
-
 /** data_structure for cmd vhtcfg */
 struct eth_priv_vhtcfg {
 	/** Band (1: 2.4G, 2: 5 G, 3: both 2.4G and 5G) */
@@ -784,6 +821,7 @@ struct eth_priv_tx_rate_cfg {
 #define MLAN_11AXCMD_CFG_ID_SET_BSRP 8
 #define MLAN_11AXCMD_CFG_ID_LLDE 9
 #define MLAN_11AXCMD_CFG_ID_RUTXPWR 10
+#define MLAN_11AXCMD_CFG_ID_HESUER 11
 
 #define MLAN_11AXCMD_SR_SUBID 0x102
 #define MLAN_11AXCMD_BEAM_SUBID 0x103
@@ -794,6 +832,7 @@ struct eth_priv_tx_rate_cfg {
 #define MLAN_11AXCMD_SET_BSRP_SUBID 0x109
 #define MLAN_11AXCMD_LLDE_SUBID 0x110
 #define MLAN_11AXCMD_RUTXSUBPWR_SUBID 0x118
+#define MLAN_11AXCMD_HESUER_SUBID 0x121
 
 #define MRVL_DOT11AX_ENABLE_SR_TLV_ID (PROPRIETARY_TLV_BASE_ID + 322)
 #define MRVL_DOT11AX_OBSS_PD_OFFSET_TLV_ID (PROPRIETARY_TLV_BASE_ID + 323)
@@ -816,12 +855,36 @@ typedef struct _mlan_ds_11ax_he_capa {
 	t_u8 val[28];
 } __ATTRIB_PACK__ mlan_ds_11ax_he_capa, *pmlan_ds_11ax_he_capa;
 
+typedef struct _mlan_6g_cap_t {
+	t_u16 minMpduStartSpacing : 3;
+	t_u16 maxAmpduLengthExp : 3;
+	t_u16 maxMpduLength : 2;
+	t_u16 rsvd1 : 1;
+	t_u16 smPowerSave : 2;
+	t_u16 rdResponder : 1;
+	t_u16 rxAntPat : 1;
+	t_u16 txAntPat : 1;
+	t_u16 rsvd2 : 2;
+} mlan_6g_cap_t;
+
+typedef struct _mlan_ds_11ax_he_6g_capa {
+	/** tlv id of he capability */
+	t_u16 id;
+	/** length of the payload */
+	t_u16 len;
+	/** extension id */
+	t_u8 ext_id;
+	/** he 6g capability info */
+	mlan_6g_cap_t capInfo;
+} __ATTRIB_PACK__ mlan_ds_11ax_he_6g_capa, *pmlan_ds_11ax_he_6g_capa;
+
 /** Type definition of mlan_ds_11ax_he_cfg for MLAN_OID_11AX_HE_CFG */
 typedef struct _mlan_ds_11ax_he_cfg {
 	/** band, BIT0:2.4G, BIT1:5G*/
 	t_u8 band;
 	/** mlan_ds_11ax_he_capa */
 	mlan_ds_11ax_he_capa he_cap;
+	mlan_ds_11ax_he_6g_capa he_6g_cap;
 } __ATTRIB_PACK__ mlan_ds_11ax_he_cfg, *pmlan_ds_11ax_he_cfg;
 
 /** Type definition of mlan_11axcmdcfg_obss_pd_offset for MLAN_OID_11AX_CMD_CFG
@@ -915,6 +978,7 @@ typedef struct _mlan_ds_11ax_llde_cmd {
 	t_u16 tbppdu_datacnt;
 } mlan_ds_11ax_llde_cmd, *pmlan_ds_11ax_llde_cmd;
 
+#define MAX_SIZE_RUTX_SUB_PWR 168 /*for 2G,5G,6G subbands */
 /** Type definition of mlan_ds_11ax_rutxpwr_cmd for MLAN_OID_11AX_CMD_CFG */
 typedef struct _mlan_ds_11ax_rutxpwr_cmd {
 	MrvlIEtypesHeader_t header;
@@ -923,9 +987,18 @@ typedef struct _mlan_ds_11ax_rutxpwr_cmd {
 	/** column,row are 3 for table,however column are 7 for FC and 6 for
 	 * other SOCs */
 	t_u8 col;
+	/** row are 3 for every subband table,total row for MAC1 is 12 and MAC2
+	 * id 3 ( consider only 2G support */
+	t_u8 row;
 	/*ru tx data */
-	t_u8 rutxSubPwr[89];
+	t_s8 rutxSubPwr[MAX_SIZE_RUTX_SUB_PWR];
 } mlan_ds_11ax_rutxpwr_cmd, *pmlan_ds_11ax_rutxpwr_cmd;
+
+/** Type definition of mlan_ds_11ax_HeSuER_cmd for MLAN_11AXCMD_HESUER_SUBID */
+typedef struct _mlan_ds_11ax_HeSuER_cmd {
+	/** command value: 1 is enable, 0 is disable*/
+	t_u8 value;
+} mlan_ds_11ax_HeSuER_cmd, *pmlan_ds_11ax_HeSuER_cmd;
 
 /** Type definition of mlan_ds_11ax_cmd_cfg for MLAN_OID_11AX_CMD_CFG */
 typedef struct _mlan_ds_11ax_cmd_cfg {
@@ -954,8 +1027,28 @@ typedef struct _mlan_ds_11ax_cmd_cfg {
 		/** rutxpwr for subband/channel for
 		 * MLAN_11AXCMD_RUTXSUBPWR_SUBID */
 		mlan_ds_11ax_rutxpwr_cmd rutxpwr_cfg;
+		/** HeSuER configuration for MLAN_11AXCMD_HESUER_SUBID */
+		mlan_ds_11ax_HeSuER_cmd HeSuER_cfg;
 	} param;
 } mlan_ds_11ax_cmd_cfg, *pmlan_ds_11ax_cmd_cfg;
+
+/** Type definition of mlan_ds_11ax_llde_pkt_filter_cmd for
+ * mlan_ds_11ax_llde_pkt_filter_cmd_cfg */
+typedef struct _mlan_ds_11ax_llde_pkt_filter_cmd {
+	/** 0: no preference, 1: iphone (carplay IE in assoc)*/
+	t_u8 device_filter;
+	/** make traffic to specific mac address to be high priority, Can have
+	 * max 2 mac address entries */
+	t_u8 macfilter1[MLAN_MAC_ADDR_LENGTH];
+	/** make traffic to specific mac address to be high priority, other mac
+	 * filter */
+	t_u8 macfilter2[MLAN_MAC_ADDR_LENGTH];
+	/** high priority data packet type. 0: All traffic, 1: ping, 2: TCP ACK,
+	 * 4: TCP Data, 8: UDP */
+	t_u8 packet_type;
+} mlan_ds_11ax_llde_pkt_filter_cmd, *pmlan_ds_11ax_llde_pkt_filter_cmd;
+
+int parse_line(char *line, char *args[], t_u16 args_count);
 
 /** Maximum number of AC QOS queues available in the driver/firmware */
 #define MAX_AC_QUEUES 4
@@ -1031,10 +1124,10 @@ typedef struct MAPP_HostCmd_DS_802_11_CFG_DATA {
 
 /** mlan_ioctl_11h_tpc_resp */
 typedef struct {
-	int status_code; /**< Firmware command result status code */
-	int tx_power; /**< Reported TX Power from the TPC Report */
-	int link_margin; /**< Reported Link margin from the TPC Report */
-	int rssi; /**< RSSI of the received TPC Report frame */
+	t_u8 status_code; /**< Firmware command result status code */
+	t_u8 tx_power; /**< Reported TX Power from the TPC Report */
+	t_s8 link_margin; /**< Reported Link margin from the TPC Report */
+	t_s8 rssi; /**< RSSI of the received TPC Report frame */
 } __ATTRIB_PACK__ mlan_ioctl_11h_tpc_resp;
 
 /** Host Command ID : 802.11 TPC adapt req */
@@ -1196,7 +1289,8 @@ typedef struct MrvlIEtypes_PreBeaconLost {
 
 /** AutoTx_MacFrame_t */
 typedef struct AutoTx_MacFrame {
-	t_u16 interval; /**< in seconds */
+	t_u16 interval; /**< bit15:14 interval unit 00-s, 01-us, 10-ms,
+			   11-one_shot, bit13-0: interval  */
 	t_u8 priority; /**< User Priority: 0~7, ignored if non-WMM */
 	t_u8 reserved; /**< set to 0 */
 	t_u8 getTodToAForPkts;
@@ -1219,6 +1313,14 @@ typedef struct MAPP_HostCmd_DS_802_11_AUTO_TX {
 	t_u16 action; /* 0 = ACT_GET; 1 = ACT_SET; */
 	MrvlIEtypes_AutoTx_t auto_tx; /**< Auto Tx */
 } __ATTRIB_PACK__ HostCmd_DS_802_11_AUTO_TX;
+
+/** intrval bit15:14 */
+#define AUTO_TX_INTERVAL_CTRL 0xc000
+#define AUTO_TX_INTERVAL_BITS 0x3FFF
+#define AUTO_TX_INTERVAL_SEC 0x0000
+#define AUTO_TX_INTERVAL_MS 0x8000
+#define AUTO_TX_INTERVAL_US 0x4000
+#define AUTO_TX_ONE_SHOT 0xc000
 
 /** Host Command ID : 802.11 auto Tx */
 #define HostCmd_CMD_802_11_AUTO_TX 0x0082
@@ -1296,6 +1398,16 @@ typedef struct MAPP_HostCmd_DS_MEM {
 	/** Value */
 	t_u32 value;
 } __ATTRIB_PACK__ HostCmd_DS_MEM;
+
+#define NUM_EVT_MASK_BITMAP 10
+typedef struct _HostCmd_DS_EVENT_MASK_CFG {
+	/** Get / Set action*/
+	t_u8 action;
+	/** feature enabled or disabled */
+	t_u8 enabled;
+	/** Bit map of the masked events. 1 - masked, 0 - allowed */
+	t_u32 events_bitmap[NUM_EVT_MASK_BITMAP];
+} __ATTRIB_PACK__ HostCmd_DS_EVENT_MASK_CFG;
 
 typedef struct _HostCmd_DS_MEF_CFG {
 	/** Criteria */
@@ -1380,7 +1492,6 @@ struct eth_priv_pmfcfg {
 #endif
 
 #define MAX_NUM_MAC 2
-
 struct dmcsChanStatus_t {
 	/** Channel number */
 	t_u8 channel;
@@ -1587,6 +1698,31 @@ struct eth_priv_scan_cfg {
 	t_u32 scan_chan_gap;
 };
 
+/** Type definition of eth_priv_scan_6g_cfg */
+struct eth_priv_scan_6g_cfg {
+	/** scan 6 GHz channels flag:
+	 * 0: Scan all 6 GHz channels,
+	 * 1: Scan colocated AP channels or/and PSC channels
+	 */
+	t_u8 scan_coloc_ap;
+};
+
+/** Type definition of eth_priv_auth_assoc_timeout_cfg */
+struct eth_priv_auth_assoc_timeout_cfg {
+	/** auth timeout */
+	int auth_timeout;
+	/** Auth retry timeout if received ack */
+	int auth_retry_timeout_if_ack;
+	/** Auth retry timeout if ack is not received */
+	int auth_retry_timeout_if_no_ack;
+	/** assoc timeout */
+	int assoc_timeout;
+	/** reassoc timeout */
+	int reassoc_timeout;
+	/** assoc/reassoc frame retry timeout if ack received */
+	int retry_timeout;
+};
+
 enum _mlan_rate_format {
 	MLAN_RATE_FORMAT_LG = 0,
 	MLAN_RATE_FORMAT_HT,
@@ -1667,7 +1803,7 @@ typedef struct {
 } __ATTRIB_PACK__ wlan_ioctl_user_scan_bssid;
 
 /** Maximum number of channels that can be sent in a setuserscan ioctl */
-#define WLAN_IOCTL_USER_SCAN_CHAN_MAX 50
+#define WLAN_IOCTL_USER_SCAN_CHAN_MAX 109
 
 /** Maximum channel scratch */
 #define MAX_CHAN_SCRATCH 100
@@ -1952,14 +2088,6 @@ typedef struct _custom_ie {
 	/** IE buffer */
 	t_u8 ie_buffer[];
 } __ATTRIB_PACK__ custom_ie;
-
-/**
- * Hex or Decimal to Integer
- * @param   num string to convert into decimal or hex
- */
-#define A2HEXDECIMAL(num)                                                      \
-	(strncasecmp("0x", (num), 2) ? (unsigned int)strtoll((num), NULL, 0) : \
-				       a2hex((num)))
 
 /** Convert TLV header from little endian format to CPU format */
 #define endian_convert_tlv_header_in(x)                                        \
@@ -2958,6 +3086,10 @@ typedef struct _ed_mac_ctrl {
 	t_u16 ed_ctrl_5g;
 	/** Energy detect threshold offset for 5ghz */
 	t_s16 ed_offset_5g;
+	/** EU adaptivity for 6ghz band */
+	t_u16 ed_ctrl_6g;
+	/** Energy detect threshold offset for 6ghz */
+	t_s16 ed_offset_6g;
 } ed_mac_ctrl;
 
 /** Type definition of aggr_ctrl */
@@ -3149,6 +3281,38 @@ typedef struct _mlan_ds_cross_chip_synch {
 	/**cross chip sync intial TSF high */
 	t_u32 init_tsf_high;
 } mlan_ds_cross_chip_synch;
+
+#define MAX_RFUS 2
+#define MAX_PATHS 2
+
+typedef struct _mlan_ds_tsp_cfg {
+	/** TSP config action 0-GET, 1-SET */
+	t_u16 action;
+	/** TSP enable/disable tsp algothrim */
+	t_u16 enable;
+	/** TSP config power backoff */
+	t_s32 backoff;
+	/** TSP config high threshold */
+	t_s32 high_thrshld;
+	/** TSP config low threshold */
+	t_s32 low_thrshld;
+	/** TSP config DUTY_CYC_STEP */
+	t_s32 duty_cyc_step;
+	/** TSP config DUTY_CYC_MIN */
+	t_s32 duty_cyc_min;
+	/** TSP config HIGH_THRESHOLD_TEMP */
+	t_s32 high_thrshld_temp;
+	/** TSP config LOW_THRESHOLD_TEMP */
+	t_s32 low_thrshld_temp;
+	/** TSP current throttle percentage */
+	t_u32 throttle_duty_cycle;
+	/** TSP rfu temp poll count */
+	t_u32 rf_temp_poll_cnt;
+	/** TSP CAU TSEN register */
+	t_s32 reg_cau_val;
+	/** TSP RFU registers */
+	t_s32 reg_rfu_temp[MAX_RFUS][MAX_PATHS];
+} mlan_ds_tsp_cfg;
 
 #ifdef WIFI_DIRECT_SUPPORT
 /** flag for NOA */
@@ -3466,6 +3630,11 @@ typedef struct _mlan_ds_ch_load {
 	t_u16 rx_quality;
 	t_u16 duration;
 } mlan_ds_ch_load;
+
+typedef struct _mlan_ds_foundry_type {
+	/**get foundry type UMC or TSMC*/
+	t_u8 foundry_type_param;
+} mlan_ds_foundry_type;
 
 /** channel statictics */
 typedef struct _chan_statistics_t {
@@ -3903,6 +4072,7 @@ typedef struct _snr_thr_cfg {
 	t_u8 snr;
 } snr_thr_cfg;
 
+#define BTWT_AGREEMENT_MAX 5
 /** TWT setup parameters */
 typedef struct _twt_setup {
 	/** Implicit, 0: TWT session is explicit, 1: Session is implicit */
@@ -3932,6 +4102,8 @@ typedef struct _twt_setup {
 	t_u16 twt_mantissa;
 	/** TWT Request Type, 0: REQUEST_TWT, 1: SUGGEST_TWT*/
 	t_u8 twt_request;
+	/** TWT link lost timeout threshold */
+	t_u16 bcnMiss_threshold;
 } __ATTRIB_PACK__ twt_setup;
 
 /** TWT tear down parameters */
@@ -3968,6 +4140,21 @@ typedef struct _twt_information {
 	 * than resume the agreement and enter SP immediately */
 	t_u32 suspend_duration;
 } __ATTRIB_PACK__ twt_information;
+
+typedef struct {
+	t_u8 btwtId;
+	t_u16 Ap_Bcast_Mantissa;
+	t_u8 Ap_Bcast_Exponent;
+	t_u8 nominalwake;
+} __ATTRIB_PACK__ BTWT_set;
+/** BTWT AP Config parameters */
+typedef struct _btwt_ap_config {
+	t_u8 ap_bcast_bet_sta_wait;
+	t_u16 Ap_Bcast_Offset;
+	t_u8 bcastTWTLI;
+	t_u8 count;
+	BTWT_set BTWT_sets[BTWT_AGREEMENT_MAX];
+} __ATTRIB_PACK__ btwt_ap_config;
 
 /** rx_abort_cfg parameters */
 typedef struct _rx_abort_cfg_para {
@@ -4013,6 +4200,14 @@ typedef struct _nav_mitigation_para {
 	int stop_cnt;
 } nav_mitigation_para;
 
+/** nav mitigation parameters */
+typedef struct _nav_mitigation_hw_para {
+	t_u32 start_nav_mitigation;
+	t_u32 duration_threshold;
+	t_u32 honoring_duration;
+	t_u32 txop_duration_threshold;
+} nav_mitigation_hw_para;
+
 #define TX_AMPDU_RTS_CTS 0
 #define TX_AMPDU_CTS_2_SELF 1
 #define TX_AMPDU_DISABLE_PROTECTION 2
@@ -4024,11 +4219,13 @@ typedef struct _tx_ampdu_prot_mode_para {
 	int mode;
 } tx_ampdu_prot_mode_para;
 
-/** dot11mc_unassoc_ftm_cfg parameters */
-typedef struct _dot11mc_unassoc_ftm_cfg_para {
-	/** set state */
-	int state;
-} dot11mc_unassoc_ftm_cfg_para;
+/** preamble_pwr_boost enable parameters */
+typedef struct _preamble_pwr_boost_para {
+	/** force-enable/force-disable the PPB feature*/
+	int enable_mode;
+	/** set rssi threshold */
+	int rssi_threshold;
+} preamble_pwr_boost_para;
 
 /** rate adapt cfg parameters */
 typedef struct _rate_adapt_cfg_para {
@@ -4139,6 +4336,30 @@ typedef struct _tp_acnt {
 #define EXT_LTE_RESP_RSTSTAT 0x5A
 /** Host Command ID:  ROBUST_COEX */
 #define HostCmd_ROBUST_COEX 0x00e0
+#define ROBUST_COEX_TLV_EXT_COEX 0x0238
+#define ROBUST_COEX_TLV_COEX_MODE 0x0160
+
+#define EXT_COEX_CONFIG_RESPONSE 0x1
+#define EXT_COEX_CONFIG_RESPONSE_DISABLE 0x81
+#define EXT_COEX_CONFIG_2_RESPONSE 0x2
+#define EXT_COEX_CONFIG_2_RESPONSE_DISABLE 0x82
+#define EXT_COEX_UWB_CONFIG_RESPONSE 0x3
+#define EXT_COEX_UWB_CONFIG_RESPONSE_DISABLE 0x83
+#define EXT_COEX_UART_CONFIG_RESPONSE 0x4
+#define EXT_COEX_UART_CONFIG_RESPONSE_DISABLE 0x84
+#define EXT_COEX_PTA_CONFIG_RESPONSE 0x5
+#define EXT_COEX_PTA_CONFIG_RESPONSE_DISABLE 0x85
+#define EXT_COEX_WCI2_CONFIG_RESPONSE 0x6
+#define EXT_COEX_WCI2_CONFIG_RESPONSE_DISABLE 0x86
+#define EXT_COEX_UART_GPIO_CONFIG_RESPONSE 0x07
+#define EXT_COEX_UART_GPIO_CONFIG_RESPONSE_DISABLE 0x08
+#define EXT_COEX_UART2_CONFIG_RESPONSE 0x09
+#define EXT_COEX_UART2_CONFIG_RESPONSE_DISABLE 0x89
+
+#define COEX_MODE_NONE 0x00
+#define COEX_MODE_BCA_TDM 0x08
+#define EXT_COEX_SAME_BAND_NOT_ALLOWED 0x000A
+
 typedef struct _host_RobustCoexLteStats_t {
 	unsigned int Count_LTE_TX_NOTIFY;
 	unsigned int Count_LTE_RX_PROTECT;
@@ -4146,6 +4367,86 @@ typedef struct _host_RobustCoexLteStats_t {
 	unsigned int Count_LTE_RX_NOTIFY;
 	unsigned char ResponseType;
 } __ATTRIB_PACK__ host_RobustCoexLteStats_t;
+
+typedef struct _external_coex_common_t {
+	t_u16 Action;
+	t_u16 RSVD;
+	t_u16 RobustCoexTlvType;
+	t_u16 len;
+	t_u8 Enabled;
+} __ATTRIB_PACK__ external_coex_common_t;
+
+typedef struct _external_coex_config_t {
+	t_u16 Action;
+	t_u16 RSVD;
+	t_u16 RobustCoexTlvType;
+	t_u16 len;
+	t_u8 Enabled;
+	t_u8 ExtHighInputPriority;
+	t_u8 ExtLowInputPriority;
+	t_u8 ExtPriGPIONum;
+	t_u8 ExtPriGPIOPolarity;
+	t_u8 ExtReqGPIONum;
+	t_u8 ExtReqGPIOPolarity;
+	t_u8 ExtGrntGPIONum;
+	t_u8 ExtGrntGPIOPolarity;
+} __ATTRIB_PACK__ external_coex_config_t;
+
+typedef struct _external_coex_uwb_config_t {
+	t_u16 Action;
+	t_u16 RSVD;
+	t_u16 RobustCoexTlvType;
+	t_u16 len;
+	t_u8 Enabled;
+} __ATTRIB_PACK__ external_coex_uwb_config_t;
+
+typedef struct _external_coex_config_2_t {
+	t_u16 Action;
+	t_u16 RSVD;
+	t_u16 RobustCoexTlvType;
+	t_u16 len;
+	t_u8 Enabled;
+	t_u8 ExtHighInputPriority;
+	t_u8 ExtLowInputPriority;
+} __ATTRIB_PACK__ external_coex_config_2_t;
+
+typedef struct _external_coex_uart_config_t {
+	t_u16 Action;
+	t_u16 RSVD;
+	t_u16 RobustCoexTlvType;
+	t_u16 len;
+	t_u8 Enabled;
+	t_u8 Loopback;
+	t_u32 BaudRate;
+	t_u8 Band;
+} __ATTRIB_PACK__ external_coex_uart_config_t;
+
+typedef struct _external_coex_pta_config_t {
+	t_u16 Action;
+	t_u16 RSVD;
+	t_u16 RobustCoexTlvType;
+	t_u16 len;
+	t_u8 Enabled;
+	t_u8 ExtWifiBtArb;
+	t_u8 PolGrantPin;
+	t_u8 EnablePriPtaInt;
+	t_u8 EnableStateFromPta;
+	t_u16 SetPriSampTiming;
+	t_u16 SetStateInfoSampTiming;
+	t_u8 ExtRadioTrafficPrio;
+	t_u8 ExtCoexHwIntWci2;
+	t_u8 Band;
+	t_u8 Freq;
+} __ATTRIB_PACK__ external_coex_pta_config_t;
+
+typedef struct _external_coex_uart_gpio_config_t {
+	t_u16 Action;
+	t_u16 RSVD;
+	t_u16 RobustCoexTlvType;
+	t_u16 len;
+	t_u8 Enabled;
+	t_u8 ExtCoexHwIntWci2;
+} __ATTRIB_PACK__ external_coex_uart_gpio_config_t;
 
 /** turbo_mode parameters */
 typedef struct _turbo_mode_para {
@@ -4155,5 +4456,174 @@ typedef struct _turbo_mode_para {
 	/** set prot mode */
 	t_u8 mode;
 } __ATTRIB_PACK__ turbo_mode_para;
+
+typedef struct chan_freq_power {
+	t_u16 channel;
+	t_u32 freq;
+	t_u16 max_tx_power;
+	t_u8 passive_scan_or_radar_detect;
+	t_u16 flags;
+	t_u8 blacklist;
+	t_u32 dfs_state;
+} cfp;
+typedef struct _cfpinfo {
+	t_u8 nss : 2;
+	t_u8 is2g_present : 1;
+	t_u8 is5g_present : 1;
+	t_u8 is6g_present : 1;
+	t_u8 reserved : 3;
+	t_u8 rows_2g;
+	t_u8 cols_2g;
+	t_u8 rows_5g;
+	t_u8 cols_5g;
+	t_u8 rows_6g;
+	t_u8 cols_6g;
+	t_u8 region_code;
+	t_u8 environment;
+	t_u8 country_code[2];
+	t_u16 action;
+} cfpinfo;
+/** print linkstats parameters */
+struct eth_priv_linkstats_cmd {
+	/** enable/disable */
+	t_u8 enable;
+	/** filter for print items */
+	t_u32 filter;
+	/** Periodic time(ms) for print */
+	t_u32 interval;
+	/** stats whether zero out in each period */
+	t_u8 netlink_evt;
+};
+
+/** print linkstats info */
+struct eth_priv_linkstats {
+	/** channel */
+	t_u16 channel;
+	/** region code */
+	t_u32 region_code;
+
+	/* Num TX packets */
+	unsigned long tx_packets;
+	/* Num TX packets base */
+	unsigned long tx_packets_base;
+	/* Num TX packets in bytes */
+	unsigned long tx_bytes;
+	/* Num TX packets in bytes base */
+	unsigned long tx_bytes_base;
+
+	/* Num RX packets */
+	unsigned long rx_packets;
+	/* Num RX packets base */
+	unsigned long rx_packets_base;
+	/* Num RX packets in bytes */
+	unsigned long rx_bytes;
+	/* Num RX packets in bytes base */
+	unsigned long rx_bytes_base;
+
+	/** dot11 retry count */
+	unsigned long retry_cnt;
+	/** dot11 retry base count */
+	unsigned long retry_cnt_base;
+	/** dot11 failed count */
+	unsigned long failed_cnt;
+	/** dot11 failed base count */
+	unsigned long failed_cnt_base;
+	/** dot11 rts failure count */
+	unsigned long rtsfailure;
+	/** dot11 rts base failure count for reset*/
+	unsigned long rtsfailure_base;
+	/** dot11 fcs error count */
+	unsigned long fcserror;
+	/** dot11 fcs base error count */
+	unsigned long fcserror_base;
+	/** dot11 tx frame count */
+	unsigned long txframe;
+	/** dot11 tx frame base count */
+	unsigned long txframe_base;
+	/** dot11 tx frame dropped count */
+	unsigned long tx_dropped;
+	/** dot11 tx frame dropped base count */
+	unsigned long tx_dropped_base;
+	/** Num of deauth sent by our device */
+	unsigned long num_evt_deauth_tx;
+	/** Num of deauth received by our device */
+	unsigned long num_evt_deauth_rx;
+
+	/** Last DATA RSSI in dBm */
+	t_s16 data_rssi;
+	/** SNR of last data packet */
+	t_s16 data_snr;
+	/** Noise floor of last data packet */
+	t_s16 data_nf;
+	/** Channel Load (max = 100) */
+	t_u16 chload;
+	/** Noise floor */
+	t_s16 noise;
+};
+
+/** per_band_txpwr_cap parameters */
+typedef struct _per_band_txpwr_cap {
+	/** band */
+	int band;
+	/** cap power value */
+	int power;
+	/** strong rssi threshold value*/
+	int strong_rssi_thresh;
+	/** weak rssi threshold value */
+	int weak_rssi_thresh;
+} per_band_txpwr_cap;
+
+#ifdef UAP_SUPPORT
+/** Type defination of wlan_ioctl_agcs_info */
+typedef struct {
+	t_u16 action;
+
+	/* BIT0 - Enable Agile channel switching in CarPlay
+	 * BIT1 - no specific interference type check, but only check Tx or Rx
+	 * throughput drop
+	 */
+	t_u32 mode;
+
+	/* Adjust the weight of TX/RX average packet count */
+	t_u8 avg_threshold_percentage;
+
+	/* The conservative amount of rx packet per second */
+	t_u16 rx_min_pkt_count;
+
+	/* The conservative amount of tx packet per second */
+	t_u16 tx_min_pkt_count;
+
+	/* Unit is ms */
+	t_u32 sample_time;
+
+	/* The latest sampled windows size */
+	t_u8 sample_count_window;
+
+	/* Continuous drop rapidly times */
+	t_u8 continuous_hit_count;
+
+	/* Make sure a reasonable rate can be sustained. */
+	t_s8 nf_margin;
+
+	/* The channel load threshold that the new channel needs to reach. */
+	t_u8 chload_threshold_percentage;
+
+	/* channel switch announcement count, default is 5 */
+	t_u8 csa_cnt;
+
+	/** Variable number (fixed maximum) of channels to scan up */
+	wlan_ioctl_user_scan_chan chan_list[WLAN_IOCTL_USER_SCAN_CHAN_MAX];
+
+	/* Long duration packets threshold */
+	t_u16 nav_mitigation_th;
+
+	/* ch threshold to trigger channel switch for nighthawk */
+	t_u16 ch_th;
+
+	/* Channel switching is triggered only when the current pkts > the min
+	 * average packet percentage. */
+	t_u16 min_pkt_percentage;
+} __ATTRIB_PACK__ wlan_ioctl_agcs_info;
+#endif /* UAP_SUPPORT */
 
 #endif /* _MLANUTL_H_ */

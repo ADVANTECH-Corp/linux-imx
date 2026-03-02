@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2020 NXP
+ *  Copyright 2012-2020, 2024 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -213,7 +213,7 @@ typedef struct _nan_state_info {
 	u8 cur_rfactor;
 	u8 hold_hop_cnt_flag;
 	u8 cur_hop_cnt;
-	u8 disable_2g;
+	u8 reserved1;
 } __ATTRIB_PACK__ nan_state_info;
 
 /** HostCmd_CMD_NAN_MODE_CONFIG structure */

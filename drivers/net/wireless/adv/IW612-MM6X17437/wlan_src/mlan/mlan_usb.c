@@ -3,7 +3,7 @@
  *  @brief This file contains USB specific code
  *
  *
- *  Copyright 2008-2021 NXP
+ *  Copyright 2008-2021, 2024-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -46,16 +46,6 @@ Change log:
 /********************************************************
 			Local Variables
 ********************************************************/
-#ifdef USB8801
-static const struct _mlan_card_info mlan_card_info_usb8801 = {
-	.max_tx_buf_size = MLAN_TX_DATA_BUF_SIZE_2K,
-	.v14_fw_api = 1,
-	.v16_fw_api = 0,
-	.supp_ps_handshake = 1,
-	.default_11n_tx_bf_cap = DEFAULT_11N_TX_BF_CAP_1X1,
-	.support_11mc = 0,
-};
-#endif
 #ifdef USB8897
 static const struct _mlan_card_info mlan_card_info_usb8897 = {
 	.max_tx_buf_size = MLAN_TX_DATA_BUF_SIZE_4K,
@@ -78,10 +68,10 @@ static const struct _mlan_card_info mlan_card_info_usb8997 = {
 
 #ifdef USB8978
 static const struct _mlan_card_info mlan_card_info_usb8978 = {
-	.max_tx_buf_size = MLAN_TX_DATA_BUF_SIZE_4K,
+	.max_tx_buf_size = MLAN_TX_DATA_BUF_SIZE_2K,
 	.v16_fw_api = 1,
 	.supp_ps_handshake = 1,
-	.default_11n_tx_bf_cap = DEFAULT_11N_TX_BF_CAP_2X2,
+	.default_11n_tx_bf_cap = DEFAULT_11N_TX_BF_CAP_1X1,
 	.support_11mc = 1,
 };
 #endif
@@ -119,8 +109,8 @@ static const struct _mlan_card_info mlan_card_info_usbIW624 = {
 };
 #endif
 
-#ifdef USBIW615
-static const struct _mlan_card_info mlan_card_info_usbIW615 = {
+#ifdef USBIW610
+static const struct _mlan_card_info mlan_card_info_usbIW610 = {
 	.max_tx_buf_size = MLAN_TX_DATA_BUF_SIZE_4K,
 	.v16_fw_api = 1,
 	.v17_fw_api = 1,
@@ -225,7 +215,8 @@ static mlan_status wlan_usb_prog_fw_w_helper(pmlan_adapter pmadapter,
 {
 	mlan_status ret = MLAN_STATUS_SUCCESS;
 	pmlan_callbacks pcb = &pmadapter->callbacks;
-	t_u8 *firmware = pmfw->pfw_buf, *RecvBuff;
+	const t_u8 *firmware = pmfw->pfw_buf;
+	t_u8 *RecvBuff;
 	t_u32 retries = MAX_FW_RETRY, DataLength;
 	t_u32 FWSeqNum = 0, TotalBytes = 0, DnldCmd = 0;
 	t_u8 *TxBuff = MNULL;
@@ -237,6 +228,9 @@ static mlan_status wlan_usb_prog_fw_w_helper(pmlan_adapter pmadapter,
 #if defined(USB9098)
 	t_u32 revision_id = 0;
 #endif
+	t_u32 fw_data_param = pmadapter->init_para.fw_data_cfg;
+	fw_data_t fw_data_list[MAX_FW_DATA_BLOCK] = {0};
+	t_u32 fw_data_param_num = 0, fw_data_index = 0;
 
 	ENTER();
 
@@ -278,6 +272,16 @@ static mlan_status wlan_usb_prog_fw_w_helper(pmlan_adapter pmadapter,
 			check_fw_status = MTRUE;
 	}
 #endif
+
+	if (fw_data_param) {
+		fw_data_param_num =
+			MIN(MAX_FW_DATA_BLOCK, bitcount(fw_data_param));
+		/** Get the custom Fw data */
+		if (MLAN_STATUS_SUCCESS !=
+		    wlan_get_custom_fw_data(pmadapter, (t_u8 *)fw_data_list))
+			goto cleanup;
+	}
+
 #if defined(USB9097)
 	if (IS_USB9097(pmadapter->card_type))
 		check_fw_status = MTRUE;
@@ -294,8 +298,9 @@ static mlan_status wlan_usb_prog_fw_w_helper(pmlan_adapter pmadapter,
 			       sizeof(FWHeader));
 			DataLength = 0;
 		} else {
-			/* Copy the header of the firmware data to get the
-			 * length */
+			/* reset length and Copy the header of the firmware data
+			 * to get the length */
+			fwdata->fw_header.data_length = 0;
 			if (firmware)
 				memcpy_ext(pmadapter, &fwdata->fw_header,
 					   &firmware[TotalBytes],
@@ -444,6 +449,25 @@ static mlan_status wlan_usb_prog_fw_w_helper(pmlan_adapter pmadapter,
 		FWSeqNum++;
 		PRINTM(MINFO, ".\n");
 
+		if (fw_data_param) {
+			if (fw_data_index < fw_data_param_num) {
+				firmware = fw_data_list[fw_data_index]
+						   .fw_data_buffer;
+				/** make TotalBytes as 0 as allocated custom Fw
+				 * data buffers are not contiguous */
+				TotalBytes = 0;
+				fw_data_index++;
+			}
+			/** custom Fw data download complete, restore Fw */
+			if (fw_data_index >= fw_data_param_num) {
+				firmware = pmfw->pfw_buf;
+				fw_data_param = 0;
+				fw_data_index = 0;
+				FWSeqNum = 0;
+				TotalBytes = 0;
+			}
+		}
+
 		/* Add FW ending check for secure download */
 		if (((DnldCmd == FW_CMD_21) && (DataLength == 0)) ||
 		    (TotalBytes >= pmfw->fw_len))
@@ -578,14 +602,15 @@ wlan_usb_tx_copy_buf_to_aggr_v2(pmlan_adapter pmadapter,
 		  pmbuf_aggr->data_len;
 	if (last) {
 		offset = pmbuf->data_len;
-		*(t_u16 *)&payload[2] =
-			wlan_cpu_to_le16(MLAN_TYPE_AGGR_DATA_V2 | 0x80);
+		write_u16_unaligned(pmadapter, &payload[2],
+				    wlan_cpu_to_le16(MLAN_TYPE_AGGR_DATA_V2 |
+						     0x80));
 	} else {
 		offset = usb_tx_aggr_pad_len(pmbuf->data_len, pusb_tx_aggr);
-		*(t_u16 *)&payload[2] =
-			wlan_cpu_to_le16(MLAN_TYPE_AGGR_DATA_V2);
+		write_u16_unaligned(pmadapter, &payload[2],
+				    wlan_cpu_to_le16(MLAN_TYPE_AGGR_DATA_V2));
 	}
-	*(t_u16 *)&payload[0] = wlan_cpu_to_le16(offset);
+	write_u16_unaligned(pmadapter, &payload[0], wlan_cpu_to_le16(offset));
 	pmbuf_aggr->data_len += pmbuf->data_len;
 	PRINTM(MIF_D, "offset=%d len=%d\n", offset, pmbuf->data_len);
 	LEAVE();
@@ -711,9 +736,11 @@ static inline t_void wlan_usb_tx_send_aggr(pmlan_adapter pmadapter,
 	} else if (pusb_tx_aggr->aggr_ctrl.aggr_mode ==
 		   MLAN_USB_AGGR_MODE_LEN_V2) {
 		t_u8 *payload = pmbuf_aggr->pbuf + pmbuf_aggr->data_offset;
-		*(t_u16 *)&payload[0] = wlan_cpu_to_le16(pmbuf_aggr->data_len);
-		*(t_u16 *)&payload[2] =
-			wlan_cpu_to_le16(MLAN_TYPE_AGGR_DATA_V2 | 0x80);
+		write_u16_unaligned(pmadapter, &payload[0],
+				    wlan_cpu_to_le16(pmbuf_aggr->data_len));
+		write_u16_unaligned(pmadapter, &payload[2],
+				    wlan_cpu_to_le16(MLAN_TYPE_AGGR_DATA_V2 |
+						     0x80));
 		PRINTM(MIF_D, "USB Send single packet len=%d\n",
 		       pmbuf_aggr->data_len);
 		DBG_HEXDUMP(MIF_D, "USB Tx",
@@ -802,11 +829,6 @@ mlan_status wlan_get_usb_device(pmlan_adapter pmadapter)
 	}
 
 	switch (card_type) {
-#ifdef USB8801
-	case CARD_TYPE_USB8801:
-		pmadapter->pcard_info = &mlan_card_info_usb8801;
-		break;
-#endif
 #ifdef USB8897
 	case CARD_TYPE_USB8897:
 		pmadapter->pcard_info = &mlan_card_info_usb8897;
@@ -837,9 +859,9 @@ mlan_status wlan_get_usb_device(pmlan_adapter pmadapter)
 		pmadapter->pcard_info = &mlan_card_info_usbIW624;
 		break;
 #endif
-#ifdef USBIW615
-	case CARD_TYPE_USBIW615:
-		pmadapter->pcard_info = &mlan_card_info_usbIW615;
+#ifdef USBIW610
+	case CARD_TYPE_USBIW610:
+		pmadapter->pcard_info = &mlan_card_info_usbIW610;
 		break;
 #endif
 	default:
@@ -893,16 +915,26 @@ mlan_status wlan_usb_deaggr_rx_pkt(pmlan_adapter pmadapter, pmlan_buffer pmbuf)
 	RxPD *prx_pd;
 	t_u8 *pdata;
 	t_s32 aggr_len;
-	pmlan_buffer pdeaggr_buf;
+	pmlan_buffer pdeaggr_buf = MNULL;
+	t_u16 max_loop_cnt = 0;
+	/* (8 * (MLAN_USB_BLOCK_SIZE * 4)) */
+#define MAX_USB_RX_DATA_SIZE (MLAN_USB_RX_MAX_AGGR_NUM * MLAN_USB_MAX_PKT_SIZE)
 
 	ENTER();
 
 	pdata = pmbuf->pbuf + pmbuf->data_offset;
-	prx_pd = (RxPD *)pdata;
+
+	prx_pd = (RxPD *)(pmbuf->pbuf + pmbuf->data_offset);
 	curr_pkt_len = wlan_le16_to_cpu(prx_pd->rx_pkt_length) +
 		       wlan_le16_to_cpu(prx_pd->rx_pkt_offset);
 	/* if non-aggregate, just send through, don’t process here */
 	aggr_len = pmbuf->data_len;
+	if (aggr_len < 0 || aggr_len > MAX_USB_RX_DATA_SIZE) {
+		PRINTM(MERROR, "ERR: Invalid aggr length: %d\n", aggr_len);
+		ret = MLAN_STATUS_FAILURE;
+		LEAVE();
+		return ret;
+	}
 	if ((aggr_len == (t_s32)curr_pkt_len) ||
 	    (wlan_usb_deaggr_rx_num_pkts(pmadapter, pdata, aggr_len) == 1) ||
 	    (pmadapter->pcard_usb->usb_rx_deaggr.aggr_ctrl.enable != MTRUE)) {
@@ -911,7 +943,8 @@ mlan_status wlan_usb_deaggr_rx_pkt(pmlan_adapter pmadapter, pmlan_buffer pmbuf)
 		return ret;
 	}
 
-	while (aggr_len >= (t_s32)sizeof(RxPD)) {
+	while ((aggr_len >= (t_s32)sizeof(RxPD)) &&
+	       (max_loop_cnt++ < MLAN_USB_RX_MAX_AGGR_NUM)) {
 		/* check for (all-zeroes) termination RxPD */
 		if (!memcmp(pmadapter, pdata, zero_rx_pd, sizeof(RxPD))) {
 			break;
@@ -920,6 +953,10 @@ mlan_status wlan_usb_deaggr_rx_pkt(pmlan_adapter pmadapter, pmlan_buffer pmbuf)
 		/* make new buffer and copy packet to it (including RxPD).
 		 * Also, reserve headroom so that there must have space
 		 * to change RxPD to TxPD for bridge packet in uAP mode */
+		/* pdeaggr_buf is freed in moal_recv_complete(), therefore
+		 * Overwriting pdeaggr_buf is not harmful.
+		 */
+		// coverity[overwrite_var:SUPPRESS]
 		pdeaggr_buf = wlan_alloc_mlan_buffer(pmadapter, curr_pkt_len,
 						     MLAN_RX_HEADER_LEN,
 						     MOAL_ALLOC_MLAN_BUFFER);
@@ -938,7 +975,11 @@ mlan_status wlan_usb_deaggr_rx_pkt(pmlan_adapter pmadapter, pmlan_buffer pmbuf)
 		memcpy_ext(pmadapter,
 			   pdeaggr_buf->pbuf + pdeaggr_buf->data_offset, pdata,
 			   curr_pkt_len, pdeaggr_buf->data_len);
-
+		/* Deaggr buffer is freed in moal_recv_complete() after rx data
+		 * handling completed, Coverity is not able to trace callbacks
+		 * registered for and process_rx_packet and moal_recv_complete
+		 */
+		// coverity[RESOURCE_LEAK]: SUPPRESS
 		/* send new packet to processing */
 		ret = wlan_handle_rx_packet(pmadapter, pdeaggr_buf);
 		if (ret == MLAN_STATUS_FAILURE) {
@@ -957,18 +998,26 @@ mlan_status wlan_usb_deaggr_rx_pkt(pmlan_adapter pmadapter, pmlan_buffer pmbuf)
 					 (curr_pkt_len %
 					  pmadapter->pcard_usb->usb_rx_deaggr
 						  .aggr_ctrl.aggr_align));
+		/* curr_pkt_len should not be greate than the aggreated length*/
+		if (curr_pkt_len > aggr_len)
+			break;
 		/* point to next packet */
-		aggr_len -= curr_pkt_len;
+		aggr_len -= (t_s32)curr_pkt_len;
 		pdata += curr_pkt_len;
 		prx_pd = (RxPD *)pdata;
 		curr_pkt_len = wlan_le16_to_cpu(prx_pd->rx_pkt_length) +
 			       wlan_le16_to_cpu(prx_pd->rx_pkt_offset);
 	}
-
+	if (max_loop_cnt >= MLAN_USB_RX_MAX_AGGR_NUM) {
+		PRINTM(MERROR, "ERR: max loop limit is exceeded\n");
+		ret = MLAN_STATUS_FAILURE;
+	}
 	/* free original pmbuf (since not sent for processing) */
 	pmadapter->callbacks.moal_recv_complete(pmadapter->pmoal_handle, pmbuf,
 						pmadapter->rx_data_ep, ret);
 	LEAVE();
+	/* pdeaggr_buf is freed in moal_recv_complete() */
+	// coverity[leaked_storage:SUPPRESS]
 	return ret;
 }
 
@@ -1337,7 +1386,7 @@ static mlan_status wlan_usb_host_to_card(pmlan_private pmpriv, t_u8 type,
 	}
 	if (type == MLAN_TYPE_CMD
 #if defined(USB9098) || defined(USB9097) || defined(USBIW624) ||               \
-	defined(USB8997) || defined(USB8978)
+	defined(USB8997) || defined(USB8978) || defined(USBIW610)
 	    || type == MLAN_TYPE_VDLL
 #endif
 	) {
@@ -1398,8 +1447,13 @@ static mlan_status wlan_usb_evt_complete(pmlan_adapter pmadapter,
 					 mlan_buffer *pmbuf, mlan_status status)
 {
 	ENTER();
+
+	wlan_request_event_lock(pmadapter);
+	if (pmadapter->event_received)
+		pmadapter->event_received = MFALSE;
 	pmadapter->event_cause = 0;
 	pmadapter->pmlan_buffer_event = MNULL;
+	wlan_release_event_lock(pmadapter);
 	pmadapter->callbacks.moal_recv_complete(pmadapter->pmoal_handle, pmbuf,
 						pmadapter->rx_cmd_ep, status);
 
