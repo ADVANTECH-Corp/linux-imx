@@ -276,10 +276,13 @@
 #define conn_to_sec_mipi_dsim(conn)		\
 	container_of(conn, struct sec_mipi_dsim, connector)
 
+#ifdef CONFIG_ARCH_ADVANTECH
 extern void enable_lcd_vdd_en(void);
 extern void enable_bridge_stdy_en(void);
+extern void disable_bridge_stdy_en(void);
 //extern void enable_ldb_bkl_vcc(void);
 //extern void enable_ldb_bkl_pwm(void);
+#endif
 
 /* used for CEA standard modes */
 struct dsim_hblank_par {
@@ -1353,8 +1356,10 @@ static void sec_mipi_dsim_bridge_enable(struct drm_bridge *bridge)
 	 * already been enabled. So the dsim can be configed here
 	 */
 
-        enable_bridge_stdy_en();
+#ifdef CONFIG_ARCH_ADVANTECH
+	enable_bridge_stdy_en();
 	enable_lcd_vdd_en();
+#endif
 
 	/* config main display mode */
 	sec_mipi_dsim_set_main_mode(dsim);
@@ -1469,6 +1474,10 @@ static void sec_mipi_dsim_bridge_disable(struct drm_bridge *bridge)
 		if (unlikely(ret))
 			dev_err(dsim->dev, "panel unprepare failed: %d\n", ret);
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	disable_bridge_stdy_en();
+#endif
 }
 
 static bool sec_mipi_dsim_bridge_mode_fixup(struct drm_bridge *bridge,

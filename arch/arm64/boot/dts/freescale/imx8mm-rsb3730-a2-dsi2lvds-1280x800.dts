@@ -46,7 +46,6 @@
 		compatible = "auo,g101ean02";
 		reg = <0>;
 		backlight=<&backlight0>;
-		no-wakeup-init;
 		panel-init-sequence = [
 			29 00 06 3C 01 05 00 03	00
 			29 00 06 14 01 03 00 00	00
@@ -107,4 +106,54 @@
 	status = "okay";
 	lvds-bkl-delay-time = <150>;
 	lvds-vcc-delay-time = <60>;
+};
+
+&usdhc1 {
+	/delete-property/ keep-power-in-suspend;
+};
+
+&gpio2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_gpio_hog>;
+
+	host-bt-wake {
+		gpio-hog;
+		gpios = <7 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "host-bt-wake";
+	};
+
+	bt-wake-host {
+		gpio-hog;
+		gpios = <8 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "bt-wake-host";
+	};
+
+	sd1-wake {
+		gpio-hog;
+		gpios = <9 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "sd1-wake";
+	};
+};
+
+&gpio3 {
+	pcie-clk-req {
+		gpio-hog;
+		gpios = <16 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "pcie-clk-req";
+	};
+};
+
+&iomuxc {
+	pinctrl_gpio_hog: hogmux {
+		fsl,pins = <
+			MX8MM_IOMUXC_SD1_DATA5_GPIO2_IO7		0x41    /* HOST_BT_WAKE */
+			MX8MM_IOMUXC_SD1_DATA6_GPIO2_IO8		0x41    /* BT_WAKE_Z_HOST */
+			MX8MM_IOMUXC_SD1_DATA7_GPIO2_IO9		0x41    /* SD1_WAKE */
+			MX8MM_IOMUXC_NAND_READY_B_GPIO3_IO16	0x41	/* CLK_REQ */
+		>;
+	};
 };
