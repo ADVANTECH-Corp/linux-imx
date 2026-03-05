@@ -166,6 +166,34 @@ static irqreturn_t lt9611uxc_irq_thread_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+static void lt9611uxc_process_irq_state(struct lt9611uxc *lt9611uxc)
+{
+	unsigned int irq_status = 0;
+	unsigned int hpd_status = 0;
+
+	lt9611uxc_lock(lt9611uxc);
+
+	regmap_read(lt9611uxc->regmap, 0xb022, &irq_status);
+	regmap_read(lt9611uxc->regmap, 0xb023, &hpd_status);
+
+	if (irq_status)
+		regmap_write(lt9611uxc->regmap, 0xb022, 0);
+
+	if (irq_status & BIT(0))
+		lt9611uxc->edid_read = !!(hpd_status & BIT(0));
+
+	if (irq_status & BIT(1))
+		lt9611uxc->hdmi_connected = hpd_status & BIT(1);
+
+	lt9611uxc_unlock(lt9611uxc);
+
+	/* Notify outside lock. */
+	if (irq_status & BIT(0))
+		wake_up_all(&lt9611uxc->wq);
+	if (irq_status & BIT(1))
+		schedule_work(&lt9611uxc->work);
+}
+
 static void lt9611uxc_hpd_work(struct work_struct *work)
 {
 	struct lt9611uxc *lt9611uxc = container_of(work, struct lt9611uxc, work);
@@ -872,6 +900,21 @@ retry:
 		dev_err(dev, "failed to request irq\n");
 		goto err_disable_regulators;
 	}
+
+	/*
+	 * Give LT9611 some time to settle after reset and IRQ registration.
+	 *
+	 * In some cases the LT9611 may assert its interrupt before
+	 * request_threaded_irq() is called. Since if the interrupt line is routed
+	 * through a GPIO expander and configured as edge-triggered, the early
+	 * edge may be missed by the kernel IRQ handler.
+	 *
+	 * Sleep briefly and then poll the IRQ status registers once to consume
+	 * any latched interrupt state that occurred before the IRQ pipeline
+	 * was fully established.
+	 */
+	msleep(50);
+	lt9611uxc_process_irq_state(lt9611uxc);
 
 	i2c_set_clientdata(client, lt9611uxc);
 
