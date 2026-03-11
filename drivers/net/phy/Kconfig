@@ -426,7 +426,7 @@ config RTL8366_SMI
 	  This module implements the SMI interface protocol which is used
 	  by some RTL8366 ethernet switch devices via the generic GPIO API.
 
-if RTL8366_SMIs
+if RTL8366_SMI
 
 config RTL8366_SMI_DEBUG_FS
 	bool "RTL8366 SMI interface debugfs support"
