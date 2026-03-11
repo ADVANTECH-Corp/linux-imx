@@ -1590,14 +1590,8 @@ static int  rtl8367b_probe(struct platform_device *pdev)
 {
 	struct rtl8366_smi *smi;
 	int err;
-#ifdef CONFIG_ARCH_ADVANTECH
-	struct device *dev = &pdev->dev;
-	struct device_node *np;
-	enum of_gpio_flags flags;
-	int gpio_sel;
-	int sel_default_value;
-	int active;
-#endif
+	int ret;
+	u32 chip_num;
 
 	smi = rtl8366_smi_probe(pdev);
 	if (IS_ERR(smi))
@@ -1615,30 +1609,6 @@ static int  rtl8367b_probe(struct platform_device *pdev)
 	smi->mib_counters = rtl8367b_mib_counters;
 	smi->num_mib_counters = ARRAY_SIZE(rtl8367b_mib_counters);
 
-#ifdef CONFIG_ARCH_ADVANTECH
-	np = dev->of_node;
-	gpio_sel = of_get_named_gpio_flags(np, "gpio-sel", 0, &flags);
-
-	if (gpio_is_valid(gpio_sel))
-	{
-		err = gpio_request(gpio_sel, "uio-gpio-sel");
-		if (!err)
-		{
-			sel_default_value = gpio_get_value(gpio_sel);
-			active = !(flags & OF_GPIO_ACTIVE_LOW);
-			if(active)
-				gpio_direction_output(gpio_sel, GPIOF_OUT_INIT_HIGH);
-			else
-				gpio_direction_output(gpio_sel, GPIOF_OUT_INIT_LOW);
-		}
-
-		dev_info(smi->parent, "using GPIO pins %d (Select) and default_value %d \n",
-						gpio_sel, sel_default_value);
-	}
-	smi->gpio_sel = gpio_sel;
-	smi->gpio_sel_active_value = sel_default_value;
-#endif
-
 	err = rtl8366_smi_init(smi);
 	if (err)
 		goto err_free_smi;
@@ -1646,9 +1616,6 @@ static int  rtl8367b_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, smi);
 
 #ifdef CONFIG_ARCH_ADVANTECH
-	int test,ret;
-	u32 chip_num;
-	u32 chip_ver;
 	rtl8366_smi_write_reg(smi, RTL8367B_RTL_MAGIC_ID_REG,
 			      RTL8367B_RTL_MAGIC_ID_VAL);  //rtl8367b_setAsicReg(0x13C2, 0x0249)
 
@@ -1685,17 +1652,6 @@ static int  rtl8367b_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, NULL);
 	rtl8366_smi_cleanup(smi);
  err_free_smi:
-#ifdef CONFIG_ARCH_ADVANTECH
-	if (gpio_is_valid(gpio_sel))
-	{
-		if(sel_default_value)
-			gpio_direction_output(gpio_sel, GPIOF_OUT_INIT_HIGH);
-		else
-			gpio_direction_output(gpio_sel, GPIOF_OUT_INIT_LOW);
-
-		gpio_free(gpio_sel);
-	}
-#endif
 	kfree(smi);
 	return err;
 }
@@ -1708,19 +1664,6 @@ static int rtl8367b_remove(struct platform_device *pdev)
 		rtl8367b_switch_cleanup(smi);
 		platform_set_drvdata(pdev, NULL);
 		rtl8366_smi_cleanup(smi);
-
-	#ifdef CONFIG_ARCH_ADVANTECH
-		if (gpio_is_valid(smi->gpio_sel))
-		{
-			if(smi->gpio_sel_default_value)
-				gpio_direction_output(smi->gpio_sel, GPIOF_OUT_INIT_HIGH);
-			else
-				gpio_direction_output(smi->gpio_sel, GPIOF_OUT_INIT_LOW);
-
-			gpio_free(smi->gpio_sel);
-		}
-	#endif
-
 		kfree(smi);
 	}
 
