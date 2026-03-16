@@ -861,6 +861,7 @@ static int opt3001_probe(struct i2c_client *client,
 
 	INIT_DELAYED_WORK(&opt->light_work, opt3001_light_work);
 	schedule_delayed_work(&opt->light_work, 3*HZ);
+	dev_set_drvdata(dev, opt);
 #endif
 
 	return 0;
@@ -901,6 +902,37 @@ static int opt3001_remove(struct i2c_client *client)
 	return 0;
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int opt3001_resume(struct device *dev)
+{
+	struct opt3001 *opt = dev_get_drvdata(dev);
+    
+	if (!opt) {
+		dev_err(dev, "Failed to get driver data in resume\n");
+		return -ENODEV;
+	}
+
+	opt3001_configure(opt);
+	schedule_delayed_work(&opt->light_work, 3*HZ);
+
+	return 0;
+}
+
+static int opt3001_suspend(struct device *dev)
+{
+	struct opt3001 *opt = dev_get_drvdata(dev);
+    
+	if (!opt) {
+		dev_err(dev, "Failed to get driver data in suspend\n");
+		return -ENODEV;
+	}
+
+	cancel_delayed_work_sync(&opt->light_work);
+
+	return 0;
+}
+#endif
+
 static const struct i2c_device_id opt3001_id[] = {
 	{ "opt3001", 0 },
 	{ } /* Terminating Entry */
@@ -913,6 +945,13 @@ static const struct of_device_id opt3001_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, opt3001_of_match);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static const struct dev_pm_ops opt3001_pm_ops = {
+	.resume = opt3001_resume,
+	.suspend = opt3001_suspend,
+};
+#endif
+
 static struct i2c_driver opt3001_driver = {
 	.probe = opt3001_probe,
 	.remove = opt3001_remove,
@@ -921,6 +960,9 @@ static struct i2c_driver opt3001_driver = {
 	.driver = {
 		.name = "opt3001",
 		.of_match_table = of_match_ptr(opt3001_of_match),
+#ifdef CONFIG_ARCH_ADVANTECH
+		.pm = &opt3001_pm_ops,
+#endif
 	},
 };
 
