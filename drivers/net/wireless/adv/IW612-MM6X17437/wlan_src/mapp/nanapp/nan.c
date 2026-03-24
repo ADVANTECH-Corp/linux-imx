@@ -1719,8 +1719,7 @@ enum nan_error nan_handle_ndp_state(int event, struct mwu_iface_info *cur_if,
 							 NULL);
 				/*Clear peers published entries*/
 				nan_clear_peer_avail_published_entries(cur_if);
-			} else if (NDP_NDL_STATUS_REJECTED == ndl_status ||
-				   NDP_NDL_STATUS_REJECTED == ndl_status) {
+			} else if (NDP_NDL_STATUS_REJECTED == ndl_status) {
 				memset(&cur_if->pnan_info->peer_avail_info, 0,
 				       sizeof(peer_availability_info));
 				memset(&cur_if->pnan_info->ndc_info, 0,

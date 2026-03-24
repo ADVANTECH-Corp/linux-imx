@@ -1,7 +1,7 @@
 ===============================================================================
 			U S E R  M A N U A L
 
- Copyright 2009-2024 NXP
+ Copyright 2009-2026 NXP
 
 
 1) FOR DRIVER BUILD
@@ -9,7 +9,7 @@
 	Goto source code directory wlan_src.
 		make [clean] build
 	The driver binaries can be found in ../bin_xxxx directory.
-	The driver source code is compatible with hosts running Linux kernel versions ranging from 2.6.32 to 6.17.0.
+	The driver source code is compatible with hosts running Linux kernel versions ranging from 2.6.32 to 6.18.2.
 
 2) FOR INTEGRATING DRIVER INTO LINUX KERNEL
 
@@ -96,6 +96,7 @@
 	  pm_keep_power=1|0 <PM keep power in suspend (default) | PM no power in suspend>
 	  shutdown_hs=1|0 <Enable HS when shutdown | No HS when shutdown (default)>
 	  cfg_11d=0|1|2 <use MLAN default | enable 11d | disable 11d>
+    amsdu_8k_rx=0|1, <not support AMPDU 8K RX, just support 4K (default) | support AMPDU 8K RX>
 	  dts_enable=0|1 <Disable DTS | Enable DTS (default)>
 	  fw_name = <FW file name>
 		e.g. copy pcieuart9098_combo_v1.bin to firmware directory, fw_name=nxp/pcieuart9098_combo_v1.bin
@@ -412,6 +413,7 @@ sys_cfg_gwk_cipher [GROUP_CIPHER]
 sys_cfg_group_rekey_timer [GROUP_REKEY_TIMER]
 sys_cfg_wpa_passphrase [PASSPHRASE]
 sys_cfg_wpa3_sae_password [PASSWORD]
+ssid_protection [0|1]
 sys_cfg_max_sta_num [STA_NUM]
 sys_cfg_retry_limit [RETRY_LIMIT]
 sys_cfg_sticky_tim_config [ENABLE] [<DURATION> <STICKY_BIT_MASK>]
@@ -1588,6 +1590,19 @@ sys_cfg_wpa3_sae_password
 
         ./uaputl.exe sys_cfg_wpa3_sae_password
                 Get AP's WPA3 SAE password.
+
+ssid_protection
+-------------------
+    "./uaputl.exe ssid_protection [0|1]"
+
+    This command is used to set or get the ssid protection capability for WPA/WPA2/WPA3
+    1: enable, 0: disable. Default is disabled.
+    This command can be issued only when uAP is inactive.
+
+    If no arguments are given, this command returns the current ssid protection mode
+
+    Example:
+       ./uaputl.exe ssid_protection 1
 
 sys_cfg_max_sta_num
 -------------------

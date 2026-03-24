@@ -41,6 +41,8 @@ void cf_blockwise_accumulate_final(uint8_t *partial, size_t *npartial,
 		size_t space = nblock - *npartial;
 		size_t taken = MIN(space, nbytes);
 
+		// coverity[cert_exp34_c_violation:SUPPRESS]
+		// coverity[integer_overflow:SUPPRESS]
 		memcpy(partial + *npartial, bufin, taken);
 
 		bufin += taken;
@@ -49,10 +51,13 @@ void cf_blockwise_accumulate_final(uint8_t *partial, size_t *npartial,
 
 		/* If that gives us a full block, process it. */
 		if (*npartial == nblock) {
-			if (nbytes == 0)
+			if (nbytes == 0) {
+				// coverity[forward_null:SUPPRESS]
 				process_final(ctx, partial);
-			else
+			} else {
+				// coverity[cert_exp34_c_violation:SUPPRESS]
 				process(ctx, partial);
+			}
 			*npartial = 0;
 		}
 	}
@@ -78,6 +83,7 @@ void cf_blockwise_accumulate_final(uint8_t *partial, size_t *npartial,
 		size_t space = nblock - *npartial;
 		size_t taken = MIN(space, nbytes);
 
+		// coverity[integer_overflow:SUPPRESS]
 		memcpy(partial + *npartial, bufin, taken);
 
 		bufin += taken;
@@ -104,12 +110,15 @@ void cf_blockwise_xor(uint8_t *partial, size_t *npartial, size_t nblock,
 	while (nbytes) {
 		/* If we're out of material, and need more, produce a block. */
 		if (*npartial == 0) {
+			// coverity[forward_null:SUPPRESS]
 			process(ctx, partial);
 			*npartial = nblock;
 		}
 
 		size_t offset = nblock - *npartial;
 		size_t taken = MIN(*npartial, nbytes);
+		// coverity[forward_null:SUPPRESS]
+		// coverity[integer_overflow:SUPPRESS]
 		xor_bb(outb, inb, partial + offset, taken);
 		*npartial -= taken;
 		nbytes -= taken;

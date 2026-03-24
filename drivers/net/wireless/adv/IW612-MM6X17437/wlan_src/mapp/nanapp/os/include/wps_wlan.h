@@ -1,7 +1,7 @@
 /** @file wps_wlan.h
  *  @brief This file contains definition for WLAN driver control/command.
  *
- *  Copyright 2012-2020, 2024 NXP
+ *  Copyright 2012-2020, 2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -504,6 +504,18 @@ typedef struct _deauth_param {
 	u16 reason_code;
 } deauth_param;
 
+/** firmware complete version number */
+typedef struct _fw_release_version {
+	/** FW release number */
+	u8 releaseNum;
+	/** minor version */
+	u8 minorRevNum;
+	/** major version */
+	u8 majorRevNum;
+	/** patch level version */
+	u16 patchLevel;
+} fw_release_version;
+
 /** fw_info */
 typedef struct _fw_info {
 	/** subcmd */
@@ -511,7 +523,7 @@ typedef struct _fw_info {
 	/** Get */
 	u32 action;
 	/** Firmware release number */
-	u32 fw_release_number;
+	fw_release_version fw_release_number;
 	/** Device support for MIMO abstraction of MCSs */
 	u8 hw_dev_mcs_support;
 	/** Region Code */

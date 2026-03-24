@@ -649,7 +649,6 @@ static int woal_cfg80211_subcmd_get_drv_version(struct wiphy *wiphy,
 	struct sk_buff *skb = NULL;
 	t_u32 reply_len = 0;
 	int ret = 0;
-	t_u32 drv_len = 0;
 	char drv_version[MLAN_MAX_VER_STR_LEN] = {0};
 	char *pos;
 
@@ -657,18 +656,13 @@ static int woal_cfg80211_subcmd_get_drv_version(struct wiphy *wiphy,
 	moal_memcpy_ext(priv->phandle, drv_version,
 			&priv->phandle->driver_version, MLAN_MAX_VER_STR_LEN,
 			MLAN_MAX_VER_STR_LEN);
+	/* Remove all "-%s" substrings */
 	// drv_version is already initialized to 0 and hence null terminated
 	// coverity[cert_str32_c_violation:SUPPRESS]
-	drv_len = strlen(drv_version);
-	pos = strstr(drv_version, "%s");
-	/* remove 3 char "-%s" in driver_version string */
-	if (pos != NULL)
-		moal_memcpy_ext(priv->phandle, pos, pos + 3, strlen(pos) - 3,
+	while ((pos = strstr(drv_version, "-%s")) != NULL)
+		moal_memcpy_ext(priv->phandle, pos, pos + 3, strlen(pos) - 2,
 				strlen(pos));
-
 	reply_len = strlen(drv_version) + 1;
-	drv_len -= 3;
-	drv_version[drv_len] = '\0';
 
 	/** Allocate skb for cmd reply*/
 	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, reply_len);
@@ -708,25 +702,32 @@ static int woal_cfg80211_subcmd_get_fw_version(struct wiphy *wiphy,
 	t_u32 reply_len = 0;
 	char end_c = '\0';
 	int ret = 0;
-	char fw_ver[32] = {0};
+	char fw_ver[100] = {0};
 	t_u8 hotfix_ver = 0;
-	union {
-		t_u32 l;
-		t_u8 c[4];
-	} ver;
 
 	ENTER();
 
 	hotfix_ver = priv->phandle->fw_hotfix_version;
-	ver.l = priv->phandle->fw_release_number;
 	if (hotfix_ver) {
-		if (snprintf(fw_ver, sizeof(fw_ver), "%u.%u.%u.p%u.%u%c",
-			     ver.c[2], ver.c[1], ver.c[0], ver.c[3], hotfix_ver,
-			     end_c) <= 0)
+		if (snprintf(fw_ver, sizeof(fw_ver),
+			     "%s %u.%u.%u.p%u.%u %s %s%c",
+			     priv->phandle->fw_ver_milestone,
+			     priv->phandle->fw_release_number.majorRevNum,
+			     priv->phandle->fw_release_number.minorRevNum,
+			     priv->phandle->fw_release_number.releaseNum,
+			     priv->phandle->fw_release_number.patchLevel,
+			     hotfix_ver, priv->phandle->fw_ver_buildtype,
+			     priv->phandle->fw_ver_data, end_c) <= 0)
 			PRINTM(MERROR, "Failed to write fw hotfix version\n");
 	} else {
-		if (snprintf(fw_ver, sizeof(fw_ver), "%u.%u.%u.p%u%c", ver.c[2],
-			     ver.c[1], ver.c[0], ver.c[3], end_c) <= 0)
+		if (snprintf(fw_ver, sizeof(fw_ver), "%s %u.%u.%u.p%u %s %s%c",
+			     priv->phandle->fw_ver_milestone,
+			     priv->phandle->fw_release_number.majorRevNum,
+			     priv->phandle->fw_release_number.minorRevNum,
+			     priv->phandle->fw_release_number.releaseNum,
+			     priv->phandle->fw_release_number.patchLevel,
+			     priv->phandle->fw_ver_buildtype,
+			     priv->phandle->fw_ver_data, end_c) <= 0)
 			PRINTM(MERROR, "Failed to write fw version\n");
 	}
 	reply_len = strlen(fw_ver) + 1;
@@ -9976,16 +9977,16 @@ static const struct wiphy_vendor_command vendor_commands[] = {
 #endif
     },
 	{
-	.info = {
-		.vendor_id = MRVL_VENDOR_ID,
-		.subcmd = subcmd_get_usable_channels,
-	},
-	.flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-		WIPHY_VENDOR_CMD_NEED_NETDEV,
-	.doit = woal_cfg80211_subcmd_get_usable_channels,
+		.info = {
+				.vendor_id = MRVL_VENDOR_ID,
+				.subcmd = subcmd_get_usable_channels,
+			},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV |
+			 WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = woal_cfg80211_subcmd_get_usable_channels,
 #if KERNEL_VERSION(5, 3, 0) <= CFG80211_VERSION_CODE
-	.policy = woal_usable_channel_policy,
-	.maxattr = ATTR_USABLE_CHANNEL_MAX,
+		.policy = woal_usable_channel_policy,
+		.maxattr = ATTR_USABLE_CHANNEL_MAX,
 #endif
 	},
 };

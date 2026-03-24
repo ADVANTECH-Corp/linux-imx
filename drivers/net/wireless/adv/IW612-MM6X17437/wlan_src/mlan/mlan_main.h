@@ -612,10 +612,10 @@ extern t_void (*assert_callback)(t_void *pmoal_handle, t_u32 cond);
 #define SDIO_CMD53_MAX_SIZE 65280
 #define MAX_SUPPORT_AMSDU_SIZE 4096
 /** Maximum numbfer of registers to read for multiple port */
-#if defined(SD8887) || defined(SD8997) || defined(SD8977) ||                   \
-	defined(SD8987) || defined(SD9098) || defined(SD9097) ||               \
-	defined(SDAW693) || defined(SDIW624) || defined(SD8978) ||             \
-	defined(SD9177) || defined(SDIW610)
+#if defined(SD8887) || defined(SD8977) || defined(SD8987) ||                   \
+	defined(SD9098) || defined(SD9097) || defined(SDAW693) ||              \
+	defined(SDIW624) || defined(SD8978) || defined(SD9177) ||              \
+	defined(SDIW610)
 #define MAX_MP_REGS 196
 #else
 /* upto 0xB7 */
@@ -658,6 +658,7 @@ extern t_void (*assert_callback)(t_void *pmoal_handle, t_u32 cond);
 #define MFG_CMD_RADIO_MODE_CFG 0x1211
 #define MFG_CMD_CONFIG_MAC_HE_TB_TX 0x110A
 #define MFG_CMD_CONFIG_TRIGGER_FRAME 0x110C
+#define MFG_CMD_SET_DEBUG_TEMPERATURE 0x121f
 
 /** Debug command number */
 #define DBG_CMD_NUM 10
@@ -1341,6 +1342,8 @@ typedef struct _mlan_private {
 	/* Mgmt Frame Protection config */
 	mlan_ds_misc_pmfcfg pmfcfg;
 #endif
+	/* SSID Protection capability */
+	t_u8 ssid_protection;
 	/** WAPI IE */
 	t_u8 wapi_ie[256];
 	/** WAPI IE length */
@@ -1685,6 +1688,10 @@ struct _sta_node {
 	IEEEtypes_HTInfo_t HTInfo;
 	/** peer BSSCO_20_40*/
 	IEEEtypes_2040BSSCo_t BSSCO_20_40;
+	/* Support operating class IE */
+	IEEEtypes_Generic_t OperClass;
+	/*Extended capability*/
+	IEEEtypes_ExtCap_t ExtCap;
 	/*RSN IE*/
 	IEEEtypes_Generic_t rsn_ie;
 	/**Link ID*/
@@ -1716,10 +1723,6 @@ struct _sta_node {
 	t_u8 vendor_oui[VENDOR_OUI_LEN * MAX_VENDOR_OUI_NUM];
 	/** vendor OUI count */
 	t_u8 vendor_oui_count;
-	/* Support operating class IE */
-	IEEEtypes_Generic_t OperClass;
-	/*Extended capability*/
-	IEEEtypes_ExtCap_t ExtCap;
 };
 
 /** 802.11h State information kept in the 'mlan_adapter' driver structure */
@@ -2534,6 +2537,18 @@ typedef struct _adapter_operations {
 	t_u32 intf_header_len;
 } mlan_adapter_operations;
 
+/** firmware complete version number */
+typedef struct _fw_release_version {
+	/** FW release number */
+	t_u8 releaseNum;
+	/** minor version */
+	t_u8 minorRevNum;
+	/** major version */
+	t_u8 majorRevNum;
+	/** patch level version */
+	t_u16 patchLevel;
+} fw_release_version;
+
 /** Adapter data structure for MLAN */
 struct _mlan_adapter {
 	/** MOAL handle structure */
@@ -2608,6 +2623,8 @@ struct _mlan_adapter {
 	t_u16 max_tx_buf_size;
 	/** Tx buf size */
 	t_u16 tx_buf_size;
+	/** Rx buf size */
+	t_u16 rx_buf_size;
 	/** current tx buf size in fw */
 	t_u16 curr_tx_buf_size;
 	/** flush data flag */
@@ -2627,9 +2644,15 @@ struct _mlan_adapter {
 
 	/** Radio on flag */
 	t_u16 radio_on;
-
+	fw_release_version fw_release_number;
 	/** Firmware release number */
-	t_u32 fw_release_number;
+	//	t_u32 fw_release_number;
+	/** firmware version milestone */
+	char fw_ver_milestone[10];
+	/** firmware version buildtype */
+	char fw_ver_buildtype[10];
+	/** firmware version data */
+	char fw_ver_data[30];
 	/** firmware version */
 	t_u8 fw_ver;
 	/** firmware minor version */
@@ -3162,7 +3185,7 @@ struct _mlan_adapter {
 	/** LLDE enable/disable */
 	t_u8 llde_enabled;
 	/** LLDE modes 0 - default; 1 - carplay; 2 - gameplay; 3 - sound bar, 4
-	 * - validation, 5- event driven */
+	 * - validation, 5 - event driven */
 	t_u8 llde_mode;
 	/** high priority data packet type. 0: All traffic, 1: ping, 2: TCP ACK,
 	 * 4: TCP Data, 8: UDP */
@@ -4685,6 +4708,9 @@ mlan_status wlan_ret_drcs_cfg(pmlan_private pmpriv,
 void wlan_bt_coex_wlan_param_update_event(pmlan_private priv,
 					  pmlan_buffer pevent);
 
+mlan_status wlan_misc_ioctl_lte_coex_band_cfg(pmlan_adapter pmadapter,
+					      pmlan_ioctl_req pioctl_req);
+
 mlan_status wlan_misc_ioctl_dfs_repeater_cfg(pmlan_adapter pmadapter,
 					     pmlan_ioctl_req pioctl_req);
 
@@ -4747,6 +4773,17 @@ mlan_status wlan_ret_foundry_type(pmlan_private pmpriv,
 
 mlan_status wlan_misc_ioctl_foundry_type(pmlan_adapter pmadapter,
 					 mlan_ioctl_req *pioctl_req);
+
+mlan_status wlan_cmd_set_debug_temperature(pmlan_private pmpriv,
+					   HostCmd_DS_COMMAND *cmd,
+					   t_u16 cmd_action,
+					   t_void *pioctl_req);
+mlan_status wlan_ret_debug_temperature(pmlan_private pmpriv,
+				       HostCmd_DS_COMMAND *resp,
+				       mlan_ioctl_req *pioctl_buf);
+
+mlan_status wlan_misc_ioctl_debug_temperature(pmlan_adapter pmadapter,
+					      mlan_ioctl_req *pioctl_req);
 
 mlan_status wlan_misc_ioctl_get_tsf(pmlan_adapter pmadapter,
 				    pmlan_ioctl_req pioctl_req);
@@ -5279,16 +5316,19 @@ mlan_status wlan_cmd_mclient_scheduling_enable(pmlan_private pmpriv,
 void wlan_add_iPhone_entry(mlan_private *priv, t_u8 *mac);
 void wlan_delete_iPhone_entry(mlan_private *priv, t_u8 *mac);
 
-extern void print_chan_switch_block_event(t_u16 reason_code);
+/**
+ *  @brief This function checks whether the operation class is a 6G
+ *
+ *  @param op_class       global operation class
+ *
+ *  @return 0--not allowed, other value allowed
+ */
+static INLINE t_bool wlan_is_6ghz_op_class(t_u8 op_class)
+{
+	return op_class >= 131 && op_class <= 137;
+}
 
-#ifdef SECURE_HOST
-mlan_status wlan_adapter_func_init(pmlan_adapter pmadapter);
-mlan_status wlan_cmd_secure_host(pmlan_private pmpriv, HostCmd_DS_COMMAND *cmd,
-				 t_pvoid pdata_buf);
-mlan_status wlan_process_secure_host_event(pmlan_private pmpriv, t_u8 *data,
-					   t_u32 len);
-#endif
-mlan_status mlan_read_meta_data(mlan_adapter *pmadapter, pmlan_fw_image pmfw);
+extern void print_chan_switch_block_event(t_u16 reason_code);
 
 static inline t_bool wlan_copy_on_tx_enabled(const mlan_adapter *adapter)
 {
@@ -5300,6 +5340,14 @@ static inline t_bool wlan_copy_on_rx_enabled(const mlan_adapter *adapter)
 	return adapter->init_para.copy_on_rx;
 }
 
+#ifdef SECURE_HOST
+mlan_status wlan_adapter_func_init(pmlan_adapter pmadapter);
+mlan_status wlan_cmd_secure_host(pmlan_private pmpriv, HostCmd_DS_COMMAND *cmd,
+				 t_pvoid pdata_buf);
+mlan_status wlan_process_secure_host_event(pmlan_private pmpriv, t_u8 *data,
+					   t_u32 len);
+#endif
+mlan_status mlan_read_meta_data(mlan_adapter *pmadapter, pmlan_fw_image pmfw);
 mlan_status wlan_cmd_mfg_set_debug_temperature(pmlan_private pmpriv,
 					       HostCmd_DS_COMMAND *cmd,
 					       t_u16 cmd_action,

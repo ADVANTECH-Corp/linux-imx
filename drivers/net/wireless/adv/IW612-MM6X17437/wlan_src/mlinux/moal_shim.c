@@ -289,7 +289,7 @@ mlan_status moal_malloc_cached(t_void *pmoal, t_u32 size, t_u8 **ppbuf,
 	flag = in_atomic()     ? GFP_ATOMIC :
 	       irqs_disabled() ? GFP_ATOMIC :
 				 GFP_KERNEL;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
 	*ppbuf = dma_alloc_noncoherent(&card->dev->dev, size, &dma,
 				       DMA_BIDIRECTIONAL, flag);
 #else
@@ -329,7 +329,7 @@ mlan_status moal_mfree_cached(t_void *pmoal, t_u32 size, t_u8 *pbuf,
 	if (unlikely(!pbuf || !card))
 		return MLAN_STATUS_FAILURE;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
 	dma_free_noncoherent(&card->dev->dev, size, pbuf, buf_pa,
 			     DMA_BIDIRECTIONAL);
 #else
@@ -1879,8 +1879,13 @@ static mlan_status moal_recv_packet_to_mon_if(moal_handle *handle,
 					struct ieee80211_radiotap_header);
 				if (rt_info.radiotap_extra) {
 					rth_hdr->it_present |= cpu_to_le32(
+#if LINUX_VERSION_CODE > KERNEL_VERSION(4, 9, 0)
 						(1
-						 << IEEE80211_RADIOTAP_TIMESTAMP) |
+						 << IEEE80211_RADIOTAP_TIMESTAMP)
+#else
+						0
+#endif
+						|
 						(1
 						 << IEEE80211_RADIOTAP_RADIOTAP_NAMESPACE) |
 						(1 << IEEE80211_RADIOTAP_EXT));
@@ -2793,7 +2798,7 @@ mlan_status moal_recv_packet(t_void *pmoal, pmlan_buffer pmbuf)
 	struct sk_buff *skb = NULL;
 	moal_handle *handle = (moal_handle *)pmoal;
 #if defined(USB) || defined(PCIE)
-	t_u32 max_rx_data_size = MLAN_RX_DATA_BUF_SIZE;
+	t_u32 max_rx_data_size = handle->params.amsdu_rx_size;
 #endif
 	dot11_rxcontrol rxcontrol;
 	t_u8 rx_info_flag = MFALSE;
@@ -2822,9 +2827,9 @@ mlan_status moal_recv_packet(t_void *pmoal, pmlan_buffer pmbuf)
 						MAX(MLAN_USB_MAX_PKT_SIZE,
 						    cardp->rx_deaggr_ctrl
 							    .aggr_align);
-					max_rx_data_size =
-						MAX(max_rx_data_size,
-						    MLAN_RX_DATA_BUF_SIZE);
+					max_rx_data_size = MAX(
+						max_rx_data_size,
+						handle->params.amsdu_rx_size);
 				}
 			}
 		}
@@ -3119,6 +3124,8 @@ mlan_status moal_recv_packet(t_void *pmoal, pmlan_buffer pmbuf)
 					woal_get_monotonic_time(&t);
 					pmbuf->out_ts_sec = t.time_sec;
 					pmbuf->out_ts_usec = t.time_usec;
+					moal_tp_accounting(handle, pmbuf,
+							   RX_TIME_PKT);
 				}
 			}
 			if (priv->phandle->tp_acnt.drop_point == RX_DROP_P4) {
@@ -3144,18 +3151,15 @@ mlan_status moal_recv_packet(t_void *pmoal, pmlan_buffer pmbuf)
 					}
 				}
 			}
-			if (priv->phandle->tp_acnt.on) {
-				if (pmbuf && pmbuf->in_ts_sec)
-					moal_tp_accounting(handle, pmbuf,
-							   RX_TIME_PKT);
-			}
 		}
 	}
 done:
-	if (status != MLAN_STATUS_PENDING && pmbuf && !pmbuf->pdesc && skb)
-		dev_kfree_skb(skb);
-	if (pmbuf && !pmbuf->pbuf)
-		status = MLAN_STATUS_PENDING;
+	if (status == MLAN_STATUS_FAILURE) {
+		if (pmbuf && !pmbuf->pbuf)
+			status = MLAN_STATUS_PENDING;
+		if (pmbuf && !pmbuf->pdesc && skb)
+			dev_kfree_skb(skb);
+	}
 	LEAVE();
 	return status;
 }
@@ -3944,7 +3948,6 @@ mlan_status moal_recv_event(t_void *pmoal, pmlan_event pmevent)
 
 	case MLAN_EVENT_ID_FW_DISCONNECTED:
 #if defined(STA_CFG80211) || defined(UAP_CFG80211)
-#if CFG80211_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
 		/* 6E Indoor/Outdoor, download the default power table
 		 * after disconnect/link-loss */
 		if ((priv->phandle->fw_bands & BAND_6G) &&
@@ -3956,7 +3959,6 @@ mlan_status moal_recv_event(t_void *pmoal, pmlan_event pmevent)
 				PRINTM(MERROR,
 				       "Default 6E table download failed!!\n");
 		}
-#endif
 #endif
 		if (priv->media_connected)
 			woal_send_disconnect_to_system(
@@ -4198,27 +4200,6 @@ mlan_status moal_recv_event(t_void *pmoal, pmlan_event pmevent)
 #ifdef STA_CFG80211
 #if CFG80211_VERSION_CODE > KERNEL_VERSION(2, 6, 35)
 		if (IS_STA_CFG80211(cfg80211_wext)) {
-			struct cfg80211_bss *bss = NULL;
-#if CFG80211_VERSION_CODE >= KERNEL_VERSION(4, 1, 0)
-			bss = cfg80211_get_bss(priv->wdev->wiphy, NULL,
-					       priv->cfg_bssid, NULL, 0,
-					       IEEE80211_BSS_TYPE_ESS,
-					       IEEE80211_PRIVACY_ANY);
-
-#else
-			bss = cfg80211_get_bss(priv->wdev->wiphy, NULL,
-					       priv->cfg_bssid, NULL, 0,
-					       WLAN_CAPABILITY_ESS,
-					       WLAN_CAPABILITY_ESS);
-#endif
-			if (bss) {
-				cfg80211_unlink_bss(priv->wdev->wiphy, bss);
-#if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 9, 0)
-				cfg80211_put_bss(priv->wdev->wiphy, bss);
-#else
-				cfg80211_put_bss(bss);
-#endif
-			}
 			if (!hw_test && priv->roaming_enabled)
 				woal_config_bgscan_and_rssi(priv, MFALSE);
 			else {
@@ -5751,7 +5732,8 @@ mlan_status moal_recv_event(t_void *pmoal, pmlan_event pmevent)
 			roam_info->req_ie_len = ie_len;
 			roam_info->resp_ie = pinfo->rsp_ie;
 			roam_info->resp_ie_len = pinfo->header.len;
-#if CFG80211_VERSION_CODE >= KERNEL_VERSION(5, 19, 0)
+#if (CFG80211_VERSION_CODE >= KERNEL_VERSION(5, 19, 0) ||                      \
+     (defined(ANDROID_SDK_VERSION) && ANDROID_SDK_VERSION >= 33))
 			if (priv->wdev->u.client.ssid_len)
 #else
 			if (priv->wdev->ssid_len)

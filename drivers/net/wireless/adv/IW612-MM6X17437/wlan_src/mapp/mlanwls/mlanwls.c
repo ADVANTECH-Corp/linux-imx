@@ -106,6 +106,7 @@ static char *mlanwls_help[] = {
 	"		anqp_req     [<conf> <chan> <mac_address>]",
 	"		neighbor_report_req  [<conf> <chan> <mac_address>]",
 	"		event        [<<wlan_device_number>]",
+	"		dot11mc_unassoc_ftm_cfg [1:Enable/0:Disable]",
 	"	For help on each subcommand,",
 	"		mlanwls mlan0 <command> <subcommand> -h"
 	""};
@@ -200,6 +201,8 @@ static char *dot11mc_unassoc_ftm_cfg_req_help[] = {
 	"   Examples:",
 	"   mlanwls mlan0 ftm dot11mc_unassoc_ftm_cfg",
 	"       - Get current state of unassociated state FTM cfg",
+	"   mlanwls mlan0 ftm dot11mc_unassoc_ftm_cfg 0",
+	"       - Set the unassociated state FTM cfg to disabled",
 	"   mlanwls mlan0 ftm dot11mc_unassoc_ftm_cfg 1",
 	"       - Set the unassociated state FTM cfg to Enabled",
 	" "};
@@ -2217,6 +2220,16 @@ static int process_subcommand(int argc, char *argv[])
 			}
 			break;
 		case DOT11MC_UNASSOC_FTM_CFG_CMD_ID:
+			// Check if user requested help
+			if (argc >= 5 && strcmp(argv[argc - 1], "-h") == 0) {
+				display_help(
+					NELEMENTS(
+						dot11mc_unassoc_ftm_cfg_req_help),
+					dot11mc_unassoc_ftm_cfg_req_help);
+				ret = MLAN_STATUS_SUCCESS;
+				goto done;
+			}
+
 			if ((DOT11MC_UNASSOC_FTM_CFG_CMD_LEN != argc) &&
 			    ((DOT11MC_UNASSOC_FTM_CFG_CMD_LEN - 1) != argc)) {
 				DBG_ERROR(
@@ -2836,8 +2849,13 @@ int main(int argc, char *argv[])
 		}
 		mlanwls_event_monitor(nl_sk, wls_mode);
 	} else {
-		/*Process the wlscmd sub command argument*/
-		ret = process_subcommand(argc, argv);
+		if (!strncmp(argv[WLS_SUBCMD_INDEX], "ftm", 3) &&
+		    (argv[WLS_SUBCMD_INDEX + 1] != NULL)) {
+			/*Process the wlscmd sub command argument*/
+			ret = process_subcommand(argc, argv);
+		} else {
+			display_help(NELEMENTS(mlanwls_help), mlanwls_help);
+		}
 	}
 
 done:

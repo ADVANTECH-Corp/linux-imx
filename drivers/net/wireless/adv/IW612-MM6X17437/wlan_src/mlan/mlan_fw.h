@@ -433,6 +433,10 @@ typedef enum _WLAN_802_11_WEP_STATUS {
 
 /** HW_SPEC Dot11nDevCap : MAX AMSDU supported */
 #define ISSUPP_MAXAMSDU(Dot11nDevCap) (Dot11nDevCap & MBIT(31))
+/** HW_SPEC Dot11nDevCap : Reset MAX AMSDU supported */
+#define RESETSUPP_MAXAMSDU(Dot11nDevCap) (Dot11nDevCap &= ~MBIT(31))
+/** HW_SPEC Dot11nDevCap : Set MAX AMSDU supported */
+#define SETSUPP_MAXAMSDU(Dot11nDevCap) (Dot11nDevCap |= MBIT(31))
 /** HW_SPEC Dot11nDevCap : Beamforming support */
 #define ISSUPP_BEAMFORMING(Dot11nDevCap) (Dot11nDevCap & MBIT(30))
 /** HW_SPEC Dot11nDevCap : Green field support */
@@ -2838,7 +2842,21 @@ enum API_VER_ID {
 	UAP_FW_API_VER_ID = 3,
 	CHANRPT_API_VER_ID = 4,
 	FW_HOTFIX_VER_ID = 5,
+	FW_PL_VER_ID = 6,
+	FW_MILESTONE_VER_ID = 7,
+	FW_BUILDTYPE_VER_ID = 8,
+	FW_COMMIT_INFO_VER_ID = 9,
 };
+
+/** MrvlIEtypes_fw_ver_info_t */
+typedef MLAN_PACK_START struct _MrvlIEtypes_fw_ver_ie_t {
+	/** Header */
+	MrvlIEtypesHeader_t header;
+	/** API id */
+	t_u16 api_id;
+	/** fw version details */
+	t_u8 ver_ie_ptr[];
+} MLAN_PACK_END MrvlIEtypes_fw_ver_ie_t;
 
 /** FW AP V15 */
 #define HOST_API_VERSION_V15 15
@@ -3910,6 +3928,19 @@ typedef MLAN_PACK_START struct _MrvlIEtypes_boot_time_cfg_t {
 	t_u8 reserve[3];
 } MLAN_PACK_END MrvlIEtypes_boot_time_cfg_t, *pMrvlIEtypes_boot_time_cfg_t;
 
+/** Host Max RX Buffer Size TLV */
+typedef MLAN_PACK_START struct _MrvlIEtypes_host_max_rx_buf_size_t {
+	/** Header type */
+	t_u16 type;
+	/** Header length */
+	t_u16 len;
+	/** Max RX buffer size */
+	t_u16 max_rx_buf_size;
+	/** Reserved */
+	t_u16 reserved;
+} MLAN_PACK_END MrvlIEtypes_host_max_rx_buf_size_t,
+	*pMrvlIEtypes_host_max_rx_buf_size_t;
+
 /** Power_Group_t */
 typedef MLAN_PACK_START struct _Power_Group_t {
 	/** Modulation Class */
@@ -4701,6 +4732,17 @@ typedef MLAN_PACK_START struct _HostCmd_DS_GET_FOUNDRY_TYPE {
 	t_u8 foundry_type;
 } MLAN_PACK_END HostCmd_DS_GET_FOUNDRY_TYPE;
 
+/** Type definition of HostCmd_DS_SET_DEBUG_TEMPERATURE */
+typedef MLAN_PACK_START struct _HostCmd_DS_SET_DEBUG_TEMPERATURE {
+	/** Action */
+	t_u16 action;
+	/** enable/disable debug thermal simulation */
+	t_u16 simulation_enable;
+	/** CAU temperature to set */
+	t_s32 cau_temp;
+	/** RFU temperature to set */
+	t_s32 rf_temp[MAX_RFUS][MAX_PATHS];
+} MLAN_PACK_END HostCmd_DS_SET_DEBUG_TEMPERATURE;
 /** Type definition of hostcmd_twt_information */
 typedef struct MLAN_PACK_START _hostcmd_twt_information {
 	/** TWT Flow Identifier. Range: [0-7] */
@@ -5267,6 +5309,9 @@ typedef MLAN_PACK_START struct _MrvlIEtypes_SAE_PWE_Mode_t {
 
 /** SAE H2E capability bit in RSNX */
 #define SAE_H2E_BIT 5
+/** SSID Protection capability bit in RSNX */
+#define SSID_PROTECTION_BIT 21
+#define SSID_PROTECTION_OCTET3_BIT 5
 
 /* rsnMode -
  *      Bit 0    : No RSN
@@ -6586,6 +6631,14 @@ typedef MLAN_PACK_START struct _HostCmd_DS_PACKET_AGGR_OVER_HOST_INTERFACE {
 } MLAN_PACK_END HostCmd_DS_PACKET_AGGR_OVER_HOST_INTERFACE;
 #endif /* USB */
 
+/** HostCmd_DS_LTE_COEX_BAND_PARAMS_CONFIG */
+typedef MLAN_PACK_START struct _HostCmd_DS_LTE_COEX_BAND_PARAMS_CONFIG {
+	/** ACT_GET/ACT_SET */
+	t_u16 action;
+	/** LTE COEX BAND */
+	t_u8 band;
+} MLAN_PACK_END HostCmd_DS_LTE_COEX_BAND_PARAMS_CONFIG;
+
 /** HostCmd_CONFIG_LOW_PWR_MODE */
 typedef MLAN_PACK_START struct _HostCmd_CONFIG_LOW_PWR_MODE {
 	/** Enable LPM */
@@ -7008,7 +7061,7 @@ typedef MLAN_PACK_START struct _HostCmd_DS_PCIE_ADMA_INIT {
 	t_u8 reserved;
 } HostCmd_DS_PCIE_ADMA_INIT;
 
-#if defined(PCIE8997) || defined(PCIE8897)
+#if defined(PCIE8897)
 /** PCIE ring buffer description for DATA */
 typedef MLAN_PACK_START struct _mlan_pcie_data_buf {
 	/** Buffer descriptor flags */
@@ -7869,7 +7922,7 @@ typedef struct MLAN_PACK_START _HostCmd_DS_COMMAND {
 		HostCmd_DS_802_11_NET_MONITOR net_mon;
 		HostCmd_DS_CMD_TX_DATA_PAUSE tx_data_pause;
 #if defined(PCIE)
-#if defined(PCIE8997) || defined(PCIE8897)
+#if defined(PCIE8897)
 		HostCmd_DS_PCIE_HOST_BUF_DETAILS pcie_host_spec;
 #endif
 #endif
@@ -7892,6 +7945,7 @@ typedef struct MLAN_PACK_START _HostCmd_DS_COMMAND {
 		HostCmd_DS_MULTI_CHAN_CFG multi_chan_cfg;
 		HostCmd_DS_MULTI_CHAN_POLICY multi_chan_policy;
 		HostCmd_DS_DRCS_CFG drcs_cfg;
+		HostCmd_DS_LTE_COEX_BAND_PARAMS_CONFIG lte_coex_cfg;
 		HostCmd_CONFIG_LOW_PWR_MODE low_pwr_mode_cfg;
 		HostCmd_DS_TSF tsf;
 		HostCmd_DS_DFS_REPEATER_MODE dfs_repeater;
@@ -7955,6 +8009,7 @@ typedef struct MLAN_PACK_START _HostCmd_DS_COMMAND {
 		mfg_Cmd_IEEEtypes_CtlBasicTrigHdr_t mfg_tx_trigger_config;
 		mfg_cmd_otp_mac_addr_rd_wr_t mfg_otp_mac_addr_rd_wr;
 		mfg_cmd_otp_cal_data_rd_wr_t mfg_otp_cal_data_rd_wr;
+		mfg_CmdDebugTemperature_Cfg_t mfg_debug_temp;
 		HostCmd_DS_CMD_ARB_CONFIG arb_cfg;
 		HostCmd_DS_CMD_DOT11MC_UNASSOC_FTM_CFG dot11mc_unassoc_ftm_cfg;
 		HostCmd_DS_HAL_PHY_CFG hal_phy_cfg_params;
@@ -7985,11 +8040,11 @@ typedef struct MLAN_PACK_START _HostCmd_DS_COMMAND {
 		t_u8 assoc_rsp_buf[ASSOC_RSP_BUF_SIZE];
 		HostCmd_DS_GET_FOUNDRY_TYPE foundry_type;
 
+		HostCmd_DS_SET_DEBUG_TEMPERATURE temp_cfg;
 #ifdef UAP_SUPPORT
 		/** Agiled channel switch configuration */
 		HostCmd_DS_AGCS_CFG agcs_cfg;
 #endif /* UAP_SUPPORT */
-
 	} params;
 } MLAN_PACK_END HostCmd_DS_COMMAND, *pHostCmd_DS_COMMAND;
 

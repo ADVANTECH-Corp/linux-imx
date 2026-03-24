@@ -316,7 +316,9 @@ static int woal_uap_get_fw_info(struct net_device *dev, struct ifreq *req)
 		ret = -EFAULT;
 		goto done;
 	}
-	fw.fw_release_number = fw_info.fw_ver;
+	//	fw.fw_release_number = fw_info.fw_ver;
+	moal_memcpy_ext(priv->phandle, &fw.fw_release_number, &fw_info.fw_ver,
+			sizeof(fw.fw_release_number), sizeof(fw_info.fw_ver));
 	fw.hw_dev_mcs_support = fw_info.hw_dev_mcs_support;
 	fw.fw_bands = fw_info.fw_bands;
 	fw.region_code = fw_info.region_code;
@@ -3855,6 +3857,7 @@ int woal_uap_set_11ac_status(moal_private *priv, t_u8 action, t_u8 band,
 	} else {
 		cfg_11ac->param.vht_cfg.vht_cap_info =
 			fw_info.usr_dot_11ac_dev_cap_a;
+		cfg_11ac->param.vht_cfg.vht_cap_info &= ~(MBIT(0) | MBIT(1));
 	}
 	if (action == MLAN_ACT_DISABLE) {
 		cfg_11ac->param.vht_cfg.bwcfg = MFALSE;
@@ -5027,7 +5030,7 @@ void woal_uap_get_version(moal_private *priv, char *version, int max_len)
 		PRINTM(MINFO, "MOAL UAP VERSION: %s\n",
 		       info->param.ver_ext.version_str);
 		snprintf(version, max_len, priv->phandle->driver_version,
-			 info->param.ver_ext.version_str);
+			 info->param.ver_ext.version_str, REL_MILESTONE);
 	}
 
 	if (status != MLAN_STATUS_PENDING)

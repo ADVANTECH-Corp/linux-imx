@@ -3,7 +3,7 @@
  *  @brief This file contains TLV ID definitions.
  *
  *
- *  Copyright 2023-2025 NXP
+ *  Copyright 2023-2026 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -57,6 +57,8 @@
 /** TLV type : Power capability */
 #define TLV_TYPE_POWER_CAPABILITY 0x0021
 #define TLV_TYPE_HT_CAPABILITY 0x002d
+/** TLV type : RSN eXtended IE */
+#define TLV_TYPE_RSNX 0x00f4
 /** TLV type : Vendor Specific IE */
 #define TLV_TYPE_VENDOR_SPECIFIC_IE 0x00dd
 #define TLV_TYPE_EXTENSION_ID 0x00ff
@@ -516,7 +518,9 @@
 #define VENDOR_IE_OUIS_TLV_ID (PROPRIETARY_TLV_BASE_ID + 357) /* 0x0265 */
 #define TLV_TYPE_AP_INFO (PROPRIETARY_TLV_BASE_ID + 358) /* 0x0266 */
 #define TLV_TYPE_CSI_AGC_CONFIG (PROPRIETARY_TLV_BASE_ID + 363) /* 0x026b */
+#define NXP_VERSION_COMPONENTS_TLV_ID                                          \
+	(PROPRIETARY_TLV_BASE_ID + 364) /* 0x026c */
 #define TLV_TYPE_PER_BAND_TXPWR_CAP (PROPRIETARY_TLV_BASE_ID + 365) /* 0x026d  \
 								     */
-
+#define TLV_HOST_MAX_RX_BUF_SIZE (PROPRIETARY_TLV_BASE_ID + 366) /* 0x026e */
 #endif /* !MLAN_TLV_IDS_H_ */

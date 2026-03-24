@@ -1,7 +1,7 @@
 ===============================================================================
 			U S E R  M A N U A L
 
- Copyright 2008-2025 NXP
+ Copyright 2008-2026 NXP
 
 
 1) FOR DRIVER BUILD
@@ -9,7 +9,7 @@
 	Goto source code directory wlan_src/.
 	make [clean] build
 	The driver and utility binaries can be found in ../bin_xxxx directory.
-	The driver source code is compatible with hosts running Linux kernel versions ranging from 2.6.32 to 6.17.0.
+	The driver source code is compatible with hosts running Linux kernel versions ranging from 2.6.32 to 6.18.2.
 
 2) FOR INTEGRATING DRIVER INTO LINUX KERNEL
 
@@ -144,6 +144,7 @@
 	(Note: This feature will be supported for IW416 and IW610x chipsets with host_mlme=1 case as of now.)
 	tpe_ie_ignore=0|1 <obey TPE IEs from ex-AP (default) | ignore TPE IEs from ex-AP>
 	make_before_break=0|1, <No make before break during roam (default) | make_before_break during roam)>
+    amsdu_8k_rx=0|1, <not support AMPDU 8K RX, just support 4K (default) | support AMPDU 8K RX>
 	dts_enable=0|1 <Disable DTS | Enable DTS (default)>
 	fw_name = <FW file name>
 		e.g. copy pcieuart9098_combo_v1.bin to firmware directory, fw_name=nxp/pcieuart9098_combo_v1.bin
@@ -157,7 +158,7 @@
 	For 9097/9098: antcfg=0x101|0x303|.. <Bit0: Tx/Rx Path A for 2G, Bit1: Tx/Rx Path B for 2G, Bit8: Tx/Rx Path A for 5G, Bit9: Tx/Rx Path B for 5G>
 	For IW624/AW693: antcfg=0x10101|0x30303|.. <Bit0: Tx/Rx Path A for 2G, Bit1: Tx/Rx Path B for 2G, Bit8: Tx/Rx Path A for 5G, Bit9: Tx/Rx Path B for 5G, Bit16: Tx/Rx Path A for 6G, Bit17: Tx/Rx Path B for 6G>
 		For AW693, it's recommended to use mod_para configuration file for antcfg as MAC1 supports 2x2 and MAC2 supports only 1x1.
-	For 8897/8997: antcfg=0x11|0x13|0x33 <Bit0:Rx Path A, Bit1:Rx Path B, Bit 4:Tx Path A, Bit 5:Tx Path B>
+	For 8897: antcfg=0x11|0x13|0x33 <Bit0:Rx Path A, Bit1:Rx Path B, Bit 4:Tx Path A, Bit 5:Tx Path B>
 	For others: antcfg=0|1|2|0xffff <default | Tx/Rx antenna 1 | Tx/Rx antenna 2 | enable antenna diversity>
 	slew_rate: Slew Rate Control value = 0|1|2|3 (0 is the slowest slew rate and 03 has the highest slew rate (default))
 	init_cfg=<init config (MAC addresses, registers etc.) file name>
@@ -458,7 +459,7 @@
        echo "fw_reload=4" > /proc/mwlan/adapterX/config   trigger PCIe FLR and reload firmware.
        echo "fw_reload=6" > /proc/mwlan/adapterX/config   trigger PCIe inband firmware reset and reload firmware.
 
-    (Note: This feature will be supported on IW416 and 8997.
+    (Note: This feature will be supported on IW416.
            For 8987, it only work with the board which supports parallel fw download)
 
 6) FOR RF test mode commands:
@@ -888,6 +889,7 @@ SYNOPSIS
 	mlanutl mlanX linkstats
 	mlanutl uapX plinkstats <action> <filter> <interval> <netlink_evt>
 	mlanutl mlanX listeninterval [l]
+	mlanutl mlanX ltecoexcfg [n]
 	mlanutl mlanX macctrl [n]
 	mlanutl uapX macctrl [n]
 	mlanutl mlanX memrdwr <address> [value]
@@ -900,6 +902,7 @@ SYNOPSIS
 	mlanutl mlanX offchannel [<l> <m> <n> <bandwidth>]
 	mlanutl mlanX otpuserdata <l>
 	mlanutl mlanX passphrase [l]
+	mlanutl mlanX ssid_protection [n]
 	mlanutl mlanX pb_bypass [data_1, data_2, ... data_n]
 	mlanutl mlanX pcieregrw <offset> [value]
 	mlanutl mlanX pciebar0regrw <offset> [value]
@@ -1675,6 +1678,7 @@ htcapinfo
 
 	where <m> is <capinfo>
 	<capinfo> - This is a bitmap and should be used as following
+		Bit 31: max amsdu rx length, 0 - 3839 octets, 1 - 7935 octets
 		Bit 29: Green field enable/disable
 		Bit 26: Rx STBC Support enable/disable. (As we support
 			single spatial stream only 1 bit is used for Rx STBC)
@@ -3747,6 +3751,17 @@ listeninterval
 		mlanutl mlan0 listeninterval     : Display Listen interval
 		mlanutl mlan0 listeninterval 1   : Set Listen interval to 1.
 
+ltecoexcfg
+        This command is used to configure LTE coex band.
+
+        Usage:
+                mlanutl mlanX ltecoexcfg [n]
+
+        where:
+                n: LTE Coex Band to be set in fw.
+
+        Examples:
+                mlanutl mlan0 ltecoexcfg 26                             : Set the LTE Band to 26
 macctrl
 	This command is used to set/get MAC control.
 	It's recommended to read the current setting first to avoid override issue.
@@ -4019,6 +4034,14 @@ passphrase
 	Examples:
 		mlanutl mlan0 passphrase "1;ssid=nxp;sae_password=1234567890"
 
+ssid_protection [n]
+       This command is used to set/get ssid protection for WPA-PSK/WPA2-PSK/WPA3-SAE mode.
+
+       Where <n>
+               1/0: enable/disable (default: 0)
+       Example:
+               mlanutl mlan0 ssid_protection 1
+
 pb_bypass
 	This command is used to get the By-passed TX packet from upper layer.
 
@@ -4268,7 +4291,7 @@ regrdwr
 		   X = Path ID (0=Path_A, 1=Path_B), ZZ = offset (0-0xFF).
 		2. If Y != 0, access RFU XCVR Register on Path Y (1=Path_A, 2=Path_B).
 		   X = Page # (0=Page_1, 1=Page_2, 2=Page_3 if chip support), ZZ: offset (0-0xFF).
-		For 8977/8997/8987
+		For 8977/8987
         X   = Path ID (0-1)
         Y   = Page Number (0-6) in selected Path
         ZZ  = Register offset in selected path/page
@@ -5864,9 +5887,11 @@ per_band_txpwr_cap
 	This command is used to set/get cap the power value for all transmit frames on all
 	channels in a band at runtime, irrespective of the association state or BSS active
 	state, operating on channels within the band.
-	In addition, set/get peer RSSI thresholds based backoff tx power when the DUT STA/uAP
-	operates in the 6GHz PSD VLP modes in FCC/ETSI regions. FW will backoff 6dBm from the
-	maximum EIRP PSD value of -5 dBm/MHz, when the peer RSSI is stronger than the strong
+
+	For 5GHz and 6GHz bands, in addition to static power capping, this command supports
+	peer RSSI threshold based dynamic TPC to backoff tx power based on signal strength.
+
+	FW will backoff 6dBm from the final cfg txpower, when the peer RSSI is stronger than the strong
 	RSSI threshold, will backoff 3dBm, when the peer RSSI is between strong and weak
 	RSSI thresholds, and will remove backoff for weaker levels.
 	(This command supports AW693 chipset only)
@@ -5881,8 +5906,8 @@ per_band_txpwr_cap
 		power:
 			absolute cap tx power value in dBm (0 to 25 dBm)
 			0: remove capping
-			0xff: enable peer RSSI threshold based TPC for the operating 6GHz
-				channel in VLP PSD mode, if both strong and weak thresholds
+			0xff: enable peer RSSI threshold based TPC for the operating 5GHz or 6GHz band
+				channel, if both strong and weak thresholds
 				are specified, else dynamic TPC
 
 		strong_rssi_thresh: peer strong RSSI threshold between -1 and -120 dBm
@@ -5894,6 +5919,10 @@ Examples:
 		Remove capping for 2.4G band
 	mlanutl mlan0 per_band_txpwr_cap 1
 		Get current max tx power setting for 5G band
+	mlanutl mlan0 per_band_txpwr_cap 1 0xff -30 -40
+		Enable RSSI threshold based txpower backoff for 5G band DFS channels
+	mlanutl mlan0 per_band_txpwr_cap 1 0xff
+		Enable dynamic TPC based txpower backoff for 5G band DFS channels
 	mlanutl mlan0 per_band_txpwr_cap 2 0xff -30 -40
 		Enable RSSI threshold based txpower backoff in 6E VLP PSD mode
 	mlanutl mlan0 per_band_txpwr_cap 2 0xff
@@ -6118,7 +6147,7 @@ agcs
 		chload_th=[0~100]		Adjustable chload threshold. The chload of the newly selected channel will be
 								compared with this threshold to determine whether to switch channels.
 		csa_cnt=[value]			Channel switch count.
-		chan=[chan#][band]		User specified candidate channels, where band is [a,b,g,e].
+		chan=[chan#][band]		User specified candidate scan channels, where band is [a,b,g,e].
 								Default is	2g: 1, 6, 11
 										5g: 36, 40, 44, 48, 149, 153, 157, 161, 165
 										6g: 37
@@ -6146,7 +6175,8 @@ agcs
 	3) Enable with default parameters:
 		mlanutl uap0 agcs mode=1
 
-	4) Enable with partial parameters:
+	4) Enable with partial parameters:	enable agcs, set sample_time to 500ms, set scan channel duration to 30ms,
+										and specify candidate scan channels as 6, 36, and 37.
 		mlanutl uap0 agcs mode=1 sample_time=500 scan_dur=30 chan=6g,36a,37e
 
 ===============================================================================

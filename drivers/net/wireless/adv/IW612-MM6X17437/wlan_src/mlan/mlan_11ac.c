@@ -145,6 +145,7 @@ static void wlan_fill_cap_info(mlan_private *priv, VHT_capa_t *vht_cap,
 			       t_u16 bands)
 {
 	t_u32 usr_dot_11ac_dev_cap;
+	t_u32 cfg_value = 0;
 	ENTER();
 
 	if (bands & BAND_A)
@@ -155,6 +156,16 @@ static void wlan_fill_cap_info(mlan_private *priv, VHT_capa_t *vht_cap,
 	vht_cap->vht_cap_info = usr_dot_11ac_dev_cap;
 
 	RESET_VHTCAP_MAXMPDULEN(vht_cap->vht_cap_info);
+	/*
+	   Set to 0 for 3895 octets.
+	   Set to 1 for 7991 octets.
+	   Set to 2 for 11 454 octets.
+	*/
+	cfg_value = GET_VHTCAP_MAXMPDULEN(usr_dot_11ac_dev_cap);
+	if (cfg_value &&
+	    (priv->adapter->rx_buf_size >= MLAN_RX_DATA_BUF_SIZE_8K)) {
+		SET_VHTCAP_MAXMPDULEN(vht_cap->vht_cap_info, 1);
+	}
 	LEAVE();
 }
 
@@ -216,12 +227,16 @@ static mlan_status wlan_11ac_ioctl_vhtcfg(pmlan_adapter pmadapter,
 				   cfg->param.vht_cfg.vht_cap_info &
 				   pmadapter->hw_dot_11ac_dev_cap;
 		/** set MAX MPDU LEN field (bit 0 - bit 1) */
+		RESET_VHTCAP_MAXMPDULEN(usr_vht_cap_info);
 		cfg_value =
 			GET_VHTCAP_MAXMPDULEN(cfg->param.vht_cfg.vht_cap_info);
 		hw_value =
 			GET_VHTCAP_MAXMPDULEN(pmadapter->hw_dot_11ac_dev_cap);
-		SET_VHTCAP_MAXMPDULEN(usr_vht_cap_info,
-				      MIN(cfg_value, hw_value));
+		if (cfg_value && hw_value &&
+		    (pmpriv->adapter->rx_buf_size >=
+		     MLAN_RX_DATA_BUF_SIZE_8K)) {
+			SET_VHTCAP_MAXMPDULEN(usr_vht_cap_info, 1);
+		}
 		/** set CHAN Width Set field (bit 2 - bit 3) */
 		cfg_value = GET_VHTCAP_CHWDSET(cfg->param.vht_cfg.vht_cap_info);
 		hw_value = GET_VHTCAP_CHWDSET(pmadapter->hw_dot_11ac_dev_cap);

@@ -953,7 +953,13 @@ t_void wlan_init_adapter(pmlan_adapter pmadapter)
 	pmadapter->fw_bands = 0;
 	pmadapter->config_bands = 0;
 	pmadapter->pscan_channels = MNULL;
-	pmadapter->fw_release_number = 0;
+	pmadapter->fw_release_number.releaseNum = 0;
+	pmadapter->fw_release_number.minorRevNum = 0;
+	pmadapter->fw_release_number.majorRevNum = 0;
+	pmadapter->fw_release_number.patchLevel = 0;
+	pmadapter->fw_ver_milestone[0] = '\0';
+	pmadapter->fw_ver_buildtype[0] = '\0';
+	pmadapter->fw_ver_data[0] = '\0';
 	pmadapter->fw_cap_info = 0;
 	memset(pmadapter, &pmadapter->upld_buf, 0, sizeof(pmadapter->upld_buf));
 	pmadapter->upld_len = 0;
@@ -984,7 +990,7 @@ t_void wlan_init_adapter(pmlan_adapter pmadapter)
 		pmadapter->pcard_pcie->rxbd_rdptr = 0;
 		pmadapter->pcard_pcie->evtbd_rdptr = 0;
 		pmadapter->pcard_pcie->txbd_pending = 0;
-#if defined(PCIE8997) || defined(PCIE8897)
+#if defined(PCIE8897)
 		if (!pmadapter->pcard_pcie->reg->use_adma) {
 			pmadapter->pcard_pcie->rxbd_wrptr =
 				pmadapter->pcard_pcie->reg

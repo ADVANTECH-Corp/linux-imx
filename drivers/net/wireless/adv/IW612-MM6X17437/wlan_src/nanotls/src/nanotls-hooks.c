@@ -87,6 +87,7 @@ enum ecode nanotls_sha256_update(nanotls_sha_ctx *ctx, const void *buf,
 enum ecode nanotls_sha256_digest(const nanotls_sha_ctx *ctx,
 				 uint8_t hash[NANOTLS_SHA256_HASH_SIZE])
 {
+	// coverity[misra_c_2012_rule_11_8_violation:SUPPRESS]
 	cf_sha256_digest((void *)ctx, hash);
 
 	return E_OK;

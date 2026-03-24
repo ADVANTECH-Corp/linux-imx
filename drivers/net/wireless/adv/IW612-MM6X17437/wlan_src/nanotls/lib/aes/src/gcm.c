@@ -118,13 +118,13 @@ static void gcm_mult(gcm_context *ctx, // pointer to established context
 	uint8_t lo, hi, rem;
 	uint64_t zh, zl;
 
-	lo = (uint8_t)(x[15] & 0x0f);
+	lo = (uint8_t)(x[15] & 0x0fU);
 	hi = (uint8_t)(x[15] >> 4);
 	zh = ctx->HH[lo];
 	zl = ctx->HL[lo];
 
 	for (i = 15; i >= 0; i--) {
-		lo = (uint8_t)(x[i] & 0x0f);
+		lo = (uint8_t)(x[i] & 0x0fU);
 		hi = (uint8_t)(x[i] >> 4);
 
 		if (i != 15) {
@@ -203,7 +203,9 @@ int gcm_setkey(gcm_context *ctx, // pointer to caller-provided gcm context
 		vh = *HiH;
 		vl = *HiL;
 		for (j = 1; j < i; j++) {
+			// coverity[overrun:SUPPRESS]
 			HiH[j] = vh ^ ctx->HH[j];
+			// coverity[overrun:SUPPRESS]
 			HiL[j] = vl ^ ctx->HL[j];
 		}
 	}

@@ -316,8 +316,11 @@ static uint64_t u32_muladd64(uint32_t x, uint32_t y, uint32_t z, uint32_t t)
 	const uint32_t m2 = (uint32_t)xl * yh;
 	const uint32_t hi = (uint32_t)xh * yh;
 
+	// coverity[misra_c_2012_rule_10_8_violation:SUPPRESS]
 	uint64_t acc = lo + ((uint64_t)(hi + (m1 >> 16) + (m2 >> 16)) << 32);
+	// coverity[overflow_before_widen:SUPPRESS]
 	acc += m1 << 16;
+	// coverity[overflow_before_widen:SUPPRESS]
 	acc += m2 << 16;
 	acc += z;
 	acc += t;
@@ -706,7 +709,7 @@ static void m256_inv(uint32_t z[8], const uint32_t x[8], const m256_mod *mod)
 	 * Use plain right-to-left binary exponentiation;
 	 * branches are OK as the exponent is not a secret.
 	 */
-	uint32_t bitval[8];
+	uint32_t bitval[8] = {0};
 	u256_cmov(bitval, x, 1); /* copy x before writing to z */
 
 	m256_set32(z, 1, mod);
@@ -764,7 +767,7 @@ static int m256_from_bytes(uint32_t z[8], const uint8_t p[32],
 static void m256_to_bytes(uint8_t p[32], const uint32_t z[8],
 			  const m256_mod *mod)
 {
-	uint32_t zi[8];
+	uint32_t zi[8] = {0};
 	u256_cmov(zi, z, 1);
 	m256_done(zi, mod);
 

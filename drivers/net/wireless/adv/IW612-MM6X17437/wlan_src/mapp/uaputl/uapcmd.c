@@ -438,6 +438,20 @@ static void print_sys_cfg_protocol_usage(void)
 }
 
 /**
+ *  @brief Show usage information for the ssid_protection
+ *   command
+ *
+ *  $return         N/A
+ */
+void print_ssid_protection_usage(void)
+{
+	printf("\nUsage : ssid_protection [n]\n");
+	printf("\nOptions:              1 - Enable");
+	printf("\n                      0 - Disable (default)\n");
+	return;
+}
+
+/**
  *  @brief Show usage information for the sys_cfg_wep_key
  *   command
  *
@@ -4280,6 +4294,106 @@ int apcmd_sys_cfg_protocol(int argc, char *argv[])
 	return ret;
 }
 
+/**
+ *  @brief Gets/sets ssid protection in the FW
+ *   and sends to the driver
+ *
+ *  @param argc     Number of arguments
+ *  @param argv     Pointer to the arguments
+ *  @return         UAP_SUCCESS/UAP_FAILURE
+ */
+int apcmd_ssid_protection(int argc, char *argv[])
+{
+	apcmdbuf_sys_configure *cmd_buf = NULL;
+	t_u8 *buffer = NULL;
+	t_u16 buf_len = MRVDRV_SIZE_OF_CMD_BUFFER;
+	t_u16 cmd_len = 0;
+	tlvbuf_rsnx_ie_t *tlv;
+	int ret = UAP_SUCCESS;
+	int opt;
+	while ((opt = getopt_long(argc, argv, "+", cmd_options, NULL)) != -1) {
+		switch (opt) {
+		default:
+			print_ssid_protection_usage();
+			return UAP_SUCCESS;
+		}
+	}
+	argc -= optind;
+	argv += optind;
+	/* Check arguments */
+	if (argc &&
+	    is_input_valid(SSID_PROTECTION, argc, argv) != UAP_SUCCESS) {
+		print_ssid_protection_usage();
+		return UAP_FAILURE;
+	}
+	/* Initialize the command length */
+	cmd_len = sizeof(apcmdbuf_sys_configure) + sizeof(tlvbuf_rsnx_ie_t);
+	/* Initialize the command buffer */
+	buffer = (t_u8 *)malloc(buf_len);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return UAP_FAILURE;
+	}
+	memset(buffer, 0, buf_len);
+	/* Locate headers */
+	cmd_buf = (apcmdbuf_sys_configure *)buffer;
+	tlv = (tlvbuf_rsnx_ie_t *)(buffer + sizeof(apcmdbuf_sys_configure));
+	/* Fill the command buffer */
+	cmd_buf->cmd_code = APCMD_SYS_CONFIGURE;
+	cmd_buf->size = cmd_len;
+	cmd_buf->seq_num = 0;
+	cmd_buf->result = 0;
+	tlv->tag = TLV_TYPE_RSNX;
+	tlv->length = 3;
+	if (argc == 0) {
+		cmd_buf->action = ACTION_GET;
+	} else {
+		cmd_buf->action = ACTION_SET;
+		if (atoi(argv[0]) == 1) {
+			tlv->data[0] = 2;
+			tlv->data[2] |= (1 << SSID_PROTECTION_OCTET3_BIT);
+		}
+	}
+	endian_convert_tlv_header_out(tlv);
+	/* Send the command */
+	ret = uap_ioctl((t_u8 *)cmd_buf, &cmd_len, buf_len);
+
+	/* Process response */
+	if (ret == UAP_SUCCESS) {
+		/* Verify response */
+		if (cmd_buf->cmd_code !=
+		    (APCMD_SYS_CONFIGURE | APCMD_RESP_CHECK)) {
+			printf("ERR:Corrupted response! cmd_code=%x, Tlv->tag=%x\n",
+			       cmd_buf->cmd_code, uap_le16_to_cpu(tlv->tag));
+			free(buffer);
+			return UAP_FAILURE;
+		}
+		/* Print response */
+		if (cmd_buf->result == CMD_SUCCESS) {
+			if (argc == 0) {
+				print_tlv(
+					(t_u8 *)tlv,
+					cmd_buf->size -
+						sizeof(apcmdbuf_sys_configure) +
+						BUF_HEADER_SIZE);
+			} else {
+				printf("ssid protection setting successful\n");
+			}
+		} else {
+			if (argc == 0) {
+				printf("ERR:Could not get ssid_protection!\n");
+			} else {
+				printf("ERR:Could not set ssid_protection!\n");
+			}
+			ret = UAP_FAILURE;
+		}
+	} else {
+		printf("ERR:Command sending failed!\n");
+	}
+	if (buffer)
+		free(buffer);
+	return ret;
+}
 /**
  *  @brief Creates a sys_cfg request for WEP keys settings
  *   and sends to the driver

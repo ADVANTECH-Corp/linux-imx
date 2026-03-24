@@ -73,8 +73,10 @@ int nan_openssl_hmac_vector(const EVP_MD *type, const u8 *key, size_t key_len,
 #if OPENSSL_VERSION_NUMBER < 0x30000000
 	HMAC_CTX *ctx;
 #else
-	EVP_MAC_CTX *ctx;
-	EVP_MAC *evp_mac;
+	EVP_MAC_CTX *ctx = NULL;
+	EVP_MAC *evp_mac = NULL;
+	OSSL_PARAM params[2];
+	const char *digest_name;
 #endif
 	size_t i;
 	int res;
@@ -92,27 +94,69 @@ int nan_openssl_hmac_vector(const EVP_MD *type, const u8 *key, size_t key_len,
 	}
 #endif
 #else
+	/* Determine digest name from EVP_MD type */
+	if (type == EVP_sha256())
+		digest_name = "SHA256";
+	else if (type == EVP_sha1())
+		digest_name = "SHA1";
+	else if (type == EVP_md5())
+		digest_name = "MD5";
+	else {
+		printf("OpenSSL: Unsupported digest type\n");
+		return -1;
+	}
+
 	evp_mac = EVP_MAC_fetch(NULL, "HMAC", NULL);
+	if (evp_mac == NULL) {
+		printf("OpenSSL: EVP_MAC_fetch failed\n");
+		return -1;
+	}
 	ctx = EVP_MAC_CTX_new(evp_mac);
+	if (ctx == NULL) {
+		printf("OpenSSL: EVP_MAC_CTX_new failed\n");
+		EVP_MAC_free(evp_mac);
+		return -1;
+	}
+
+	/* Set digest algorithm parameter */
+	params[0] = OSSL_PARAM_construct_utf8_string("digest",
+						     (char *)digest_name, 0);
+	params[1] = OSSL_PARAM_construct_end();
 #endif
 
 #if OPENSSL_VERSION_NUMBER < 0x00909000
 	HMAC_Init_ex(ctx, key, key_len, type, NULL);
 #else
 #if OPENSSL_VERSION_NUMBER < 0x30000000
-	if (HMAC_Init_ex(ctx, key, key_len, type, NULL) != 1)
+	if (HMAC_Init_ex(ctx, key, key_len, type, NULL) != 1) {
+		HMAC_CTX_cleanup(ctx);
 		return -1;
+	}
 #else
-	EVP_MAC_init(ctx, key, key_len, NULL);
+	if (EVP_MAC_init(ctx, key, key_len, params) != 1) {
+		printf("OpenSSL: EVP_MAC_init failed\n");
+		EVP_MAC_CTX_free(ctx);
+		EVP_MAC_free(evp_mac);
+		return -1;
+	}
 #endif
 #endif /* openssl < 0.9.9 */
 
-	for (i = 0; i < num_elem; i++)
+	for (i = 0; i < num_elem; i++) {
 #if OPENSSL_VERSION_NUMBER < 0x30000000
-		HMAC_Update(ctx, addr[i], len[i]);
+		if (HMAC_Update(ctx, addr[i], len[i]) != 1) {
+			HMAC_CTX_cleanup(ctx);
+			return -1;
+		}
 #else
-		EVP_MAC_update(ctx, addr[i], len[i]);
+		if (EVP_MAC_update(ctx, addr[i], len[i]) != 1) {
+			printf("OpenSSL: EVP_MAC_update failed\n");
+			EVP_MAC_CTX_free(ctx);
+			EVP_MAC_free(evp_mac);
+			return -1;
+		}
 #endif
+	}
 
 #if OPENSSL_VERSION_NUMBER < 0x00909000
 	HMAC_Final(ctx, mac, (unsigned int *)&mdlen);
@@ -133,6 +177,7 @@ int nan_openssl_hmac_vector(const EVP_MD *type, const u8 *key, size_t key_len,
 #endif
 #else
 	EVP_MAC_CTX_free(ctx);
+	EVP_MAC_free(evp_mac);
 #endif
 
 	return res == 1 ? 0 : -1;
@@ -144,9 +189,11 @@ int nan_openssl_digest_vector(const EVP_MD *type, size_t num_elem,
 	EVP_MD_CTX *ctx;
 	size_t i;
 	unsigned int mac_len;
+	int ret = -1;
 #if OPENSSL_VERSION_NUMBER < 0x10100000
 	EVP_MD_CTX mctx;
 	ctx = &mctx;
+	EVP_MD_CTX_init(ctx);
 #else
 	ctx = EVP_MD_CTX_new();
 	if (ctx == NULL) {
@@ -155,31 +202,33 @@ int nan_openssl_digest_vector(const EVP_MD *type, size_t num_elem,
 	}
 #endif
 
-	EVP_MD_CTX_init(ctx);
 	if (!EVP_DigestInit_ex(ctx, type, NULL)) {
 		printf("OpenSSL: EVP_DigestInit_ex failed: %s",
 		       ERR_error_string(ERR_get_error(), NULL));
-		return -1;
+		goto cleanup;
 	}
 	for (i = 0; i < num_elem; i++) {
 		if (!EVP_DigestUpdate(ctx, addr[i], len[i])) {
 			printf("OpenSSL: EVP_DigestUpdate "
 			       "failed: %s",
 			       ERR_error_string(ERR_get_error(), NULL));
-			return -1;
+			goto cleanup;
 		}
 	}
 	if (!EVP_DigestFinal(ctx, mac, &mac_len)) {
 		printf("OpenSSL: EVP_DigestFinal failed: %s",
 		       ERR_error_string(ERR_get_error(), NULL));
-		return -1;
+		goto cleanup;
 	}
+	ret = 0;
+
+cleanup:
 #if OPENSSL_VERSION_NUMBER < 0x10100000
 	EVP_MD_CTX_cleanup(ctx);
 #else
 	EVP_MD_CTX_free(ctx);
 #endif
-	return 0;
+	return ret;
 }
 int nan_hmac_sha256_vector(const u8 *key, size_t key_len, size_t num_elem,
 			   const u8 *addr[], const size_t *len, u8 *mac)

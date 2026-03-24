@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2020, 2024 NXP
+ *  Copyright 2012-2020, 2024-2025 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -2218,10 +2218,8 @@ int mwu_key_material(struct mwu_iface_info *cur_if, KEY_MATERIAL *key_mat,
 	u16 mrvl_header_len =
 		strlen(CMD_NXP) + strlen(NAN_PARAMS_KEY_MATERIAL_CMD);
 
-	u16 len = 0, cmd_len = 0, buf_len = 0;
-
-	len = sizeof(KEY_MATERIAL) + mrvl_header_len + sizeof(mrvl_priv_cmd) +
-	      sizeof(mrvl_cmd_head_buf);
+	u16 len = sizeof(KEY_MATERIAL) + mrvl_header_len +
+		  sizeof(mrvl_priv_cmd) + sizeof(mrvl_cmd_head_buf);
 
 	buffer = (unsigned char *)malloc(len);
 	if (buffer == NULL) {
@@ -2241,7 +2239,6 @@ int mwu_key_material(struct mwu_iface_info *cur_if, KEY_MATERIAL *key_mat,
 	strncpy((char *)pos, PRIV_CMD_HOSTCMD, strlen(PRIV_CMD_HOSTCMD));
 	pos += strlen(PRIV_CMD_HOSTCMD);
 
-	cmd_len = sizeof(mrvl_cmd_head_buf);
 	cmd = (mrvl_cmd_head_buf *)(mrvl_cmd->buf + mrvl_header_len);
 	cmd->cmd_code = HostCmd_CMD_KEY_MATERIAL;
 	cmd->seq_num = 0;
@@ -2294,26 +2291,11 @@ int mwu_key_material(struct mwu_iface_info *cur_if, KEY_MATERIAL *key_mat,
 
 	key_mat->key_param_set.length =
 		wlan_cpu_to_le16(KEY_PARAMS_FIXED_LEN + sizeof(cmac_aes_param));
-	cmd->size = wlan_cpu_to_le16(S_DS_GEN + sizeof(KEY_MATERIAL) +
-				     sizeof(cmd->buf_size));
+	cmd->size = wlan_cpu_to_le16(S_DS_GEN + sizeof(KEY_MATERIAL));
 
 	INFO("Set CMAC AES Key\n");
-	cmd_len += sizeof(KEY_MATERIAL);
-	ret = nan_cmdbuf_send(cur_if, mrvl_cmd, mrvl_header_len);
-
-	buf_len = cmd_len;
-	cmd->size = cmd_len;
-
 	mwu_hexdump(MSG_INFO, "CMD: ", (unsigned char *)mrvl_cmd, len);
-	/* Send collective command */
-	wifidir_ioctl(cur_if->ifname, mrvl_cmd, &cmd_len, buf_len,
-		      mrvl_header_len);
-
-	/* check the response */
-	cmd->cmd_code = wlan_le16_to_cpu(cmd->cmd_code);
-	cmd->size = wlan_le16_to_cpu(cmd->size);
-	cmd->cmd_code &= ~WIFIDIRCMD_RESP_CHECK;
-	ret = wlan_le16_to_cpu(cmd->result);
+	ret = nan_cmdbuf_send(cur_if, mrvl_cmd, mrvl_header_len);
 
 	FREE(buffer);
 	return ret;

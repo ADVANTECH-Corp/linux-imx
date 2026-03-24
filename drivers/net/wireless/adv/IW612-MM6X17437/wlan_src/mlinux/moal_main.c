@@ -4,7 +4,7 @@
  * driver.
  *
  *
- * Copyright 2008-2025 NXP
+ * Copyright 2008-2026 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -330,50 +330,6 @@ static struct _card_info card_info_SD8978 = {
 };
 #endif
 
-#ifdef SD8997
-static struct _card_info card_info_SD8997 = {
-	.embedded_supp = 1,
-	.drcs = 0,
-	.go_noa = 1,
-	.v16_fw_api = 1,
-	.pmic = 1,
-	.cal_data_cfg = 1,
-	.low_power_enable = 0,
-	.rx_rate_max = 196,
-	.histogram_table_num = 3,
-	.feature_control = FEATURE_CTRL_DEFAULT,
-	.rev_id_reg = 0xc8,
-	.host_strap_reg = 0xf4,
-	.magic_reg = 0xf0,
-	.fw_name = SD8997_DEFAULT_COMBO_FW_NAME,
-	.fw_name_wlan = SD8997_DEFAULT_WLAN_FW_NAME,
-#ifdef SDIO
-	.dump_fw_info = DUMP_FW_SDIO_V3,
-	.dump_fw_ctrl_reg = 0xf9,
-	.dump_fw_start_reg = 0xf1,
-	.dump_fw_end_reg = 0xf8,
-	.dump_fw_host_ready = 0xcc,
-	.dump_reg.reg_table = {0x08, 0x58, 0x5C, 0x5D, 0x60, 0x61, 0x62, 0x64,
-			       0x65, 0x66, 0x68, 0x69, 0x6a},
-	.dump_reg.reg_table_size = 13,
-	.scratch_reg = 0xe8,
-	.func1_reg_start = 0x10,
-	.func1_reg_end = 0x17,
-	.fw_stuck_code_reg = 0xEB,
-	.fw_reset_reg = 0x0EE,
-	.fw_reset_val = 0x99,
-	.fw_wakeup_reg = 0,
-	.fw_wakeup_val = 2,
-	.fw_winner_status_reg = 0xFC,
-	.slew_rate_reg = 0x80002328,
-	.slew_rate_bit_offset = 12,
-#endif
-	.sniffer_support = 1,
-	.per_pkt_cfg_support = 1,
-	.host_mlme_required = 1,
-};
-#endif
-
 #ifdef SD9098
 static struct _card_info card_info_SD9098 = {
 	.embedded_supp = 1,
@@ -644,33 +600,6 @@ static struct _card_info card_info_SDIW610 = {
 };
 #endif
 
-#ifdef PCIE8997
-static struct _card_info card_info_PCIE8997 = {
-	.embedded_supp = 1,
-	.drcs = 0,
-	.go_noa = 1,
-	.v16_fw_api = 1,
-	.pmic = 1,
-	.cal_data_cfg = 1,
-	.low_power_enable = 0,
-	.rx_rate_max = 196,
-	.histogram_table_num = 3,
-	.feature_control = FEATURE_CTRL_DEFAULT,
-	.rev_id_reg = 0x8,
-	.host_strap_reg = 0x0cd0,
-	.magic_reg = 0x0cd4,
-	.fw_name = PCIE8997_DEFAULT_COMBO_FW_NAME,
-	.fw_name_wlan = PCIE8997_DEFAULT_WLAN_FW_NAME,
-	.fw_stuck_code_reg = 0xcf8,
-	.fw_reset_reg = 0xcf4,
-	.fw_reset_val = 0x99,
-	.fw_wakeup_reg = 0x0c48,
-	.sniffer_support = 1,
-	.per_pkt_cfg_support = 1,
-	.host_mlme_required = 1,
-};
-#endif
-
 #ifdef PCIE9097
 static struct _card_info card_info_PCIE9097 = {
 	.embedded_supp = 1,
@@ -799,26 +728,6 @@ static struct _card_info card_info_USB8978 = {
 	.histogram_table_num = 1,
 	.fw_name = USB8978_DEFAULT_COMBO_FW_NAME,
 	.fw_name_wlan = USB8978_DEFAULT_WLAN_FW_NAME,
-	.sniffer_support = 1,
-	.per_pkt_cfg_support = 1,
-	.host_mlme_required = 1,
-};
-#endif
-
-#ifdef USB8997
-static struct _card_info card_info_USB8997 = {
-	.embedded_supp = 1,
-	.drcs = 1,
-	.go_noa = 1,
-	.v16_fw_api = 1,
-	.pmic = 1,
-	.cal_data_cfg = 1,
-	.low_power_enable = 0,
-	.rx_rate_max = 196,
-	.feature_control = FEATURE_CTRL_DEFAULT,
-	.histogram_table_num = 3,
-	.fw_name = USB8997_DEFAULT_COMBO_FW_NAME,
-	.fw_name_wlan = USB8997_DEFAULT_WLAN_FW_NAME,
 	.sniffer_support = 1,
 	.per_pkt_cfg_support = 1,
 	.host_mlme_required = 1,
@@ -1032,6 +941,10 @@ static mlan_callbacks woal_callbacks = {
 	.moal_tp_accounting_rx_param = moal_tp_accounting_rx_param,
 	.moal_amsdu_tp_accounting = moal_amsdu_tp_accounting,
 	.moal_calc_short_ssid = moal_calc_short_ssid,
+	.moal_unaligned_access.moal_read_u16 = moal_read_unaligned_u16,
+	.moal_unaligned_access.moal_read_u32 = moal_read_unaligned_u32,
+	.moal_unaligned_access.moal_write_u16 = moal_write_unaligned_u16,
+	.moal_unaligned_access.moal_write_u32 = moal_write_unaligned_u32,
 #ifdef SECURE_HOST
 	.moal_secure_host_get_msg_id = moal_secure_host_get_msg_id,
 	.moal_secure_host_init = moal_secure_host_init,
@@ -1046,10 +959,6 @@ static mlan_callbacks woal_callbacks = {
 	.moal_secure_host_data_encrypt = moal_secure_host_data_encrypt,
 	.moal_secure_host_data_decrypt = moal_secure_host_data_decrypt,
 #endif
-	.moal_unaligned_access.moal_read_u16 = moal_read_unaligned_u16,
-	.moal_unaligned_access.moal_read_u32 = moal_read_unaligned_u32,
-	.moal_unaligned_access.moal_write_u16 = moal_write_unaligned_u16,
-	.moal_unaligned_access.moal_write_u32 = moal_write_unaligned_u32,
 	.moal_crc32_be = moal_crc32_be,
 };
 
@@ -2884,6 +2793,7 @@ mlan_status woal_init_sw(moal_handle *handle)
 	device->disable_11h_tpc = (t_u32)handle->params.disable_11h_tpc;
 	device->tpe_ie_ignore = (t_u32)handle->params.tpe_ie_ignore;
 	device->amsdu_disable = handle->params.amsdu_disable;
+	device->amsdu_rx_size = handle->params.amsdu_rx_size;
 
 	for (i = 0; i < handle->drv_mode.intf_num; i++) {
 		device->bss_attr[i].bss_type =
@@ -2923,6 +2833,8 @@ mlan_status woal_init_sw(moal_handle *handle)
 	    !handle->secure) {
 		PRINTM(MERROR, "secure host handshake incomplete\n");
 		ret = MLAN_STATUS_FAILURE;
+		if (device)
+			kfree(device);
 		LEAVE();
 		return ret;
 	}
@@ -4908,7 +4820,7 @@ static mlan_status woal_req_cal_data(moal_handle *handle,
 		}
 	} else if (!cal_data_cfg && handle->card_info->cal_data_cfg) {
 		PRINTM(MERROR,
-		       "Please add cal_data_cfg for 8887/8977/8997/8987/8978\n");
+		       "Please add cal_data_cfg for 8887/8977/8987/8978\n");
 		ret = MLAN_STATUS_FAILURE;
 		goto done;
 	}
@@ -5004,11 +4916,7 @@ static mlan_status woal_init_fw_dpc(moal_handle *handle)
 			PRINTM(MERROR,
 			       "WLAN: Fail download FW with nowwait: %u\n",
 			       moal_extflg_isset(handle, EXT_REQ_FW_NOWAIT));
-			if (handle->ops.reg_dbg
-#ifdef PCIE
-			    && !IS_PCIEAW693(handle->card_type)
-#endif
-			)
+			if (handle->ops.reg_dbg)
 				handle->ops.reg_dbg(handle);
 			goto done;
 		}
@@ -5016,8 +4924,7 @@ static mlan_status woal_init_fw_dpc(moal_handle *handle)
 
 #if defined(USB)
 		if (handle->boot_state == USB_FW_DNLD) {
-			if (!IS_USB8997(handle->card_type) &&
-			    !IS_USB9098(handle->card_type) &&
+			if (!IS_USB9098(handle->card_type) &&
 			    !IS_USB9097(handle->card_type) &&
 			    !IS_USBIW624(handle->card_type) &&
 			    !IS_USBIW610(handle->card_type) &&
@@ -5084,11 +4991,7 @@ static mlan_status woal_init_fw_dpc(moal_handle *handle)
 	if (handle->hardware_status != HardwareStatusReady) {
 		wifi_status = WIFI_STATUS_INIT_FW_FAIL;
 		handle->event_fw_dump = MFALSE;
-		if (handle->ops.reg_dbg
-#ifdef PCIE
-		    && !IS_PCIEAW693(handle->card_type)
-#endif
-		)
+		if (handle->ops.reg_dbg)
 			handle->ops.reg_dbg(handle);
 #ifdef DEBUG_LEVEL1
 		if (drvdbg & MFW_D) {
@@ -6757,10 +6660,14 @@ moal_private *woal_add_interface(moal_handle *handle, t_u8 bss_index,
 	    (bss_type == MLAN_BSS_TYPE_STA))
 		woal_start_bgscan(priv);
 #endif /* STA_SUPPORT */
-	if (handle->params.plinkstats)
+#ifdef STA_CFG80211
+#ifdef STA_SUPPORT
+	if (handle->params.plinkstats) {
 		/* Init plinkstats parameters*/
 		woal_priv_init_link_stats(priv);
-
+	}
+#endif
+#endif
 	LEAVE();
 	return priv;
 error:
@@ -10459,11 +10366,6 @@ static int woal_get_card_info(moal_handle *phandle)
 		phandle->card_info = &card_info_SD8978;
 		break;
 #endif
-#ifdef SD8997
-	case CARD_TYPE_SD8997:
-		phandle->card_info = &card_info_SD8997;
-		break;
-#endif
 #ifdef SD9098
 	case CARD_TYPE_SD9098:
 		phandle->card_info = &card_info_SD9098;
@@ -10497,11 +10399,6 @@ static int woal_get_card_info(moal_handle *phandle)
 		phandle->event_fw_dump = MTRUE;
 		break;
 #endif
-#ifdef PCIE8997
-	case CARD_TYPE_PCIE8997:
-		phandle->card_info = &card_info_PCIE8997;
-		break;
-#endif
 #ifdef PCIE9097
 	case CARD_TYPE_PCIE9097:
 		phandle->card_info = &card_info_PCIE9097;
@@ -10523,11 +10420,6 @@ static int woal_get_card_info(moal_handle *phandle)
 	case CARD_TYPE_PCIE9098:
 		phandle->card_info = &card_info_PCIE9098;
 		phandle->event_fw_dump = MTRUE;
-		break;
-#endif
-#ifdef USB8997
-	case CARD_TYPE_USB8997:
-		phandle->card_info = &card_info_USB8997;
 		break;
 #endif
 #ifdef USB8978
@@ -11594,7 +11486,7 @@ t_void woal_store_ssu_dump(moal_handle *phandle, mlan_event *pmevent)
 		PRINTM(MERROR, "event_len is invalid\n");
 	}
 
-	PRINTM(MINFO, "ssu dump event: evt_len=%d toal_len=%llu\n",
+	PRINTM(MINFO, "ssu dump event: evt_len=%u toal_len=%llu\n",
 	       pmevent->event_len, phandle->ssu_dump_len);
 	PRINTM(MMSG, "==== SSU DUMP END: %ld bytes ====\n",
 	       (long int)phandle->ssu_dump_len);
@@ -12138,11 +12030,7 @@ static int woal_dump_moal_drv_info(moal_handle *phandle, t_u8 *buf)
 	ptr += snprintf(ptr, MAX_BUF_LEN,
 			"------------moal_debug_info End-------------\n");
 
-	if (phandle->ops.dump_reg_info
-#ifdef PCIE
-	    && !IS_PCIEAW693(phandle->card_type)
-#endif
-	)
+	if (phandle->ops.dump_reg_info)
 		ptr += phandle->ops.dump_reg_info(phandle, ptr);
 
 	LEAVE();
@@ -13067,11 +12955,7 @@ void woal_moal_debug_info(moal_private *priv, moal_handle *handle, u8 flag)
 #ifdef PCIE
 	if (IS_PCIE(phandle->card_type)) {
 #ifdef DEBUG_LEVEL1
-		if (phandle->ops.reg_dbg
-#ifdef PCIE
-		    && !IS_PCIEAW693(phandle->card_type)
-#endif
-		) {
+		if (phandle->ops.reg_dbg) {
 			phandle->ops.reg_dbg(phandle);
 		}
 #endif
@@ -13082,11 +12966,8 @@ void woal_moal_debug_info(moal_private *priv, moal_handle *handle, u8 flag)
 		if (flag && ((phandle->main_state == MOAL_END_MAIN_PROCESS) ||
 			     (phandle->main_state == MOAL_STATE_IDLE))) {
 #ifdef DEBUG_LEVEL1
-			if (phandle->ops.reg_dbg && (drvdbg & (MREG_D | MFW_D))
-#ifdef PCIE
-			    && !IS_PCIEAW693(phandle->card_type)
-#endif
-			) {
+			if (phandle->ops.reg_dbg &&
+			    (drvdbg & (MREG_D | MFW_D))) {
 				phandle->ops.reg_dbg(phandle);
 			}
 #endif
@@ -13778,7 +13659,7 @@ done:
  * @return              N/A
  *
  */
-static void woal_survey_dump_reset(moal_private *priv)
+void woal_survey_dump_reset(moal_private *priv)
 {
 	mlan_ds_get_stats stats;
 
@@ -13983,6 +13864,9 @@ t_void woal_evt_work_queue(struct work_struct *work)
 			woal_print_linkstats_info((moal_private *)evt->priv,
 						  MFALSE);
 			break;
+		case WOAL_EVENT_SURVEY_DUMP_RESET:
+			woal_survey_dump_reset((moal_private *)evt->priv);
+			break;
 #ifdef UAP_SUPPORT
 		case WOAL_EVENT_AGCS:
 			if (evt->agcs_evt.type ==
@@ -13998,9 +13882,6 @@ t_void woal_evt_work_queue(struct work_struct *work)
 			}
 			break;
 #endif /* UAP_SUPPORT */
-		case WOAL_EVENT_SURVEY_DUMP_RESET:
-			woal_survey_dump_reset((moal_private *)evt->priv);
-			break;
 #ifdef STA_CFG80211
 		case WOAL_EVENT_CFG80211_INFORM_BSS:
 			woal_send_bss_scan_result((moal_private *)evt->priv);
@@ -14364,11 +14245,7 @@ t_void woal_main_work_queue(struct work_struct *work)
 	}
 	if (handle->reg_dbg == MTRUE) {
 		handle->reg_dbg = MFALSE;
-		if (handle->ops.reg_dbg
-#ifdef PCIE
-		    && !IS_PCIEAW693(handle->card_type)
-#endif
-		)
+		if (handle->ops.reg_dbg)
 			handle->ops.reg_dbg(handle);
 	}
 	if (handle->fw_dbg == MTRUE) {
@@ -14962,12 +14839,7 @@ moal_handle *woal_add_card(void *card, struct device *dev, moal_if_ops *if_ops,
 	device_init_wakeup(dev, true);
 #ifdef SD8887
 	if (IS_SD8887(handle->card_type)) {
-		union {
-			t_u32 l;
-			t_u8 c[4];
-		} ver;
-		ver.l = handle->fw_release_number;
-		if (ver.c[1] == 75) {
+		if (handle->fw_release_number.minorRevNum == 75) {
 			handle->card_info->embedded_supp = 0;
 			PRINTM(MMSG,
 			       "Disable EMBEDED Supplicant for SD8887-FP75\n");
@@ -15711,7 +15583,6 @@ int woal_request_fw_reload(moal_handle *phandle, t_u8 mode)
 		LEAVE();
 		return -EINVAL;
 	}
-
 	if (phandle->fw_dump) {
 		PRINTM(MMSG, "Ignore fw reload req, fw dump is ongoing\n");
 		LEAVE();

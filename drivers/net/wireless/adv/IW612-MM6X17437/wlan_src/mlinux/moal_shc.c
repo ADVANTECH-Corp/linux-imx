@@ -120,7 +120,9 @@ void moal_secure_host_cleanup(t_void *pmoal)
 		return;
 
 	PRINTM(MMSG, "Free secure host context\n");
-	nanotls_host_cleanup(secure->host_ctx);
+
+	if (secure->host_ctx)
+		nanotls_host_cleanup(secure->host_ctx);
 
 	for (idx = 0; idx < MAX_CTX_AND_KEY; idx++) {
 		if (secure->data_ctx[idx])

@@ -3548,7 +3548,15 @@ mlan_status wlan_process_802dot11_mgmt_pkt(mlan_private *priv, t_u8 *payload,
 				    !memcmp(pmadapter, pieee_pkt_hdr->addr3,
 					    (t_u8 *)priv->curr_bss_params
 						    .prev_bssid,
-					    MLAN_MAC_ADDR_LENGTH)) {
+					    MLAN_MAC_ADDR_LENGTH) ||
+				    (pmadapter->enable_net_mon && unicast &&
+				     !memcmp(pmadapter, pieee_pkt_hdr->addr3,
+					     (t_u8 *)priv->curr_bss_params
+						     .bss_descriptor.mac_address,
+					     MLAN_MAC_ADDR_LENGTH) &&
+				     memcmp(pmadapter, pieee_pkt_hdr->addr1,
+					    (t_u8 *)priv->curr_addr,
+					    MLAN_MAC_ADDR_LENGTH))) {
 					PRINTM(MCMND,
 					       "Dropping Deauth frame from other bssid: type=%d " MACSTR
 					       "\n",
@@ -6028,6 +6036,45 @@ mlan_status wlan_misc_ioctl_drcs_config(pmlan_adapter pmadapter,
 }
 
 /**
+ *  @brief Get/Set LTE coexistence configuration
+ *
+ *  @param pmadapter    A pointer to mlan_adapter structure
+ *  @param pioctl_req   A pointer to ioctl request buffer
+ *
+ *  @return             MLAN_STATUS_SUCCESS
+ */
+mlan_status wlan_misc_ioctl_lte_coex_band_cfg(pmlan_adapter pmadapter,
+					      pmlan_ioctl_req pioctl_req)
+{
+	mlan_status ret = MLAN_STATUS_SUCCESS;
+	mlan_ds_misc_cfg *misc = MNULL;
+	t_u16 cmd_action = 0;
+	mlan_private *pmpriv = pmadapter->priv[pioctl_req->bss_index];
+
+	ENTER();
+
+	misc = (mlan_ds_misc_cfg *)pioctl_req->pbuf;
+
+	if (pioctl_req->action == MLAN_ACT_SET)
+		cmd_action = HostCmd_ACT_GEN_SET;
+	else
+		cmd_action = HostCmd_ACT_GEN_GET;
+
+	/* Send request to firmware */
+	ret = wlan_prepare_cmd(pmpriv, HostCmd_CMD_LTE_COEX_BAND_CONFIG,
+			       cmd_action, 0, (t_void *)pioctl_req,
+			       &misc->param.lte_cfg);
+
+	if (ret == MLAN_STATUS_SUCCESS)
+		ret = MLAN_STATUS_PENDING;
+	else
+		ret = MLAN_STATUS_FAILURE;
+
+	LEAVE();
+	return ret;
+}
+
+/**
  *  @brief Is any uAP started or STA connected?
  *
  *  @param pmadapter    A pointer to mlan_adapter structure
@@ -7329,6 +7376,42 @@ mlan_status wlan_misc_ioctl_foundry_type(pmlan_adapter pmadapter,
 }
 
 /**
+ *  @brief  Get/Set thermal simulation temperature
+ *
+ *  @param pmadapter	A pointer to mlan_adapter structure
+ *  @param pioctl_req	A pointer to ioctl request buffer
+ *
+ *  @return		MLAN_STATUS_PENDING --success, otherwise fail
+ */
+
+mlan_status wlan_misc_ioctl_debug_temperature(pmlan_adapter pmadapter,
+					      pmlan_ioctl_req pioctl_req)
+{
+	mlan_private *pmpriv = pmadapter->priv[pioctl_req->bss_index];
+	mlan_status ret = MLAN_STATUS_SUCCESS;
+	mlan_ds_misc_cfg *misc_cfg = MNULL;
+	t_u16 cmd_action = 0;
+
+	ENTER();
+	misc_cfg = (mlan_ds_misc_cfg *)pioctl_req->pbuf;
+	if (pioctl_req->action == MLAN_ACT_SET)
+		cmd_action = HostCmd_ACT_GEN_SET;
+	else if (pioctl_req->action == MLAN_ACT_GET)
+		cmd_action = HostCmd_ACT_GEN_GET;
+
+	/* Send request to firmware */
+	ret = wlan_prepare_cmd(pmpriv, HostCmd_CMD_SET_DEBUG_TEMPERATURE,
+			       cmd_action, 0, (t_void *)pioctl_req,
+			       (t_void *)&misc_cfg->param.temp_cfg);
+
+	if (ret == MLAN_STATUS_SUCCESS)
+		ret = MLAN_STATUS_PENDING;
+
+	LEAVE();
+	return ret;
+}
+
+/**
  *  @brief  Get CHAN_TPRC setting
  *
  *  @param pmadapter	A pointer to mlan_adapter structure
@@ -8228,8 +8311,23 @@ mlan_status wlan_misc_ioctl_rf_test_cfg(pmlan_adapter pmadapter,
 				       cmd_action, 0, (t_void *)pioctl_req,
 				       &(pmisc->param.mfg_otp_cal_data_rd_wr));
 		break;
+	case MLAN_OID_MISC_RF_TEST_DEBUG_TEMPERATURE:
+		if (pioctl_req->action == MLAN_ACT_SET)
+			cmd_action = HostCmd_ACT_GEN_SET;
+		else if (pioctl_req->action == MLAN_ACT_GET)
+			cmd_action = HostCmd_ACT_GEN_GET;
+		else {
+			PRINTM(MERROR, "Unsupported cmd_action\n");
+			ret = MLAN_STATUS_FAILURE;
+			goto done;
+		}
+		/* Send request to firmware */
+		PRINTM(MERROR, " sending request to FW mlan_misc \n");
+		ret = wlan_prepare_cmd(pmpriv, HostCmd_CMD_MFG_COMMAND,
+				       cmd_action, 0, (t_void *)pioctl_req,
+				       (&(pmisc->param.mfg_debug_temp)));
+		break;
 	}
-
 	if (ret == MLAN_STATUS_SUCCESS)
 		ret = MLAN_STATUS_PENDING;
 done:
@@ -8608,13 +8706,6 @@ mlan_status wlan_misc_ioctl_edmac_cfg(pmlan_adapter pmadapter,
 			misc->param.edmac_cfg.ed_ctrl_5g = 0x1;
 			misc->param.edmac_cfg.ed_offset_5g = 0xA;
 			misc->param.edmac_cfg.ed_bitmap_txq_lock = 0x1e00FF;
-		} else if (IS_CARD8997(pmadapter->card_type)) {
-			// from config/ed_mac_ctrl_V2_8997.conf
-			misc->param.edmac_cfg.ed_ctrl_2g = 0x1;
-			misc->param.edmac_cfg.ed_offset_2g = 0x0;
-			misc->param.edmac_cfg.ed_ctrl_5g = 0x1;
-			misc->param.edmac_cfg.ed_offset_5g = 0x4;
-			misc->param.edmac_cfg.ed_bitmap_txq_lock = 0xFF;
 		} else if (IS_CARD8978(pmadapter->card_type)) {
 			// from config/ed_mac_ctrl_V2_iw416.conf
 			misc->param.edmac_cfg.ed_ctrl_2g = 0x1;

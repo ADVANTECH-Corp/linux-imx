@@ -19,6 +19,7 @@ void cf_hash(const cf_chash *h, const void *m, size_t nm, uint8_t *out)
 {
 	cf_chash_ctx ctx;
 	uassert(h);
+	// coverity[cert_exp34_c_violation:SUPPRESS]
 	h->init(&ctx);
 	h->update(&ctx, m, nm);
 	h->digest(&ctx, out);

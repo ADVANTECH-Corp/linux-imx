@@ -5499,11 +5499,15 @@ mlan_status wlan_cmd_func_init(pmlan_private pmpriv, HostCmd_DS_COMMAND *cmd)
 	HostCmd_DS_FUNC_INIT *func_init = &cmd->params.func_init;
 	mlan_adapter *pmadapter = pmpriv->adapter;
 	MrvlIEtypes_boot_time_cfg_t *pboot_time_tlv = MNULL;
+	MrvlIEtypes_host_max_rx_buf_size_t *prx_buf_size_tlv = MNULL;
+	t_u8 *tlv_buf = MNULL;
+
 	ENTER();
 
 	cmd->command = wlan_cpu_to_le16(HostCmd_CMD_FUNC_INIT);
 	cmd->size = S_DS_GEN + sizeof(MrvlIEtypes_boot_time_cfg_t);
-	pboot_time_tlv = (MrvlIEtypes_boot_time_cfg_t *)func_init->tlv_buf;
+	tlv_buf = func_init->tlv_buf;
+	pboot_time_tlv = (MrvlIEtypes_boot_time_cfg_t *)tlv_buf;
 	pboot_time_tlv->type = wlan_cpu_to_le16(TLV_TYPE_BOOT_TIME_CFG);
 	pboot_time_tlv->len =
 		wlan_cpu_to_le16(sizeof(MrvlIEtypes_boot_time_cfg_t) -
@@ -5513,6 +5517,16 @@ mlan_status wlan_cmd_func_init(pmlan_private pmpriv, HostCmd_DS_COMMAND *cmd)
 	} else {
 		pboot_time_tlv->enable = MFALSE;
 	}
+	tlv_buf += sizeof(MrvlIEtypes_boot_time_cfg_t);
+	prx_buf_size_tlv = (MrvlIEtypes_host_max_rx_buf_size_t *)tlv_buf;
+	prx_buf_size_tlv->type = wlan_cpu_to_le16(TLV_HOST_MAX_RX_BUF_SIZE);
+	prx_buf_size_tlv->len =
+		wlan_cpu_to_le16(sizeof(MrvlIEtypes_host_max_rx_buf_size_t) -
+				 sizeof(MrvlIEtypesHeader_t));
+	prx_buf_size_tlv->max_rx_buf_size =
+		wlan_cpu_to_le16(pmadapter->rx_buf_size);
+	prx_buf_size_tlv->reserved = 0;
+	cmd->size += sizeof(MrvlIEtypes_host_max_rx_buf_size_t);
 	cmd->size = wlan_cpu_to_le16(cmd->size);
 	LEAVE();
 	return MLAN_STATUS_SUCCESS;
@@ -6140,21 +6154,9 @@ mlan_status wlan_process_vdll_event(pmlan_private pmpriv, pmlan_buffer pevent)
 		break;
 	case VDLL_IND_TYPE_INTF_RESET:
 		PRINTM(MEVENT, "VDLL_IND (INTF_RESET)\n");
-#ifdef PCIE8997
-		/* For PCIe PFU, need to reset both Tx and Rx rd/wrptr */
-		if (IS_PCIE8997(pmadapter->card_type)) {
-			pmadapter->pcard_pcie->txbd_wrptr = 0;
-			pmadapter->pcard_pcie->txbd_rdptr = 0;
-			pmadapter->pcard_pcie->rxbd_wrptr =
-				pmadapter->pcard_pcie->reg
-					->txrx_rw_ptr_rollover_ind;
-			pmadapter->pcard_pcie->rxbd_rdptr = 0;
-		}
-#endif
-#if defined(SD8997) || defined(SD8987) || defined(SD8978)
+#if defined(SD8987) || defined(SD8978)
 		/* For SDIO, need to reset wr_port only */
-		if (IS_SD8997(pmadapter->card_type) ||
-		    IS_SD8987(pmadapter->card_type) ||
+		if (IS_SD8987(pmadapter->card_type) ||
 		    IS_SD8978(pmadapter->card_type)) {
 			pmadapter->pcard_sd->curr_wr_port =
 				pmadapter->pcard_sd->reg->start_wr_port;
@@ -7049,8 +7051,10 @@ mlan_status wlan_ret_get_hw_spec(pmlan_private pmpriv, HostCmd_DS_COMMAND *resp,
 	t_u16 left_len;
 	t_u16 tlv_type = 0;
 	t_u16 tlv_len = 0;
+	t_u16 fw_pl_ver = 0;
 	MrvlIEtypes_fw_ver_info_t *api_rev = MNULL;
 	t_u16 api_id = 0;
+	t_u16 dev_max_amsdu_size;
 	MrvlIEtypesHeader_t *tlv = MNULL;
 	pmlan_ioctl_req pioctl_req = (mlan_ioctl_req *)pioctl_buf;
 	MrvlIEtypes_Max_Conn_t *tlv_max_conn = MNULL;
@@ -7058,6 +7062,7 @@ mlan_status wlan_ret_get_hw_spec(pmlan_private pmpriv, HostCmd_DS_COMMAND *resp,
 	MrvlIEtypes_fw_cap_info_t *fw_cap_tlv = MNULL;
 
 	MrvlIEtypes_Secure_Boot_Uuid_t *sb_uuid_tlv = MNULL;
+	MrvlIEtypes_fw_ver_ie_t *fw_ver_ie = MNULL;
 	t_u32 feature_mask = 0;
 
 	ENTER();
@@ -7127,17 +7132,16 @@ mlan_status wlan_ret_get_hw_spec(pmlan_private pmpriv, HostCmd_DS_COMMAND *resp,
 	pmadapter->fw_country_code = wlan_le16_to_cpu(hw_spec->fw_country_code);
 	PRINTM(MCMND, "GET_HW_SPEC: country_code=0x%X\n",
 	       pmadapter->fw_country_code);
-	pmadapter->fw_release_number =
-		wlan_le32_to_cpu(hw_spec->fw_release_number);
 	pmadapter->number_of_antenna =
 		wlan_le16_to_cpu(hw_spec->number_of_antenna) & 0x00ff;
 	pmadapter->antinfo =
 		(wlan_le16_to_cpu(hw_spec->number_of_antenna) & 0xff00) >> 8;
 	PRINTM(MCMND, "num_ant=%d, antinfo=0x%x\n",
 	       pmadapter->number_of_antenna, pmadapter->antinfo);
-
-	PRINTM(MINFO, "GET_HW_SPEC: fw_release_number- 0x%X\n",
-	       pmadapter->fw_release_number);
+	memcpy(pmadapter, &pmadapter->fw_release_number,
+	       &hw_spec->fw_release_number, sizeof(hw_spec->fw_release_number));
+	pmadapter->fw_release_number.patchLevel =
+		((t_u8 *)(&hw_spec->fw_release_number))[3];
 	PRINTM(MINFO, "GET_HW_SPEC: Permanent addr- " MACSTR "\n",
 	       MAC2STR(hw_spec->permanent_addr));
 	PRINTM(MINFO, "GET_HW_SPEC: hw_if_version=0x%X  version=0x%X\n",
@@ -7151,6 +7155,18 @@ mlan_status wlan_ret_get_hw_spec(pmlan_private pmpriv, HostCmd_DS_COMMAND *resp,
 		MLAN_MAC_ADDR_LENGTH);
 	pmadapter->hw_dot_11n_dev_cap =
 		wlan_le32_to_cpu(hw_spec->dot_11n_dev_cap);
+
+	dev_max_amsdu_size = ISSUPP_MAXAMSDU(hw_spec->dot_11n_dev_cap) ?
+				     MLAN_RX_DATA_BUF_SIZE_8K :
+				     MLAN_RX_DATA_BUF_SIZE_4K;
+	pmadapter->rx_buf_size =
+		MIN(pmadapter->rx_buf_size, dev_max_amsdu_size);
+
+	if (ISSUPP_MAXAMSDU(hw_spec->dot_11n_dev_cap))
+		SETSUPP_MAXAMSDU(pmadapter->hw_dot_11n_dev_cap);
+	else
+		RESETSUPP_MAXAMSDU(pmadapter->hw_dot_11n_dev_cap);
+
 	pmadapter->hw_dev_mcs_support = hw_spec->dev_mcs_support;
 	pmadapter->hw_mpdu_density = GET_MPDU_DENSITY(hw_spec->hw_dev_cap);
 	PRINTM(MCMND, "GET_HW_SPEC: hw_mpdu_density=%d dev_mcs_support=0x%x\n",
@@ -7185,6 +7201,17 @@ mlan_status wlan_ret_get_hw_spec(pmlan_private pmpriv, HostCmd_DS_COMMAND *resp,
 	}
 	pmadapter->hw_dot_11ac_dev_cap =
 		wlan_le32_to_cpu(hw_spec->Dot11acDevCap);
+	dev_max_amsdu_size = ISSUPP_MAXAMSDU(hw_spec->Dot11acDevCap) ?
+				     MLAN_RX_DATA_BUF_SIZE_8K :
+				     MLAN_RX_DATA_BUF_SIZE_4K;
+	pmadapter->rx_buf_size =
+		MIN(pmadapter->rx_buf_size, dev_max_amsdu_size);
+
+	if (ISSUPP_MAXAMSDU(hw_spec->Dot11acDevCap))
+		SETSUPP_MAXAMSDU(pmadapter->hw_dot_11ac_dev_cap);
+	else
+		RESETSUPP_MAXAMSDU(pmadapter->hw_dot_11ac_dev_cap);
+
 	pmadapter->hw_dot_11ac_mcs_support =
 		wlan_le32_to_cpu(hw_spec->Dot11acMcsSupport);
 	for (i = 0; i < pmadapter->priv_num; i++) {
@@ -7335,6 +7362,49 @@ mlan_status wlan_ret_get_hw_spec(pmlan_private pmpriv, HostCmd_DS_COMMAND *resp,
 				pmadapter->fw_hotfix_ver = api_rev->major_ver;
 				PRINTM(MCMND, "fw hotfix ver=%d\n",
 				       api_rev->major_ver);
+				break;
+			case FW_PL_VER_ID:
+				fw_pl_ver = ((api_rev->minor_ver << 8) |
+					     (api_rev->major_ver));
+				pmadapter->fw_release_number.patchLevel =
+					fw_pl_ver;
+				PRINTM(MCMND,
+				       "GET_HW_SPEC: fw_release_number received from FW: v%d.%d.%d.%d\n",
+				       pmadapter->fw_release_number.majorRevNum,
+				       pmadapter->fw_release_number.minorRevNum,
+				       pmadapter->fw_release_number.releaseNum,
+				       pmadapter->fw_release_number.patchLevel);
+				break;
+			default:
+				break;
+			}
+			break;
+		case NXP_VERSION_COMPONENTS_TLV_ID:
+			fw_ver_ie = (MrvlIEtypes_fw_ver_ie_t *)tlv;
+			api_id = wlan_le16_to_cpu(fw_ver_ie->api_id);
+			switch (api_id) {
+			case FW_MILESTONE_VER_ID:
+				memcpy(pmadapter, pmadapter->fw_ver_milestone,
+				       fw_ver_ie->ver_ie_ptr,
+				       tlv_len - sizeof(fw_ver_ie->api_id));
+				PRINTM(MCMND,
+				       "GET_HW_SPEC: FW build milestone: %s\n",
+				       pmadapter->fw_ver_milestone);
+				break;
+			case FW_BUILDTYPE_VER_ID:
+				memcpy(pmadapter, pmadapter->fw_ver_buildtype,
+				       fw_ver_ie->ver_ie_ptr,
+				       tlv_len - sizeof(fw_ver_ie->api_id));
+				PRINTM(MCMND, "GET_HW_SPEC: FW buildtype: %s\n",
+				       pmadapter->fw_ver_buildtype);
+				break;
+			case FW_COMMIT_INFO_VER_ID:
+				memcpy(pmadapter, pmadapter->fw_ver_data,
+				       fw_ver_ie->ver_ie_ptr,
+				       tlv_len - sizeof(fw_ver_ie->api_id));
+				PRINTM(MCMND,
+				       "GET_HW_SPEC: FW version data: %s\n",
+				       pmadapter->fw_ver_data);
 				break;
 			default:
 				break;
@@ -11863,6 +11933,88 @@ mlan_status wlan_ret_foundry_type(pmlan_private pmpriv,
 			wlan_le16_to_cpu(fab_cmd->foundry_type);
 		PRINTM(MCMND, "get SOC foundry_type %d \n",
 		       fab_cmd->foundry_type);
+	}
+
+	LEAVE();
+	return MLAN_STATUS_SUCCESS;
+}
+
+/**
+ *  @brief This function prepares command to set debug temperature
+ *
+ *  @param pmpriv       A pointer to mlan_private structure
+ *  @param cmd          A pointer to HostCmd_DS_COMMAND structure
+ *  @param cmd_action   the action: GET or SET
+ *  @param pdata_buf    A pointer to data buffer
+ *  @return             MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
+ */
+mlan_status wlan_cmd_set_debug_temperature(pmlan_private pmpriv,
+					   HostCmd_DS_COMMAND *cmd,
+					   t_u16 cmd_action, t_void *pdata_buf)
+{
+	HostCmd_DS_SET_DEBUG_TEMPERATURE *temp_config = &cmd->params.temp_cfg;
+	mlan_ds_set_debug_temperature *cfg =
+		(mlan_ds_set_debug_temperature *)pdata_buf;
+	t_u8 rfu = 0;
+	t_u8 rpath = 0;
+
+	ENTER();
+	cmd->command = wlan_cpu_to_le16(HostCmd_CMD_SET_DEBUG_TEMPERATURE);
+	cmd->size = wlan_cpu_to_le16(sizeof(HostCmd_DS_SET_DEBUG_TEMPERATURE) +
+				     S_DS_GEN);
+	temp_config->action = wlan_cpu_to_le16(cmd_action);
+	temp_config->simulation_enable =
+		wlan_cpu_to_le16(cfg->simulation_enable);
+	if (temp_config->simulation_enable == 0) {
+		cmd->size = wlan_cpu_to_le16(
+			sizeof(temp_config->action) +
+			sizeof(temp_config->simulation_enable) + S_DS_GEN);
+	} else {
+		temp_config->cau_temp = wlan_cpu_to_le32(cfg->cau_temp);
+		for (rfu = 0; rfu < MAX_RFUS; rfu++) {
+			for (rpath = 0; rpath < MAX_PATHS; rpath++) {
+				temp_config->rf_temp[rfu][rpath] =
+					wlan_cpu_to_le32(
+						cfg->rf_temp[rfu][rpath]);
+			}
+		}
+	}
+	LEAVE();
+	return MLAN_STATUS_SUCCESS;
+}
+
+/**
+ *  @brief This function handles the command response of debug temperature
+ *
+ *  @param pmpriv       A pointer to mlan_private structure
+ *  @param resp         A pointer to HostCmd_DS_COMMAND
+ *  @param pioctl_buf   A pointer to command buffer
+ *
+ *  @return             MLAN_STATUS_SUCCESS
+ */
+mlan_status wlan_ret_debug_temperature(pmlan_private pmpriv,
+				       HostCmd_DS_COMMAND *resp,
+				       mlan_ioctl_req *pioctl_buf)
+{
+	HostCmd_DS_SET_DEBUG_TEMPERATURE *temp_config =
+		(HostCmd_DS_SET_DEBUG_TEMPERATURE *)&resp->params.temp_cfg;
+	mlan_ds_misc_cfg *cfg = MNULL;
+	t_u8 rfu = 0;
+	t_u8 rpath = 0;
+	ENTER();
+	if (pioctl_buf) {
+		cfg = (mlan_ds_misc_cfg *)pioctl_buf->pbuf;
+		cfg->param.temp_cfg.simulation_enable =
+			wlan_le16_to_cpu(temp_config->simulation_enable);
+		cfg->param.temp_cfg.cau_temp =
+			wlan_le32_to_cpu(temp_config->cau_temp);
+		for (rfu = 0; rfu < MAX_RFUS; rfu++) {
+			for (rpath = 0; rpath < MAX_PATHS; rpath++) {
+				cfg->param.temp_cfg
+					.rf_temp[rfu][rpath] = wlan_le32_to_cpu(
+					temp_config->rf_temp[rfu][rpath]);
+			}
+		}
 	}
 
 	LEAVE();

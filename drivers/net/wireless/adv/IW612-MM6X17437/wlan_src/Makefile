@@ -45,9 +45,6 @@ CONFIG_PCIE8897=n
 CONFIG_SD8977=n
 CONFIG_SD8978=n
 CONFIG_USB8978=n
-CONFIG_SD8997=n
-CONFIG_USB8997=n
-CONFIG_PCIE8997=n
 CONFIG_SD8987=n
 CONFIG_SD9097=n
 CONFIG_SD9177=y
@@ -111,7 +108,7 @@ CONFIG_DFS_TESTING_SUPPORT=y
 
 
 # Enable driver/FW dump to proc
-CONFIG_DUMP_TO_PROC=y
+CONFIG_DUMP_TO_PROC=n
 
 # Enable FW dump via driver print
 CONFIG_FWDUMP_VIA_PRINT=n
@@ -232,6 +229,7 @@ ifeq ($(ANDROID), yes)
     PWD := $(shell pwd)
     KERNELDIR ?= $(KERNEL_SRC)
     ccflags-y += -DANDROID_SDK_VERSION=$(ANDROID_SDK_VERSION)
+    CONFIG_SD8978=n
 endif
 
 MODEXT = ko
@@ -264,7 +262,9 @@ APPDIR= $(shell if test -d "mapp"; then echo mapp; fi)
 #############################################################################
 
 	ccflags-y += -I$(KERNELDIR)/include
-	ccflags-y += -DMLAN_RELEASE_VERSION='"540.p41"'
+	ccflags-y += -DMLAN_RELEASE_VERSION='"542.p8"'
+	ccflags-y += -DMLAN_EXT_RELEASE_VERSION='"542.p8"'
+	ccflags-y += -DREL_MILESTONE='""'
 
 	ccflags-y += -DFPNUM='"92"'
 
@@ -360,10 +360,6 @@ ifeq ($(CONFIG_SD8978),y)
 	CONFIG_SDIO=y
 	ccflags-y += -DSD8978
 endif
-ifeq ($(CONFIG_SD8997),y)
-	CONFIG_SDIO=y
-	ccflags-y += -DSD8997
-endif
 ifeq ($(CONFIG_SD8987),y)
 	CONFIG_SDIO=y
 	ccflags-y += -DSD8987
@@ -400,10 +396,6 @@ ifeq ($(CONFIG_USB8897),y)
 	CONFIG_MUSB=y
 	ccflags-y += -DUSB8897
 endif
-ifeq ($(CONFIG_USB8997),y)
-	CONFIG_MUSB=y
-	ccflags-y += -DUSB8997
-endif
 ifeq ($(CONFIG_USB8978),y)
 	CONFIG_MUSB=y
 	ccflags-y += -DUSB8978
@@ -427,10 +419,6 @@ endif
 ifeq ($(CONFIG_PCIE8897),y)
 	CONFIG_PCIE=y
 	ccflags-y += -DPCIE8897
-endif
-ifeq ($(CONFIG_PCIE8997),y)
-	CONFIG_PCIE=y
-	ccflags-y += -DPCIE8997
 endif
 ifeq ($(CONFIG_PCIE9097),y)
 	CONFIG_PCIE=y
@@ -466,6 +454,12 @@ endif
 ifeq ($(CONFIG_PCIE),y)
 	ccflags-y += -DPCIE
 endif
+
+
+ifeq ($(CONFIG_XDP_SUPPORT), y)
+	ccflags-y += -DXDP_SUPPORT
+endif
+
 
 
 #############################################################################
@@ -508,18 +502,12 @@ endif
 endif
 endif
 
-ifeq ($(CONFIG_XDP_SUPPORT), y)
-	 ccflags-y += -DXDP_SUPPORT
-endif
-
-
+# Default for out-of-tree builds
+CONFIG_NXP_WLAN_DRIVER ?= m
 
 ifeq ($(CONFIG_SECURE_HOST), y)
        ccflags-y += -DSECURE_HOST
 endif
-
-# Default for out-of-tree builds
-CONFIG_NXP_WLAN_DRIVER ?= m
 
 MOALOBJS =	mlinux/moal_main.o \
 		mlinux/moal_ioctl.o \
@@ -625,8 +613,8 @@ MOALOBJS += nanotls/lib/src/blockwise.o \
             mlinux/moal_shc.o
 endif
 
-obj-$(CONFIG_NXP_WLAN_DRIVER) := mlan_iw612.o
-mlan_iw612-objs := $(MLANOBJS)
+obj-$(CONFIG_NXP_WLAN_DRIVER) := mlan.o
+mlan-objs := $(MLANOBJS)
 
 ifeq ($(CONFIG_MUSB),y)
 MOALOBJS += mlinux/moal_usb.o
@@ -637,14 +625,14 @@ endif
 ifeq ($(CONFIG_PCIE),y)
 MOALOBJS += mlinux/moal_pcie.o
 endif
-obj-$(CONFIG_NXP_WLAN_DRIVER) += moal_iw612.o
-moal_iw612-objs := $(MOALOBJS)
+obj-$(CONFIG_NXP_WLAN_DRIVER) += moal.o
+moal-objs := $(MOALOBJS)
 
 # Otherwise we were called directly from the command line; invoke the kernel build system.
 else
 
 default:
-	$(MAKE) -C $(KERNELDIR) M=$(shell pwd) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules
+	$(MAKE) -C $(KERNELDIR) M=$(PWD) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules
 
 endif
 
@@ -731,7 +719,7 @@ build:		echo default
 
 	cp -f mlan.$(MODEXT) $(BINDIR)/mlan$(DBG).$(MODEXT)
 
-	cp -f sdxxx.$(MODEXT) $(BINDIR)/sdw61x$(DBG).$(MODEXT)
+	cp -f moal.$(MODEXT) $(BINDIR)/moal$(DBG).$(MODEXT)
 	cp -rpf script/load $(BINDIR)/
 	cp -rpf script/unload $(BINDIR)/
 
@@ -797,9 +785,9 @@ endif
 install: default
 
 	cp -f mlan.$(MODEXT) $(INSTALLDIR)/mlan$(DBG).$(MODEXT)
-	cp -f sdxxx.$(MODEXT) $(INSTALLDIR)/sdw61x$(DBG).$(MODEXT)
+	cp -f moal.$(MODEXT) $(INSTALLDIR)/moal$(DBG).$(MODEXT)
 	echo $(INSTALLDIR)
-	echo "SDW61X Driver Installed"
+	echo "MX Driver Installed"
 
 distclean:
 	-find . -name "*.o" -exec rm {} \;

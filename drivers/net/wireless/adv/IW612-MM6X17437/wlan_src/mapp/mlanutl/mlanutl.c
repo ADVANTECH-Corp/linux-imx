@@ -5,7 +5,7 @@
  * Usage: mlanutl mlanX cmd [...]
  *
  *
- * Copyright 2011-2025 NXP
+ * Copyright 2011-2026 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -201,6 +201,7 @@ static int process_opermodecfg(int argc, char *argv[]);
 static int process_getcfgchanlist(int argc, char *argv[]);
 static int process_esuppmode(int argc, char *argv[]);
 static int process_passphrase(int argc, char *argv[]);
+static int process_ssid_protection(int argc, char *argv[]);
 static int process_deauth(int argc, char *argv[]);
 #ifdef UAP_SUPPORT
 static int process_getstalist(int argc, char *argv[]);
@@ -368,6 +369,7 @@ static int process_sdcmd53rw(int argc, char *argv[]);
 static int process_cfg_noa_opp_ps(int argc, char *argv[]);
 #endif
 static int process_dscpmap(int argc, char *argv[]);
+static int process_ltecoexbandcfg(int argc, char *argv[]);
 #ifdef WIFI_DIRECT_SUPPORT
 static int process_miracastcfg(int argc, char *argv[]);
 #endif
@@ -431,7 +433,7 @@ static int process_ch_load_results(int argc, char *argv[]);
 static int process_auth_assoc_timeout_cfg(int argc, char *argv[]);
 static int process_foundry_type(int argc, char *argv[]);
 static int process_per_band_txpwr_cap(int argc, char *argv[]);
-
+static int process_debug_thermal_simulation(int argc, char *argv[]);
 #ifdef UAP_SUPPORT
 static int process_agcs(int argc, char *argv[]);
 #endif
@@ -473,6 +475,7 @@ struct command_node command_list[] = {
 	{"opermodecfg", process_opermodecfg},
 	{"esuppmode", process_esuppmode},
 	{"passphrase", process_passphrase},
+	{"ssid_protection", process_ssid_protection},
 	{"deauth", process_deauth},
 #ifdef UAP_SUPPORT
 	{"getstalist", process_getstalist},
@@ -644,6 +647,7 @@ struct command_node command_list[] = {
 	{"cfg_noa", process_cfg_noa_opp_ps},
 	{"cfg_opp_ps", process_cfg_noa_opp_ps},
 #endif
+	{"ltecoexcfg", process_ltecoexbandcfg},
 #ifdef WIFI_DIRECT_SUPPORT
 	{"miracastcfg", process_miracastcfg},
 #endif
@@ -709,7 +713,7 @@ struct command_node command_list[] = {
 	{"auth_assoc_timeout_cfg", process_auth_assoc_timeout_cfg},
 	{"foundry_type", process_foundry_type},
 	{"per_band_txpwr_cap", process_per_band_txpwr_cap},
-
+	{"set_debug_temperature", process_debug_thermal_simulation},
 #ifdef UAP_SUPPORT
 	{"agcs", process_agcs},
 #endif
@@ -782,7 +786,7 @@ static char *usage[] = {
 #ifdef STA_SUPPORT
 	"         listeninterval",
 #endif
-	"         macctrl", "         memrdwr",
+	"         ltecoexcfg", "         macctrl", "         memrdwr",
 #ifdef WIFI_DIRECT_SUPPORT
 	"         miracastcfg",
 #endif
@@ -795,7 +799,7 @@ static char *usage[] = {
 	"         cfg_noa", "         cfg_opp_ps",
 #endif
 	"         offchannel", "         otpuserdata", "         passphrase",
-	"         pb_bypass",
+	"         ssid_protection", "         pb_bypass",
 #ifdef PCIE
 	"         pcieregrw",
 #endif
@@ -862,11 +866,11 @@ static char *usage[] = {
 	"         crosssynch", "         vndr_cmd_dump",
 	"         auth_assoc_timeout_cfg", "         foundry_type",
 
-	"         per_band_txpwr_cap",
+	"         per_band_txpwr_cap", "    set_debug_temperature",
+
 #ifdef UAP_SUPPORT
 	"         agcs"
 #endif
-
 };
 
 /** Socket */
@@ -8665,6 +8669,83 @@ static int process_passphrase(int argc, char *argv[])
 		free(cmd);
 
 	return MLAN_STATUS_SUCCESS;
+}
+
+/**
+ *  @brief Process ssid_protection command
+ *  @param argc   Number of arguments
+ *  @param argv   A pointer to arguments array
+ *  @return     MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+static int process_ssid_protection(int argc, char *argv[])
+{
+	int ret = 0, ssid_prot = 0;
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+	memset(buffer, 0, BUFFER_LENGTH);
+
+	/* Sanity tests */
+	if (argc < 3 || argc > 4) {
+		printf("Error: invalid no of arguments\n");
+		printf("mlanutl mlanX ssid_protection [#]\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl");
+		fprintf(stderr, "mlanutl: ssid_protection fail\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	/* Process result */
+	if (argc == 3) {
+		memcpy(&ssid_prot, buffer, sizeof(ssid_prot));
+		printf("SSID protection capability for STA mode set to %d\n",
+		       ssid_prot);
+	}
+
+done:
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return ret;
 }
 
 /**
@@ -25609,6 +25690,70 @@ done:
 	return ret;
 }
 
+static int process_ltecoexbandcfg(int argc, char *argv[])
+{
+	int ret = 0;
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+	lte_coex_band_cfg *lte_band_cfg = NULL;
+
+	if (argc < 3 || argc > 4) {
+		printf("ERR: Invalid number of arguments\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
+
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl");
+		fprintf(stderr, "mlanutl: ltecoexcfg fail\n");
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+	if (argc == 3) {
+		lte_band_cfg = (lte_coex_band_cfg *)buffer;
+		printf("LTE Band: %d\n", (lte_band_cfg->band));
+	}
+
+done:
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return ret;
+}
+
 /**
  *  @brief Set/Get DF repeater mode parameters
  *
@@ -28685,12 +28830,15 @@ static int process_preamble_pwr_boost(int argc, char *argv[])
 					 "force-disabled");
 
 	if (data.enable_mode) {
-		/* on some platforms, t_s8 is same as unsigned char */
-		rssi = (int)(data.rssi_threshold);
-		if (rssi > 0x7f)
-			rssi = -(256 - rssi);
-		printf("RSSI Threshold : %s%ddBm\n", ((rssi > 0) ? "-" : ""),
-		       rssi);
+		if (data.rssi_threshold) {
+			/* on some platforms, t_s8 is same as unsigned char */
+			rssi = (int)(data.rssi_threshold);
+
+			if (rssi > 0x7f)
+				rssi = -(256 - rssi);
+			printf("RSSI Threshold : %s%ddBm\n",
+			       ((rssi > 0) ? "-" : ""), rssi);
+		}
 	}
 
 	if (buffer)
@@ -30731,10 +30879,10 @@ static int process_per_band_txpwr_cap(int argc, char *argv[])
 	memset((void *)&data, 0, sizeof(data));
 	memcpy((void *)&data, buffer, sizeof(data));
 
-	if (data.band < 2)
+	if (data.band == 0)
 		printf("per_band_txpwr_cap: band = %d, power = %ddBm\n",
 		       data.band, data.power);
-	if (data.band == 2) {
+	if ((data.band == 1) || (data.band == 2)) {
 		printf("per_band_txpwr_cap: band = %d", data.band);
 		if (data.power == 0xff) {
 			/* on some platforms, t_s8 is same as unsigned char */
@@ -30744,7 +30892,7 @@ static int process_per_band_txpwr_cap(int argc, char *argv[])
 			rssi2 = (int)(data.weak_rssi_thresh);
 			if (rssi2 > 0x7f)
 				rssi2 = -(256 - rssi2);
-			printf("\nPeer RSSI Thresholds used to backoff Tx power on operating in 6GHz PSD VLP mode:");
+			printf("\nPeer RSSI Thresholds used to backoff Tx power on operating channel");
 			printf("\nstrong = %s%ddBm, weak = %s%ddBm\n",
 			       ((rssi1 > 0) ? "-" : ""), rssi1,
 			       ((rssi2 > 0) ? "-" : ""), rssi2);
@@ -30752,7 +30900,91 @@ static int process_per_band_txpwr_cap(int argc, char *argv[])
 			printf(", power = %ddBm\n", data.power);
 		}
 	}
+
 	printf("\n");
+	if (buffer)
+		free(buffer);
+	if (cmd)
+		free(cmd);
+
+	return MLAN_STATUS_SUCCESS;
+}
+
+/**
+ *	@brief process debug_thermal_simulation- allows to set CAU, RFU
+ *temperature dynamically for thermal simulation debug
+ *	@param argc  number of arguments
+ *	@param argv  A pointer to arguments array
+ *	@return  MLAN_STATUS_SUCCESS--success, otherwise--fail
+ */
+
+static int process_debug_thermal_simulation(int argc, char *argv[])
+{
+	t_u8 *buffer = NULL;
+	struct eth_priv_cmd *cmd = NULL;
+	struct ifreq ifr;
+	mlan_ds_set_debug_temperature *cfg = NULL;
+	t_u8 mac = 0, rpath = 0;
+
+	/* Initialize buffer */
+	buffer = (t_u8 *)malloc(BUFFER_LENGTH);
+	if (!buffer) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+	prepare_buffer(buffer, argv[2], (argc - 3), &argv[3]);
+	/*send command */
+	cmd = (struct eth_priv_cmd *)malloc(sizeof(struct eth_priv_cmd));
+	if (!cmd) {
+		printf("ERR:Cannot allocate buffer for command!\n");
+		return MLAN_STATUS_FAILURE;
+	}
+
+/* Fill up buffer */
+#ifdef USERSPACE_32BIT_OVER_KERNEL_64BIT
+	memset(cmd, 0, sizeof(struct eth_priv_cmd));
+	memcpy(&cmd->buf, &buffer, sizeof(buffer));
+#else
+	cmd->buf = buffer;
+#endif
+	cmd->used_len = 0;
+	cmd->total_len = BUFFER_LENGTH;
+	/* Perform IOCTL */
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_ifrn.ifrn_name, dev_name, strlen(dev_name));
+	ifr.ifr_ifru.ifru_data = (void *)cmd;
+	if (ioctl(sockfd, MLAN_ETH_PRIV, &ifr)) {
+		perror("mlanutl");
+		fprintf(stderr, "mlanutl: debug set temperature fail\n");
+		if (cmd)
+			free(cmd);
+		if (buffer)
+			free(buffer);
+		return MLAN_STATUS_FAILURE;
+	}
+
+	/* SET operation */
+
+	/* Process result */
+	cfg = (mlan_ds_set_debug_temperature *)buffer;
+	if (argc != 3)
+		printf("Thermal simulation %s\n",
+		       ((cfg->simulation_enable)) ? "enabled" : "disabled");
+	/* Show thermal simulation debug data*/
+	if ((cfg->simulation_enable) || (argc == 3)) {
+		printf("\nThermal simulation temperature configuration:\n");
+		printf("    cau temperature set:  %d\n", cfg->cau_temp);
+		printf("    RFU temperature set\t\n");
+		for (mac = 0; mac < MAX_RFUS; mac++) {
+			for (rpath = 0;
+			     (rpath < MAX_PATHS) && (cfg->rf_temp[mac][rpath]);
+			     rpath++)
+				printf("\t\t[mac:%d][%s]:%d\n", mac,
+				       (rpath == 0) ? "PATH_A" : "PATH_B",
+				       cfg->rf_temp[mac][rpath]);
+		}
+	}
+
 	if (buffer)
 		free(buffer);
 	if (cmd)
@@ -30888,6 +31120,9 @@ static int prepare_agcs_buffer(wlan_ioctl_agcs_info *agcs_req, t_u32 num,
 								[chan_cmd_idx]
 									.radio_type =
 								1;
+						agcs_req->chan_list[chan_cmd_idx]
+							.scan_type =
+							MLAN_SCAN_TYPE_PASSIVE;
 					} else {
 						switch (toupper((
 							unsigned char)*pchan_tok)) {
@@ -30912,18 +31147,6 @@ static int prepare_agcs_buffer(wlan_ioctl_agcs_info *agcs_req, t_u32 num,
 									.radio_type =
 								2;
 							is_radio_set = TRUE;
-							break;
-						case 'C':
-							agcs_req->chan_list
-								[chan_cmd_idx]
-									.scan_type =
-								MLAN_SCAN_TYPE_ACTIVE;
-							break;
-						case 'P':
-							agcs_req->chan_list
-								[chan_cmd_idx]
-									.scan_type =
-								MLAN_SCAN_TYPE_PASSIVE;
 							break;
 						default:
 							printf("Error: Band type not supported!\n");

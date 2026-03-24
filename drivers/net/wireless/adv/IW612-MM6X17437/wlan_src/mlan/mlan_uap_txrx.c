@@ -418,7 +418,7 @@ mlan_status wlan_ops_uap_process_rx_packet(t_void *adapter, pmlan_buffer pmbuf)
 			 * meant for monitor iface
 			 */
 			pmbuf2 = wlan_alloc_mlan_buffer(pmadapter,
-							MLAN_RX_DATA_BUF_SIZE,
+							pmadapter->rx_buf_size,
 							MLAN_RX_HEADER_LEN,
 							MOAL_ALLOC_MLAN_BUFFER);
 			if (!pmbuf2) {

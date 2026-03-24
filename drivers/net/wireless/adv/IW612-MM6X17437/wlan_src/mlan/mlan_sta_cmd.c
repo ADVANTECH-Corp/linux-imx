@@ -558,6 +558,48 @@ static mlan_status wlan_cmd_mfg_config_trigger_frame(pmlan_private pmpriv,
 }
 
 /**
+ *  @brief This function prepares command to set debug temperature
+ *
+ *  @param pmpriv       A pointer to mlan_private structure
+ *  @param cmd          A pointer to HostCmd_DS_COMMAND structure
+ *  @param cmd_action   the action: GET or SET
+ *  @param pdata_buf    A pointer to data buffer
+ *  @return             MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
+ */
+mlan_status wlan_cmd_mfg_set_debug_temperature(pmlan_private pmpriv,
+					       HostCmd_DS_COMMAND *cmd,
+					       t_u16 cmd_action,
+					       t_void *pdata_buf)
+{
+	mfg_CmdDebugTemperature_Cfg_t *temp_config =
+		(mfg_CmdDebugTemperature_Cfg_t *)&cmd->params.mfg_debug_temp;
+	mfg_CmdDebugTemperature_Cfg_t *cfg =
+		(mfg_CmdDebugTemperature_Cfg_t *)pdata_buf;
+	t_u8 rfu = 0;
+	t_u8 rpath = 0;
+
+	ENTER();
+	cmd->command = wlan_cpu_to_le16(HostCmd_CMD_MFG_COMMAND);
+	cmd->size = wlan_cpu_to_le16(sizeof(mfg_CmdDebugTemperature_Cfg_t) +
+				     S_DS_GEN);
+	temp_config->mfg_cmd = wlan_cpu_to_le32(cfg->mfg_cmd);
+	temp_config->action = wlan_cpu_to_le16(cmd_action);
+	temp_config->simulation_enable =
+		wlan_cpu_to_le32(cfg->simulation_enable);
+	temp_config->cau_temperature = wlan_cpu_to_le32(cfg->cau_temperature);
+
+	for (rfu = 0; rfu < MAX_RFUS; rfu++) {
+		for (rpath = 0; rpath < MAX_PATHS; rpath++)
+			temp_config->rfu_temperature[rfu][rpath] =
+				wlan_cpu_to_le32(
+					cfg->rfu_temperature[rfu][rpath]);
+	}
+
+	LEAVE();
+	return MLAN_STATUS_SUCCESS;
+}
+
+/**
  *  @brief This function prepares command of MFG HE TB Tx.
  *
  *  @param pmpriv       A pointer to mlan_private structure
@@ -715,6 +757,11 @@ mlan_status wlan_cmd_mfg(pmlan_private pmpriv, HostCmd_DS_COMMAND *cmd,
 		ret = wlan_cmd_mfg_otp_cal_data_rw(pmpriv, cmd, action,
 						   pdata_buf);
 		goto cmd_mfg_done;
+	case MFG_CMD_SET_DEBUG_TEMPERATURE:
+		ret = wlan_cmd_mfg_set_debug_temperature(pmpriv, cmd, action,
+							 pdata_buf);
+		goto cmd_mfg_done;
+
 	case MFG_CMD_SET_TEST_MODE:
 	case MFG_CMD_UNSET_TEST_MODE:
 	case MFG_CMD_TX_ANT:
@@ -2977,6 +3024,36 @@ mlan_status wlan_cmd_net_monitor(pmlan_private pmpriv, HostCmd_DS_COMMAND *cmd,
 	return MLAN_STATUS_SUCCESS;
 }
 
+static mlan_status wlan_cmd_lte_coex_band_cfg(pmlan_private pmpriv,
+					      HostCmd_DS_COMMAND *cmd,
+					      t_u16 cmd_action,
+					      t_void *pdata_buf)
+{
+	mlan_ds_misc_lte_coex_band_cfg *lte_cfg = MNULL;
+	HostCmd_DS_LTE_COEX_BAND_PARAMS_CONFIG *cmd_lte_cfg =
+		&cmd->params.lte_coex_cfg;
+
+	ENTER();
+
+	cmd->size = S_DS_GEN + sizeof(HostCmd_DS_LTE_COEX_BAND_PARAMS_CONFIG);
+
+	lte_cfg = (mlan_ds_misc_lte_coex_band_cfg *)pdata_buf;
+	cmd->size = wlan_cpu_to_le16(cmd->size);
+	cmd->command = wlan_cpu_to_le16(cmd->command);
+	cmd_lte_cfg->action = wlan_cpu_to_le16(cmd_action);
+	if (cmd_action == HostCmd_ACT_GEN_SET) {
+		if (!lte_cfg) {
+			LEAVE();
+			return MLAN_STATUS_FAILURE;
+		}
+
+		cmd_lte_cfg->band = (lte_cfg->band);
+	}
+
+	LEAVE();
+	return MLAN_STATUS_SUCCESS;
+}
+
 /**
  *  @brief This function prepares Low Power Mode
  *
@@ -4305,7 +4382,7 @@ mlan_status wlan_ops_sta_prepare_cmd(t_void *priv, t_u16 cmd_no,
 		ret = wlan_meas_cmd_process(pmpriv, cmd_ptr, pdata_buf);
 		break;
 #if defined(PCIE)
-#if defined(PCIE8997) || defined(PCIE8897)
+#if defined(PCIE8897)
 	case HostCmd_CMD_PCIE_HOST_BUF_DETAILS:
 		ret = wlan_cmd_pcie_host_buf_cfg(pmpriv, cmd_ptr, cmd_action,
 						 pdata_buf);
@@ -4367,6 +4444,10 @@ mlan_status wlan_ops_sta_prepare_cmd(t_void *priv, t_u16 cmd_no,
 		break;
 	case HostCmd_CMD_DRCS_CONFIG:
 		ret = wlan_cmd_drcs_cfg(pmpriv, cmd_ptr, cmd_action, pdata_buf);
+		break;
+	case HostCmd_CMD_LTE_COEX_BAND_CONFIG:
+		ret = wlan_cmd_lte_coex_band_cfg(pmpriv, cmd_ptr, cmd_action,
+						 pdata_buf);
 		break;
 	case HostCmd_CMD_CONFIG_LOW_POWER_MODE:
 		ret = wlan_cmd_low_pwr_mode(pmpriv, cmd_ptr, pdata_buf);
@@ -4552,13 +4633,15 @@ mlan_status wlan_ops_sta_prepare_cmd(t_void *priv, t_u16 cmd_no,
 	case HostCmd_CMD_DS_GET_FOUNDRY_TYPE:
 		ret = wlan_cmd_get_foundry_type(pmpriv, cmd_ptr, cmd_action);
 		break;
-
+	case HostCmd_CMD_SET_DEBUG_TEMPERATURE:
+		ret = wlan_cmd_set_debug_temperature(pmpriv, cmd_ptr,
+						     cmd_action, pdata_buf);
+		break;
 #ifdef SECURE_HOST
 	case HostCmd_CMD_SECURE_HOST:
 		ret = wlan_cmd_secure_host(pmpriv, cmd_ptr, pdata_buf);
 		break;
 #endif
-
 	default:
 		PRINTM(MERROR, "PREP_CMD: unknown command- %#x\n", cmd_no);
 		ret = MLAN_STATUS_FAILURE;

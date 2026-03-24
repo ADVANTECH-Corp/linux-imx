@@ -3341,6 +3341,11 @@ typedef struct _mlan_ds_wifi_direct_config {
 } mlan_ds_wifi_direct_config;
 #endif
 
+typedef struct _lte_coex_band_cfg {
+	/** LTE COEX BAND */
+	t_u8 band;
+} lte_coex_band_cfg;
+
 /** mlan_ds_11h_nop_chan_list */
 typedef struct _mlan_ds_11h_nop_chan_list {
 	/** number of nop channel */
@@ -3635,6 +3640,16 @@ typedef struct _mlan_ds_foundry_type {
 	/**get foundry type UMC or TSMC*/
 	t_u8 foundry_type_param;
 } mlan_ds_foundry_type;
+
+/** debug temperature structure */
+typedef struct _mlan_ds_set_debug_temperature {
+	/** enable/disable debug thermal simulation */
+	t_u16 simulation_enable;
+	/** CAU temperature to set */
+	t_s32 cau_temp;
+	/** RFU temperature to set */
+	t_s32 rf_temp[MAX_RFUS][MAX_PATHS];
+} mlan_ds_set_debug_temperature;
 
 /** channel statictics */
 typedef struct _chan_statistics_t {

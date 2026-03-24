@@ -5295,27 +5295,39 @@ static mlan_status wlan_process_agcs_event(pmlan_private priv,
 					pacs_start_event->stats.all_sta_ecs =
 						MFALSE;
 				}
-				if (sta_ptr->is_11ax_enabled == 0) {
-					pacs_start_event->stats.all_sta_6g =
-						MFALSE;
-				} else {
-					int i;
-					t_bool t_support_6g = MFALSE;
+				if (pacs_start_event->stats.all_sta_6g ==
+				    MTRUE) {
+					if (sta_ptr->is_11ax_enabled == 0) {
+						pacs_start_event->stats
+							.all_sta_6g = MFALSE;
+					} else {
+						int i;
+						t_bool t_support_6g = MFALSE;
 
-					for (i = 0;
-					     i <
-					     sta_ptr->OperClass.ieee_hdr.len;
-					     i++) {
-						if (is_6ghz_op_class(
-							    sta_ptr->OperClass
-								    .data[i]) ==
-						    MTRUE) {
-							t_support_6g = MTRUE;
-							break;
+						for (i = 0;
+						     i < sta_ptr->OperClass
+								 .ieee_hdr.len;
+						     i++) {
+							if (wlan_is_6ghz_op_class(
+								    sta_ptr->OperClass
+									    .data[i]) ==
+							    MTRUE) {
+								t_support_6g =
+									MTRUE;
+								break;
+							}
 						}
+						if (t_support_6g == MFALSE)
+							pacs_start_event->stats
+								.all_sta_6g =
+								MFALSE;
 					}
-					pacs_start_event->stats.all_sta_6g &=
-						t_support_6g;
+				}
+				if (pacs_start_event->stats.all_sta_ecs ==
+					    MFALSE &&
+				    pacs_start_event->stats.all_sta_6g ==
+					    MFALSE) {
+					break;
 				}
 				sta_ptr = sta_ptr->pnext;
 			}
@@ -5670,7 +5682,7 @@ mlan_status wlan_ops_uap_prepare_cmd(t_void *priv, t_u16 cmd_no,
 						pdata_buf);
 		break;
 #if defined(PCIE)
-#if defined(PCIE8997) || defined(PCIE8897)
+#if defined(PCIE8897)
 	case HostCmd_CMD_PCIE_HOST_BUF_DETAILS:
 		ret = wlan_cmd_pcie_host_buf_cfg(pmpriv, cmd_ptr, cmd_action,
 						 pdata_buf);
@@ -5805,6 +5817,10 @@ mlan_status wlan_ops_uap_prepare_cmd(t_void *priv, t_u16 cmd_no,
 		break;
 	case HostCmd_CMD_DS_GET_FOUNDRY_TYPE:
 		ret = wlan_cmd_get_foundry_type(pmpriv, cmd_ptr, cmd_action);
+		break;
+	case HostCmd_CMD_SET_DEBUG_TEMPERATURE:
+		ret = wlan_cmd_set_debug_temperature(pmpriv, cmd_ptr,
+						     cmd_action, pdata_buf);
 		break;
 #ifdef STA_SUPPORT
 	case HostCmd_CMD_802_11_SCAN_EXT:
@@ -6179,7 +6195,7 @@ mlan_status wlan_ops_uap_process_cmdresp(t_void *priv, t_u16 cmdresp_no,
 		ret = wlan_ret_packet_aggr_ctrl(pmpriv, resp, pioctl_buf);
 		break;
 #if defined(PCIE)
-#if defined(PCIE8997) || defined(PCIE8897)
+#if defined(PCIE8897)
 	case HostCmd_CMD_PCIE_HOST_BUF_DETAILS:
 		PRINTM(MINFO, "PCIE host buffer configuration successful.\n");
 		break;
@@ -6287,6 +6303,10 @@ mlan_status wlan_ops_uap_process_cmdresp(t_void *priv, t_u16 cmdresp_no,
 		break;
 	case HostCmd_CMD_DS_GET_FOUNDRY_TYPE:
 		ret = wlan_ret_foundry_type(pmpriv, resp, pioctl_buf);
+		break;
+
+	case HostCmd_CMD_SET_DEBUG_TEMPERATURE:
+		ret = wlan_ret_debug_temperature(pmpriv, resp, pioctl_buf);
 		break;
 
 #ifdef STA_SUPPORT

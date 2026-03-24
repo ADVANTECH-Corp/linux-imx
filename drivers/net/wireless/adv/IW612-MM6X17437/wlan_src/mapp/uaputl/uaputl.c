@@ -12862,6 +12862,8 @@ static command_table ap_command[] = {
 	 "Set/getuAP groupwise Handshake timeout value and retries"},
 	{"sys_cfg_custom_ie", apcmd_sys_cfg_custom_ie,
 	 "\tSet/get custom IE configuration"},
+	{"ssid_protection", apcmd_ssid_protection,
+	 "\tSet/get WPA/WPA2/WPA3 ssid_protection capability"},
 	{"sta_filter_table", apcmd_sta_filter_table, "Set/get uAP mac filter"},
 	{"regrdwr", apcmd_regrdwr, "\t\tRead/Write register command"},
 	{"memaccess", apcmd_memaccess,
@@ -13948,6 +13950,17 @@ int is_input_valid(valid_inputs cmd, int argc, char *argv[])
 			ret = UAP_FAILURE;
 		}
 		break;
+	case SSID_PROTECTION:
+		if ((argc > 1) || (ISDIGIT(argv[0]) == 0)) {
+			printf("ERR:Invalid SSID Protection\n");
+			ret = UAP_FAILURE;
+		} else {
+			if ((atoi(argv[0]) < 0) || (atoi(argv[0]) > 1)) {
+				printf("ERR: SSID Protection can either be 0 or 1. \n");
+				ret = UAP_FAILURE;
+			}
+		}
+		break;
 	default:
 		ret = UAP_FAILURE;
 		break;
@@ -14337,6 +14350,7 @@ void print_tlv(t_u8 *buf, t_u16 len)
 	tlvbuf_htcap_t *ht_cap_tlv;
 	tlvbuf_htinfo_t *ht_info_tlv;
 	tlvbuf_2040_coex *coex_2040_tlv;
+	tlvbuf_rsnx_ie_t *rsnx_tlv;
 
 #if DEBUG
 	uap_printf(MSG_DEBUG, "tlv total len=%d\n", len);
@@ -14936,6 +14950,14 @@ void print_tlv(t_u8 *buf, t_u16 len)
 			       uap_le16_to_cpu(
 				       wmm_para_tlv->wmm_para.ac_params[AC_VO]
 					       .tx_op_limit));
+			break;
+		case TLV_TYPE_RSNX:
+			rsnx_tlv = (tlvbuf_rsnx_ie_t *)pcurrent_tlv;
+			printf("SSID Protection capability=%d\n",
+			       (rsnx_tlv->data[2] &
+				(1 << SSID_PROTECTION_OCTET3_BIT)) ?
+				       1 :
+				       0);
 			break;
 		default:
 			break;

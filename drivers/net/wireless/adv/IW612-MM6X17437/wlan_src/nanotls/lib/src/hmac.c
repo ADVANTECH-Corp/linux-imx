@@ -25,13 +25,16 @@ void cf_hmac_init(cf_hmac_ctx *ctx, const cf_chash *hash, const uint8_t *key,
 	uassert(ctx);
 	uassert(hash);
 
+	// coverity[forward_null:SUPPRESS]
 	mem_clean(ctx, sizeof *ctx);
 	ctx->hash = hash;
 
 	/* Prepare key: */
 	uint8_t k[CF_CHASH_MAXBLK];
+	memset(k, 0, sizeof k);
 
 	/* Shorten long keys. */
+	// coverity[forward_null:SUPPRESS]
 	if (nkey > hash->blocksz) {
 		/* Standard doesn't cover case where blocksz < hashsz.
 		 * FIPS186-1 seems to want to append a negative number of zero
@@ -48,6 +51,7 @@ void cf_hmac_init(cf_hmac_ctx *ctx, const cf_chash *hash, const uint8_t *key,
 	if (k != key)
 		memcpy(k, key, nkey);
 	if (hash->blocksz > nkey)
+		// coverity[integer_overflow:SUPPRESS]
 		memset(k + nkey, 0, hash->blocksz - nkey);
 
 	/* Start inner hash computation */
@@ -70,6 +74,7 @@ void cf_hmac_update(cf_hmac_ctx *ctx, const void *data, size_t ndata)
 {
 	uassert(ctx && ctx->hash);
 
+	// coverity[cert_exp34_c_violation:SUPPRESS]
 	ctx->hash->update(&ctx->inner, data, ndata);
 }
 
@@ -79,9 +84,11 @@ void cf_hmac_finish(cf_hmac_ctx *ctx, uint8_t *out)
 	uassert(out);
 
 	uint8_t innerh[CF_MAXHASH];
+	// coverity[cert_exp34_c_violation:SUPPRESS]
 	ctx->hash->digest(&ctx->inner, innerh);
 
 	ctx->hash->update(&ctx->outer, innerh, ctx->hash->hashsz);
+	// coverity[cert_exp34_c_violation:SUPPRESS]
 	ctx->hash->digest(&ctx->outer, out);
 
 	mem_clean(ctx, sizeof *ctx);

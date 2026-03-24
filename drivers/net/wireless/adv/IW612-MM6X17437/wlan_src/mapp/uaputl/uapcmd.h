@@ -4,7 +4,7 @@
  *  functions defined in uapcmd.c
  *
  *
- * Copyright 2008-2022 NXP
+ * Copyright 2008-2022, 2025 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -58,6 +58,7 @@ int apcmd_sys_cfg_sta_ageout_timer(int argc, char *argv[]);
 int apcmd_sys_cfg_ps_sta_ageout_timer(int argc, char *argv[]);
 int apcmd_sys_cfg_auth(int argc, char *argv[]);
 int apcmd_sys_cfg_protocol(int argc, char *argv[]);
+int apcmd_ssid_protection(int argc, char *argv[]);
 int apcmd_sys_cfg_wep_key(int argc, char *argv[]);
 int apcmd_sys_cfg_cipher(int argc, char *argv[]);
 int apcmd_sys_cfg_pwk_cipher(int argc, char *argv[]);

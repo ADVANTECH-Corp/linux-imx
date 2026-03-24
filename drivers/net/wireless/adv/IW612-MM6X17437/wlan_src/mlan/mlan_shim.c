@@ -2,7 +2,7 @@
  *
  *  @brief This file contains APIs to MOAL module.
  *
- *  Copyright 2008-2021, 2024-2025 NXP
+ *  Copyright 2008-2021, 2024-2026 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -37,7 +37,7 @@
  *  embedded chipset.
  *
  *
- *  Copyright 2008-2021, 2024-2025 NXP
+ *  Copyright 2008-2021, 2024-2026 NXP
  *
  *  NXP CONFIDENTIAL
  *  The source code contained or described herein and all documents related to
@@ -449,6 +449,9 @@ mlan_status mlan_register(pmlan_device pmdevice, t_void **ppmlan_adapter)
 		PRINTM(MMSG,
 		       "Attach mlan adapter operations.card_type is 0x%x.\n",
 		       pmdevice->card_type);
+		/* coverity assumes that Passing pmadapter to memset,
+		 *  sets pmadapter->callbacks.moal_memcpy_ext to NULL
+		 */
 		memcpy_ext(pmadapter, &pmadapter->ops, &mlan_pcie_ops,
 			   sizeof(mlan_adapter_operations),
 			   sizeof(mlan_adapter_operations));
@@ -480,6 +483,11 @@ mlan_status mlan_register(pmlan_device pmdevice, t_void **ppmlan_adapter)
 		PRINTM(MMSG,
 		       "Attach mlan adapter operations.card_type is 0x%x.\n",
 		       pmdevice->card_type);
+		/* coverity assumes that Passing pmadapter to memset,
+		 * sets pmadapter->callbacks.moal_memcpy_ext to NULL but
+		 * memset of pmadapter will not nullify
+		 * pmadapter->callbacks.moal_memcpy_ext.
+		 */
 		memcpy_ext(pmadapter, &pmadapter->ops, &mlan_usb_ops,
 			   sizeof(mlan_adapter_operations),
 			   sizeof(mlan_adapter_operations));
@@ -554,6 +562,7 @@ mlan_status mlan_register(pmlan_device pmdevice, t_void **ppmlan_adapter)
 	pmadapter->init_para.disable_11h_tpc = pmdevice->disable_11h_tpc;
 	pmadapter->init_para.tpe_ie_ignore = pmdevice->tpe_ie_ignore;
 	pmadapter->init_para.amsdu_disable = pmdevice->amsdu_disable;
+	pmadapter->rx_buf_size = pmdevice->amsdu_rx_size;
 	pmadapter->priv_num = 0;
 	pmadapter->priv[0] = MNULL;
 
@@ -2076,7 +2085,7 @@ mlan_status mlan_recv(t_void *padapter, pmlan_buffer pmbuf, t_u32 port)
 #ifdef DEBUG_LEVEL1
 	t_u32 sec = 0, usec = 0;
 #endif
-	t_u32 max_rx_data_size = MLAN_RX_DATA_BUF_SIZE;
+	t_u32 max_rx_data_size = pmadapter->rx_buf_size;
 
 	ENTER();
 
@@ -2175,7 +2184,7 @@ mlan_status mlan_recv(t_void *padapter, pmlan_buffer pmbuf, t_u32 port)
 					    pmadapter->pcard_usb->usb_rx_deaggr
 						    .aggr_ctrl.aggr_align);
 				max_rx_data_size = MAX(max_rx_data_size,
-						       MLAN_RX_DATA_BUF_SIZE);
+						       pmadapter->rx_buf_size);
 			}
 		}
 #endif
@@ -2312,8 +2321,10 @@ void mlan_process_deaggr_pkt(t_void *padapter, pmlan_buffer pmbuf, t_u8 *drop)
 t_void mlan_set_driver_status(t_void *adapter, t_u8 driver_status)
 {
 	mlan_adapter *pmadapter = (mlan_adapter *)adapter;
+
 	ENTER();
-	pmadapter->driver_status = driver_status;
+	if (pmadapter)
+		pmadapter->driver_status = driver_status;
 	LEAVE();
 }
 

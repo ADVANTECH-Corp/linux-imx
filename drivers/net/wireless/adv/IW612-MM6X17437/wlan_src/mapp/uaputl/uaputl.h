@@ -404,6 +404,18 @@ typedef struct _addba_reject_para {
 	t_u8 addba_reject[MAX_NUM_TID];
 } addba_reject_para;
 
+/** firmware complete version number */
+typedef struct _fw_release_version {
+	/** FW release number */
+	t_u8 releaseNum;
+	/** minor version */
+	t_u8 minorRevNum;
+	/** major version */
+	t_u8 majorRevNum;
+	/** patch level version */
+	t_u16 patchLevel;
+} fw_release_version;
+
 /** fw_info */
 typedef struct _fw_info {
 	/** subcmd */
@@ -411,7 +423,7 @@ typedef struct _fw_info {
 	/** Get */
 	t_u32 action;
 	/** Firmware release number */
-	t_u32 fw_release_number;
+	fw_release_version fw_release_number;
 	/** Device support for MIMO abstraction of MCSs */
 	t_u8 hw_dev_mcs_support;
 	/** fw_bands*/
@@ -893,7 +905,8 @@ typedef enum {
 	RESTRICT_CLIENT_MODE,
 	AKM_SUITE,
 	WACPMODE,
-	AP_EXT_CAP_LEN
+	AP_EXT_CAP_LEN,
+	SSID_PROTECTION
 } valid_inputs;
 
 /** Message verbosity level */
@@ -2468,6 +2481,19 @@ typedef PACK_START struct _tlvbuf_6e_inband_frames_t {
 #define TDLS_CHANNEL_SWITCH_PROHIBIT 7
 /** TDLS Maximum extended capability length */
 #define MAX_TDLS_EXT_CAP_LEN 64
+
+/* ssid protection cap in rsnx */
+#define SSID_PROTECTION_BIT 21
+#define SSID_PROTECTION_OCTET3_BIT 5
+/**TLV: RSNX IE */
+#define TLV_TYPE_RSNX 0xf4
+/** RSNX tlv */
+typedef PACK_START struct _tlvbuf_rsnx_ie_t {
+	/** Header */
+	TLVHEADER;
+	/** rsnx cap */
+	t_u8 data[3];
+} PACK_END tlvbuf_rsnx_ie_t;
 
 /** TLV: HT_CAPABILITY */
 #define HT_CAPABILITY_TLV_ID 0x2d

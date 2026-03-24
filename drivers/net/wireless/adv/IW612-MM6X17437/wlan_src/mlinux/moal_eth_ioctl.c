@@ -4,7 +4,7 @@
  * @brief This file contains private ioctl functions
  *
  *
- * Copyright 2014-2025 NXP
+ * Copyright 2014-2026 NXP
  *
  * NXP CONFIDENTIAL
  * The source code contained or described herein and all documents related to
@@ -2909,6 +2909,91 @@ static int woal_setget_priv_passphrase(moal_private *priv, t_u8 *respbuf,
 				sae_password);
 
 	ret = len;
+done:
+	if (status != MLAN_STATUS_PENDING)
+		kfree(req);
+	LEAVE();
+	return ret;
+}
+
+/**
+ *  @brief Set/Get esupplicant ssid_protection configurations
+ *
+ *  @param priv         A pointer to moal_private structure
+ *  @param respbuf      A pointer to response buffer
+ *  @param respbuflen   Available length of response buffer
+ *
+ *  @return             Number of bytes written, negative for failure.
+ */
+static int woal_setget_priv_ssid_protection(moal_private *priv, t_u8 *respbuf,
+					    t_u32 respbuflen)
+{
+	mlan_ioctl_req *req = NULL;
+	mlan_ds_sec_cfg *sec = NULL;
+	int ret = 0;
+	t_u32 data[1];
+	int user_data_len = 0;
+	mlan_status status = MLAN_STATUS_SUCCESS;
+
+	ENTER();
+
+	if (!priv->phandle->card_info->embedded_supp) {
+		PRINTM(MERROR, "Not supported cmd on this card\n");
+		ret = -EOPNOTSUPP;
+		goto done;
+	}
+
+	if (strlen(respbuf) ==
+	    (strlen(CMD_NXP) + strlen(PRIV_CMD_SSID_PROTECTION))) {
+		/* GET operation */
+		user_data_len = 0;
+	} else {
+		/* SET operation */
+		memset((char *)data, 0, sizeof(data));
+		parse_arguments(respbuf + strlen(CMD_NXP) +
+					strlen(PRIV_CMD_SSID_PROTECTION),
+				data, ARRAY_SIZE(data), &user_data_len);
+	}
+
+	if (user_data_len >= 2) {
+		PRINTM(MERROR, "Too many arguments\n");
+		ret = -EINVAL;
+		goto done;
+	}
+	if (user_data_len) {
+		if (data[0] > 1) {
+			PRINTM(MERROR, "Invalid ssid protection value\n");
+			ret = -EINVAL;
+			goto done;
+		}
+	}
+
+	req = woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_sec_cfg));
+	if (req == NULL) {
+		ret = -ENOMEM;
+		goto done;
+	}
+
+	req->req_id = MLAN_IOCTL_SEC_CFG;
+	sec = (mlan_ds_sec_cfg *)req->pbuf;
+	sec->sub_command = MLAN_OID_SEC_CFG_SSID_PROTECTION;
+	if (user_data_len == 0)
+		req->action = MLAN_ACT_GET;
+	else {
+		req->action = MLAN_ACT_SET;
+		sec->param.ssid_protection = data[0];
+	}
+
+	status = woal_request_ioctl(priv, req, MOAL_IOCTL_WAIT);
+	if (status != MLAN_STATUS_SUCCESS) {
+		ret = -EFAULT;
+		goto done;
+	}
+
+	moal_memcpy_ext(priv->phandle, respbuf,
+			(t_u8 *)&sec->param.ssid_protection, sizeof(data),
+			respbuflen);
+	ret = sizeof(data);
 done:
 	if (status != MLAN_STATUS_PENDING)
 		kfree(req);
@@ -9747,6 +9832,7 @@ static int woal_priv_set_get_dscp_map(moal_private *priv, t_u8 *respbuf,
 	return ret;
 }
 
+#define BUF_LEN 50
 /**
  *  @brief Get extended driver version
  *
@@ -9763,6 +9849,7 @@ static int woal_priv_get_driver_verext(moal_private *priv, t_u8 *respbuf,
 	mlan_ds_get_info *info = NULL;
 	mlan_ioctl_req *req = NULL;
 	int ret = 0;
+	char buf[BUF_LEN];
 	int copy_size = 0;
 	int user_data_len = 0, header_len = 0;
 	mlan_status status = MLAN_STATUS_SUCCESS;
@@ -9808,15 +9895,24 @@ static int woal_priv_get_driver_verext(moal_private *priv, t_u8 *respbuf,
 		goto done;
 	}
 
+	ret = snprintf(buf, BUF_LEN, "%s%s-%s, ", DRV_BUILDTYPE, KERN_VERSION,
+		       MLAN_EXT_RELEASE_VERSION);
+	if (ret <= 0) {
+		PRINTM(MERROR, "Failed to mlan release ext version\n");
+		goto done;
+	}
 	/*
 	 * Set the amount to copy back to the application as the minimum of the
 	 *   available assoc resp data or the buffer provided by the application
 	 */
-	copy_size = MIN(strlen(info->param.ver_ext.version_str), respbuflen);
-	moal_memcpy_ext(priv->phandle, respbuf, info->param.ver_ext.version_str,
-			copy_size, respbuflen);
+	copy_size =
+		MIN(ret + strlen(info->param.ver_ext.version_str), respbuflen);
+	moal_memcpy_ext(priv->phandle, respbuf, buf, ret, respbuflen);
+	moal_memcpy_ext(priv->phandle, respbuf + ret,
+			info->param.ver_ext.version_str, copy_size - ret,
+			respbuflen);
 	ret = copy_size;
-	PRINTM(MINFO, "MOAL EXTENDED VERSION: %s\n",
+	PRINTM(MERROR, "MOAL EXTENDED VERSION: %s\n",
 	       info->param.ver_ext.version_str);
 
 done:
@@ -14915,6 +15011,110 @@ done:
 }
 
 /**
+ * @brief               Set/Get thermal simulation debug temperatures
+ *
+ * @param priv          Pointer to moal_private structure
+ * @param respbuf       Pointer to response buffer
+ * @param resplen       Response buffer length
+ *
+ * @return             Number of bytes written, negative for failure.
+ */
+static int woal_priv_set_debug_temperature(moal_private *priv, t_u8 *respbuf,
+					   t_u32 respbuflen)
+{
+	mlan_ioctl_req *ioctl_req = NULL;
+	mlan_ds_misc_cfg *misc = NULL;
+	mlan_status status = MLAN_STATUS_SUCCESS;
+	int ret = 0, header_len = 0, user_data_len = 0;
+	int data[8];
+
+	t_u8 rfu = 0, i = 2;
+	t_u8 rpath = 0;
+
+	ENTER();
+	memset(data, 0, sizeof(data));
+	header_len = strlen(CMD_NXP) + strlen(PRIV_CMD_DEBUG_TEMPERATURE);
+	if (strlen(respbuf) == (header_len)) {
+		/* GET operation */
+		user_data_len = 0;
+	} else {
+		/*set operation*/
+		memset((char *)data, 0, sizeof(data));
+
+		parse_arguments(respbuf + header_len, data, ARRAY_SIZE(data),
+				&user_data_len);
+		if (user_data_len != 5) {
+			PRINTM(MERROR,
+			       "set_debug_temperature: invalid numder of arguments provided\n");
+			LEAVE();
+			return -EINVAL;
+		}
+	}
+
+	/* Allocate an IOCTL request buffer */
+	ioctl_req = woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_misc_cfg));
+	if (ioctl_req == NULL) {
+		ret = -ENOMEM;
+		goto done;
+	}
+
+	/* Fill request buffer */
+
+	misc = (mlan_ds_misc_cfg *)ioctl_req->pbuf;
+	misc->sub_command = MLAN_OID_MISC_DEBUG_TEMPERATURE;
+	ioctl_req->req_id = MLAN_IOCTL_MISC_CFG;
+	if (user_data_len) {
+		// set operation
+		if (data[0] < 0 || data[0] > 1) {
+			PRINTM(MERROR,
+			       "err: Invalid temperature simulation enable value\n");
+			ret = -EINVAL;
+			goto done;
+		}
+		misc->param.temp_cfg.simulation_enable = (t_u16)data[0];
+		if (misc->param.temp_cfg.simulation_enable) {
+			misc->param.temp_cfg.cau_temp = (t_s32)data[1];
+			for (rfu = 0; rfu < MAX_RFUS; rfu++) {
+				for (rpath = 0; rpath < MAX_PATHS; rpath++) {
+					misc->param.temp_cfg
+						.rf_temp[rfu][rpath] =
+						(t_s32)data[i++];
+				}
+			}
+		}
+		ioctl_req->action = MLAN_ACT_SET;
+	} else
+		ioctl_req->action = MLAN_ACT_GET;
+
+	/* Send IOCTL request to MLAN */
+	status = woal_request_ioctl(priv, ioctl_req, MOAL_IOCTL_WAIT);
+	if (status != MLAN_STATUS_SUCCESS) {
+		ret = -EFAULT;
+		goto done;
+	}
+
+	data[0] = misc->param.temp_cfg.simulation_enable;
+	data[1] = misc->param.temp_cfg.cau_temp;
+	i = 2;
+	for (rfu = 0; rfu < MAX_RFUS; rfu++) {
+		for (rpath = 0; rpath < MAX_PATHS; rpath++) {
+			data[i] = misc->param.temp_cfg.rf_temp[rfu][rpath];
+			i++;
+		}
+	}
+	moal_memcpy_ext(priv->phandle, respbuf, (t_u8 *)data, sizeof(data),
+			respbuflen);
+	ret = sizeof(data);
+
+done:
+	if (status != MLAN_STATUS_PENDING)
+		kfree(ioctl_req);
+
+	LEAVE();
+	return ret;
+}
+
+/**
  * @brief               Set/Get Tx/Rx antenna
  *
  * @param priv          Pointer to moal_private structure
@@ -17809,6 +18009,84 @@ done:
 }
 #endif
 #endif
+
+/**
+ * @brief               Set/Get LTE coexistence parameters
+ *
+ * @param priv          Pointer to moal_private structure
+ * @param respbuf       Pointer to response buffer
+ * @param resplen       Response buffer length
+ *
+ *  @return             Number of bytes written, negative for failure.
+ */
+static int woal_priv_lte_coex_band_cfg(moal_private *priv, t_u8 *respbuf,
+				       t_u32 respbuflen)
+{
+	int ret = 0;
+	t_u8 *pos = NULL;
+	int user_data_len = 0, header_len = 0, data[1];
+	mlan_ioctl_req *req = NULL;
+	mlan_ds_misc_cfg *misc_cfg = NULL;
+	mlan_ds_misc_lte_coex_band_cfg *lte_cfg = NULL;
+	mlan_status status = MLAN_STATUS_SUCCESS;
+
+	ENTER();
+
+	header_len = strlen(CMD_NXP) + strlen(PRIV_CMD_LTE_COEX_CFG);
+	/* Allocate an IOCTL request buffer */
+	req = woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_misc_cfg));
+	if (req == NULL) {
+		LEAVE();
+		return -ENOMEM;
+	}
+	/* Fill request buffer */
+	req->req_id = MLAN_IOCTL_MISC_CFG;
+	misc_cfg = (mlan_ds_misc_cfg *)req->pbuf;
+	misc_cfg->sub_command = MLAN_OID_MISC_LTE_COEX_CFG;
+	lte_cfg = &misc_cfg->param.lte_cfg;
+
+	if ((int)strlen(respbuf) == header_len) {
+		/* GET operation */
+		user_data_len = 0;
+		req->action = MLAN_ACT_GET;
+	} else {
+		/* SET operation */
+		parse_arguments(respbuf + header_len, data, ARRAY_SIZE(data),
+				&user_data_len);
+		pos = respbuf + header_len;
+		if (user_data_len != 1) {
+			PRINTM(MERROR, "Invalid number of args! %d\n",
+			       user_data_len);
+			ret = -EINVAL;
+			goto done;
+		}
+		if (user_data_len == 1) {
+			lte_cfg->band = data[0];
+		}
+		req->action = MLAN_ACT_SET;
+	}
+
+	/* Send IOCTL request to MLAN */
+	status = woal_request_ioctl(priv, req, MOAL_IOCTL_WAIT);
+	if (status != MLAN_STATUS_SUCCESS) {
+		ret = -EFAULT;
+		goto done;
+	}
+
+	if (!user_data_len) {
+		moal_memcpy_ext(priv->phandle, respbuf, (t_u8 *)lte_cfg,
+				sizeof(mlan_ds_misc_lte_coex_band_cfg),
+				respbuflen);
+		ret = sizeof(mlan_ds_misc_lte_coex_band_cfg);
+	}
+
+done:
+	if (status != MLAN_STATUS_PENDING)
+		kfree(req);
+
+	LEAVE();
+	return ret;
+}
 
 /**
  * @brief               Set/Get DFS repeater mode
@@ -21482,12 +21760,15 @@ static int woal_priv_preamble_pwr_boost(moal_private *priv, t_u8 *respbuf,
 			ret = -EINVAL;
 			goto done;
 		}
-		if (data[0] == MTRUE) {
-			if (data[1] && data[1] > 0x7f) {
-				PRINTM(MERROR, "Invalid threshold value\n");
-				ret = -EINVAL;
-				goto done;
-			}
+		if ((data[0] < 0) || (data[0] > 2)) {
+			PRINTM(MERROR, "Invalid enable mode value\n");
+			ret = -EINVAL;
+			goto done;
+		}
+		if ((data[1] > 0) || (data[1] < -80)) {
+			PRINTM(MERROR, "Invalid threshold value\n");
+			ret = -EINVAL;
+			goto done;
 		}
 
 		misc->param.preamble_pwr_boost.enable_mode = (t_u8)data[0];
@@ -22508,7 +22789,9 @@ static int woal_priv_per_band_txpwr_cap(moal_private *priv, t_u8 *respbuf,
 	}
 	/* tx power capping cannot be negative or above 25 dBm */
 	if (data[1] < 0 || data[1] > 25) {
-		if (data[1] == 0xff && data[0] == BAND_6GHZ) {
+		if (data[1] == 0xff && data[0] == BAND_5GHZ) {
+			/* rssi based tpc */
+		} else if (data[1] == 0xff && data[0] == BAND_6GHZ) {
 			/* rssi based tpc */
 		} else {
 			PRINTM(MERROR,
@@ -22517,7 +22800,8 @@ static int woal_priv_per_band_txpwr_cap(moal_private *priv, t_u8 *respbuf,
 			goto done;
 		}
 	}
-	if (data[0] == BAND_6GHZ && data[1] == 0xff) {
+	if ((data[0] == BAND_5GHZ && data[1] == 0xff) ||
+	    (data[0] == BAND_6GHZ && data[1] == 0xff)) {
 		if ((data[2] == 0 || data[3] == 0) && (data[2] != data[3])) {
 			/* both thresholds must be 0 for dynamic TPC */
 			PRINTM(MERROR,
@@ -22536,6 +22820,7 @@ static int woal_priv_per_band_txpwr_cap(moal_private *priv, t_u8 *respbuf,
 			goto done;
 		}
 	}
+
 	misc->param.per_band_txpwr_cap.band = (t_u8)data[0];
 	misc->param.per_band_txpwr_cap.power = (t_u8)data[1];
 	misc->param.per_band_txpwr_cap.strong_rssi_thresh = (t_s8)data[2];
@@ -22781,6 +23066,13 @@ int woal_android_priv_cmd(struct net_device *dev, struct ifreq *req)
 			/* Esupplicant passphrase configuration */
 			len = woal_setget_priv_passphrase(priv, buf,
 							  priv_cmd.total_len);
+			goto handled;
+		} else if (strnicmp(buf + strlen(CMD_NXP),
+				    PRIV_CMD_SSID_PROTECTION,
+				    strlen(PRIV_CMD_SSID_PROTECTION)) == 0) {
+			/* SSID protection mode configuration */
+			len = woal_setget_priv_ssid_protection(
+				priv, buf, priv_cmd.total_len);
 			goto handled;
 		} else if (strnicmp(buf + strlen(CMD_NXP), PRIV_CMD_DEAUTH,
 				    strlen(PRIV_CMD_DEAUTH)) == 0) {
@@ -23622,6 +23914,14 @@ int woal_android_priv_cmd(struct net_device *dev, struct ifreq *req)
 			goto handled;
 
 		} else if (strnicmp(buf + strlen(CMD_NXP),
+				    PRIV_CMD_DEBUG_TEMPERATURE,
+				    strlen(PRIV_CMD_DEBUG_TEMPERATURE)) == 0) {
+			/* mc_aggr_cfg*/
+			len = woal_priv_set_debug_temperature(
+				priv, buf, priv_cmd.total_len);
+			goto handled;
+
+		} else if (strnicmp(buf + strlen(CMD_NXP),
 				    PRIV_CMD_CROSS_CHIP_SYNCH,
 				    strlen(PRIV_CMD_CROSS_CHIP_SYNCH)) == 0) {
 			len = woal_priv_cross_chip_synch(priv, buf,
@@ -23820,6 +24120,13 @@ int woal_android_priv_cmd(struct net_device *dev, struct ifreq *req)
 						       priv_cmd.total_len);
 			goto handled;
 #endif
+		} else if (strnicmp(buf + strlen(CMD_NXP),
+				    PRIV_CMD_LTE_COEX_CFG,
+				    strlen(PRIV_CMD_LTE_COEX_CFG)) == 0) {
+			/* Set/Get LTE coexistence parameters */
+			len = woal_priv_lte_coex_band_cfg(priv, buf,
+							  priv_cmd.total_len);
+			goto handled;
 		} else if (strnicmp(buf + strlen(CMD_NXP),
 				    PRIV_CMD_DFS_REPEATER_CFG,
 				    strlen(PRIV_CMD_DFS_REPEATER_CFG)) == 0) {

@@ -23,6 +23,7 @@
  *  0 > n > 32. */
 static inline uint32_t rotr32(uint32_t x, unsigned n)
 {
+	// coverity[integer_overflow:SUPPRESS]
 	return (x >> n) | (x << (32 - n));
 }
 
@@ -30,6 +31,7 @@ static inline uint32_t rotr32(uint32_t x, unsigned n)
  *  0 > n > 32. */
 static inline uint32_t rotl32(uint32_t x, unsigned n)
 {
+	// coverity[integer_overflow:SUPPRESS]
 	return (x << n) | (x >> (32 - n));
 }
 
@@ -37,6 +39,7 @@ static inline uint32_t rotl32(uint32_t x, unsigned n)
  *  0 > n > 64. */
 static inline uint64_t rotr64(uint64_t x, unsigned n)
 {
+	// coverity[integer_overflow:SUPPRESS]
 	return (x >> n) | (x << (64 - n));
 }
 
@@ -44,6 +47,7 @@ static inline uint64_t rotr64(uint64_t x, unsigned n)
  *  0 > n > 64. */
 static inline uint64_t rotl64(uint64_t x, unsigned n)
 {
+	// coverity[integer_overflow:SUPPRESS]
 	return (x << n) | (x >> (64 - n));
 }
 
@@ -156,6 +160,7 @@ static inline uint8_t mask_u8(uint32_t x, uint32_t y)
 {
 	uint32_t diff = x ^ y;
 	uint8_t diff_is_zero = ~diff & (diff - 1);
+	// coverity[integer_overflow:SUPPRESS]
 	return -(diff_is_zero >> 7);
 }
 
@@ -268,6 +273,7 @@ static inline void copy_bytes_unaligned(uint8_t *out, const uint8_t *in,
 	uint8_t lmask = ~rmask;
 
 	for (size_t i = 0; i < len; i++) {
+		// coverity[integer_overflow:SUPPRESS]
 		out[i] = (in[i + byte_off] << bit_off) & lmask;
 		out[i] |= (in[i + byte_off + 1] >> (8 - bit_off)) & rmask;
 	}

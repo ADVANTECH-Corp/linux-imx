@@ -118,10 +118,10 @@ static int ext_scan;
 static int bootup_cal_ctrl = 0;
 /** IEEE PS mode */
 static int ps_mode;
-/** tcpackenh parameter */
-static int tcpackenh = 1;
 /** plinkstats parameter */
 static char *plinkstats = NULL;
+/** tcpackenh parameter */
+static int tcpackenh = 1;
 /** passive to active scan */
 static int p2a_scan;
 /** scan chan gap */
@@ -378,6 +378,8 @@ static int disable_11h_tpc = 0;
 /** ignore TPE IE configuration from ex-AP*/
 static int tpe_ie_ignore = 0;
 
+static int amsdu_8k_rx = 0;
+
 #ifdef DEBUG_LEVEL1
 #ifdef DEBUG_LEVEL2
 #define DEFAULT_DEBUG_MASK (0xffffffff)
@@ -400,9 +402,6 @@ static card_type_entry card_type_map_tbl[] = {
 #endif
 #ifdef SD8978
 	{CARD_TYPE_SD8978, 0, CARD_SD8978},
-#endif
-#ifdef SD8997
-	{CARD_TYPE_SD8997, 0, CARD_SD8997},
 #endif
 #ifdef SD8987
 	{CARD_TYPE_SD8987, 0, CARD_SD8987},
@@ -428,9 +427,6 @@ static card_type_entry card_type_map_tbl[] = {
 #ifdef PCIE8897
 	{CARD_TYPE_PCIE8897, 0, CARD_PCIE8897},
 #endif
-#ifdef PCIE8997
-	{CARD_TYPE_PCIE8997, 0, CARD_PCIE8997},
-#endif
 #ifdef PCIE9097
 	{CARD_TYPE_PCIE9097, 0, CARD_PCIE9097},
 #endif
@@ -446,9 +442,6 @@ static card_type_entry card_type_map_tbl[] = {
 
 #ifdef USB8897
 	{CARD_TYPE_USB8897, 0, CARD_USB8897},
-#endif
-#ifdef USB8997
-	{CARD_TYPE_USB8997, 0, CARD_USB8997},
 #endif
 #ifdef USB8978
 	{CARD_TYPE_USB8978, 0, CARD_USB8978},
@@ -473,11 +466,6 @@ static int keep_previous_scan = 1;
 static int make_before_break = 0;
 static int auto_11ax = 1;
 static int reject_addba_req = 0;
-
-#ifdef SECURE_HOST
-/** secure host mode support */
-int secure_host = 0;
-#endif
 
 /** bandctrl */
 static int bandctrl = 0;
@@ -509,6 +497,11 @@ mlan_status check_device_name_info(char *device_name, t_u16 *card_type)
 
 	return MLAN_STATUS_FAILURE;
 }
+#endif
+
+#ifdef SECURE_HOST
+/** secure host mode support */
+int secure_host = 0;
 #endif
 
 /**
@@ -1150,13 +1143,6 @@ static mlan_status parse_cfg_read_block(t_u8 *data, t_u32 size,
 				goto err;
 			params->ps_mode = out_data;
 			PRINTM(MMSG, "ps_mode = %d\n", params->ps_mode);
-		} else if (strncmp(line, "tcpackenh", strlen("tcpackenh")) ==
-			   0) {
-			if (parse_line_read_int(line, &out_data) !=
-			    MLAN_STATUS_SUCCESS)
-				goto err;
-			params->tcpackenh = out_data;
-			PRINTM(MMSG, "tcpackenh = %d\n", params->tcpackenh);
 		} else if (strncmp(line, "plinkstats", strlen("plinkstats")) ==
 			   0) {
 			if (parse_line_read_string(line, &out_str) !=
@@ -1164,6 +1150,13 @@ static mlan_status parse_cfg_read_block(t_u8 *data, t_u32 size,
 				goto err;
 			woal_dup_string(&params->plinkstats, out_str);
 			PRINTM(MMSG, "plinkstats=%s\n", params->plinkstats);
+		} else if (strncmp(line, "tcpackenh", strlen("tcpackenh")) ==
+			   0) {
+			if (parse_line_read_int(line, &out_data) !=
+			    MLAN_STATUS_SUCCESS)
+				goto err;
+			params->tcpackenh = out_data;
+			PRINTM(MMSG, "tcpackenh = %d\n", params->tcpackenh);
 		} else if (strncmp(line, "p2a_scan", strlen("p2a_scan")) == 0) {
 			if (parse_line_read_int(line, &out_data) !=
 			    MLAN_STATUS_SUCCESS)
@@ -2482,6 +2475,8 @@ static void woal_setup_module_param(moal_handle *handle, moal_mod_para *params)
 	if (params)
 		handle->params.tpe_ie_ignore = params->tpe_ie_ignore;
 	handle->params.make_before_break = make_before_break;
+	handle->params.amsdu_rx_size = amsdu_8k_rx ? MLAN_RX_DATA_BUF_SIZE_8K :
+						     MLAN_RX_DATA_BUF_SIZE_4K;
 
 #ifdef SECURE_HOST
 	handle->params.secure_host = secure_host;
@@ -3760,7 +3755,7 @@ MODULE_PARM_DESC(
 module_param(antcfg, int, 0660);
 MODULE_PARM_DESC(
 	antcfg,
-	"0:default; SD8887/SD8987-[1:Tx/Rx antenna 1, 2:Tx/Rx antenna 2, 0xffff:enable antenna diversity];SD8897/SD8997-[Bit0:Rx Path A, Bit1:Rx Path B, Bit 4:Tx Path A, Bit 5:Tx Path B];9098/9097-[Bit 0: 2G Tx/Rx path A, Bit 1: 2G Tx/Rx path B,Bit 8: 5G Tx/Rx path A, Bit 9: 5G Tx/Rx path B];AW693-[Bit 0: 2G Tx/Rx path A, Bit 1: 2G Tx/Rx path B, Bit 8: 5G Tx/Rx path A, Bit 9: 5G Tx/Rx path B, Bit 16: 6G Tx/Rx path A, Bit 17: 6G Tx/Rx path B]");
+	"0:default; SD8887/SD8987-[1:Tx/Rx antenna 1, 2:Tx/Rx antenna 2, 0xffff:enable antenna diversity];SD8897-[Bit0:Rx Path A, Bit1:Rx Path B, Bit 4:Tx Path A, Bit 5:Tx Path B];9098/9097-[Bit 0: 2G Tx/Rx path A, Bit 1: 2G Tx/Rx path B,Bit 8: 5G Tx/Rx path A, Bit 9: 5G Tx/Rx path B];AW693-[Bit 0: 2G Tx/Rx path A, Bit 1: 2G Tx/Rx path B, Bit 8: 5G Tx/Rx path A, Bit 9: 5G Tx/Rx path B, Bit 16: 6G Tx/Rx path A, Bit 17: 6G Tx/Rx path B]");
 
 module_param(uap_oper_ctrl, uint, 0);
 MODULE_PARM_DESC(uap_oper_ctrl, "0:default; 0x20001:uap restarts on channel 6");
@@ -3960,6 +3955,10 @@ MODULE_PARM_DESC(
 	"0: Disable secure host mode(default); 1: Enable secure host mode");
 #endif
 
-module_param(bandctrl, int, 0660);
+module_param(bandctrl, int, 0);
 MODULE_PARM_DESC(bandctrl,
 		 "0: Disable bandctrl mode(default); 1: Enable bandctrl mode");
+
+module_param(amsdu_8k_rx, int, 0);
+MODULE_PARM_DESC(amsdu_8k_rx,
+		 "1: support AMPDU 8K RX; 0: just support AMPDU 4K RX");

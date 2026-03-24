@@ -1666,19 +1666,6 @@ mlan_status wlan_ops_sta_process_event(t_void *priv)
 			PRINTM(MEVENT,
 			       "Ignoring the Channel Switch Reg Info Event\n");
 		break;
-	case EVENT_WIFI_CHANNEL_AVOID_LIST:
-		PRINTM(MEVENT, "EVENT: EVENT_WIFI_CHANNEL_AVOID_LIST (%#x)\n",
-		       eventcause);
-		pevent->event_id = MLAN_EVENT_ID_FW_WIFI_CHANNEL_AVOID_LIST;
-		pevent->bss_index = pmpriv->bss_index;
-		pevent->event_len = pmbuf->data_len;
-		memcpy_ext(pmadapter, (t_u8 *)pevent->event_buf,
-			   pmbuf->pbuf + pmbuf->data_offset, pevent->event_len,
-			   pevent->event_len);
-		DBG_HEXDUMP(MCMD_D, "WiFi channel avoid list",
-			    (t_u8 *)pevent->event_buf, pevent->event_len);
-		wlan_recv_event(pmpriv, pevent->event_id, pevent);
-		break;
 #ifdef SECURE_HOST
 	case EVENT_SECURE_HOST_COMM:
 		ret = wlan_process_secure_host_event(
@@ -1686,6 +1673,20 @@ mlan_status wlan_ops_sta_process_event(t_void *priv)
 			pmbuf->data_len);
 		break;
 #endif
+	case EVENT_WIFI_CHANNEL_AVOID_LIST:
+		PRINTM(MEVENT, "EVENT: EVENT_WIFI_CHANNEL_AVOID_LIST (%#x)\n",
+		       eventcause);
+		pevent->event_id = MLAN_EVENT_ID_FW_WIFI_CHANNEL_AVOID_LIST;
+		pevent->bss_index = pmpriv->bss_index;
+		pevent->event_len = pmbuf->data_len;
+		// coverity[cert_arr30_c_violation:SUPPRESS]
+		memcpy_ext(pmadapter, (t_u8 *)pevent->event_buf,
+			   pmbuf->pbuf + pmbuf->data_offset, pevent->event_len,
+			   pevent->event_len);
+		DBG_HEXDUMP(MCMD_D, "WiFi channel avoid list",
+			    (t_u8 *)pevent->event_buf, pevent->event_len);
+		wlan_recv_event(pmpriv, pevent->event_id, pevent);
+		break;
 	default:
 		PRINTM(MEVENT, "EVENT: unknown event id: %#x\n", eventcause);
 		wlan_recv_event(pmpriv, MLAN_EVENT_ID_FW_UNKNOWN, MNULL);

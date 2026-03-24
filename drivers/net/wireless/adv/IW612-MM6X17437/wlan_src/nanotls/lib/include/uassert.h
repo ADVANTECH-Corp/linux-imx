@@ -29,9 +29,15 @@
 #define NANOTLS_UASSERT_H
 
 #include <linux/types.h>
+#ifdef __linux__
+#include <linux/bug.h>
+#endif
 
 static inline void uassert(__attribute__((unused)) bool cond)
 {
+#ifdef __linux__
+	BUG_ON(!cond);
+#elif DEBUG
 #ifdef DEBUG
 #include <assert.h>
 	assert(cond);

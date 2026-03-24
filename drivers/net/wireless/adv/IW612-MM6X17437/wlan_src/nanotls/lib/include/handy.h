@@ -101,6 +101,7 @@
 static inline void mem_clean(volatile void *v, size_t len)
 {
 	if (len) {
+		// coverity[misra_c_2012_rule_11_8_violation:SUPPRESS]
 		memset((void *)v, 0, len);
 		(void)*((volatile uint8_t *)v);
 	}
