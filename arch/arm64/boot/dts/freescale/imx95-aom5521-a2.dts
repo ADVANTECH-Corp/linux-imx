@@ -7,6 +7,12 @@
 
 / {
 	model = "Advantech AOM-5521 A2 board";
+
+	board {
+		compatible = "proc-board";
+		board-type = "AOM-5521 A2";
+		board-cpu = "IMX95";
+	};
 };
 
 /*
