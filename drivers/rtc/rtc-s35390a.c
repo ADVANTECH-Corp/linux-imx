@@ -437,6 +437,7 @@ static int s35390a_probe(struct i2c_client *client)
 	char buf, status1;
 	struct device *dev = &client->dev;
 
+	// msleep(500);
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
 		return -ENODEV;
 
@@ -530,7 +531,18 @@ static struct i2c_driver s35390a_driver = {
 	.id_table	= s35390a_id,
 };
 
-module_i2c_driver(s35390a_driver);
+static int __init s35390a_driver_init(void)
+{
+    return i2c_add_driver(&s35390a_driver);
+}
+
+static void __exit s35390a_driver_exit(void)
+{
+    i2c_del_driver(&s35390a_driver);
+}
+
+late_initcall(s35390a_driver_init);
+module_exit(s35390a_driver_exit);
 
 MODULE_AUTHOR("Byron Bradley <byron.bbradley@gmail.com>");
 MODULE_DESCRIPTION("S35390A RTC driver");
