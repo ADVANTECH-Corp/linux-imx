@@ -34,7 +34,16 @@ struct pwm_bl_data {
 	struct gpio_desc	*enable_gpio;
 	unsigned int		scale;
 #ifdef CONFIG_ARCH_ADVANTECH
-	unsigned int		dft_enable;
+	int			lvds_vcc_enable;
+	int			lvds_bkl_enable;
+	int			bklt_vcc_enable;
+	int			lvds_vcc_delay_value;
+	int			lvds_bkl_delay_value;
+	int			bklt_pwm_delay_value;
+	int			bklt_en_delay_value;
+	enum of_gpio_flags	lvds_vcc_flag;
+	enum of_gpio_flags	lvds_bkl_flag;
+	enum of_gpio_flags	bklt_vcc_flag;
 #endif
 	bool			legacy;
 	unsigned int		post_pwm_on_delay;
@@ -64,6 +73,20 @@ enum of_gpio_flags lvds_bkl_flag;
 enum of_gpio_flags bklt_vcc_flag;
 enum of_gpio_flags lvds_reset_flag;
 enum of_gpio_flags lvds_stby_flag;
+
+static void pwm_backlight_select_advantech_gpio(struct pwm_bl_data *pb)
+{
+	lvds_vcc_enable = pb->lvds_vcc_enable;
+	lvds_bkl_enable = pb->lvds_bkl_enable;
+	bklt_vcc_enable = pb->bklt_vcc_enable;
+	lvds_vcc_delay_value = pb->lvds_vcc_delay_value;
+	lvds_bkl_delay_value = pb->lvds_bkl_delay_value;
+	bklt_pwm_delay_value = pb->bklt_pwm_delay_value;
+	bklt_en_delay_value = pb->bklt_en_delay_value;
+	lvds_vcc_flag = pb->lvds_vcc_flag;
+	lvds_bkl_flag = pb->lvds_bkl_flag;
+	bklt_vcc_flag = pb->bklt_vcc_flag;
+}
 
 void enable_lcd_vdd_en(void)
 {
@@ -124,32 +147,34 @@ void enable_ldb_signal(void)
 
 void enable_ldb_bkl_vcc(void)
 {
-	if ((bklt_vcc_enable < 0) || (bklt_vcc_flag == gpio_get_value(bklt_vcc_enable)))
-		return;
-	mdelay(lvds_bkl_delay_value); // T3 for AUO 7"
+	if (lvds_bkl_delay_value > 0)
+		mdelay(lvds_bkl_delay_value); // T3 for AUO 7"
 
 	// Backlight On (VCC)
 	if (bklt_vcc_enable >= 0)
 	{
-		printk(KERN_INFO "[LVDS Sequence] 3 Start to enable backlight VCC. bklt_vcc_flag=%d\n",bklt_vcc_flag);
-		gpio_set_value_cansleep(bklt_vcc_enable, bklt_vcc_flag);
+		if (bklt_vcc_flag != gpio_get_value_cansleep(bklt_vcc_enable)) {
+			printk(KERN_INFO "[LVDS Sequence] 3 Start to enable backlight VCC. bklt_vcc_flag=%d\n",bklt_vcc_flag);
+			gpio_set_value_cansleep(bklt_vcc_enable, bklt_vcc_flag);
+		}
 	}
 
-	mdelay(bklt_pwm_delay_value); // T8 for AUO 7"
+	if (bklt_pwm_delay_value > 0)
+		mdelay(bklt_pwm_delay_value); // T8 for AUO 7"
 	printk(KERN_INFO "[LVDS Sequence] 4 Start to enable backlight PWM.\n");
 }
 
 void disable_ldb_bkl_vcc(void)
 {
-	if (bklt_vcc_enable < 0)
-		return;
-	mdelay(bklt_pwm_delay_value); // T8 for AUO 7"
+	if (bklt_pwm_delay_value > 0)
+		mdelay(bklt_pwm_delay_value); // T8 for AUO 7"
 
 	// Backlight Off (VCC)
 	if (bklt_vcc_enable >= 0)
 		gpio_set_value_cansleep(bklt_vcc_enable, !bklt_vcc_flag);
 
-	mdelay(lvds_bkl_delay_value); // T4 for AUO 7"
+	if (lvds_bkl_delay_value > 0)
+		mdelay(lvds_bkl_delay_value); // T4 for AUO 7"
 }
 
 void enable_ldb_bkl_pwm(void)
@@ -185,11 +210,16 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb)
 	struct pwm_state state;
 	int err;
 
-	enable_ldb_bkl_vcc();
-
 	pwm_get_state(pb->pwm, &state);
 	if (pb->enabled)
 		return;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	pwm_backlight_select_advantech_gpio(pb);
+	enable_lcd_vdd_en();
+	enable_ldb_signal();
+	enable_ldb_bkl_vcc();
+#endif
 
 	err = regulator_enable(pb->power_supply);
 	if (err < 0)
@@ -206,7 +236,9 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb)
 
 	pb->enabled = true;
 
+#ifdef CONFIG_ARCH_ADVANTECH
 	enable_ldb_bkl_pwm();
+#endif
 }
 
 static void pwm_backlight_power_off(struct pwm_bl_data *pb)
@@ -218,6 +250,7 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 		return;
 
 #ifdef CONFIG_ARCH_ADVANTECH
+	pwm_backlight_select_advantech_gpio(pb);
 	disable_ldb_bkl_pwm();
 #endif
 
@@ -236,6 +269,7 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 
 #ifdef CONFIG_ARCH_ADVANTECH
 	disable_ldb_bkl_vcc();
+	disable_lcd_vdd_en();
 #endif
 }
 
@@ -545,7 +579,6 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	lvds_reset_enable = of_get_named_gpio_flags(node, "lvds-reset", 0, &lvds_reset_flag);
 	lvds_stby_enable = of_get_named_gpio_flags(node, "lvds-stby", 0, &lvds_stby_flag);
 
-
 	if (of_find_property(node, "skip-gpios-init", NULL)) {
 		printk("[LVDS] Skip setting GPIOs to default states\n");
 		goto get_delays;
@@ -753,10 +786,16 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	strcpy(pb->fb_id, data->fb_id);
 
 #ifdef CONFIG_ARCH_ADVANTECH
-	pb->dft_enable = 1;
-	if (!of_property_read_u32(node, "default-enable", &ret)) {
-		pb->dft_enable = ret;
-	}
+	pb->lvds_vcc_enable = lvds_vcc_enable;
+	pb->lvds_bkl_enable = lvds_bkl_enable;
+	pb->bklt_vcc_enable = bklt_vcc_enable;
+	pb->lvds_vcc_delay_value = lvds_vcc_delay_value;
+	pb->lvds_bkl_delay_value = lvds_bkl_delay_value;
+	pb->bklt_pwm_delay_value = bklt_pwm_delay_value;
+	pb->bklt_en_delay_value = bklt_en_delay_value;
+	pb->lvds_vcc_flag = lvds_vcc_flag;
+	pb->lvds_bkl_flag = lvds_bkl_flag;
+	pb->bklt_vcc_flag = bklt_vcc_flag;
 #endif
 
 	pb->enable_gpio = devm_gpiod_get_optional(&pdev->dev, "enable",
@@ -914,6 +953,15 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	bl->props.brightness = data->dft_brightness;
 	bl->props.power = pwm_backlight_initial_power_state(pb);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	/*
+	 * Keep the Yocto 2.5 behavior: let the default brightness drive the
+	 * Advantech backlight GPIO sequence during probe.
+	 */
+	bl->props.power = FB_BLANK_UNBLANK;
+	bl->props.fb_blank = FB_BLANK_UNBLANK;
+#endif
+
 #if 0
 #if defined(CONFIG_OF) && defined(CONFIG_ARCH_ADVANTECH) //&& !defined(CONFIG_FB_MXC_DISP_FRAMEWORK)
 	/* Inorder to power off pwm backlight for SI test */
@@ -925,12 +973,8 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 #endif
 #endif
 
-#ifdef CONFIG_ARCH_ADVANTECH
-	if(pb->dft_enable)
-		backlight_update_status(bl);
-#else
 	backlight_update_status(bl);
-#endif
+
 	platform_set_drvdata(pdev, bl);
 	return 0;
 
@@ -985,6 +1029,8 @@ static int pwm_backlight_resume(struct device *dev)
 {
 	struct backlight_device *bl = dev_get_drvdata(dev);
 
+	backlight_update_status(bl);
+
 	return 0;
 }
 #endif
@@ -1014,3 +1060,4 @@ module_platform_driver(pwm_backlight_driver);
 MODULE_DESCRIPTION("PWM based Backlight Driver");
 MODULE_LICENSE("GPL v2");
 MODULE_ALIAS("platform:pwm-backlight");
+
