@@ -24,11 +24,12 @@
 
 &mipi0_dsi_host {
 	status = "okay";
-	fsl,clock-drop-level = <2>;
+	/*fsl,clock-drop-level = <2>;*/
 
 	panel@0 {
                 compatible = "auo,g101uan02";
                 reg = <0>;
+		backlight = <&lvds_backlight0>;
                 #address-cells = <1>;
                 #size-cells = <0>;
                 port@0 {
@@ -49,11 +50,12 @@
 };
 &mipi1_dsi_host {
 	status = "okay";
-	fsl,clock-drop-level = <2>;
+	/*fsl,clock-drop-level = <2>;*/
 
 	panel@0 {
                 compatible = "auo,g101uan02";
                 reg = <0>;
+		backlight = <&lvds_backlight1>;
                 #address-cells = <1>;
                 #size-cells = <0>;
                 port@0 {
@@ -73,3 +75,11 @@
         };
 };
 
+&lvds_backlight0 {
+	/delete-property/ skip-gpios-init;
+	status = "okay";
+};
+&lvds_backlight1 {
+	/delete-property/ skip-gpios-init;
+	status = "okay";
+};
