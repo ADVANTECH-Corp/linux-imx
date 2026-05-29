@@ -397,6 +397,14 @@ static void nwl_dsi_bridge_enable(struct drm_bridge *bridge)
 	if (ret < 0)
 		DRM_DEV_ERROR(dsi->dev, "Failed to deassert DPI: %d\n", ret);
 
+	/*
+	 * Switch back to continuous clock after the video stream starts,
+	 * matching the working 4.14 behavior. The panel's D-PHY receiver
+	 * needs a continuous clock to achieve PLL lock.
+	 */
+	if (dsi->dsi_mode_flags & MIPI_DSI_CLOCK_NON_CONTINUOUS) {
+		regmap_write(dsi->regmap, NWL_DSI_CFG_NONCONTINUOUS_CLK, 0x00);
+	}
 }
 
 static void nwl_dsi_bridge_disable(struct drm_bridge *bridge)
