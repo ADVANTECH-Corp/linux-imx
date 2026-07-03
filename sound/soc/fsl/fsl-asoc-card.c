@@ -129,6 +129,7 @@ struct fsl_asoc_card_priv {
 	bool is_codec_master;
 	bool is_playback_only;
 	bool is_capture_only;
+        struct device *codec_dev;
 	char name[32];
 };
 
@@ -806,6 +807,7 @@ static int fsl_asoc_card_probe(struct platform_device *pdev)
 		priv->codec_priv.mclk_id = SGTL5000_SYSCLK;
 		priv->dai_fmt |= SND_SOC_DAIFMT_CBP_CFP;
 		priv->card_type = CARD_SGTL5000;
+                priv->codec_dev = codec_dev;
 	} else if (of_device_is_compatible(np, "fsl,imx-audio-tlv320aic32x4")) {
 		codec_dai_name = "tlv320aic32x4-hifi";
 		priv->dai_fmt |= SND_SOC_DAIFMT_CBP_CFP;
@@ -1125,6 +1127,39 @@ fail:
 	return ret;
 }
 
+static int fsl_asoc_card_suspend(struct device *dev)
+{
+       return snd_soc_pm_ops.suspend ? snd_soc_pm_ops.suspend(dev) : 0;
+}
+
+static int fsl_asoc_card_resume(struct device *dev)
+{
+       struct snd_soc_card *card = dev_get_drvdata(dev);
+       struct fsl_asoc_card_priv *priv = snd_soc_card_get_drvdata(card);
+       int ret;
+
+       /*
+        * tom_add: SGTL5000 has no reset line and no software reset command.
+        * If its MCLK is interrupted across system suspend, the chip's I2C
+        * control port is left wedged and regcache_sync() in snd_soc_resume()
+        * fails with -EAGAIN indefinitely (audio silent after resume).
+        * Force a full re-probe of the codec while the SAI MCLK is live again,
+        * then run the normal ASoC resume.
+        */
+       if (priv->card_type == CARD_SGTL5000 && priv->codec_dev) {
+               ret = device_reprobe(priv->codec_dev);
+               if (ret)
+                       dev_err(dev, "SGTL5000 reprobe on resume failed: %d\n",
+                               ret);
+       }
+
+       return snd_soc_pm_ops.resume ? snd_soc_pm_ops.resume(dev) : 0;
+}
+
+static const struct dev_pm_ops fsl_asoc_card_pm_ops = {
+       SET_SYSTEM_SLEEP_PM_OPS(fsl_asoc_card_suspend, fsl_asoc_card_resume)
+};
+
 static const struct of_device_id fsl_asoc_card_dt_ids[] = {
 	{ .compatible = "fsl,imx-audio-ac97", },
 	{ .compatible = "fsl,imx-audio-cs42888", },
@@ -1148,7 +1183,7 @@ static struct platform_driver fsl_asoc_card_driver = {
 	.probe = fsl_asoc_card_probe,
 	.driver = {
 		.name = DRIVER_NAME,
-		.pm = &snd_soc_pm_ops,
+		.pm = &fsl_asoc_card_pm_ops,
 		.of_match_table = fsl_asoc_card_dt_ids,
 	},
 };
