@@ -1879,11 +1879,56 @@ disable_bus_clk:
 	return ret;
 }
 
+static int fsl_sai_suspend(struct device *dev)
+{
+       struct fsl_sai *sai = dev_get_drvdata(dev);
+
+       /*
+        * mclk-always-on: runtime_suspend is a no-op, so this device idles
+        * with RPM status "suspended" while the hardware is fully active.
+        * pm_runtime_force_suspend() short-circuits on that status and never
+        * arms needs_force_resume, so on wake runtime_resume() is skipped and
+        * nothing re-asserts TERE -> the TERE-gated MCLK pad stays dead and
+        * the codec's resume regcache_sync() fails. Handle system sleep
+        * explicitly instead: the AUDIOMIX domain resets the SAI in suspend,
+        * so make the regcache the source of truth here and rebuild the
+        * hardware in fsl_sai_resume().
+        */
+       if (sai->mclk_always_on) {
+               regcache_cache_only(sai->regmap, true);
+               regcache_mark_dirty(sai->regmap);
+               return 0;
+       }
+       return pm_runtime_force_suspend(dev);
+}
+
+static int fsl_sai_resume(struct device *dev)
+{
+       struct fsl_sai *sai = dev_get_drvdata(dev);
+
+       if (sai->mclk_always_on) {
+               unsigned int ofs = sai->soc_data->reg_offset;
+
+               /* same recovery sequence as fsl_sai_runtime_resume() */
+               regcache_cache_only(sai->regmap, false);
+               regcache_mark_dirty(sai->regmap);
+               regmap_write(sai->regmap, FSL_SAI_TCSR(ofs), FSL_SAI_CSR_SR);
+               regmap_write(sai->regmap, FSL_SAI_RCSR(ofs), FSL_SAI_CSR_SR);
+               usleep_range(1000, 2000);
+               regmap_write(sai->regmap, FSL_SAI_TCSR(ofs), 0);
+               regmap_write(sai->regmap, FSL_SAI_RCSR(ofs), 0);
+               regcache_sync(sai->regmap);
+               regmap_update_bits(sai->regmap, FSL_SAI_TCSR(ofs),
+                                  FSL_SAI_CSR_TERE, FSL_SAI_CSR_TERE);
+               return 0;
+       }
+       return pm_runtime_force_resume(dev);
+}
+
 static const struct dev_pm_ops fsl_sai_pm_ops = {
 	SET_RUNTIME_PM_OPS(fsl_sai_runtime_suspend,
 			   fsl_sai_runtime_resume, NULL)
-	SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
-				pm_runtime_force_resume)
+        SET_SYSTEM_SLEEP_PM_OPS(fsl_sai_suspend, fsl_sai_resume)
 };
 
 static struct platform_driver fsl_sai_driver = {
