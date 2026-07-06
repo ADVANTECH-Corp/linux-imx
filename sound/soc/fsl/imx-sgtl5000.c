@@ -21,6 +21,7 @@ struct imx_sgtl5000_data {
 	char codec_dai_name[DAI_NAME_SIZE];
 	char platform_name[DAI_NAME_SIZE];
 	struct clk *codec_clk;
+	struct device *codec_dev;
 	unsigned int clk_frequency;
 };
 
@@ -148,6 +149,7 @@ static int imx_sgtl5000_probe(struct platform_device *pdev)
 	}
 
 	data->clk_frequency = clk_get_rate(data->codec_clk);
+	data->codec_dev = &codec_dev->dev;
 
 	data->dai.cpus		= &comp[0];
 	data->dai.codecs	= &comp[1];
@@ -225,6 +227,40 @@ static int imx_sgtl5000_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int imx_sgtl5000_suspend(struct device *dev)
+{
+	return snd_soc_pm_ops.suspend ? snd_soc_pm_ops.suspend(dev) : 0;
+}
+
+static int imx_sgtl5000_resume(struct device *dev)
+{
+	struct snd_soc_card *card = dev_get_drvdata(dev);
+	struct imx_sgtl5000_data *data = snd_soc_card_get_drvdata(card);
+	int ret;
+
+	/*
+	 * SGTL5000 has no reset line and no software reset command. If its
+	 * MCLK is interrupted across system suspend the I2C control port is
+	 * left wedged and regcache_sync() in snd_soc_resume() fails (silent
+	 * after resume). Force a full codec re-probe while the SAI MCLK is
+	 * live again, then run the normal ASoC resume.
+	 */
+	if (data->codec_dev) {
+		ret = device_reprobe(data->codec_dev);
+		if (ret)
+			dev_err(dev, "sgtl5000 reprobe on resume failed: %d\n",
+				ret);
+	}
+
+	return snd_soc_pm_ops.resume ? snd_soc_pm_ops.resume(dev) : 0;
+}
+
+static const struct dev_pm_ops imx_sgtl5000_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(imx_sgtl5000_suspend, imx_sgtl5000_resume)
+};
+#endif
+
 static const struct of_device_id imx_sgtl5000_dt_ids[] = {
 	{ .compatible = "fsl,imx-audio-sgtl5000", },
 	{ /* sentinel */ }
@@ -234,7 +270,11 @@ MODULE_DEVICE_TABLE(of, imx_sgtl5000_dt_ids);
 static struct platform_driver imx_sgtl5000_driver = {
 	.driver = {
 		.name = "imx-sgtl5000",
+#ifdef CONFIG_ARCH_ADVANTECH
+		.pm = &imx_sgtl5000_pm_ops,
+#else
 		.pm = &snd_soc_pm_ops,
+#endif
 		.of_match_table = imx_sgtl5000_dt_ids,
 	},
 	.probe = imx_sgtl5000_probe,
