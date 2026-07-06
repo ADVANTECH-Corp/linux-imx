@@ -1733,11 +1733,70 @@ disable_bus_clk:
 }
 #endif /* CONFIG_PM */
 
+#if defined(CONFIG_ARCH_ADVANTECH) && defined(CONFIG_PM_SLEEP)
+/*
+ * Fix sgtl5000 losing sound after system suspend/resume.
+ *
+ * With "fsl,sai-mclk-direction-output" set, fsl_sai_runtime_suspend() is a
+ * no-op, so the SAI idles with runtime-PM status "suspended" while its MCLK
+ * hardware is still active. During system sleep the default
+ * pm_runtime_force_suspend() then short-circuits on that status and never
+ * arms needs_force_resume; on wake pm_runtime_force_resume() likewise
+ * short-circuits and the runtime_resume callback -- which re-asserts TERE --
+ * never runs. The TERE-gated MCLK pad stays dead and the codec's
+ * regcache_sync() in snd_soc_resume() fails, leaving audio silent.
+ *
+ * Handle system sleep explicitly for this path: freeze the regcache in
+ * suspend and rebuild the SAI (same sequence as fsl_sai_runtime_resume())
+ * in resume so TERE / MCLK come back before the codec resumes.
+ */
+static int fsl_sai_suspend(struct device *dev)
+{
+	struct fsl_sai *sai = dev_get_drvdata(dev);
+
+	if (of_find_property(dev->of_node,
+			     "fsl,sai-mclk-direction-output", NULL)) {
+		regcache_cache_only(sai->regmap, true);
+		regcache_mark_dirty(sai->regmap);
+		return 0;
+	}
+
+	return pm_runtime_force_suspend(dev);
+}
+
+static int fsl_sai_resume(struct device *dev)
+{
+	struct fsl_sai *sai = dev_get_drvdata(dev);
+	unsigned char offset = sai->soc->reg_offset;
+
+	if (of_find_property(dev->of_node,
+			     "fsl,sai-mclk-direction-output", NULL)) {
+		regcache_cache_only(sai->regmap, false);
+		regcache_mark_dirty(sai->regmap);
+		regmap_write(sai->regmap, FSL_SAI_TCSR(offset), FSL_SAI_CSR_SR);
+		regmap_write(sai->regmap, FSL_SAI_RCSR(offset), FSL_SAI_CSR_SR);
+		usleep_range(1000, 2000);
+		regmap_write(sai->regmap, FSL_SAI_TCSR(offset), 0);
+		regmap_write(sai->regmap, FSL_SAI_RCSR(offset), 0);
+		regcache_sync(sai->regmap);
+		regmap_update_bits(sai->regmap, FSL_SAI_TCSR(offset),
+				   FSL_SAI_CSR_TERE, FSL_SAI_CSR_TERE);
+		return 0;
+	}
+
+	return pm_runtime_force_resume(dev);
+}
+#endif
+
 static const struct dev_pm_ops fsl_sai_pm_ops = {
 	SET_RUNTIME_PM_OPS(fsl_sai_runtime_suspend,
 			   fsl_sai_runtime_resume, NULL)
+#ifdef CONFIG_ARCH_ADVANTECH
+	SET_SYSTEM_SLEEP_PM_OPS(fsl_sai_suspend, fsl_sai_resume)
+#else
 	SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
 				pm_runtime_force_resume)
+#endif
 };
 
 static struct platform_driver fsl_sai_driver = {
