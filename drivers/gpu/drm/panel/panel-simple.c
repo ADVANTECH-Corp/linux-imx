@@ -1274,6 +1274,31 @@ static const struct panel_desc boe_ev121wxm_n10_1850 = {
 };
 
 #ifdef CONFIG_ARCH_ADVANTECH
+static const struct drm_display_mode am1024600_mode = {
+	.clock = 51200,
+	.hdisplay = 1024,
+	.hsync_start = 1024 + 160,
+	.hsync_end = 1024 + 160 + 20,
+	.htotal = 1344,
+	.vdisplay = 600,
+	.vsync_start = 600 + 23,
+	.vsync_end = 600 + 23 + 3,
+	.vtotal = 635,
+	.flags = DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC,
+};
+
+static const struct panel_desc am1024600 = {
+	.modes = &am1024600_mode,
+	.num_modes = 1,
+	.bpc = 8,
+	.size = {
+		.width = 222,
+		.height = 125,
+	},
+	.bus_flags = DRM_BUS_FLAG_DE_HIGH,
+	.bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
+	.connector_type = DRM_MODE_CONNECTOR_LVDS,
+};
 static const struct drm_display_mode auo_g070vw01_v0_mode = {
         .clock = 35000,
         .hdisplay = 800,
@@ -4224,6 +4249,9 @@ static const struct of_device_id platform_of_match[] = {
 	}, {
 		.compatible = "innolux,g101ice-l01_new",
 		.data = &innolux_g101ice_l01_new
+	}, {
+		.compatible = "ampire,am-1024600s1tzqw-td6h",
+		.data = &am1024600,
 	}, {
 #endif
 		.compatible = "boe,hv070wsa-100",
