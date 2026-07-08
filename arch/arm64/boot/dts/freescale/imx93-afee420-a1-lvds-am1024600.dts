@@ -1,0 +1,15 @@
+#include "imx93-afee420-a1-lvds.dts"
+
+&{/lvds_panel} {
+	compatible = "ampire,am-1024600s1tzqw-td6h";
+};
+
+&lcdif {
+	assigned-clock-rates = <358400000>, <51200000>, <400000000>, <133333333>;
+};
+
+&ldb {
+	assigned-clock-rates = <358400000>;
+};
+
+
