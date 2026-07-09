@@ -1,0 +1,59 @@
+/ {
+	sound-aic3101 {
+		compatible = "fsl,imx-audio-tlv320aic3x";
+		model = "imx-aic3101";
+		audio-cpu = <&sai3>;
+		audio-codec = <&aic3101>;
+		audio-routing =
+			"Headphone Jack", "HPLOUT",
+			"Headphone Jack", "HPROUT";
+	};
+};
+
+&lpi2c4 {
+	aic3101: tlv320aic3x@18 {
+		#sound-dai-cells = <0>;
+		compatible = "ti,tlv320aic3x";
+		reg = <0x18>;
+		/* fsl-asoc-card does clk_get() on the codec device for MCLK */
+		clocks = <&scmi_clk IMX95_CLK_SAI3>;
+		clock-names = "mclk";
+		ai3x-ocmv = <2>;   /* HP common-mode 1.65V — datasheet Table 5 */
+	};
+};
+
+&sai3 {
+	#sound-dai-cells = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_sai3>;
+
+	clocks = <&scmi_clk IMX95_CLK_BUSWAKEUP>, <&dummy>,
+		 <&scmi_clk IMX95_CLK_SAI3>, <&dummy>,
+		 <&dummy>, <&scmi_clk IMX95_CLK_AUDIOPLL1>,
+		 <&scmi_clk IMX95_CLK_AUDIOPLL2>;
+	clock-names = "bus", "mclk0", "mclk1", "mclk2", "mclk3", "pll8k", "pll11k";
+
+	assigned-clocks = <&scmi_clk IMX95_CLK_AUDIOPLL1_VCO>,
+			  <&scmi_clk IMX95_CLK_AUDIOPLL2_VCO>,
+			  <&scmi_clk IMX95_CLK_AUDIOPLL1>,
+			  <&scmi_clk IMX95_CLK_AUDIOPLL2>,
+			  <&scmi_clk IMX95_CLK_SAI3>;
+	assigned-clock-parents = <0>, <0>, <0>, <0>,
+				 <&scmi_clk IMX95_CLK_AUDIOPLL1>;
+	assigned-clock-rates = <3932160000>, <3612672000>,
+			       <393216000>, <361267200>, <12288000>;
+	fsl,sai-mclk-direction-output;
+	fsl,sai-synchronous-rx;
+};
+
+&scmi_iomuxc {
+	pinctrl_sai3: sai3grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO17__SAI3_MCLK			0x31e
+			IMX95_PAD_GPIO_IO18__SAI3_RX_BCLK		0x31e
+			IMX95_PAD_GPIO_IO19__SAI3_RX_SYNC		0x31e
+			IMX95_PAD_GPIO_IO20__SAI3_RX_DATA_BIT0		0x31e
+			IMX95_PAD_GPIO_IO21__SAI3_TX_DATA_BIT0		0x31e
+		>;
+	};
+};
