@@ -54,6 +54,7 @@ enum fsl_asoc_card_type {
 	CARD_SI476X,
 	CARD_WM8958,
 	CARD_WM8904,
+	CARD_TLV320AIC3X,
 };
 
 /**
@@ -216,6 +217,29 @@ static int fsl_asoc_card_hw_params(struct snd_pcm_substream *substream,
 
 	if (fsl_asoc_card_is_ac97(priv))
 		return 0;
+
+	/*
+	 * AIC3x on SAI (master, MCLK out): set the SAI MCLK to rate*256 per
+	 * stream so fsl_sai reparents AUDIOPLL1/2 (pll8k/pll11k) for the 44.1k
+	 * vs 48k families, and update the codec sysclk to match. This mirrors
+	 * simple-card's mclk-fs behaviour so native 44.1k works.
+	 */
+	if (priv->card_type == CARD_TLV320AIC3X) {
+		unsigned int aic_mclk = priv->sample_rate * 256;
+		struct snd_soc_dai *codec_dai;
+		int codec_idx;
+
+		cpu_priv->sysclk_freq[tx] = aic_mclk;
+
+		for_each_rtd_codec_dais(rtd, codec_idx, codec_dai) {
+			ret = snd_soc_dai_set_sysclk(codec_dai, 0, aic_mclk,
+						     SND_SOC_CLOCK_IN);
+			if (ret && ret != -ENOTSUPP) {
+				dev_err(dev, "failed to set aic3x sysclk: %d\n", ret);
+				return ret;
+			}
+		}
+	}
 
 	/* Specific configurations of DAIs starts from here */
 	ret = snd_soc_dai_set_sysclk(asoc_rtd_to_cpu(rtd, 0), cpu_priv->sysclk_id[tx],
@@ -812,6 +836,20 @@ static int fsl_asoc_card_probe(struct platform_device *pdev)
 		codec_dai_name = "tlv320aic32x4-hifi";
 		priv->dai_fmt |= SND_SOC_DAIFMT_CBP_CFP;
 		priv->card_type = CARD_TLV320AIC32X4;
+	} else if (of_device_is_compatible(np, "fsl,imx-audio-tlv320aic3x")) {
+		/* TLV320AIC3101 (tlv320aic3x driver); SAI is clock master and
+		 * drives MCLK out to the codec, so the codec is bit/frame
+		 * consumer (CBC_CFC).
+		 */
+		codec_dai_name = "tlv320aic3x-hifi";
+		priv->cpu_priv.sysclk_freq[TX] = priv->codec_priv.mclk_freq;
+		priv->cpu_priv.sysclk_freq[RX] = priv->codec_priv.mclk_freq;
+		priv->cpu_priv.sysclk_dir[TX] = SND_SOC_CLOCK_OUT;
+		priv->cpu_priv.sysclk_dir[RX] = SND_SOC_CLOCK_OUT;
+		priv->card.dapm_routes = audio_map_tx;
+		priv->card.num_dapm_routes = ARRAY_SIZE(audio_map_tx);
+		priv->dai_fmt |= SND_SOC_DAIFMT_CBC_CFC;
+		priv->card_type = CARD_TLV320AIC3X;
 	} else if (of_device_is_compatible(np, "fsl,imx-audio-tlv320aic31xx")) {
 		codec_dai_name = "tlv320dac31xx-hifi";
 		priv->dai_fmt |= SND_SOC_DAIFMT_CBS_CFS;
@@ -1167,6 +1205,7 @@ static const struct of_device_id fsl_asoc_card_dt_ids[] = {
 	{ .compatible = "fsl,imx-audio-cs427x", },
 	{ .compatible = "fsl,imx-audio-tlv320aic32x4", },
 	{ .compatible = "fsl,imx-audio-tlv320aic31xx", },
+	{ .compatible = "fsl,imx-audio-tlv320aic3x", },
 	{ .compatible = "fsl,imx-audio-sgtl5000", },
 	{ .compatible = "fsl,imx-audio-wm8962", },
 	{ .compatible = "fsl,imx-audio-wm8960", },
