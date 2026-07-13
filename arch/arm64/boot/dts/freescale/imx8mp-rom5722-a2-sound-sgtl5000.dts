@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2019 NXP
+ */
+
+/* ROM-5722-A2 with the SGTL5000 CN3 codec module.
+ *
+ * The base imx8mp-rom5722-a2.dts now defaults to the TLV320AIC3101 CN3
+ * module; defining ROM5722_SOUND_SGTL5000 before including it selects the
+ * SGTL5000 sound card instead. Choose this DTB from U-Boot:
+ *   setenv fdt_file imx8mp-rom5722-a2-sound-sgtl5000.dtb
+ */
+#define ROM5722_SOUND_SGTL5000
+
+#include "imx8mp-rom5722-a2.dts"

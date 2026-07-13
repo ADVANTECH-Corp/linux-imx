@@ -225,6 +225,7 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mp-rom5722-a2-adv7535.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mp-rom5722-a2-auog101uan02.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mp-rom5722-a2-basler.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mp-rom5722-a2-m2-sdio.dtb
+dtb-$(CONFIG_ARCH_MXC) += imx8mp-rom5722-a2-sound-sgtl5000.dtb
 
 dtb-$(CONFIG_ARCH_MXC) += imx8mq-evk.dtb imx8mq-evk-rpmsg.dtb
 dtb-$(CONFIG_ARCH_MXC) += imx8mq-evk.dtb imx8mq-evk-rpmsg.dtb imx8mq-evk-pcie1-m2.dtb imx8mq-evk-usd-wifi.dtb \
