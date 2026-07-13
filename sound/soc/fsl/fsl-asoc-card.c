@@ -1148,9 +1148,10 @@ static int fsl_asoc_card_resume(struct device *dev)
         */
        if (priv->card_type == CARD_SGTL5000 && priv->codec_dev) {
                ret = device_reprobe(priv->codec_dev);
-               if (ret)
+               if (ret && ret != -EPROBE_DEFER)
                        dev_err(dev, "SGTL5000 reprobe on resume failed: %d\n",
                                ret);
+               wait_for_device_probe();
        }
 
        return snd_soc_pm_ops.resume ? snd_soc_pm_ops.resume(dev) : 0;
