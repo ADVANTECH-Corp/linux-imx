@@ -12,6 +12,13 @@
 /* Definitions */
 #define ROM_DB5901
 #define ROM_DB5901_I2S_CN3
+/* CN3 codec module select (mutually exclusive plug-in modules on SAI3):
+ * default = TLV320AIC3101. imx8mp-rom5722-a2-sound-sgtl5000.dts defines
+ * ROM5722_SOUND_SGTL5000 before including this file to build the SGTL5000
+ * variant instead — pick it in U-Boot via the fdt_file env variable. */
+#ifndef ROM5722_SOUND_SGTL5000
+#define ROM_DB5901_AIC3101
+#endif
 
 / {
 	model = "Advantech i.MX8MPlus RSB5722A2 board";
@@ -115,6 +122,7 @@
 	};
 
 #ifdef ROM_DB5901
+#ifndef ROM_DB5901_AIC3101
 	sound: sound {
 		compatible = "fsl,imx-audio-sgtl5000";
 		model = "sgtl5000";
@@ -130,6 +138,23 @@
 			"Mic Jack", "Mic Bias",
 			"Headphone Jack", "HP_OUT";
 	};
+#else
+	/* TLV320AIC3101 plug-in module on CN3 replaces the SGTL5000 module (same
+	 * I2S0/SAI3 + I2C_GP wiring). Bound by fsl-asoc-card via the added
+	 * "fsl,imx-audio-tlv320aic3x" case (codec DAI tlv320aic3x-hifi, SoC is
+	 * BCLK/LRCLK provider, I2S). fsl-asoc-card reads the codec node's mclk
+	 * clock rate and sets it as codec sysclk in late_probe. Not
+	 * simple-audio-card: that driver is reserved for the HDMI audio card. */
+	sound_aic3101: sound-aic3101 {
+		compatible = "fsl,imx-audio-tlv320aic3x";
+		model = "imx-aic3101";
+		audio-cpu = <&sai3>;
+		audio-codec = <&aic3101>;
+		audio-routing =
+			"Headphone Jack", "HPLOUT",
+			"Headphone Jack", "HPROUT";
+	};
+#endif
 #endif
 
 	extcon_usb_otg: extcon_usb_otg@1 {
@@ -649,6 +674,7 @@
 	status = "okay";
 
 #ifdef ROM_DB5901
+#ifndef ROM_DB5901_AIC3101
 	codec: sgtl5000@a {
 		compatible = "fsl,sgtl5000";
 		reg = <0x0a>;
@@ -656,6 +682,25 @@
 		clock-names = "mclk";
 		pinctrl-names = "default";
 	};
+#else
+	/* AIC3101 plug-in module on CN3 — shares I2C_GP/i2c5 + SAI3 with the SGTL5000
+	 * module; only one codec module is populated at a time. Bind via the GENERIC
+	 * aic3x family match (model AIC3X_MODEL_3X), NOT ti,tlv320aic3101 and NOT the
+	 * aic31xx driver (different chip). The aic3x driver itself does not consume
+	 * the mclk clock; fsl-asoc-card reads its RATE from this node to program the
+	 * codec sysclk (SAI3 MCLK1 = 12.288 MHz, TERE-pinned always-on). */
+	aic3101: tlv320aic3x@18 {
+		#sound-dai-cells = <0>;
+		compatible = "ti,tlv320aic3x";	/* ti,tlv320aic3101 silently fails to probe */
+		reg = <0x18>;			/* [CONFIRM] strap 0x18..0x1b on the CN3 module schematic */
+		clocks = <&audio_blk_ctrl IMX8MP_CLK_AUDIOMIX_SAI3_MCLK1>;
+		clock-names = "mclk";
+		ai3x-ocmv = <2>;	/* HP common-mode 1.65V — datasheet Table 5 */
+		/* reset-gpios omitted — [CONFIRM] whether CN3 routes a GPIO to codec RESET */
+		/* IOVDD/DVDD/AVDD/DRVDD supplies omitted -> dummy regulators; the module
+		 * splits its own rails from always-on AUDIO_VDDA (+V3) [CONFIRM] */
+	};
+#endif
 
 	eeprom: 24c64@57 {
 		compatible = "st,24c64";
@@ -775,15 +820,27 @@
 };
 
 &sai3 {
+	#sound-dai-cells = <0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sai3>;
 	assigned-clocks = <&clk IMX8MP_CLK_SAI3>;
 	assigned-clock-parents = <&clk IMX8MP_AUDIO_PLL1_OUT>;
 	assigned-clock-rates = <12288000>;
+#ifdef ROM_DB5901_AIC3101
+	/* pll8k/pll11k let fsl_sai reparent SAI3 MCLK between AUDIO_PLL1
+	 * (48k family) and AUDIO_PLL2 (44.1k family) per stream — needed by
+	 * the fsl-asoc-card aic3x per-stream rate*256 MCLK for native 44.1k */
+	clocks = <&audio_blk_ctrl IMX8MP_CLK_AUDIOMIX_SAI3_IPG>, <&clk IMX8MP_CLK_DUMMY>,
+		<&audio_blk_ctrl IMX8MP_CLK_AUDIOMIX_SAI3_MCLK1>, <&clk IMX8MP_CLK_DUMMY>,
+		<&clk IMX8MP_CLK_DUMMY>, <&clk IMX8MP_AUDIO_PLL1_OUT>,
+		<&clk IMX8MP_AUDIO_PLL2_OUT>;
+	clock-names = "bus", "mclk0", "mclk1", "mclk2", "mclk3", "pll8k", "pll11k";
+#else
 	clocks = <&audio_blk_ctrl IMX8MP_CLK_AUDIOMIX_SAI3_IPG>, <&clk IMX8MP_CLK_DUMMY>,
 		<&audio_blk_ctrl IMX8MP_CLK_AUDIOMIX_SAI3_MCLK1>, <&clk IMX8MP_CLK_DUMMY>,
 		<&clk IMX8MP_CLK_DUMMY>;
 	clock-names = "bus", "mclk0", "mclk1", "mclk2", "mclk3";
+#endif
 	fsl,sai-mclk-direction-output;
 	fsl,sai-mclk-always-on;
 	status = "okay";
