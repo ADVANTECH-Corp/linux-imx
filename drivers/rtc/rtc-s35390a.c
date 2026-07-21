@@ -158,7 +158,7 @@ static int s35390a_read_status(struct s35390a *s35390a, char *status1)
 	 * A 1–2ms range is sufficient for hardware stabilization while
 	 * preventing the boot-time hang.
 	 */
-	usleep_range(1000, 2000);
+	//usleep_range(1000, 2000);
 
 	ret = s35390a_get_reg(s35390a, S35390A_CMD_STATUS1, status1, 1);
 	if (ret < 0)
