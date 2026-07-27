@@ -6,12 +6,11 @@
 		regulator-max-microvolt = <5000000>;
 		gpio = <&gpio_exp2 13 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
-		regulator-always-on;
 	};
 
 	extcon_usb_otg: extcon_usb_otg@1 {
 		compatible = "linux,extcon-usb-gpio";
-		id-gpio = <&gpio4 14 GPIO_ACTIVE_HIGH>;
+		id-gpios = <&gpio4 14 GPIO_ACTIVE_HIGH>;
 	};
 };
 
@@ -19,13 +18,8 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usb_otg>;
 	dr_mode = "otg";
-	extcon = <&extcon_usb_otg>;
+	extcon = <0>, <&extcon_usb_otg>; /* first extcon set <0> because no VBUS_DETECT */
 	vbus-supply = <&reg_usb_otg_vbus>;
-	hnp-disable;
-	srp-disable;
-	adp-disable;
-	usb-role-switch;
-	role-switch-default-mode = "none";
 	status = "okay";
 };
 
