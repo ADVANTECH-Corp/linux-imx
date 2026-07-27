@@ -23,8 +23,9 @@
 #include "rtk_error.h"
 #include "dal/dal_mgmt.h"
 #include "dal/rtl8367c/rtl8367c_asicdrv_port.h"
+#include "dal/rtl8367c/rtl8367c_asicdrv_phy.h"
 
-
+static struct delayed_work fix_output_vol;
 static char mac_buf[150];
 static ssize_t proc_83867_detect_write(struct file *file,
         const char __user *buffer, size_t count, loff_t *pos)
@@ -90,6 +91,34 @@ static int __init proc_83867_detect_init(void)
         return 0;
 }
 fs_initcall(proc_83867_detect_init);
+
+static void fix_output_vol_handler(struct work_struct *work)
+{
+	int i;
+	rtk_uint32  regData;
+	rtk_port_linkStatus_t linkStatus;
+	rtk_port_speed_t speed;
+	rtk_port_duplex_t duplex;
+
+	for(i=0;i<4;i++)
+	{
+		if(rtk_port_phyStatus_get(i, &linkStatus, &speed, &duplex) == RT_ERR_OK) {
+			if(linkStatus != PORT_LINKUP)
+				continue;
+	
+			if(rtl8367c_getAsicPHYOCPReg(i, 0xbcc4, &regData) == RT_ERR_OK) {
+				if((regData & 0xff00) != 0xff00){
+					regData |= 0xff00;
+					rtl8367c_setAsicPHYOCPReg(i, 0xbcc4, regData);
+					//rtl8367c_getAsicPHYOCPReg(i, 0xbcc4, &regData);
+					//printk("-UTP_PORT%d 0xbcc4 = 0x%x \n",i,regData);
+				}
+			}
+		}
+	}
+
+	schedule_delayed_work(&fix_output_vol, msecs_to_jiffies(100));
+}
 
 static int testmode[2]={-1,-1};
 static ssize_t proc_rtl8367_mode_write(struct file *file,
@@ -260,6 +289,9 @@ static int  rtl8367c_probe(struct platform_device *pdev)
 
 
 	proc_create("rtl8367_mode", 0644, NULL, &proc_rtl8367_mode_fops);
+
+	INIT_DELAYED_WORK(&fix_output_vol, fix_output_vol_handler);
+	schedule_delayed_work(&fix_output_vol, msecs_to_jiffies(100));
 
 	printk("rtl8367 booting ok\n");
 /*
