@@ -55,7 +55,7 @@ config RTC_HCTOSYS_DEVICE
 
 config RTC_SYSTOHC
 	bool "Set the RTC time based on NTP synchronization"
-	default y
+	default n
 	help
 	  If you say yes here, the system time (wall clock) will be stored
 	  in the RTC specified by RTC_HCTOSYS_DEVICE approximately every 11
