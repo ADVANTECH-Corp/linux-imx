@@ -3658,6 +3658,11 @@ static void genpd_debug_add(struct generic_pm_domain *genpd)
 	if (!genpd_debugfs_dir)
 		return;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (!genpd->name)
+		return;
+#endif
+
 	d = debugfs_create_dir(dev_name(&genpd->dev), genpd_debugfs_dir);
 
 	debugfs_create_file("current_state", 0444,
