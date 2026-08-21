@@ -316,13 +316,8 @@ static int adv_wdt_i2c_probe(struct i2c_client *client)
 	//Setting GPIO
 	gpio_wdt_en_desc = devm_gpiod_get(&client->dev, "wdt-en", GPIOD_OUT_LOW);
 	if (IS_ERR(gpio_wdt_en_desc)) {
-		int err = PTR_ERR(gpio_wdt_en_desc);
-		if (err == -ENOENT || err == -EBUSY) {
-			dev_info(&client->dev, "GPIO wdt-en not ready, deferring probe\n");
-			return -EPROBE_DEFER;
-		}
-		dev_err(&client->dev, "Failed to get GPIO wdt-en (err=%d)\n", err);
-		return err;
+		dev_err(&client->dev, "Failed to get GPIO wdt-en (err=%d)\n", PTR_ERR(gpio_wdt_en_desc));
+		return PTR_ERR(gpio_wdt_en_desc);
 	}
 	wdev->gpio_wdt_en = desc_to_gpio(gpio_wdt_en_desc);
 	wdev->wdt_en_off = !gpiod_is_active_low(gpio_wdt_en_desc);
@@ -330,13 +325,8 @@ static int adv_wdt_i2c_probe(struct i2c_client *client)
 
 	gpio_wdt_ping_desc = devm_gpiod_get(&client->dev, "wdt-ping", GPIOD_OUT_LOW);
 	if (IS_ERR(gpio_wdt_ping_desc)) {
-		int err = PTR_ERR(gpio_wdt_ping_desc);
-		if (err == -ENOENT || err == -EBUSY) {
-			dev_info(&client->dev, "GPIO wdt-ping not ready, deferring probe\n");
-			return -EPROBE_DEFER;
-		}
-		dev_err(&client->dev, "Failed to get GPIO wdt-ping (err=%d)\n", err);
-		return err;
+		dev_err(&client->dev, "Failed to get GPIO wdt-ping\n");
+		return PTR_ERR(gpio_wdt_ping_desc);
 	}
 	wdev->gpio_wdt_ping = desc_to_gpio(gpio_wdt_ping_desc);
 	wdev->wdt_ping_status = gpiod_is_active_low(gpio_wdt_ping_desc);
@@ -369,12 +359,7 @@ static int adv_wdt_i2c_probe(struct i2c_client *client)
 		wdev->version[1] = tmp_version & 0xFF;
 		tmp_version = (unsigned int)(wdev->version[1] - '0') * 10 + (unsigned int)(wdev->version[0] - '0');
 	} else {
-		if (ret == -ETIMEDOUT || ret == -EIO) {
-			dev_info(&client->dev, "I2C device communication failed, deferring probe\n");
-			return -EPROBE_DEFER;
-		}
-		dev_err(&client->dev, "Read watchdog version err=%d\n", ret);
-		return ret;
+		pr_err("Read watchdog version err=%d\n", ret);
 	}
 
 	wdev->wdog.info		= &adv_wdt_info;
