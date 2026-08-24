@@ -31,6 +31,10 @@
 #include "sdhci-esdhc.h"
 #include "cqhci.h"
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/gpio.h>
+#endif
+
 #define ESDHC_SYS_CTRL_RESET_TUNING	(1 << 28)
 #define ESDHC_SYS_CTRL_RST_FIFO		(1 << 22)
 #define ESDHC_SYS_CTRL_DTOCV_MASK	0x0f
@@ -1813,6 +1817,9 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
 	struct device_node *np = pdev->dev.of_node;
 	struct esdhc_platform_data *boarddata = &imx_data->boarddata;
 	int ret;
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct gpio_desc *wifi_pwr_en_gpio,*wifi_pdn_gpio;
+#endif
 
 	if (of_property_read_bool(np, "fsl,wp-controller"))
 		boarddata->wp_type = ESDHC_WP_CONTROLLER;
@@ -1840,6 +1847,46 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
 
 	if (of_property_read_u32(np, "fsl,delay-line", &boarddata->delay_line))
 		boarddata->delay_line = 0;
+
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	/* wifi-pwr-en: LOW -> delay 5ms -> HIGH */
+	wifi_pwr_en_gpio = devm_gpiod_get_optional(&pdev->dev,
+						   "wifi-pwr-en",
+						   GPIOD_OUT_LOW);
+	if (IS_ERR(wifi_pwr_en_gpio))
+		return dev_err_probe(&pdev->dev, PTR_ERR(wifi_pwr_en_gpio),
+				     "unable to get wifi-pwr-en gpio\n");
+	if (wifi_pwr_en_gpio) {
+		mdelay(5);
+		gpiod_set_value(wifi_pwr_en_gpio, 1);
+	}
+
+	/* wifi-pdn: LOW -> delay 5ms -> HIGH */
+	wifi_pdn_gpio = devm_gpiod_get_optional(&pdev->dev,
+						"wifi-pdn",
+						GPIOD_OUT_LOW);
+	if (IS_ERR(wifi_pdn_gpio))
+		return dev_err_probe(&pdev->dev, PTR_ERR(wifi_pdn_gpio),
+				     "unable to get wifi-pdn gpio\n");
+	if (wifi_pdn_gpio) {
+		mdelay(5);
+		gpiod_set_value(wifi_pdn_gpio, 1);
+	}
+/*
+wifi_pwr_en_gpio = devm_gpiod_get_optional(&pdev->dev, "wifi-pwr-en", GPIOD_OUT_HIGH);
+if (!IS_ERR(wifi_pwr_en_gpio)) {
+    mdelay(5);
+    gpiod_set_value(wifi_pwr_en_gpio, 1);
+}
+
+wifi_pdn_gpio = devm_gpiod_get_optional(&pdev->dev, "wifi-pdn", GPIOD_OUT_HIGH);
+if (!IS_ERR(wifi_pdn_gpio)) {
+    mdelay(5);
+    gpiod_set_value(wifi_pdn_gpio, 1);
+}
+	*/
+#endif
 
 	mmc_of_parse_voltage(host->mmc, &host->ocr_mask);
 

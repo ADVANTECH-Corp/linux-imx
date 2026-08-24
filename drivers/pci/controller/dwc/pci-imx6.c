@@ -151,6 +151,9 @@ struct imx_lut_data {
 
 struct imx_pcie {
 	struct dw_pcie		*pci;
+	#ifdef CONFIG_ARCH_ADVANTECH
+        struct gpio_desc  *m2_pwr_en_gpio;
+	#endif
 	struct gpio_desc	*reset_gpiod;
 	u32			reset_gpio_delay; /* ms */
 	int			host_wake_irq;
@@ -1719,6 +1722,13 @@ static int imx_pcie_probe(struct platform_device *pdev)
 		if (IS_ERR(imx_pcie->phy_base))
 			return PTR_ERR(imx_pcie->phy_base);
 	}
+
+	#ifdef CONFIG_ARCH_ADVANTECH
+	imx_pcie->m2_pwr_en_gpio = devm_gpiod_get_optional(dev, "m2-pwr-en", GPIOD_OUT_HIGH);
+	if (IS_ERR(imx_pcie->m2_pwr_en_gpio))
+		return dev_err_probe(dev, PTR_ERR(imx_pcie->m2_pwr_en_gpio),
+				     "unable to get m2-pwr-en gpio\n");
+	#endif
 
 	/* Fetch GPIOs */
 	imx_pcie->reset_gpiod = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_HIGH);
