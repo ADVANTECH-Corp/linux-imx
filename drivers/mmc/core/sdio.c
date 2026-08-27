@@ -740,7 +740,7 @@ try_again:
 	 * to make sure which speed mode should work.
 	 */
 	if (rocr & ocr & R4_18V_PRESENT) {
-#ifndef
+#ifndef CONFIG_ARCH_ADVANTECH
 		err = mmc_set_uhs_voltage(host, ocr_card);
 #else
 		if (host->index == 0) {
