@@ -279,8 +279,8 @@
 				reg = <0x1c>;
 				clocks = <&clk IMX8MM_CLK_SAI1_ROOT>;
 				clock-names = "mclk";
-				// interrupt-parent = <&gpio5>;
-				// interrupts = <&gpio5 12 IRQ_TYPE_LEVEL_HIGH>;
+				interrupt-parent = <&gpio5>;
+				interrupts = <12 IRQ_TYPE_LEVEL_HIGH>;
 				pinctrl-names = "default";
 				pinctrl-0 = <&pinctrl_sai1_mclk>;
 				assigned-clocks = <&clk IMX8MM_CLK_SAI1>;
