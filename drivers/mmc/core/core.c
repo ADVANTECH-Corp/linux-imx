@@ -1171,7 +1171,14 @@ int mmc_set_signal_voltage(struct mmc_host *host, int signal_voltage)
 void mmc_set_initial_signal_voltage(struct mmc_host *host)
 {
 	/* Try to set signal voltage to 3.3V but fall back to 1.8v or 1.2v */
+#ifndef CONFIG_ARCH_ADVANTECH
 	if (!mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_330))
+#else
+	if (host->index == 0) {
+		mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_180);
+		pr_err("mmc_power_up: Setting 1.8V for Index: %d!!!\n", host->index);
+	} else if (!mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_330))
+#endif
 		dev_dbg(mmc_dev(host), "Initial signal voltage of 3.3v\n");
 	else if (!mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_180))
 		dev_dbg(mmc_dev(host), "Initial signal voltage of 1.8v\n");
