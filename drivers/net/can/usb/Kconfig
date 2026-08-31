@@ -165,4 +165,9 @@ config CAN_UCAN
 	          from Theobroma Systems like the A31-µQ7 and the RK3399-Q7
 	          (https://www.theobroma-systems.com/rk3399-q7)
 
+config CAN_ADV_USB
+        tristate "Advantech MCU USB interfaces for CAN 2.0b/CAN-FD"
+        help
+          Advantech MCU USB interfaces for CAN 2.0b/CAN-FD
+
 endmenu
