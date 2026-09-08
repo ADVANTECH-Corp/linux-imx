@@ -35,7 +35,7 @@
 #include "imx95-aom5521-a2-lpuart6.dtsi"
 #include "imx95-aom5521-a2-enet.dtsi"
 #include "imx95-aom5521-a2-enet-tg.dtsi"
-#include "imx95-aom5521-a2-lt9611uxc.dtsi"
+#include "imx95-aom5521-a2-lt9611uxd.dtsi"
 #include "imx95-aom5521-a2-flexspi1.dtsi"
 #include "imx95-aom5521-a2-flexspi1-nor-flash.dtsi"
 #include "imx95-aom5521-a2-lpspi4.dtsi"
