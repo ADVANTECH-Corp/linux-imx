@@ -35,7 +35,7 @@
 #define LT9611UXD_EDID_BLOCKS		2
 #define LT9611UXD_EDID_BLOCK_LEN	128
 #define LT_PAGE_SIZE 256
-#define FW_FILE  "Lontium/LT9611UXD.bin"
+#define FW_FILE  "LT9611UXD.bin"
 
 struct lt9611uxd {
 	struct device *dev;
