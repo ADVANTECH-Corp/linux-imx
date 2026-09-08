@@ -157,6 +157,7 @@
 #define PIXEL_LINK_STREAMS		2
 
 #define DRIVER_NAME			"imx95-mipi-dsi"
+#define DSI_FORCE_MIN_HS_CLK_RATE	1200000000UL
 
 enum dsi_pixel_link_format {
 	RGB_24BIT,
@@ -179,6 +180,7 @@ struct imx95_dsi {
 	struct mux_control *mux;
 	unsigned int lanes;
 	unsigned int lane_mbps;
+	bool force_min_hs_clk_rate;
 	bool use_pl0;
 	enum mipi_dsi_pixel_format format;
 	struct dw_mipi_dsi *dmd;
@@ -320,7 +322,6 @@ static int imx95_dsi_get_clk(struct imx95_dsi *dsi)
 
 	return 0;
 }
-
 static int imx95_dsi_get_regmap(struct imx95_dsi *dsi)
 {
 	struct device *dev = dsi->dev;
@@ -584,6 +585,28 @@ imx95_dsi_phy_pll_get_configure_from_opts(struct imx95_dsi *dsi,
 	return 0;
 }
 
+static int
+imx95_dsi_phy_pll_round_rate(struct imx95_dsi *dsi,
+				     struct phy_configure_opts_mipi_dphy *dphy_opts)
+{
+	struct imx95_dsi_phy_pll_cfg cfg = { 0 };
+	unsigned long fout;
+	unsigned int fvco_div;
+	int ret;
+
+	ret = imx95_dsi_phy_pll_get_configure_from_opts(dsi, dphy_opts, &cfg);
+	if (ret < 0)
+		return ret;
+
+	fout = data_rate_to_fout(dphy_opts->hs_clk_rate);
+	fvco_div = 8UL / min(DIV_ROUND_UP(fout, FVCO_DIV_FACTOR), 8UL);
+
+	dphy_opts->hs_clk_rate = 2 * div_u64((u64)cfg.m * dsi->ref_clk_rate,
+					     cfg.n * fvco_div);
+
+	return 0;
+}
+
 static u8
 imx95_dsi_phy_pll_get_hsfreqrange(struct phy_configure_opts_mipi_dphy *dphy_opts)
 {
@@ -840,6 +863,14 @@ static int imx95_dsi_get_phy_configure_opts(struct imx95_dsi *dsi,
 		return ret;
 	}
 
+	if (dsi->force_min_hs_clk_rate &&
+	    phy_cfg->mipi_dphy.hs_clk_rate < DSI_FORCE_MIN_HS_CLK_RATE) {
+		dev_dbg(dev, "raising hs_clk_rate %lu -> %lu for " DRM_MODE_FMT "\n",
+			phy_cfg->mipi_dphy.hs_clk_rate,
+			DSI_FORCE_MIN_HS_CLK_RATE, DRM_MODE_ARG(mode));
+		phy_cfg->mipi_dphy.hs_clk_rate = DSI_FORCE_MIN_HS_CLK_RATE;
+	}
+
 	return 0;
 }
 
@@ -958,6 +989,12 @@ imx95_dsi_phy_get_lane_mbps(void *priv_data, const struct drm_display_mode *mode
 					       format);
 	if (ret < 0) {
 		dev_dbg(dev, "failed to get phy cfg opts %d\n", ret);
+		return ret;
+	}
+
+	ret = imx95_dsi_phy_pll_round_rate(dsi, &phy_cfg.mipi_dphy);
+	if (ret < 0) {
+		dev_dbg(dev, "failed to round the PHY rate %d\n", ret);
 		return ret;
 	}
 
@@ -1089,6 +1126,10 @@ static int imx95_dsi_imx_host_attach(void *priv_data,
 
 	dsi->lanes = device->lanes;
 	dsi->format = device->format;
+	dsi->force_min_hs_clk_rate = !strcmp(device->name, "lt9611uxd");
+
+	dev_dbg(dsi->dev, "peripheral %s, minimum hs clock rate %s\n",
+		device->name, dsi->force_min_hs_clk_rate ? "on" : "off");
 
 	return 0;
 }
