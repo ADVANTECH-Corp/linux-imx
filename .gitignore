@@ -14,7 +14,6 @@
 *.a
 *.asn1.[ch]
 *.bin
-!firmware/LT9611UXD.bin
 *.bz2
 *.c.[012]*.*
 *.dt.yaml
