@@ -25,6 +25,12 @@
 #include <linux/iio/iio.h>
 #include <linux/iio/sysfs.h>
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/backlight.h>
+
+#define MAX_BRIGHTNESS_ADC 5000
+#endif
+
 #define OPT3001_RESULT		0x00
 #define OPT3001_CONFIGURATION	0x01
 #define OPT3001_LOW_LIMIT	0x02
@@ -33,7 +39,11 @@
 #define OPT3001_DEVICE_ID	0x7f
 
 #define OPT3001_CONFIGURATION_RN_MASK	(0xf << 12)
+#ifdef CONFIG_ARCH_ADVANTECH
+#define OPT3001_CONFIGURATION_RN_AUTO	(0x7 << 12)
+#else
 #define OPT3001_CONFIGURATION_RN_AUTO	(0xc << 12)
+#endif
 
 #define OPT3001_CONFIGURATION_CT	BIT(11)
 
@@ -90,6 +100,12 @@ struct opt3001 {
 	u8			low_thresh_exp;
 
 	bool			use_irq;
+#ifdef CONFIG_ARCH_ADVANTECH
+	u32 min_brightness;
+	u32 max_brightness;
+	struct delayed_work     light_work;
+	struct backlight_device *bd;
+#endif
 };
 
 struct opt3001_scale {
@@ -147,6 +163,46 @@ static const struct opt3001_scale opt3001_scales[] = {
 		.val2 = 600000,
 	},
 };
+
+#ifdef CONFIG_ARCH_ADVANTECH
+static int opt3001_get_lux(struct opt3001 *opt, int *val, int *val2);
+static void opt3001_light_work(struct work_struct *work)
+{
+    struct opt3001 *opt =
+            container_of(work, struct opt3001, light_work.work);
+	u32 retval,retvall;
+	u32 brightness,old,gap;
+	unsigned long timeout = 2*HZ;
+	int i;
+
+	if(IIO_VAL_INT_PLUS_MICRO != opt3001_get_lux(opt,&retval,&retvall))
+		goto retry;
+
+	if(retval > MAX_BRIGHTNESS_ADC)
+		brightness = opt->max_brightness;
+	else
+		brightness = (u32)((retval*(opt->max_brightness-opt->min_brightness))/5240)+opt->min_brightness;
+	old = opt->bd->props.brightness;
+	gap = (brightness > old) ? (brightness - old) : (old - brightness);
+	//printk("%s lux:%d,bright old:%d,new:%d\n",__func__,retval,old,brightness);
+
+	if(gap > 2) {
+		for(i=1; i<=gap; i+=2){
+			if(brightness > old)
+				backlight_device_set_brightness(opt->bd, old+i);
+			else
+				backlight_device_set_brightness(opt->bd, old-i);
+			msleep(500);
+			timeout -= HZ/2;
+			if(timeout==0)
+				break;
+		}
+	}
+
+retry:
+	schedule_delayed_work(&opt->light_work, timeout);
+}
+#endif
 
 static int opt3001_find_scale(const struct opt3001 *opt, int val,
 		int val2, u8 *exponent)
@@ -640,6 +696,11 @@ static int opt3001_configure(struct opt3001 *opt)
 	reg &= ~OPT3001_CONFIGURATION_RN_MASK;
 	reg |= OPT3001_CONFIGURATION_RN_AUTO;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	/* Set conversion time to 100ms */
+	reg &= ~OPT3001_CONFIGURATION_CT;
+#endif
+
 	/* Reflect status of the device's integration time setting */
 	if (reg & OPT3001_CONFIGURATION_CT)
 		opt->int_time = OPT3001_INT_TIME_LONG;
@@ -794,6 +855,20 @@ static int opt3001_probe(struct i2c_client *client)
 		dev_dbg(opt->dev, "enabling interrupt-less operation\n");
 	}
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	opt->bd = backlight_device_get_by_type(BACKLIGHT_RAW);
+	if (!opt->bd)
+        return -ENODEV;
+	opt->max_brightness = opt->bd->props.max_brightness;
+	ret = of_property_read_u32(client->dev.of_node, "min-brightness", &opt->min_brightness);
+	if(ret < 0)
+		opt->min_brightness = 10;
+
+	INIT_DELAYED_WORK(&opt->light_work, opt3001_light_work);
+	schedule_delayed_work(&opt->light_work, 3*HZ);
+	dev_set_drvdata(dev, opt);
+#endif
+
 	return 0;
 }
 
@@ -803,6 +878,10 @@ static void opt3001_remove(struct i2c_client *client)
 	struct opt3001 *opt = iio_priv(iio);
 	int ret;
 	u16 reg;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	cancel_delayed_work_sync(&opt->light_work);
+#endif
 
 	if (opt->use_irq)
 		free_irq(client->irq, iio);
@@ -825,6 +904,37 @@ static void opt3001_remove(struct i2c_client *client)
 	}
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int opt3001_resume(struct device *dev)
+{
+	struct opt3001 *opt = dev_get_drvdata(dev);
+
+	if (!opt) {
+		dev_err(dev, "Failed to get driver data in resume\n");
+		return -ENODEV;
+	}
+
+	opt3001_configure(opt);
+	schedule_delayed_work(&opt->light_work, 3*HZ);
+
+	return 0;
+}
+
+static int opt3001_suspend(struct device *dev)
+{
+	struct opt3001 *opt = dev_get_drvdata(dev);
+
+	if (!opt) {
+		dev_err(dev, "Failed to get driver data in suspend\n");
+		return -ENODEV;
+	}
+
+	cancel_delayed_work_sync(&opt->light_work);
+
+	return 0;
+}
+#endif
+
 static const struct i2c_device_id opt3001_id[] = {
 	{ "opt3001" },
 	{ } /* Terminating Entry */
@@ -837,6 +947,13 @@ static const struct of_device_id opt3001_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, opt3001_of_match);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static const struct dev_pm_ops opt3001_pm_ops = {
+	.resume = opt3001_resume,
+	.suspend = opt3001_suspend,
+};
+#endif
+
 static struct i2c_driver opt3001_driver = {
 	.probe = opt3001_probe,
 	.remove = opt3001_remove,
@@ -845,10 +962,27 @@ static struct i2c_driver opt3001_driver = {
 	.driver = {
 		.name = "opt3001",
 		.of_match_table = opt3001_of_match,
+#ifdef CONFIG_ARCH_ADVANTECH
+		.pm = &opt3001_pm_ops,
+#endif
 	},
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int __init opt3001_init(void)
+{
+	return i2c_add_driver(&opt3001_driver);
+}
+late_initcall(opt3001_init);
+
+static void __exit opt3001_exit(void)
+{
+	i2c_del_driver(&opt3001_driver);
+}
+module_exit(opt3001_exit);
+#else
 module_i2c_driver(opt3001_driver);
+#endif
 
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Andreas Dannenberg <dannenberg@ti.com>");

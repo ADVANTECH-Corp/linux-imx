@@ -4892,6 +4892,10 @@ static const struct panel_desc arm_rtsm = {
 	.bus_format = MEDIA_BUS_FMT_RGB888_1X24,
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static const struct panel_desc_dsi auo_g101ean02;
+#endif
+
 static const struct of_device_id platform_of_match[] = {
 	{
 		.compatible = "ampire,am-1280800n3tzqw-t00h",
@@ -4961,6 +4965,9 @@ static const struct of_device_id platform_of_match[] = {
 		.data = &auo_t215hvn01,
 	}, {
 #ifdef CONFIG_ARCH_ADVANTECH
+		.compatible = "auo,g101ean02",
+		.data = &auo_g101ean02
+	}, {
 		.compatible = "auo,g070vw01_v0",
 		.data = &auo_g070vw01_v0,
 	}, {
@@ -5418,6 +5425,36 @@ struct panel_desc_dsi {
 	enum mipi_dsi_pixel_format format;
 	unsigned int lanes;
 };
+
+#ifdef CONFIG_ARCH_ADVANTECH
+static const struct drm_display_mode auo_g101ean02_mode = {
+	.clock = 71100,
+	.hdisplay = 1280,
+	.hsync_start = 1280 + 10,
+	.hsync_end = 1280 + 10 + 140,
+	.htotal = 1280 + 10 + 140 + 10,
+	.vdisplay = 800,
+	.vsync_start = 800 + 15,
+	.vsync_end = 800 + 15 + 4,
+	.vtotal = 800 + 4 + 15 + 4,
+};
+
+static const struct panel_desc_dsi auo_g101ean02 = {
+	.desc = {
+		.modes = &auo_g101ean02_mode,
+		.num_modes = 1,
+		.bpc = 8,
+		.size = {
+			.width = 216,
+			.height = 135,
+		},
+		.bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+	},
+	.flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_NO_EOT_PACKET,
+	.format = MIPI_DSI_FMT_RGB888,
+	.lanes = 4,
+};
+#endif
 
 static const struct drm_display_mode auo_b080uan01_mode = {
 	.clock = 154500,

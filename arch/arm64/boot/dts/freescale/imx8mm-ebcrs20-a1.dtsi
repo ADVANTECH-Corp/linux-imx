@@ -290,17 +290,23 @@
 				realtek,in1-differential;
 			};
 		};
-/*
+
 		i2c@1 {
 			reg = <1>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 		};
-*/
+
 		i2c@2 {
 			reg = <2>;
 			#address-cells = <1>;
 			#size-cells = <0>;
+			light_sensor@44 {
+				compatible = "ti,opt3001";
+				status = "okay";
+				reg = <0x44>;
+				min-brightness = <10>;
+			};
 		};
 
 		i2c@3 {

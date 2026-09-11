@@ -275,6 +275,14 @@
 #define conn_to_sec_mipi_dsim(conn)		\
 	container_of(conn, struct sec_mipi_dsim, connector)
 
+#ifdef CONFIG_ARCH_ADVANTECH
+extern void enable_lcd_vdd_en(void);
+extern void enable_bridge_stdy_en(void);
+extern void disable_bridge_stdy_en(void);
+//extern void enable_ldb_bkl_vcc(void);
+//extern void enable_ldb_bkl_pwm(void);
+#endif
+
 /* used for CEA standard modes */
 struct dsim_hblank_par {
 	char *name;		/* drm display mode name */
@@ -1336,6 +1344,11 @@ sec_mipi_dsim_bridge_atomic_enable(struct drm_bridge *bridge,
 	 * already been enabled. So the dsim can be configed here
 	 */
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	enable_bridge_stdy_en();
+	enable_lcd_vdd_en();
+#endif
+
 	crtc = sec_mipi_dsim_get_new_crtc(dsim, old_state);
 	if (!crtc) {
 		dev_err(dsim->dev, "bridge is enabling without CRTC\n");
@@ -1478,6 +1491,10 @@ disable:
 	}
 
 	dsim->enabled = false;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	disable_bridge_stdy_en();
+#endif
 }
 
 static void sec_mipi_dsim_bridge_mode_set(struct drm_bridge *bridge,
