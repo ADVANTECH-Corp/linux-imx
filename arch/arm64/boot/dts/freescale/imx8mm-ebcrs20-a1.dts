@@ -79,6 +79,21 @@
         //         no-audmux;
         // };
 
+    reg_i2c2_3v3: regulator-i2c2-3v3 {
+        compatible = "regulator-fixed";
+        regulator-name = "i2c2-3v3";
+        regulator-min-microvolt = <3300000>;
+        regulator-max-microvolt = <3300000>;
+
+        gpio = <&gpio5 8 GPIO_ACTIVE_HIGH>;
+        enable-active-high;
+        regulator-boot-on;
+
+        regulator-state-mem {
+            regulator-off-in-suspend;
+        };
+    };
+
 	rt5640-sound0 {
 		compatible = "simple-audio-card";
 		simple-audio-card,format = "i2s";
@@ -100,25 +115,14 @@
 			sound-dai = <&sai1>;
 			bitclock-master;
 			frame-master;
+			/* BCLK = rate * 2 * 32, so 48k/24bit stays even-divisible from mclk-fs=512 */
+			dai-tdm-slot-num = <2>;
+			dai-tdm-slot-width = <32>;
 		};
 		simple-audio-card,codec {
 			sound-dai = <&rt5640_a0>;
 		};
 	};
-
-        // uart3_mode:uart3-mode {
-        //         compatible = "uart-mode";
-        //         status = "okay";
-
-        //         index = <2>;
-        //         default_mode = <0>;//RS232
-        //         rs232_mode_table = <1 0 1>;
-        //         rs485_mode_table = <0 1 1>;
-
-        //         sel0_gpio = <&gpio5 1 GPIO_ACTIVE_HIGH>;
-        //         sel1_gpio = <&gpio5 4 GPIO_ACTIVE_HIGH>;
-        //         term_gpio = <&gpio4 29 GPIO_ACTIVE_HIGH>;
-        // };
 
 	misc-adv-gpio {
 		compatible = "misc-adv-gpio";
@@ -128,8 +132,13 @@
 		reset-gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;
 		reset-delay = <50>;
 		minipcie-reset-gpio = <&gpio3 24 GPIO_ACTIVE_LOW>;
-		en-gpios =<&gpio3 20 GPIO_ACTIVE_HIGH>,<&gpio5 7 GPIO_ACTIVE_HIGH>,
-			    <&gpio1 6 GPIO_ACTIVE_HIGH>,<&gpio3 22 GPIO_ACTIVE_LOW>,<&gpio3 23 GPIO_ACTIVE_HIGH>;
+		en-gpios =<&gpio3 20 GPIO_ACTIVE_HIGH>,<&gpio5 7 GPIO_ACTIVE_HIGH>,<&gpio3 19 GPIO_ACTIVE_HIGH>,
+			    <&gpio1 6 GPIO_ACTIVE_HIGH>,<&gpio3 22 GPIO_ACTIVE_LOW>,<&gpio3 23 GPIO_ACTIVE_HIGH>,
+				<&gpio5 25 GPIO_ACTIVE_HIGH>,<&gpio4 25 GPIO_ACTIVE_HIGH>,<&gpio4 0 GPIO_ACTIVE_HIGH>,
+				<&gpio1 11 GPIO_ACTIVE_HIGH>,<&gpio1 10 GPIO_ACTIVE_HIGH>,<&gpio1 1 GPIO_ACTIVE_HIGH>,
+				<&gpio5 10 GPIO_ACTIVE_HIGH>,
+				<&gpio4 28 GPIO_ACTIVE_HIGH>,<&gpio2 11 GPIO_ACTIVE_HIGH>,
+				<&gpio2 9 GPIO_ACTIVE_HIGH>;
 		timing-interval = <300>;
 	};
 
@@ -143,6 +152,37 @@
             gpios = <&gpio5 1 GPIO_ACTIVE_HIGH>;
             default-state = "on";
         };
+	};
+};
+
+&gpio5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_gpio5_en>;
+
+	// i2c2-3v3-en {
+	// 	gpio-hog;
+	// 	gpios = <8 0>;
+	// 	output-high;
+	// 	line-name = "3V3_EN_GPIO";
+	// };
+
+	i2c3-pca9538-rst {
+		gpio-hog;
+		gpios = <5 0>;
+		output-high;
+		line-name = "PCA9538_RST_GPIO";
+	};
+};
+
+&gpio3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_gpio3_en>;
+
+	i2c3-pca9545-rst {
+		gpio-hog;
+		gpios = <21 0>;
+		output-high;
+		line-name = "PCA9545_RST_GPIO";
 	};
 };
 
@@ -187,7 +227,6 @@
 	// vmmc-supply = <&reg_sd1_vmmc>;
 	// resets = <&sd1_mod_reset>;
 	pm-ignore-notify;
-	keep-power-in-suspend;
 	non-removable;
 
 	fsl,sdio-async-interrupt-enabled;
@@ -202,7 +241,7 @@
 	wifi_wake_host {
 		compatible = "nxp,wifi-wake-host";
 		interrupt-parent = <&gpio4>;
-		interrupts = <8 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <8 IRQ_TYPE_EDGE_FALLING>;
 		interrupt-names = "host-wake";
 	};
 };
@@ -229,14 +268,9 @@
 	sda-gpios = <&gpio5 21 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
-	// 24c32@50 {
-    //             compatible = "atmel,24c32";
-    //             reg = <0x50>;
-    //     };
 };
 
 &pwm4 {
-        status = "disabled";
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_pwm4>;
 		status = "okay";
@@ -246,17 +280,12 @@
         pinctrl_hog: hoggrp {
 		fsl,pins = <
 			MX8MM_IOMUXC_ECSPI2_MOSI_GPIO5_IO11		0x116	/* MAC_RXER */
-			MX8MM_IOMUXC_SAI3_RXFS_GPIO4_IO28		0x116	/* VDD_1V8_EN */
-
-			MX8MM_IOMUXC_SD1_STROBE_GPIO2_IO11	0x116	/* VDD_CORE_EN */
-			MX8MM_IOMUXC_SAI1_RXFS_GPIO4_IO0	0x116	/* COLD_RST_EN */
 
 			MX8MM_IOMUXC_UART1_TXD_GPIO5_IO23	0x116	/* USB_EN_D_OC */
 			MX8MM_IOMUXC_UART2_RXD_GPIO5_IO24	0x116	/* HUB_RESET_GPIO */
-			MX8MM_IOMUXC_UART2_TXD_GPIO5_IO25	0x116	/* +V12_EN */
-			MX8MM_IOMUXC_ECSPI1_MISO_GPIO5_IO8	0x116	/* V3.3_EN_GPIO */
+
 			MX8MM_IOMUXC_ECSPI1_SS0_GPIO5_IO9	0x116	/* CAN_RST# */
-			MX8MM_IOMUXC_GPIO1_IO01_GPIO1_IO1	0x116	/* USB_5V_C_EN */
+
 			MX8MM_IOMUXC_GPIO1_IO05_GPIO1_IO5	0x116	/* WAKE_INT */
 
 			// MX8MM_IOMUXC_SAI1_TXD1_GPIO4_IO13	0x116	/* SAI1_TXD1 BOOT_CFG9 */
@@ -309,9 +338,8 @@
 	pinctrl_usdhc1_gpio: usdhc1grpgpio {
 		fsl,pins = <
 			MX8MM_IOMUXC_SD1_RESET_B_GPIO2_IO10		0x41	/* W_WLAN_RST_1V8 */
-			MX8MM_IOMUXC_SD1_DATA7_GPIO2_IO9		0x41	/* W_BT_RST_1V8 */
 
-			MX8MM_IOMUXC_SAI1_RXD6_GPIO4_IO8		0x41	/* W_BT/15.4_WAKE_OUT_1V8 */
+			MX8MM_IOMUXC_SAI1_RXD6_GPIO4_IO8		0x116		/* W_BT/15.4_WAKE_OUT_1V8 */
 			MX8MM_IOMUXC_SAI1_RXD4_GPIO4_IO6		0x41	/* W_BT/15.4_WAKE_IN_1V8 */
 			MX8MM_IOMUXC_SAI1_TXD5_GPIO4_IO17		0x41	/* W_WLAN_WAKE_IN_1V8 */
 			MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27		0x41	/* W_WLAN_WAKE_OUT_1V8 */
@@ -323,7 +351,6 @@
 			MX8MM_IOMUXC_SD1_DATA5_GPIO2_IO7		0x41    /* W_PDN_3V3 */
 
 			MX8MM_IOMUXC_SAI1_RXC_GPIO4_IO1		    0x41	/* WIFI_PWR_EN */
-			MX8MM_IOMUXC_SAI2_TXC_GPIO4_IO25	    0x41	/* W_VDD_1V8_EN */
 		>;
 	};
 
@@ -420,23 +447,44 @@
 		>;
 	};
 
+	pinctrl_gpio5_en: gpio5-en-grp {
+		fsl,pins = <
+			MX8MM_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5	0x116	/* GPIO_RST# */ /* TCA9538 */
+		>;
+	};
+
+	pinctrl_gpio3_en: gpio3-en-grp {
+		fsl,pins = <
+			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21	0x116	/* TCA9545A_RST# */
+		>;
+	};
+
+			// MX8MM_IOMUXC_ECSPI1_MISO_GPIO5_IO8	0x116	/* V3.3_EN_GPIO */
 	adv_gpio_pinmux: advgpio {
 		fsl,pins = <
 			MX8MM_IOMUXC_SAI5_RXFS_GPIO3_IO19		0x116	/* EAR_PHONE_SHDN */	
 			MX8MM_IOMUXC_SAI5_RXC_GPIO3_IO20		0x116	/* AUDIO_GAN1 */
 			MX8MM_IOMUXC_ECSPI1_MOSI_GPIO5_IO7		0x116	/* AUDIO_GAN0 */
-			MX8MM_IOMUXC_SAI3_RXC_GPIO4_IO29		0x116	/* AMP_MUTE */
 
 			MX8MM_IOMUXC_GPIO1_IO00_GPIO1_IO0		0x116	/* CH334_RST GPIO11 */
-
 			MX8MM_IOMUXC_GPIO1_IO06_GPIO1_IO6		0x41    /* MINICARD_PWR_EN */
 			MX8MM_IOMUXC_SAI5_RXD1_GPIO3_IO22		0x41    /* MINICARD_DET# */
 			MX8MM_IOMUXC_SAI5_RXD2_GPIO3_IO23		0x41    /* MINICARD_W_DIS# */
 			MX8MM_IOMUXC_SAI5_RXD3_GPIO3_IO24		0x41    /* MINICARD_RESET# */
 
-			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21		0x41    /* TCA9545A_RST# */
 			MX8MM_IOMUXC_ECSPI2_SCLK_GPIO5_IO10		0x116	/* RS485_RST */ /* CP2105_RST */
-			MX8MM_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5	0x116	/* GPIO_RST# */ /* TCA9538 */
+
+			MX8MM_IOMUXC_UART2_TXD_GPIO5_IO25	0x116	/* +V12_EN */
+			MX8MM_IOMUXC_SAI2_TXC_GPIO4_IO25	    0x41	/* W_VDD_1V8_EN */
+			MX8MM_IOMUXC_SAI1_RXFS_GPIO4_IO0	0x116	/* COLD_RST_EN */
+			MX8MM_IOMUXC_GPIO1_IO10_GPIO1_IO10	0x116	/* USB_5V_A_EN */
+			MX8MM_IOMUXC_GPIO1_IO11_GPIO1_IO11  0x116	/* USB_5V_B_EN */
+			MX8MM_IOMUXC_GPIO1_IO01_GPIO1_IO1	0x116	/* USB_5V_C_EN */
+
+			MX8MM_IOMUXC_SAI3_RXFS_GPIO4_IO28		0x116	/* VDD_1V8_EN */
+			MX8MM_IOMUXC_SD1_STROBE_GPIO2_IO11	0x116	/* VDD_CORE_EN */
+
+			MX8MM_IOMUXC_SD1_DATA7_GPIO2_IO9		0x41	/* W_BT_RST_1V8 */
 		>;
 	};
 };

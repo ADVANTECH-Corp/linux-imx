@@ -17,13 +17,13 @@
 / {
 	/delete-node/ rtl8367;
 
-	gpio_sel_reset: gpio-sel-reset {
-		compatible = "gpio-reset";
-		reset-gpios = <&gpio3 19 GPIO_ACTIVE_HIGH>;
-		reset-delay-us = <0>;
-		reset-post-delay-ms = <0>;
-		#reset-cells = <0>;
-	};
+	// gpio_sel_reset: gpio-sel-reset {
+	// 	compatible = "gpio-reset";
+	// 	reset-gpios = <&gpio3 19 GPIO_ACTIVE_HIGH>;
+	// 	reset-delay-us = <0>;
+	// 	reset-post-delay-ms = <0>;
+	// 	#reset-cells = <0>;
+	// };
 
 	backlight0: backlight@0 {
                 compatible = "pwm-backlight";
@@ -123,19 +123,19 @@
 &backlight0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_bkl>;
-	lvds-vcc-enable-gpios = <&gpio4 30 1>;
-	lvds-bkl-enable-gpios = <&gpio3 25 1>;
-	lvds-reset-gpios = <&gpio4 19 1>;
-	lvds-stby-gpios  = <&gpio4 9 1>;
-	bklt-vcc-enable-gpios = <&gpio5 22 1>;
+	lvds-vcc-enable-gpios = <&gpio4 30 0>;
+	lvds-bkl-enable-gpios = <&gpio3 25 0>;
+	lvds-reset-gpios = <&gpio4 19 0>;
+	lvds-stby-gpios  = <&gpio4 9 0>;
+	bklt-vcc-enable-gpios = <&gpio5 22 0>;
 	status = "okay";
 	lvds-bkl-delay-time = <150>;
 	lvds-vcc-delay-time = <60>;
 };
 
-&usdhc1 {
-	/delete-property/ keep-power-in-suspend;
-};
+// &usdhc1 {
+// 	/delete-property/ keep-power-in-suspend;
+// };
 
 // &gpio2 {
 // 	pinctrl-names = "default";

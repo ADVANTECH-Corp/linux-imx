@@ -37,13 +37,6 @@
 		enable-active-high;
 	};
 
-	backlight: backlight {
-		compatible = "pwm-backlight";
-		pwms = <&pwm1 0 5000000 0>;
-		brightness-levels = <0 255>;
-		num-interpolated-steps = <255>;
-		default-brightness-level = <250>;
-	};
 };
 
 &A53_0 {
@@ -260,6 +253,7 @@
 	pinctrl-1 = <&pinctrl_i2c3_gpio>;
 	scl-gpios = <&gpio5 18 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio5 19 GPIO_ACTIVE_HIGH>;
+	
 	status = "okay";
 
 	i2c-switcih@70 {
@@ -274,20 +268,23 @@
 			#size-cells = <0>;
 
 			rt5640_a0: rt5640@1c {
+				vcc-supply = <&reg_i2c2_3v3>;
 				#sound-dai-cells = <0>;
 				compatible = "realtek,rt5640";
 				reg = <0x1c>;
 				clocks = <&clk IMX8MM_CLK_SAI1_ROOT>;
 				clock-names = "mclk";
-				interrupt-parent = <&gpio5>;
-				interrupts = <12 IRQ_TYPE_LEVEL_HIGH>;
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_sai1_mclk>;
-				assigned-clocks = <&clk IMX8MM_CLK_SAI1>;
-				assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
-				assigned-clock-rates = <24576000>;
+				pinctrl-0 = <&pinctrl_codec_mute>;
+				// amp-mute-gpio = <&gpio4 29 GPIO_ACTIVE_HIGH>;
+				// interrupt-parent = <&gpio5>;
+				// interrupts = <12 IRQ_TYPE_LEVEL_HIGH>;
+				// pinctrl-names = "default";
+				// pinctrl-0 = <&pinctrl_rt5640_int>;
+				// assigned-clocks = <&clk IMX8MM_CLK_SAI1>;
+				// assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
+				// assigned-clock-rates = <24576000>;
 
-				realtek,in1-differential;
+				// realtek,in1-differential;
 			};
 		};
 
@@ -316,6 +313,7 @@
 	
 			gpio_exp1: pca9538@73 {
 				compatible = "nxp,pca9538";
+				vcc-supply = <&reg_i2c2_3v3>;
 				reg = <0x73>;
 				pinctrl-names = "default";
 				pinctrl-0 = <&pinctrl_i2c_switch>;
@@ -373,11 +371,12 @@
 
 &sai1 {
         pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_sai1>,<&pinctrl_sai1_mclk>;
+        pinctrl-0 = <&pinctrl_sai1>,<&pinctrl_sai1_mclk>,<&pinctrl_codec_mute>;
         assigned-clocks = <&clk IMX8MM_CLK_SAI1>;
         assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
-        assigned-clock-rates = <0>, <24576000>;
-        mute-gpios = <&gpio4 0 GPIO_ACTIVE_HIGH>;	//audio mute
+        assigned-clock-rates = <24576000>;
+        // mute-gpios = <&gpio4 29 GPIO_ACTIVE_HIGH>;	//audio mute
+		fsl,sai-mclk-direction-output;
         status = "okay";
 };
 
@@ -394,7 +393,8 @@
 	status = "okay";
 
 	bluetooth {
-		compatible = "nxp,88w8997-bt";
+		compatible = "nxp,88w8987-bt";
+		fw-init-baudrate = <3000000>;
 	};
 };
 
@@ -570,15 +570,20 @@
 	pinctrl_sai1_mclk: sai1grp_mclk {
 		fsl,pins = <
 			MX8MM_IOMUXC_SAI1_MCLK_SAI1_MCLK	0xd6	/* SAI1_MCLK */
+		>;
+	};
+
+	pinctrl_rt5640_int: rt5640_int_grp {
+		fsl,pins = <
 			MX8MM_IOMUXC_ECSPI2_MISO_GPIO5_IO12	0x159	/* ALC_5640_1V8_INT */
 		>;
 	};
 
-	// pinctrl_codec_mute: codec_mute  {
-	// 	fsl,pins = <
-	// 		MX8MM_IOMUXC_SAI1_RXFS_GPIO4_IO0	0x19	/* MUTE */
-	// 	>;
-	// };
+	pinctrl_codec_mute: codec_mute  {
+		fsl,pins = <
+			MX8MM_IOMUXC_SAI3_RXC_GPIO4_IO29	0x116	/* AMP_MUTE */
+		>;
+	};
 
 	pinctrl_uart1: uart1grp {
 		fsl,pins = <
