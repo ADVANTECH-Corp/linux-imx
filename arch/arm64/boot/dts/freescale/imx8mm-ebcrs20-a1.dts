@@ -79,9 +79,9 @@
         //         no-audmux;
         // };
 
-    reg_i2c2_3v3: regulator-i2c2-3v3 {
+    reg_3v3_en_gpio: regulator-3v3-en-gpio {
         compatible = "regulator-fixed";
-        regulator-name = "i2c2-3v3";
+        regulator-name = "3v3-en-gpio";
         regulator-min-microvolt = <3300000>;
         regulator-max-microvolt = <3300000>;
 

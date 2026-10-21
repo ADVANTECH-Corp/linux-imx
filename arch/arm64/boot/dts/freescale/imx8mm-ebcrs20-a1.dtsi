@@ -268,7 +268,7 @@
 			#size-cells = <0>;
 
 			rt5640_a0: rt5640@1c {
-				vcc-supply = <&reg_i2c2_3v3>;
+				vcc-supply = <&reg_3v3_en_gpio>;
 				#sound-dai-cells = <0>;
 				compatible = "realtek,rt5640";
 				reg = <0x1c>;
@@ -313,7 +313,7 @@
 	
 			gpio_exp1: pca9538@73 {
 				compatible = "nxp,pca9538";
-				vcc-supply = <&reg_i2c2_3v3>;
+				vcc-supply = <&reg_3v3_en_gpio>;
 				reg = <0x73>;
 				pinctrl-names = "default";
 				pinctrl-0 = <&pinctrl_i2c_switch>;
