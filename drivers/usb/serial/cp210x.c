@@ -22,6 +22,9 @@
 #include <linux/gpio/driver.h>
 #include <linux/bitops.h>
 #include <linux/mutex.h>
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/workqueue.h>
+#endif
 
 #define DRIVER_DESC "Silicon Labs CP210x RS232 serial adaptor driver"
 
@@ -49,6 +52,15 @@ static void cp210x_dtr_rts(struct usb_serial_port *port, int on);
 static void cp210x_process_read_urb(struct urb *urb);
 static void cp210x_enable_event_mode(struct usb_serial_port *port);
 static void cp210x_disable_event_mode(struct usb_serial_port *port);
+#ifdef CONFIG_ARCH_ADVANTECH
+static int cp210x_rs485_write(struct tty_struct *tty,
+                              struct usb_serial_port *port,
+                              const unsigned char *buf, int count);
+static void cp210x_rs485_write_complete(struct urb *urb);
+#define SCI_RS485_PORT_INDEX	1
+#define SCI_RS485_GPIO_INDEX	2
+#define SCI_RS485_GPIO_ACTIVE	1
+#endif
 
 static const struct usb_device_id id_table[] = {
 	{ USB_DEVICE(0x0404, 0x034C) },	/* NCR Retail IO Box */
@@ -296,6 +308,12 @@ struct cp210x_port_private {
 	bool			crtscts;
 	bool			dtr;
 	bool			rts;
+#ifdef CONFIG_ARCH_ADVANTECH
+	int tx_delay_ms;
+	struct delayed_work dir_work;
+	struct usb_serial_port *port;
+	void (*orig_write_complete)(struct urb *urb);
+#endif
 };
 
 static struct usb_serial_driver cp210x_device = {
@@ -323,6 +341,9 @@ static struct usb_serial_driver cp210x_device = {
 	.port_remove		= cp210x_port_remove,
 	.dtr_rts		= cp210x_dtr_rts,
 	.process_read_urb	= cp210x_process_read_urb,
+#ifdef CONFIG_ARCH_ADVANTECH
+	.write 				= cp210x_rs485_write,
+#endif
 };
 
 static struct usb_serial_driver * const serial_drivers[] = {
@@ -1985,6 +2006,60 @@ static void cp210x_gpio_remove(struct usb_serial *serial)
 	}
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static void cp210x_rs485_dir_work(struct work_struct *work)
+{
+    struct cp210x_port_private *port_priv =
+        container_of(work, struct cp210x_port_private, dir_work.work);
+    struct cp210x_serial_private *ser_priv = usb_get_serial_data(port_priv->port->serial);
+
+    if(port_priv->bInterfaceNumber == SCI_RS485_PORT_INDEX)
+		cp210x_gpio_set(&ser_priv->gc, SCI_RS485_GPIO_INDEX, SCI_RS485_GPIO_ACTIVE ? 0 : 1);
+}
+
+static void cp210x_rs485_write_complete(struct urb *urb)
+{
+    struct usb_serial_port *port = urb->context;
+    struct cp210x_port_private *port_priv = usb_get_serial_port_data(port);
+
+    if (port_priv->orig_write_complete)
+        port_priv->orig_write_complete(urb);
+    else
+        usb_serial_generic_write_bulk_callback(urb);
+
+    if(port_priv->bInterfaceNumber == SCI_RS485_PORT_INDEX)
+        mod_delayed_work(system_wq, &port_priv->dir_work, msecs_to_jiffies(port_priv->tx_delay_ms));
+}
+
+static int cp210x_rs485_write(struct tty_struct *tty,
+                              struct usb_serial_port *port,
+                              const unsigned char *buf, int count)
+{
+	struct cp210x_serial_private *ser_priv = usb_get_serial_data(port->serial);
+	struct cp210x_port_private *port_priv = usb_get_serial_port_data(port);
+	int ret;
+	unsigned int bits = tty_get_frame_size(tty->termios.c_cflag);
+	unsigned int baud = tty_get_baud_rate(tty);
+
+	if(port_priv->bInterfaceNumber == SCI_RS485_PORT_INDEX) {
+		cp210x_gpio_set(&ser_priv->gc, SCI_RS485_GPIO_INDEX, SCI_RS485_GPIO_ACTIVE ? 1 : 0);
+		mdelay(2);
+	}
+	port_priv->tx_delay_ms = (count * bits * 1000) / baud;
+
+	ret = usb_serial_generic_write(tty, port, buf, count);
+
+#if 0
+	if(port_priv->bInterfaceNumber == SCI_RS485_PORT_INDEX) {
+		mdelay(port_priv->tx_delay_ms);
+		cp210x_gpio_set(&ser_priv->gc, SCI_RS485_GPIO_INDEX, SCI_RS485_GPIO_ACTIVE ? 0 : 1);
+	}
+#endif
+
+	return ret;
+}
+#endif
+
 #else
 
 static int cp210x_gpio_init(struct usb_serial *serial)
@@ -2011,6 +2086,18 @@ static int cp210x_port_probe(struct usb_serial_port *port)
 	port_priv->bInterfaceNumber = cp210x_interface_num(serial);
 	mutex_init(&port_priv->mutex);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (port->write_urb && port->write_urb->complete)
+		port_priv->orig_write_complete = port->write_urb->complete;
+	else
+		port_priv->orig_write_complete = usb_serial_generic_write_bulk_callback;
+	if (port->write_urb)
+		port->write_urb->complete = cp210x_rs485_write_complete;
+	port_priv->port = port;
+	port_priv->tx_delay_ms = 20;
+	INIT_DELAYED_WORK(&port_priv->dir_work, cp210x_rs485_dir_work);
+#endif
+
 	usb_set_serial_port_data(port, port_priv);
 
 	return 0;
@@ -2021,6 +2108,9 @@ static void cp210x_port_remove(struct usb_serial_port *port)
 	struct cp210x_port_private *port_priv;
 
 	port_priv = usb_get_serial_port_data(port);
+#ifdef CONFIG_ARCH_ADVANTECH
+	cancel_delayed_work_sync(&port_priv->dir_work);
+#endif
 	kfree(port_priv);
 }
 
