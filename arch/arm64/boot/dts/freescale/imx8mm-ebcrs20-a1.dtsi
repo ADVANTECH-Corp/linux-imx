@@ -98,6 +98,7 @@
 	pinctrl-1 = <&pinctrl_i2c1_gpio>;
 	scl-gpios = <&gpio5 14 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio5 15 GPIO_ACTIVE_HIGH>;
+	vcc-supply = <&reg_3v3_en_gpio>;
 	status = "okay";
 
 	pmic@4b {
@@ -253,6 +254,7 @@
 	pinctrl-1 = <&pinctrl_i2c3_gpio>;
 	scl-gpios = <&gpio5 18 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio5 19 GPIO_ACTIVE_HIGH>;
+	vcc-supply = <&reg_3v3_en_gpio>;
 	
 	status = "okay";
 
@@ -261,6 +263,7 @@
 		#size-cells = <0>;
 		compatible = "nxp,pca9545";
 		reg = <0x70>;
+		vcc-supply = <&reg_3v3_en_gpio>;
 		
 		i2c@0 {
 			reg = <0>;
@@ -371,7 +374,7 @@
 
 &sai1 {
         pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_sai1>,<&pinctrl_sai1_mclk>,<&pinctrl_codec_mute>;
+        pinctrl-0 = <&pinctrl_sai1>,<&pinctrl_sai1_mclk>;
         assigned-clocks = <&clk IMX8MM_CLK_SAI1>;
         assigned-clock-parents = <&clk IMX8MM_AUDIO_PLL1_OUT>;
         assigned-clock-rates = <24576000>;
