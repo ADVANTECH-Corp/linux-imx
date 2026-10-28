@@ -2045,7 +2045,7 @@ static int cp210x_rs485_write(struct tty_struct *tty,
 		cp210x_gpio_set(&ser_priv->gc, SCI_RS485_GPIO_INDEX, SCI_RS485_GPIO_ACTIVE ? 1 : 0);
 		mdelay(2);
 	}
-	port_priv->tx_delay_ms = (count * bits * 1000) / baud;
+	port_priv->tx_delay_ms = (count * bits * 1000) / baud + 2;
 
 	ret = usb_serial_generic_write(tty, port, buf, count);
 
