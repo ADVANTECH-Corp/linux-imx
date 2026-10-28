@@ -616,6 +616,9 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 			 */
 			break;
 		}
+#ifdef CONFIG_ARCH_ADVANTECH
+		gpiod_export(bdata->gpiod, false);
+#endif
 	} else {
 		if (!button->irq) {
 			dev_err(dev, "Found button without gpio or irq\n");

@@ -188,6 +188,8 @@ struct panel_simple {
 bool blank_flag = false;
 extern void enable_ldb_bkl_vcc(void);
 extern void enable_ldb_bkl_pwm(void);
+extern void disable_ldb_bkl_pwm(void);
+extern void disable_ldb_bkl_vcc(void);
 #endif
 
 static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
@@ -438,6 +440,14 @@ static void panel_simple_wait(ktime_t start_ktime, unsigned int min_ms)
 static int panel_simple_disable(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
+
+#if defined(CONFIG_ARCH_ADVANTECH0)
+	if (blank_flag) {
+		disable_ldb_bkl_pwm();
+		disable_ldb_bkl_vcc();
+		blank_flag = false;
+	}
+#endif
 
 	if (p->desc->delay.disable)
 		msleep(p->desc->delay.disable);

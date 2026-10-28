@@ -113,12 +113,35 @@ struct rtl821x_priv {
 #ifdef CONFIG_ARCH_ADVANTECH
 static void rtl8211f_phy_fixup(struct phy_device *dev)
 {
-	msleep(200);
+	struct device_node *node = dev->mdio.dev.of_node;
+
+	//msleep(200);
 	phy_write(dev, 0x1f, 0x0d04);
 	/*PHY LED OK*/
 	phy_write(dev, 0x10, 0xa050);
 	phy_write(dev, 0x11, 0x0000);
 	phy_write(dev, 0x1f, 0x0000);
+
+        if (of_property_read_bool(node, "ssc-enable")) {
+                dev_info(&dev->mdio.dev, "enable ssc\n");
+                /* Enable rxc ssc */
+                phy_write(dev, 0x1f, 0x0c44);
+                phy_write(dev, 0x13, 0x5f00);
+                phy_write(dev, 0x1f, 0x0000);
+                phy_write(dev, 0x00, 0x9200);
+
+                /* Enable system clk ssc */
+                phy_write(dev, 0x1f, 0x0c44);
+                phy_write(dev, 0x17, 0x4f00);
+                phy_write(dev, 0x1f, 0x0000);
+                phy_write(dev, 0x00, 0x9200);
+
+                /* clk_out disable */
+                phy_write(dev, 0x1f, 0x0a43);
+                phy_write(dev, 0x19, 0x0862);
+                phy_write(dev, 0x1f, 0x0000);
+                phy_write(dev, 0x00, 0x9200);
+        }
 }
 #endif
 
@@ -519,6 +542,12 @@ static int rtl821x_resume(struct phy_device *phydev)
 	msleep(20);
 
 	return 0;
+}
+
+static int rtl8211f_resume(struct phy_device *phydev)
+{
+	rtl8211f_config_init(phydev);
+	return genphy_resume(phydev);
 }
 
 static int rtl8211f_led_hw_is_supported(struct phy_device *phydev, u8 index,
@@ -1339,7 +1368,7 @@ static struct phy_driver realtek_drvs[] = {
 		.config_intr	= &rtl8211f_config_intr,
 		.handle_interrupt = rtl8211f_handle_interrupt,
 		.suspend	= rtl821x_suspend,
-		.resume		= rtl821x_resume,
+		.resume		= rtl8211f_resume,
 		.read_page	= rtl821x_read_page,
 		.write_page	= rtl821x_write_page,
 		.flags		= PHY_ALWAYS_CALL_SUSPEND,

@@ -1828,7 +1828,22 @@ static struct platform_driver bd718xx_regulator = {
 	.id_table = bd718x7_pmic_id,
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int __init bd718xx_regulator_init(void)
+{
+    return platform_driver_register(&bd718xx_regulator);
+}
+
+static void __exit bd718xx_regulator_exit(void)
+{
+    platform_driver_unregister(&bd718xx_regulator);
+}
+
+subsys_initcall(bd718xx_regulator_init);
+module_exit(bd718xx_regulator_exit);
+#else
 module_platform_driver(bd718xx_regulator);
+#endif
 
 MODULE_AUTHOR("Matti Vaittinen <matti.vaittinen@fi.rohmeurope.com>");
 MODULE_DESCRIPTION("BD71837/BD71847 voltage regulator driver");

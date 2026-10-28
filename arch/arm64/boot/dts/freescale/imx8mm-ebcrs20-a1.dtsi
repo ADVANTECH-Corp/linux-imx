@@ -57,7 +57,9 @@
 
 &fec1 {
 	pinctrl-names = "default";
+	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&pinctrl_fec1>;
+	pinctrl-1 = <&pinctrl_fec1_sleep>;
 	phy-mode = "rgmii-id";
 	phy-handle = <&ethphy0>;
 	// fsl,magic-packet;
@@ -74,19 +76,19 @@
 		ethphy0: ethernet-phy@0 {
 			compatible = "ethernet-phy-ieee802.3-c22";
 			reg = <0>;
-			reset-gpios = <&gpio4 22 GPIO_ACTIVE_LOW>;
+			// reset-gpios = <&gpio4 22 GPIO_ACTIVE_LOW>;
 			// reset-assert-us = <10000>;
 			// reset-deassert-us = <80000>;
 			realtek,aldps-enable;
 			realtek,clkout-disable;
 			qca,disable-smarteee;
-			vddio-supply = <&vddio>;
+			//vddio-supply = <&vddio>;
 			ssc-enable;
 
-			vddio: vddio-regulator {
-				regulator-min-microvolt = <1800000>;
-				regulator-max-microvolt = <1800000>;
-			};
+			//vddio: vddio-regulator {
+			//	regulator-min-microvolt = <1800000>;
+			//	regulator-max-microvolt = <1800000>;
+			//};
 		};
 	};
 };
@@ -98,7 +100,6 @@
 	pinctrl-1 = <&pinctrl_i2c1_gpio>;
 	scl-gpios = <&gpio5 14 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio5 15 GPIO_ACTIVE_HIGH>;
-	vcc-supply = <&reg_3v3_en_gpio>;
 	status = "okay";
 
 	pmic@4b {
@@ -146,6 +147,9 @@
 				regulator-max-microvolt = <3300000>;
 				regulator-boot-on;
 				regulator-always-on;
+				//regulator-state-mem {
+				//	regulator-off-in-suspend;
+				//};
 			};
 
 			buck5_reg: BUCK5 {
@@ -254,7 +258,6 @@
 	pinctrl-1 = <&pinctrl_i2c3_gpio>;
 	scl-gpios = <&gpio5 18 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio5 19 GPIO_ACTIVE_HIGH>;
-	vcc-supply = <&reg_3v3_en_gpio>;
 	
 	status = "okay";
 
@@ -263,7 +266,6 @@
 		#size-cells = <0>;
 		compatible = "nxp,pca9545";
 		reg = <0x70>;
-		vcc-supply = <&reg_3v3_en_gpio>;
 		
 		i2c@0 {
 			reg = <0>;
@@ -271,7 +273,6 @@
 			#size-cells = <0>;
 
 			rt5640_a0: rt5640@1c {
-				vcc-supply = <&reg_3v3_en_gpio>;
 				#sound-dai-cells = <0>;
 				compatible = "realtek,rt5640";
 				reg = <0x1c>;
@@ -316,7 +317,6 @@
 	
 			gpio_exp1: pca9538@73 {
 				compatible = "nxp,pca9538";
-				vcc-supply = <&reg_3v3_en_gpio>;
 				reg = <0x73>;
 				pinctrl-names = "default";
 				pinctrl-0 = <&pinctrl_i2c_switch>;
@@ -460,6 +460,25 @@
 	pinctrl_i2c_switch: i2c_switch_grp {
 		fsl,pins = <
 			MX8MM_IOMUXC_GPIO1_IO07_GPIO1_IO7		0x159	/* I2C_INT */
+		>;
+	};
+
+	pinctrl_fec1_sleep: fec1sleepgrp {
+		fsl,pins = <
+			MX8MM_IOMUXC_ENET_MDC_GPIO1_IO16               0x3
+			MX8MM_IOMUXC_ENET_MDIO_GPIO1_IO17              0x3
+			MX8MM_IOMUXC_ENET_RD0_GPIO1_IO26          0x91
+			MX8MM_IOMUXC_ENET_RD1_GPIO1_IO27          0x91
+			MX8MM_IOMUXC_ENET_RD2_GPIO1_IO28          0x91
+			MX8MM_IOMUXC_ENET_RD3_GPIO1_IO29          0x91
+			MX8MM_IOMUXC_ENET_RXC_GPIO1_IO25          0x91
+			MX8MM_IOMUXC_ENET_RX_CTL_GPIO1_IO24    0x91
+			MX8MM_IOMUXC_ENET_TD0_GPIO1_IO21               0x1f
+			MX8MM_IOMUXC_ENET_TD1_GPIO1_IO20               0x1f
+			MX8MM_IOMUXC_ENET_TD2_GPIO1_IO19               0x1f
+			MX8MM_IOMUXC_ENET_TD3_GPIO1_IO18               0x1f
+			MX8MM_IOMUXC_ENET_TXC_GPIO1_IO23               0x1f
+			MX8MM_IOMUXC_ENET_TX_CTL_GPIO1_IO22            0x1f
 		>;
 	};
 

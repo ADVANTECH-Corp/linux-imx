@@ -309,6 +309,9 @@ struct sec_mipi_dsim {
 	struct drm_bridge *next;
 	struct drm_panel *panel;
 	struct device *dev;
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct device_link *panel_link;
+#endif
 
 	void __iomem *base;
 
@@ -2097,6 +2100,13 @@ int sec_mipi_dsim_bind(struct device *dev, struct device *master, void *data,
 
 panel:
 	if (dsim->panel) {
+#ifdef CONFIG_ARCH_ADVANTECH
+		dsim->panel_link = device_link_add(master, dsim->panel->dev,
+						   DL_FLAG_STATELESS |
+						   DL_FLAG_PM_RUNTIME);
+		if (!dsim->panel_link)
+			dev_warn(dev, "Failed to create device link to panel\n");
+#endif
 		/* A panel has been attached */
 		connector = &dsim->connector;
 
@@ -2131,6 +2141,13 @@ EXPORT_SYMBOL(sec_mipi_dsim_bind);
 void sec_mipi_dsim_unbind(struct device *dev, struct device *master, void *data)
 {
 	struct sec_mipi_dsim *dsim = dev_get_drvdata(dev);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (dsim->panel_link) {
+		device_link_del(dsim->panel_link);
+		dsim->panel_link = NULL;
+	}
+#endif
 
 	if (dsim->panel)
 		drm_connector_cleanup(&dsim->connector);

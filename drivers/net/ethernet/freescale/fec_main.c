@@ -4221,10 +4221,11 @@ static void fec_enet_deinit(struct net_device *ndev)
 #ifdef CONFIG_OF
 static int fec_reset_phy(struct platform_device *pdev)
 {
-	struct gpio_desc *phy_reset;
-	int msec = 1, phy_post_delay = 0;
+	int msec = 1;
 	struct device_node *np = pdev->dev.of_node;
 	int err;
+	struct net_device *ndev = platform_get_drvdata(pdev);
+	struct fec_enet_private *fep = netdev_priv(ndev);
 
 	if (!np)
 		return 0;
@@ -4234,18 +4235,18 @@ static int fec_reset_phy(struct platform_device *pdev)
 	if (!err && msec > 1000)
 		msec = 1;
 
-	err = of_property_read_u32(np, "phy-reset-post-delay", &phy_post_delay);
+	err = of_property_read_u32(np, "phy-reset-post-delay", &fep->phy_post_delay);
 	/* valid reset duration should be less than 1s */
-	if (!err && phy_post_delay > 1000)
+	if (!err && fep->phy_post_delay > 1000)
 		return -EINVAL;
 
-	phy_reset = devm_gpiod_get_optional(&pdev->dev, "phy-reset",
+	fep->phy_reset = devm_gpiod_get_optional(&pdev->dev, "phy-reset",
 					    GPIOD_OUT_HIGH);
-	if (IS_ERR(phy_reset))
-		return dev_err_probe(&pdev->dev, PTR_ERR(phy_reset),
+	if (IS_ERR(fep->phy_reset))
+		return dev_err_probe(&pdev->dev, PTR_ERR(fep->phy_reset),
 				     "failed to get phy-reset-gpios\n");
 
-	if (!phy_reset)
+	if (!fep->phy_reset)
 		return 0;
 
 	if (msec > 20)
@@ -4253,16 +4254,16 @@ static int fec_reset_phy(struct platform_device *pdev)
 	else
 		usleep_range(msec * 1000, msec * 1000 + 1000);
 
-	gpiod_set_value_cansleep(phy_reset, 0);
+	gpiod_set_value_cansleep(fep->phy_reset, 0);
 
-	if (!phy_post_delay)
+	if (!fep->phy_post_delay)
 		return 0;
 
-	if (phy_post_delay > 20)
-		msleep(phy_post_delay);
+	if (fep->phy_post_delay > 20)
+		msleep(fep->phy_post_delay);
 	else
-		usleep_range(phy_post_delay * 1000,
-			     phy_post_delay * 1000 + 1000);
+		usleep_range(fep->phy_post_delay * 1000,
+			     fep->phy_post_delay * 1000 + 1000);
 
 	return 0;
 }
@@ -4739,6 +4740,9 @@ static int fec_suspend(struct device *dev)
 	if (fep->clk_enet_out || fep->reg_phy)
 		fep->link = 0;
 
+	if(fep->phy_reset)
+		gpiod_set_value_cansleep(fep->phy_reset, 1);
+
 	return 0;
 }
 
@@ -4749,6 +4753,10 @@ static int fec_resume(struct device *dev)
 	int ret;
 	int val;
 
+	if(fep->phy_reset) {
+		gpiod_set_value_cansleep(fep->phy_reset, 0);
+		msleep(fep->phy_post_delay);
+	}
 	if (fep->reg_phy && !(fep->wol_flag & FEC_WOL_FLAG_ENABLE)) {
 		ret = regulator_enable(fep->reg_phy);
 		if (ret)
