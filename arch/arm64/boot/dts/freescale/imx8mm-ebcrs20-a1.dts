@@ -93,6 +93,8 @@
 		reset-gpios = < >;
 		sleep-gpios = <&gpio5 8 GPIO_ACTIVE_HIGH>,<&gpio5 10 GPIO_ACTIVE_HIGH>,<&gpio1 0 GPIO_ACTIVE_HIGH>,
 					<&gpio3 21 GPIO_ACTIVE_HIGH>,<&gpio5 5 GPIO_ACTIVE_HIGH>;
+		input-gpios = <&gpio1 12 GPIO_ACTIVE_LOW>,<&gpio1 14 GPIO_ACTIVE_LOW>;
+		dual-gpios = < >;
 	};
 
 	gpio-keys {
@@ -105,24 +107,6 @@
 		alter@1 {
 			label = "Alter KEY";
 			gpios = <&gpio1 5 GPIO_ACTIVE_LOW>; /* GPIO_ACTIVE_LOW:1 */
-			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
-			linux,code = <KEY_SUSPEND>;     //KEY_SUSPEND 205, KEY_SLEEP 142, KEY_POWER 116
-			wakeup-source;
-			debounce-interval = <100>;
-		};
-
-		gpi@2 {
-			label = "GPI1 KEY";
-			gpios = <&gpio1 12 GPIO_ACTIVE_LOW>; /* GPIO_ACTIVE_LOW:1 */
-			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
-			linux,code = <KEY_SUSPEND>;     //KEY_SUSPEND 205, KEY_SLEEP 142, KEY_POWER 116
-			wakeup-source;
-			debounce-interval = <100>;
-		};
-
-		gpi@3 {
-			label = "GPI2 KEY";
-			gpios = <&gpio1 14 GPIO_ACTIVE_LOW>; /* GPIO_ACTIVE_LOW:1 */
 			linux,input-type = <EV_PWR>; //EV_KEY 1, EV_PWR 22
 			linux,code = <KEY_SUSPEND>;     //KEY_SUSPEND 205, KEY_SLEEP 142, KEY_POWER 116
 			wakeup-source;
@@ -394,9 +378,6 @@
 			MX8MM_IOMUXC_SD1_DATA5_GPIO2_IO7		0x41    /* W_PDN_3V3 */
 
 			MX8MM_IOMUXC_SAI1_RXC_GPIO4_IO1		    0x41	/* WIFI_PWR_EN */
-
-			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21	0x116	/* TCA9545A_RST# */
-			MX8MM_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5	0x116	/* GPIO_RST# */ /* TCA9538 */
 		>;
 	};
 
@@ -536,6 +517,9 @@
 			MX8MM_IOMUXC_SD1_DATA7_GPIO2_IO9		0x41	/* W_BT_RST_1V8 */
 
 			MX8MM_IOMUXC_ECSPI1_MISO_GPIO5_IO8	0x116	/* V3.3_EN_GPIO */
+			
+			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21	0x116	/* TCA9545A_RST# */
+			MX8MM_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5	0x116	/* GPIO_RST# */ /* TCA9538 */
 		>;
 	};
 };

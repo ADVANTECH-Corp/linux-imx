@@ -27,7 +27,7 @@ static int misc_adv_gpio_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
     struct device_node *np;
-    struct gpio_descs *reset_gpios, *en_gpios;
+    struct gpio_descs *reset_gpios, *en_gpios, *in_gpios, *dual_gpios;
     int timing_interval = 50;
     int i;
 
@@ -35,6 +35,22 @@ static int misc_adv_gpio_probe(struct platform_device *pdev)
 
     if (of_property_read_u32(np, "timing-interval", &timing_interval))
         timing_interval = 50;
+
+    // input-gpios
+    in_gpios = devm_gpiod_get_array_optional(dev, "input", GPIOD_IN);
+    if (!IS_ERR(in_gpios) && in_gpios)
+    {
+        for (i = 0; i < in_gpios->ndescs; i++)
+            gpiod_export(in_gpios->desc[i], false);
+    }
+
+    // dual-gpios,default input
+    dual_gpios = devm_gpiod_get_array_optional(dev, "dual", GPIOD_IN);
+    if (!IS_ERR(dual_gpios) && dual_gpios)
+    {
+        for (i = 0; i < dual_gpios->ndescs; i++)
+            gpiod_export(dual_gpios->desc[i], true);
+    }
 
     // en-gpios
     en_gpios = devm_gpiod_get_array_optional(dev, "en", GPIOD_ASIS);
