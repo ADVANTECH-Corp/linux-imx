@@ -541,7 +541,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	gpio_lvds_stby_en_desc = devm_gpiod_get_optional(dev, "lvds-stby", GPIOD_OUT_HIGH);
 	if (IS_ERR(gpio_lvds_stby_en_desc))
 		return PTR_ERR(gpio_lvds_stby_en_desc);
-	gpio_lvds_bridge_vcc_desc = devm_gpiod_get_optional(dev, "lvds-bridge-vc", GPIOD_OUT_HIGH);
+	gpio_lvds_bridge_vcc_desc = devm_gpiod_get_optional(dev, "lvds-bridge-vcc", GPIOD_OUT_HIGH);
 	if (IS_ERR(gpio_lvds_bridge_vcc_desc))
 		return PTR_ERR(gpio_lvds_bridge_vcc_desc);
 

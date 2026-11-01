@@ -82,17 +82,19 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&adv_gpio_pinmux>;
 		timing-interval = <100>;
-		//reset-gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;
-		//reset-delay = <50>;
-		//minipcie-reset-gpio = <&gpio3 24 GPIO_ACTIVE_LOW>;
-		en-gpios =<&gpio3 20 GPIO_ACTIVE_HIGH>,<&gpio5 7 GPIO_ACTIVE_HIGH>,<&gpio3 19 GPIO_ACTIVE_HIGH>,
-			    <&gpio1 6 GPIO_ACTIVE_HIGH>,<&gpio3 22 GPIO_ACTIVE_LOW>,<&gpio3 23 GPIO_ACTIVE_HIGH>,
-				<&gpio5 25 GPIO_ACTIVE_HIGH>,<&gpio4 25 GPIO_ACTIVE_HIGH>,<&gpio4 0 GPIO_ACTIVE_HIGH>,
-				<&gpio1 11 GPIO_ACTIVE_HIGH>,<&gpio1 10 GPIO_ACTIVE_HIGH>,<&gpio1 1 GPIO_ACTIVE_HIGH>,
-				<&gpio2 9 GPIO_ACTIVE_HIGH>,<&gpio3 24 GPIO_ACTIVE_HIGH>;
+		en-gpios = < >;
 		reset-gpios = < >;
 		sleep-gpios = <&gpio5 8 GPIO_ACTIVE_HIGH>,<&gpio5 10 GPIO_ACTIVE_HIGH>,<&gpio1 0 GPIO_ACTIVE_HIGH>,
-					<&gpio3 21 GPIO_ACTIVE_HIGH>,<&gpio5 5 GPIO_ACTIVE_HIGH>;
+					<&gpio3 21 GPIO_ACTIVE_HIGH>,
+					<&gpio3 20 GPIO_ACTIVE_HIGH>,<&gpio5 7 GPIO_ACTIVE_HIGH>,<&gpio3 19 GPIO_ACTIVE_HIGH>,
+			    <&gpio1 6 GPIO_ACTIVE_HIGH>,<&gpio3 22 GPIO_ACTIVE_HIGH>,<&gpio3 23 GPIO_ACTIVE_HIGH>,
+				<&gpio5 25 GPIO_ACTIVE_HIGH>,<&gpio4 25 GPIO_ACTIVE_HIGH>,<&gpio4 0 GPIO_ACTIVE_HIGH>,
+				<&gpio1 11 GPIO_ACTIVE_HIGH>,<&gpio1 10 GPIO_ACTIVE_HIGH>,<&gpio1 1 GPIO_ACTIVE_HIGH>,
+				<&gpio2 9 GPIO_ACTIVE_HIGH>,<&gpio3 24 GPIO_ACTIVE_HIGH>,
+				<&gpio2 6 GPIO_ACTIVE_HIGH>,<&gpio2 11 GPIO_ACTIVE_HIGH>,<&gpio4 6 GPIO_ACTIVE_HIGH>,
+				<&gpio4 8 GPIO_ACTIVE_HIGH>,<&gpio4 17 GPIO_ACTIVE_HIGH>,<&gpio4 26 GPIO_ACTIVE_HIGH>,
+				<&gpio4 27 GPIO_ACTIVE_HIGH>,<&gpio5 11 GPIO_ACTIVE_HIGH>,<&gpio5 23 GPIO_ACTIVE_HIGH>,
+				<&gpio5 24 GPIO_ACTIVE_HIGH>,<&gpio5 9 GPIO_ACTIVE_HIGH>,<&gpio1 8 GPIO_ACTIVE_HIGH>;
 		input-gpios = <&gpio1 12 GPIO_ACTIVE_LOW>,<&gpio1 14 GPIO_ACTIVE_LOW>;
 		dual-gpios = < >;
 	};
@@ -119,9 +121,15 @@
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_led>;
 
-        led-user {
-            label = "user-led";
+        user-led1 {
+            label = "user-led1";
             gpios = <&gpio5 1 GPIO_ACTIVE_HIGH>;
+            default-state = "on";
+        };
+
+		user-led2 {
+            label = "user-led2";
+            gpios = <&gpio_exp1 3 GPIO_ACTIVE_LOW>;
             default-state = "on";
         };
 	};
@@ -206,7 +214,7 @@
 	lvds-bkl-enable-gpios = <&gpio3 25 GPIO_ACTIVE_HIGH>;
 	lvds-reset-gpios = <&gpio4 19 GPIO_ACTIVE_HIGH>;
 	lvds-stby-gpios  = <&gpio4 9 GPIO_ACTIVE_HIGH>;
-	lvds-bridge-vcc = <&gpio4 28 GPIO_ACTIVE_HIGH>;
+	lvds-bridge-vcc-gpios = <&gpio4 28 GPIO_ACTIVE_HIGH>;
 	bklt-vcc-enable-gpios = <&gpio5 22 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 	lvds-bkl-delay-time = <150>;
@@ -255,9 +263,9 @@
 	non-removable;
 
 	fsl,sdio-async-interrupt-enabled;
-	wakeup-source;
+	//wakeup-source;
 	mmc-pwrseq = <&usdhc1_pwrseq>;
-	keep-power-in-suspend;
+	//keep-power-in-suspend;
 	wifi-pwr-en-gpios = <&gpio4 1 GPIO_ACTIVE_HIGH>;
 	wifi-pdn-gpios = <&gpio2 7 GPIO_ACTIVE_HIGH>;
 

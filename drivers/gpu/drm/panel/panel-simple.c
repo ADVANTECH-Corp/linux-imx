@@ -441,11 +441,20 @@ static int panel_simple_disable(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
 
-#if defined(CONFIG_ARCH_ADVANTECH0)
+#if defined(CONFIG_ARCH_ADVANTECH)
+	int err;
 	if (blank_flag) {
 		disable_ldb_bkl_pwm();
 		disable_ldb_bkl_vcc();
 		blank_flag = false;
+	}
+
+	if (p->off_cmds) {
+		printk("DSI panel enter sleep mode\n");
+
+		err = panel_simple_dsi_send_cmds(p, p->off_cmds);
+		if (err)
+			dev_err(p->dev, "failed to send off cmds\n");
 	}
 #endif
 
@@ -540,6 +549,8 @@ static int panel_simple_enable(struct drm_panel *panel)
 
 #ifdef CONFIG_ARCH_ADVANTECH
 	if (p->on_cmds) {
+			printk("DSI panel init\n");
+
 		err = panel_simple_dsi_send_cmds(p, p->on_cmds);
 		if (err)
 			dev_err(p->dev, "failed to send on cmds\n");
@@ -5798,7 +5809,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 		}
 	}
 
-    data = of_get_property(dsi->dev.of_node, "panel-exit-sequence", &len);
+    data = of_get_property(dsi->dev.of_node, "panel-off-sequence", &len);
 	if (data) {
 		panel->off_cmds = devm_kzalloc(&dsi->dev,
 					       sizeof(*panel->off_cmds),

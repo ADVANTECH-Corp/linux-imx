@@ -35,8 +35,36 @@
 		gpio = <&gpio2 19 GPIO_ACTIVE_HIGH>;
 		off-on-delay-us = <20000>;
 		enable-active-high;
+		regulator-state-mem {
+			regulator-off-in-suspend;
+		};
 	};
 
+	pca9538_regulator: regulator-pca9538 {
+		compatible = "regulator-fixed";
+		//pinctrl-names = "default";
+		//pinctrl-0 = <&pinctrl_reg_usdhc2_vmmc>;
+		regulator-name = "pca9538_rst";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio5 5 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	regulator_pcie0: regulator-pcie {
+		compatible = "regulator-fixed";
+		regulator-name = "pci_pwr_en";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		enable-active-high;
+		regulator-boot-on;
+		gpio = <&gpio5 4 GPIO_ACTIVE_HIGH>;
+		//regulator-enable-ramp-delay = <20000>;
+		regulator-state-mem {
+			regulator-off-in-suspend;
+		};
+	};
 };
 
 &A53_0 {
@@ -322,10 +350,7 @@
 				pinctrl-0 = <&pinctrl_i2c_switch>;
 				#gpio-cells = <2>;
 				gpio-controller;
-				interrupt-controller;
-				#interrupt-cells = <2>;
-				interrupt-parent = <&gpio1>;
-				interrupts = <7 IRQ_TYPE_LEVEL_LOW>;
+				vcc-supply = <&pca9538_regulator>;
 			};
 		};
 
@@ -348,9 +373,9 @@
 &pcie0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie0>;
-	reset-gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;
-	// disable-gpio = <&gpio1 8 GPIO_ACTIVE_LOW>; //W_DISABLE1
-	m2-pwr-en-gpios = <&gpio5 4 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
+	adv,reset-gpio-delay = <20>;
+	vpcie-supply = <&regulator_pcie0>;
 	clocks = <&clk IMX8MM_CLK_PCIE1_ROOT>,
 		 <&clk IMX8MM_CLK_PCIE1_AUX>,
 		 <&clk IMX8MM_CLK_PCIE1_PHY>,
