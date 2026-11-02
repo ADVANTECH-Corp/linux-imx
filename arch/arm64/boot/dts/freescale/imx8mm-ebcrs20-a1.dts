@@ -263,9 +263,9 @@
 	non-removable;
 
 	fsl,sdio-async-interrupt-enabled;
-	//wakeup-source;
+	wakeup-source;
 	mmc-pwrseq = <&usdhc1_pwrseq>;
-	//keep-power-in-suspend;
+	keep-power-in-suspend;
 	wifi-pwr-en-gpios = <&gpio4 1 GPIO_ACTIVE_HIGH>;
 	wifi-pdn-gpios = <&gpio2 7 GPIO_ACTIVE_HIGH>;
 
