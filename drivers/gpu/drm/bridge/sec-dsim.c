@@ -279,6 +279,7 @@
 extern void enable_lcd_vdd_en(void);
 extern void enable_bridge_stdy_en(void);
 extern void disable_bridge_stdy_en(void);
+extern void disable_lcd_vdd_en(void);
 //extern void enable_ldb_bkl_vcc(void);
 //extern void enable_ldb_bkl_pwm(void);
 #endif
@@ -1496,6 +1497,7 @@ disable:
 	dsim->enabled = false;
 
 #ifdef CONFIG_ARCH_ADVANTECH
+	disable_lcd_vdd_en();
 	disable_bridge_stdy_en();
 #endif
 }

@@ -46,6 +46,31 @@
 #define BD71837_LDO6_STARTUP_TIME  400
 #define BD71837_LDO7_STARTUP_TIME  530
 
+static int bd718xx_set_suspend_disable(struct regulator_dev *rdev)
+{
+       static int initial=1;
+
+       if(!strcmp(rdev->desc->name,"buck4")){
+               if(initial){
+                       --initial;
+                       return 0;
+               }
+               return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg, 0x03, 0x02);
+       }
+
+       return 0;
+}
+
+static int bd718xx_resume(struct regulator_dev *rdev)
+{
+       if(strcmp(rdev->desc->name,"buck4"))
+               return 0;
+       else
+       {
+               return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg, 0x03, 0x00);
+       }
+}
+
 /*
  * BD718(37/47/50) have two "enable control modes". ON/OFF can either be
  * controlled by software - or by PMIC internal HW state machine. Whether
@@ -70,6 +95,8 @@ static const struct regulator_ops name = {			\
 	.set_ramp_delay = (_set_ramp_delay),			\
 	.set_under_voltage_protection = (_set_uvp),		\
 	.set_over_voltage_protection = (_set_ovp),		\
+	.set_suspend_disable = bd718xx_set_suspend_disable, \
+	.resume = bd718xx_resume,		\
 };								\
 								\
 static const struct regulator_ops BD718XX_HWOPNAME(name) = {	\
