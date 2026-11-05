@@ -23,8 +23,19 @@
 
 static struct gpio_descs *sleep_gpios;
 
+static int pmic_match(struct device *dev, const void *data)
+{
+    return strncmp(dev_name(dev), "bd71847-pmic", 12) == 0;
+}
+static struct device *misc_find_pmic_device(void)
+{
+    return bus_find_device(&platform_bus_type, NULL, NULL, pmic_match);
+}
+
 static int misc_adv_gpio_probe(struct platform_device *pdev)
 {
+    struct device *pmic_pdev;
+    struct device_link *link;
 	struct device *dev = &pdev->dev;
     struct device_node *np;
     struct gpio_descs *reset_gpios, *en_gpios, *in_gpios, *dual_gpios;
@@ -81,6 +92,19 @@ static int misc_adv_gpio_probe(struct platform_device *pdev)
         }
     }
 
+    pmic_pdev = misc_find_pmic_device();
+    if (!pmic_pdev) {
+        dev_info(&pdev->dev, "bd71847-pmic not ready, deferring probe\n");
+        return -EPROBE_DEFER;
+    }
+
+    link = device_link_add(&pdev->dev, pmic_pdev, DL_FLAG_STATELESS | DL_FLAG_PM_RUNTIME);
+    put_device(pmic_pdev);
+    if (!link) {
+        dev_err(&pdev->dev, "Failed to create device link\n");
+        return -EINVAL;
+    }
+
 	return 0;
 }
 
@@ -94,7 +118,7 @@ static int adv_gpio_suspend_resume(struct device *dev, int mode)
             if(mode)
                 gpiod_direction_output(sleep_gpios->desc[i], 1);
             else
-                gpiod_direction_output(sleep_gpios->desc[i], 0);
+                gpiod_direction_output(sleep_gpios->desc[sleep_gpios->ndescs-1-i], 0);
         }
     }
 	return 0;
@@ -114,8 +138,9 @@ static int misc_adv_gpio_resume(struct device *dev)
 }
 
 static const struct dev_pm_ops misc_adv_gpio_pm_ops = {
-    .suspend_late = misc_adv_gpio_suspend,
-    .resume_early = misc_adv_gpio_resume,
+    //.suspend_late = misc_adv_gpio_suspend,
+    //.resume_early = misc_adv_gpio_resume,
+    SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(misc_adv_gpio_suspend, misc_adv_gpio_resume)
 };
 
 static const struct of_device_id misc_adv_gpio_of_match[] = {
@@ -143,7 +168,7 @@ static void __exit misc_adv_gpio_exit(void)
 	platform_driver_unregister(&misc_adv_gpio_driver);
 }
 
-subsys_initcall(misc_adv_gpio_init);
+subsys_initcall_sync(misc_adv_gpio_init);
 module_exit(misc_adv_gpio_exit);
 
 MODULE_LICENSE("GPL");

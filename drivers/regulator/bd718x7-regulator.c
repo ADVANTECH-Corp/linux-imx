@@ -46,29 +46,23 @@
 #define BD71837_LDO6_STARTUP_TIME  400
 #define BD71837_LDO7_STARTUP_TIME  530
 
-static int bd718xx_set_suspend_disable(struct regulator_dev *rdev)
+static struct regmap *suspend_regmap;
+static int bd718xx_suspend(struct device *dev)
 {
-       static int initial=1;
-
-       if(!strcmp(rdev->desc->name,"buck4")){
-               if(initial){
-                       --initial;
+			if(suspend_regmap)
+				return regmap_update_bits(suspend_regmap, BD718XX_REG_2ND_NODVS_BUCK_CTRL, 0x03, 0x02);
+			else
                        return 0;
                }
-               return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg, 0x03, 0x02);
-       }
 
-       return 0;
+static int bd718xx_resume(struct device *dev)
+{
+		if(suspend_regmap) {
+        	regmap_update_bits(suspend_regmap, BD718XX_REG_2ND_NODVS_BUCK_CTRL, 0x03, 0x00);
+			//msleep(10);
 }
 
-static int bd718xx_resume(struct regulator_dev *rdev)
-{
-       if(strcmp(rdev->desc->name,"buck4"))
                return 0;
-       else
-       {
-               return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg, 0x03, 0x00);
-       }
 }
 
 /*
@@ -95,8 +89,6 @@ static const struct regulator_ops name = {			\
 	.set_ramp_delay = (_set_ramp_delay),			\
 	.set_under_voltage_protection = (_set_uvp),		\
 	.set_over_voltage_protection = (_set_ovp),		\
-	.set_suspend_disable = bd718xx_set_suspend_disable, \
-	.resume = bd718xx_resume,		\
 };								\
 								\
 static const struct regulator_ops BD718XX_HWOPNAME(name) = {	\
@@ -1760,6 +1752,7 @@ static int bd718xx_probe(struct platform_device *pdev)
 		dev_dbg(&pdev->dev, "Changed all resets from SVNS to READY\n");
 	}
 
+	suspend_regmap = regmap;
 	config.dev = pdev->dev.parent;
 	config.regmap = regmap;
 	/*
@@ -1839,6 +1832,12 @@ static int bd718xx_probe(struct platform_device *pdev)
 	return err;
 }
 
+static const struct dev_pm_ops bd718xx_pm_ops = {
+	//SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(bd718xx_suspend, bd718xx_resume)
+    //.resume_early = bd718xx_resume,
+	SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(bd718xx_suspend, bd718xx_resume)
+};
+
 static const struct platform_device_id bd718x7_pmic_id[] = {
 	{ "bd71837-pmic", ROHM_CHIP_TYPE_BD71837 },
 	{ "bd71847-pmic", ROHM_CHIP_TYPE_BD71847 },
@@ -1850,6 +1849,7 @@ static struct platform_driver bd718xx_regulator = {
 	.driver = {
 		.name = "bd718xx-pmic",
 		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
+		.pm = &bd718xx_pm_ops,
 	},
 	.probe = bd718xx_probe,
 	.id_table = bd718x7_pmic_id,

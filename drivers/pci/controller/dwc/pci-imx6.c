@@ -1674,8 +1674,19 @@ static irqreturn_t host_wake_irq_handler(int irq, void *priv)
 	return IRQ_HANDLED;
 }
 
+static int pmic_match(struct device *dev, const void *data)
+{
+    return strncmp(dev_name(dev), "bd71847-pmic", 12) == 0;
+}
+static struct device *misc_find_pmic_device(void)
+{
+    return bus_find_device(&platform_bus_type, NULL, NULL, pmic_match);
+}
+
 static int imx_pcie_probe(struct platform_device *pdev)
 {
+	struct device *pmic_pdev;
+    struct device_link *link;
 	struct device *dev = &pdev->dev;
 	struct dw_pcie *pci;
 	struct imx_pcie *imx_pcie;
@@ -1906,6 +1917,19 @@ static int imx_pcie_probe(struct platform_device *pdev)
 			}
 		}
 	}
+
+	pmic_pdev = misc_find_pmic_device();
+    if (!pmic_pdev) {
+        dev_info(&pdev->dev, "bd71847-pmic not ready, deferring probe\n");
+        return -EPROBE_DEFER;
+    }
+
+    link = device_link_add(&pdev->dev, pmic_pdev, DL_FLAG_STATELESS | DL_FLAG_PM_RUNTIME);
+    put_device(pmic_pdev);
+    if (!link) {
+        dev_err(&pdev->dev, "Failed to create device link\n");
+        return -EINVAL;
+    }
 
 	return 0;
 }
