@@ -319,7 +319,54 @@ static int tpm_tis_i2c_init_guard_time(struct tpm_tis_i2c_phy *phy)
 	return 0;
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int tpm_tis_adv_resume(struct device *dev)
+{
+	struct tpm_chip *chip = dev_get_drvdata(dev);
+    struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
+    const u8 crc_enable = 1;
+	const u8 locality = 0;
+	u8 access;
+    int ret;
+	unsigned long stop;
+	stop = jiffies + msecs_to_jiffies(20000);
+
+	do {
+        ret = tpm_tis_i2c_read_bytes(priv, TPM_I2C_ACCESS,
+                                     sizeof(access), &access,
+                                     TPM_TIS_PHYS_8);
+        if (ret < 0) {
+            tpm_msleep(2);
+            continue;
+        }
+        if (access & TPM_ACCESS_VALID)
+            break;
+    } while (time_before(jiffies, stop));
+
+	ret = tpm_tis_i2c_write_bytes(priv, TPM_LOC_SEL, sizeof(locality),
+				      &locality, TPM_TIS_PHYS_8);
+	if (ret)
+		return ret;
+
+	ret = tpm_tis_i2c_write_bytes(priv, TPM_I2C_DATA_CSUM_ENABLE,
+				      sizeof(crc_enable), &crc_enable, TPM_TIS_PHYS_8);
+	if (ret)
+		return ret;
+
+	ret = tpm_chip_start(chip);
+	if (ret)
+		return ret;
+
+	tpm_auto_startup(chip);
+
+	tpm_chip_stop(chip);
+
+    return tpm_tis_resume(dev);
+}
+static SIMPLE_DEV_PM_OPS(tpm_tis_pm, tpm_pm_suspend, tpm_tis_adv_resume);
+#else
 static SIMPLE_DEV_PM_OPS(tpm_tis_pm, tpm_pm_suspend, tpm_tis_resume);
+#endif
 
 static const struct tpm_tis_phy_ops tpm_i2c_phy_ops = {
 	.read_bytes = tpm_tis_i2c_read_bytes,
