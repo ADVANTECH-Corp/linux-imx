@@ -48,6 +48,7 @@
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		gpio = <&gpio5 5 GPIO_ACTIVE_HIGH>;
+		regulator-enable-ramp-delay = <20000>;
 		enable-active-high;
 		regulator-boot-on;
 	};
