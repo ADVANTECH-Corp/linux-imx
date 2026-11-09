@@ -691,6 +691,10 @@ struct fec_enet_private {
 		u8 at_inc_corr;
 	} ptp_saved_state;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct gpio_desc *phy_reset;
+	int phy_post_delay;
+#endif
 	u64 ethtool_stats[];
 };
 

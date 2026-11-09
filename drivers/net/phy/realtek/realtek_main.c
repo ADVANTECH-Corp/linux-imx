@@ -181,6 +181,41 @@ struct rtl821x_priv {
 	u16 iner;
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static void rtl8211f_phy_fixup(struct phy_device *dev)
+{
+	struct device_node *node = dev->mdio.dev.of_node;
+
+	//msleep(200);
+	phy_write(dev, 0x1f, 0x0d04);
+	/*PHY LED OK*/
+	phy_write(dev, 0x10, 0xa050);
+	phy_write(dev, 0x11, 0x0000);
+	phy_write(dev, 0x1f, 0x0000);
+
+        if (of_property_read_bool(node, "ssc-enable")) {
+                dev_info(&dev->mdio.dev, "enable ssc\n");
+                /* Enable rxc ssc */
+                phy_write(dev, 0x1f, 0x0c44);
+                phy_write(dev, 0x13, 0x5f00);
+                phy_write(dev, 0x1f, 0x0000);
+                phy_write(dev, 0x00, 0x9200);
+
+                /* Enable system clk ssc */
+                phy_write(dev, 0x1f, 0x0c44);
+                phy_write(dev, 0x17, 0x4f00);
+                phy_write(dev, 0x1f, 0x0000);
+                phy_write(dev, 0x00, 0x9200);
+
+                /* clk_out disable */
+                phy_write(dev, 0x1f, 0x0a43);
+                phy_write(dev, 0x19, 0x0862);
+                phy_write(dev, 0x1f, 0x0000);
+                phy_write(dev, 0x00, 0x9200);
+        }
+}
+#endif
+
 static int rtl821x_read_page(struct phy_device *phydev)
 {
 	return __phy_read(phydev, RTL821x_PAGE_SELECT);
@@ -269,6 +304,12 @@ static int rtl8211f_probe(struct phy_device *phydev)
 		device_set_wakeup_capable(dev, true);
 		devm_pm_set_wake_irq(dev, phydev->irq);
 	}
+
+	#ifdef CONFIG_ARCH_ADVANTECH
+	if (phydev && (0x001cc916 == phydev->phy_id)) {
+		rtl8211f_phy_fixup(phydev);
+	}
+	#endif
 
 	return ret;
 }
@@ -555,6 +596,9 @@ static int rtl8211f_config_rgmii_delay(struct phy_device *phydev)
 {
 	u16 val_txdly, val_rxdly;
 	int ret;
+	#ifdef CONFIG_ARCH_ADVANTECH
+	rtl8211f_phy_fixup(phydev);
+	#endif
 
 	switch (phydev->interface) {
 	case PHY_INTERFACE_MODE_RGMII:

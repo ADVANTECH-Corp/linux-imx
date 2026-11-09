@@ -43,6 +43,27 @@
 #include <drm/drm_panel.h>
 #include <drm/drm_of.h>
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <video/mipi_display.h>
+struct dsi_ctrl_hdr {
+	u8 dtype;	/* data type */
+	u8 wait;	/* ms */
+	u8 dlen;	/* payload len */
+} __packed;
+
+struct dsi_cmd_desc {
+	struct dsi_ctrl_hdr dchdr;
+	u8 *payload;
+};
+
+struct dsi_panel_cmds {
+	u8 *buf;
+	int blen;
+	struct dsi_cmd_desc *cmds;
+	int cmd_cnt;
+};
+#endif
+
 /**
  * struct panel_desc - Describes a simple panel.
  */
@@ -162,12 +183,145 @@ struct panel_simple {
 	struct drm_display_mode override_mode;
 
 	enum drm_panel_orientation orientation;
+
+	#ifdef CONFIG_ARCH_ADVANTECH
+	struct mipi_dsi_device *dsi;
+	struct device *dev;
+	struct dsi_panel_cmds *on_cmds;
+	struct dsi_panel_cmds *off_cmds;
+	#endif
+
 };
+
+#if defined(CONFIG_ARCH_ADVANTECH)
+bool blank_flag = false;
+extern void enable_ldb_bkl_vcc(void);
+extern void enable_ldb_bkl_pwm(void);
+extern void disable_ldb_bkl_pwm(void);
+extern void disable_ldb_bkl_vcc(void);
+#endif
 
 static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
 {
 	return container_of(panel, struct panel_simple, base);
 }
+
+#ifdef CONFIG_ARCH_ADVANTECH
+static int panel_simple_dsi_parse_dcs_cmds(struct device *dev,
+					   const u8 *data, int blen,
+					   struct dsi_panel_cmds *pcmds)
+{
+	int len;
+	char *buf, *bp;
+	struct dsi_ctrl_hdr *dchdr;
+	int i, cnt;
+
+	if (!pcmds)
+		return -EINVAL;
+
+	buf = kmemdup(data, blen, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	/* scan dcs commands */
+	bp = buf;
+	len = blen;
+	cnt = 0;
+	while (len > sizeof(*dchdr)) {
+		dchdr = (struct dsi_ctrl_hdr *)bp;
+
+		if (dchdr->dlen > len) {
+			dev_err(dev, "%s: error, len=%d", __func__,
+				dchdr->dlen);
+			return -EINVAL;
+		}
+
+		bp += sizeof(*dchdr);
+		len -= sizeof(*dchdr);
+		bp += dchdr->dlen;
+		len -= dchdr->dlen;
+		cnt++;
+	}
+
+	if (len != 0) {
+		dev_err(dev, "%s: dcs_cmd=%x len=%d error!",
+			__func__, buf[0], blen);
+		kfree(buf);
+		return -EINVAL;
+	}
+
+	pcmds->cmds = kcalloc(cnt, sizeof(struct dsi_cmd_desc), GFP_KERNEL);
+	if (!pcmds->cmds) {
+		kfree(buf);
+		return -ENOMEM;
+	}
+
+	pcmds->cmd_cnt = cnt;
+	pcmds->buf = buf;
+	pcmds->blen = blen;
+
+	bp = buf;
+	len = blen;
+	for (i = 0; i < cnt; i++) {
+		dchdr = (struct dsi_ctrl_hdr *)bp;
+		len -= sizeof(*dchdr);
+		bp += sizeof(*dchdr);
+		pcmds->cmds[i].dchdr = *dchdr;
+		pcmds->cmds[i].payload = bp;
+		bp += dchdr->dlen;
+		len -= dchdr->dlen;
+	}
+
+	dev_info(dev, "%s: dcs_cmd=%x len=%d, cmd_cnt=%d\n", __func__,
+		 pcmds->buf[0], pcmds->blen, pcmds->cmd_cnt);
+	return 0;
+}
+
+static int panel_simple_dsi_send_cmds(struct panel_simple *panel,
+				      struct dsi_panel_cmds *cmds)
+{
+	struct mipi_dsi_device *dsi = panel->dsi;
+	int i, err;
+
+
+    //dev_err(panel->base.dev, "Warren panel_simple_dsi_send_cmds into  \n");
+	if (!cmds)
+		return -EINVAL;
+
+	for (i = 0; i < cmds->cmd_cnt; i++) {
+		struct dsi_cmd_desc *cmd = &cmds->cmds[i];
+		switch (cmd->dchdr.dtype) {
+		case MIPI_DSI_GENERIC_SHORT_WRITE_0_PARAM:
+		case MIPI_DSI_GENERIC_SHORT_WRITE_1_PARAM:
+		case MIPI_DSI_GENERIC_SHORT_WRITE_2_PARAM:
+		case MIPI_DSI_GENERIC_LONG_WRITE:
+		    //dev_err(panel->base.dev, "Warren mipi_dsi_generic_write \n");
+			err = mipi_dsi_generic_write(dsi, cmd->payload,
+						     cmd->dchdr.dlen);
+			break;
+		case MIPI_DSI_DCS_SHORT_WRITE:
+		case MIPI_DSI_DCS_SHORT_WRITE_PARAM:
+		case MIPI_DSI_DCS_LONG_WRITE:
+		    //dev_err(panel->base.dev, "Warren mipi_dsi_dcs_write_buffer \n");
+			err = mipi_dsi_dcs_write_buffer(dsi, cmd->payload,
+							cmd->dchdr.dlen);
+			break;
+		default:
+			return -EINVAL;
+		}
+
+		if (err < 0)
+			dev_err(panel->base.dev, "Warren failed to write dcs cmd: %d\n",
+				err);
+
+		if (cmd->dchdr.wait)
+			msleep(cmd->dchdr.wait);
+	}
+
+
+	return 0;
+}
+#endif
 
 static unsigned int panel_simple_get_timings_modes(struct panel_simple *panel,
 						   struct drm_connector *connector)
@@ -296,6 +450,23 @@ static int panel_simple_disable(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
 
+#if defined(CONFIG_ARCH_ADVANTECH)
+	int err;
+	if (blank_flag) {
+		disable_ldb_bkl_pwm();
+		disable_ldb_bkl_vcc();
+		blank_flag = false;
+	}
+
+	if (p->off_cmds) {
+		printk("DSI panel enter sleep mode\n");
+
+		err = panel_simple_dsi_send_cmds(p, p->off_cmds);
+		if (err)
+			dev_err(p->dev, "failed to send off cmds\n");
+	}
+#endif
+
 	if (p->desc->delay.disable)
 		msleep(p->desc->delay.disable);
 
@@ -318,7 +489,15 @@ static int panel_simple_suspend(struct device *dev)
 
 static int panel_simple_unprepare(struct drm_panel *panel)
 {
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct panel_simple *p = to_panel_simple(panel);
+#endif
 	int ret;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (p->enable_gpio)
+		gpiod_set_value_cansleep(p->enable_gpio, 0);
+#endif
 
 	pm_runtime_mark_last_busy(panel->dev);
 	ret = pm_runtime_put_autosuspend(panel->dev);
@@ -340,6 +519,10 @@ static int panel_simple_resume(struct device *dev)
 		dev_err(dev, "failed to enable supply: %d\n", err);
 		return err;
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (p->enable_gpio)
+#endif
 
 	gpiod_set_value_cansleep(p->enable_gpio, 1);
 
@@ -366,8 +549,30 @@ static int panel_simple_enable(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	int err;
+#endif
+
 	if (p->desc->delay.enable)
 		msleep(p->desc->delay.enable);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (p->on_cmds) {
+			printk("DSI panel init\n");
+
+		err = panel_simple_dsi_send_cmds(p, p->on_cmds);
+		if (err)
+			dev_err(p->dev, "failed to send on cmds\n");
+	}
+#endif
+
+#if defined(CONFIG_ARCH_ADVANTECH)
+	if (!blank_flag) {
+		enable_ldb_bkl_vcc();
+		enable_ldb_bkl_pwm();
+		blank_flag = true;
+	}
+#endif
 
 	return 0;
 }
@@ -1384,6 +1589,60 @@ static const struct panel_desc auo_t215hvn01 = {
 	.bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
 	.connector_type = DRM_MODE_CONNECTOR_LVDS,
 };
+
+#ifdef CONFIG_ARCH_ADVANTECH
+static const struct display_timing auo_g070vw01_v0_timings = {
+        .pixelclock = { 33260000, 33260000, 33260000 },
+        .hactive = { 800, 800, 800 },
+        .hfront_porch = { 40, 40, 40 },
+        .hback_porch = { 88, 88, 88 },
+        .hsync_len = { 128, 128, 128 },
+        .vactive = { 480, 480, 480 },
+        .vfront_porch = { 10, 10, 10 },
+        .vback_porch = { 33, 33, 33 },
+        .vsync_len = { 2, 2, 2 },
+        .flags = DISPLAY_FLAGS_DE_HIGH,
+};
+
+static const struct panel_desc auo_g070vw01_v0 = {
+        .timings = &auo_g070vw01_v0_timings,
+        .num_timings = 1,
+        .bpc = 8,
+        .size = {
+                .width = 152,
+                .height = 91,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
+        .bus_flags = DRM_BUS_FLAG_DE_HIGH,
+        .connector_type = DRM_MODE_CONNECTOR_LVDS,
+};
+
+static const struct display_timing auo_g215hvn01_0_timings = {
+        .pixelclock = { 170000000, 170000000, 170000000 },
+        .hactive = { 1920, 1920, 1920 },
+        .hfront_porch = { 30, 30, 30 },
+        .hback_porch = { 90, 90, 90 },
+        .hsync_len = { 60, 60, 60 },
+        .vactive = { 1080, 1080, 1080 },
+        .vfront_porch = { 38, 38, 38 },
+        .vback_porch = { 5, 5, 5 },
+        .vsync_len = { 7, 7, 7 },
+        .flags = DISPLAY_FLAGS_DE_HIGH,
+};
+
+static const struct panel_desc auo_g215hvn01_0 = {
+        .timings = &auo_g215hvn01_0_timings,
+        .num_timings = 1,
+        .bpc = 8,
+        .size = {
+                .width = 476,
+                .height = 268,
+        },
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
+        .bus_flags = DRM_BUS_FLAG_DE_HIGH,
+        .connector_type = DRM_MODE_CONNECTOR_LVDS,
+};
+#endif
 
 static const struct drm_display_mode avic_tm070ddh03_mode = {
 	.clock = 51200,
@@ -5070,6 +5329,14 @@ static const struct of_device_id platform_of_match[] = {
 		.compatible = "auo,t215hvn01",
 		.data = &auo_t215hvn01,
 	}, {
+#ifdef CONFIG_ARCH_ADVANTECH
+		.compatible = "auo,g070vw01_v0",
+		.data = &auo_g070vw01_v0,
+	}, {
+		.compatible = "auo,g215hvn01_0",
+		.data = &auo_g215hvn01_0,
+	}, {
+#endif
 		.compatible = "avic,tm070ddh03",
 		.data = &avic_tm070ddh03,
 	}, {
@@ -5547,6 +5814,36 @@ static struct platform_driver panel_simple_platform_driver = {
 	.remove = panel_simple_platform_remove,
 	.shutdown = panel_simple_platform_shutdown,
 };
+#ifdef CONFIG_ARCH_ADVANTECH
+static const struct drm_display_mode auo_g101ean02_mode = {
+	.clock = 71100,
+	.hdisplay = 1280,
+	.hsync_start = 1280 + 10,
+	.hsync_end = 1280 + 10 + 140,
+	.htotal = 1280 + 10 + 140 + 10,
+	.vdisplay = 800,
+	.vsync_start = 800 + 15,
+	.vsync_end = 800 + 15 + 4,
+	.vtotal = 800 + 4 + 15 + 4,
+};
+
+static const struct panel_desc_dsi auo_g101ean02 = {
+	.desc = {
+		.modes = &auo_g101ean02_mode,
+		.num_modes = 1,
+		.bpc = 8,
+		.size = {
+			.width = 216,
+			.height = 135,
+		},
+		.bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+		.connector_type = DRM_MODE_CONNECTOR_DSI,
+	},
+	.flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_NO_EOT_PACKET,
+	.format = MIPI_DSI_FMT_RGB888,
+	.lanes = 4,
+};
+#endif
 
 static const struct drm_display_mode auo_b080uan01_mode = {
 	.clock = 154500,
@@ -5755,6 +6052,11 @@ static const struct of_device_id dsi_of_match[] = {
 		.compatible = "auo,b080uan01",
 		.data = &auo_b080uan01
 	}, {
+#ifdef CONFIG_ARCH_ADVANTECH
+		.compatible = "auo,g101ean02",
+		.data = &auo_g101ean02
+	}, {
+#endif
 		.compatible = "boe,tv080wum-nl0",
 		.data = &boe_tv080wum_nl0
 	}, {
@@ -5783,15 +6085,84 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	const struct panel_desc_dsi *desc;
 	struct panel_simple *panel;
 	int err;
+#if defined(CONFIG_ARCH_ADVANTECH)
+	struct gpio_desc *gpio_dsi_vcc_enable_desc = NULL;
+	struct gpio_desc *gpio_bklt_vcc_enable_desc = NULL;
+	struct gpio_desc *gpio_dsi_bkl_enable_desc = NULL;
+	const void *data;
+	int len;
+#endif
 
 	panel = panel_simple_probe(&dsi->dev);
 	if (IS_ERR(panel))
 		return PTR_ERR(panel);
 
 	desc = container_of(panel->desc, struct panel_desc_dsi, desc);
+
+#if defined(CONFIG_ARCH_ADVANTECH)
+	gpio_dsi_vcc_enable_desc = devm_gpiod_get_optional(&dsi->dev, "dsi-vcc-enable", GPIOD_OUT_LOW);
+	if (gpio_dsi_vcc_enable_desc != NULL)
+	{
+		gpiod_set_value_cansleep(gpio_dsi_vcc_enable_desc, 1);
+	}
+
+	gpio_bklt_vcc_enable_desc = devm_gpiod_get_optional(&dsi->dev, "bklt-vcc-enable", GPIOD_OUT_LOW);
+	if (gpio_bklt_vcc_enable_desc != NULL)
+	{
+		gpiod_set_value_cansleep(gpio_bklt_vcc_enable_desc, 1);
+	}
+
+	gpio_dsi_bkl_enable_desc = devm_gpiod_get_optional(&dsi->dev, "dsi-bkl-enable", GPIOD_OUT_LOW);
+	if (gpio_dsi_bkl_enable_desc != NULL)
+	{
+		gpiod_set_value_cansleep(gpio_dsi_bkl_enable_desc, 1);
+	}
+#endif
+
 	dsi->mode_flags = desc->flags;
 	dsi->format = desc->format;
 	dsi->lanes = desc->lanes;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	//--------------------------------------------------------------
+	//Warren
+
+	panel = dev_get_drvdata(&dsi->dev);
+	panel->dsi = dsi;
+
+	data = of_get_property(dsi->dev.of_node, "panel-init-sequence", &len);
+	if (data) {
+		panel->on_cmds = devm_kzalloc(&dsi->dev,
+					      sizeof(*panel->on_cmds),
+					      GFP_KERNEL);
+		if (!panel->on_cmds)
+			return -ENOMEM;
+
+		err = panel_simple_dsi_parse_dcs_cmds(&dsi->dev, data, len,
+						      panel->on_cmds);
+		if (err) {
+			dev_err(&dsi->dev, "failed to parse panel init sequence\n");
+			return err;
+		}
+	}
+
+    data = of_get_property(dsi->dev.of_node, "panel-off-sequence", &len);
+	if (data) {
+		panel->off_cmds = devm_kzalloc(&dsi->dev,
+					       sizeof(*panel->off_cmds),
+					       GFP_KERNEL);
+		if (!panel->off_cmds)
+			return -ENOMEM;
+
+		err = panel_simple_dsi_parse_dcs_cmds(&dsi->dev, data, len,
+						      panel->off_cmds);
+		if (err) {
+			dev_err(&dsi->dev, "failed to parse panel exit sequence\n");
+			return err;
+		}
+	}
+	//--------------------------------------------------------------
+#endif
 
 	err = mipi_dsi_attach(dsi);
 	if (err) {

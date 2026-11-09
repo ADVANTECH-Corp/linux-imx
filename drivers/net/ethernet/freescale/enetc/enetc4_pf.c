@@ -1629,6 +1629,9 @@ static int enetc4_pf_netdev_create(struct enetc_si *si)
 	struct enetc_ndev_priv *priv;
 	struct net_device *ndev;
 	int err;
+#ifdef CONFIG_ARCH_ADVANTECH
+	const char *cus_ifname = NULL;
+#endif
 
 	ndev = alloc_etherdev_mqs(sizeof(struct enetc_ndev_priv),
 				  si->num_tx_rings, si->num_rx_rings);
@@ -1638,6 +1641,13 @@ static int enetc4_pf_netdev_create(struct enetc_si *si)
 	priv = netdev_priv(ndev);
 	mutex_init(&priv->mm_lock);
 	mutex_init(&priv->vlan_to_bdr.lock);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (of_property_read_string(dev->of_node, "if-name", &cus_ifname))
+		dev_err(dev, "No specified if-name\n");
+	else
+		snprintf(ndev->name, sizeof(ndev->name), "%s", cus_ifname);
+#endif
 
 	priv->ref_clk = devm_clk_get_optional(dev, "ref");
 	if (IS_ERR(priv->ref_clk)) {

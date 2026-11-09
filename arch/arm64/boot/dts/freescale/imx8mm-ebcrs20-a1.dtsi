@@ -8,6 +8,7 @@
 #include <dt-bindings/phy/phy-imx8-pcie.h>
 #include <dt-bindings/usb/pd.h>
 #include "imx8mm.dtsi"
+#include "imx8mm-ebcrs20-display.dtsi"
 
 / {
 	chosen {
@@ -48,6 +49,7 @@
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		gpio = <&gpio5 5 GPIO_ACTIVE_HIGH>;
+		regulator-enable-ramp-delay = <20000>;
 		enable-active-high;
 		regulator-boot-on;
 	};
@@ -81,6 +83,11 @@
 
 &A53_3 {
 	cpu-supply = <&buck2_reg>;
+};
+
+
+&ddrc {
+	status = "disabled";
 };
 
 &fec1 {
@@ -443,6 +450,10 @@
 	status = "okay";
 };
 
+&usbphynop1 {
+	wakeup-source;
+};
+
 &usbotg1 {
 	dr_mode = "host";
 	status = "okay";
@@ -462,22 +473,6 @@
 	status = "okay";
 };
 
-&vpu_g1 {
-	status = "okay";
-};
-
-&vpu_g2 {
-	status = "okay";
-};
-
-&vpu_h1 {
-	status = "okay";
-};
-
-&vpu_v4l2 {
-	status = "okay";
-};
-
 &wdog1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_wdog>;
@@ -485,8 +480,17 @@
 	status = "disabled";
 };
 
-&imx8_gpu_ss {
-	status = "okay";
+&pgc_gpu {
+	assigned-clocks = <&clk IMX8MM_CLK_GPU_AXI>,
+			 <&clk IMX8MM_CLK_GPU_AHB>;
+	assigned-clock-parents = <&clk IMX8MM_SYS_PLL1_800M>,
+				 <&clk IMX8MM_SYS_PLL1_800M>;
+	assigned-clock-rates = <800000000>, <400000000>;
+	/delete-property/ power-domains;
+};
+
+&pgc_gpumix {
+	status = "disabled";
 };
 
 &iomuxc {

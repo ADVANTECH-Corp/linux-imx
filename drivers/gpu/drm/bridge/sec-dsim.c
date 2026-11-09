@@ -275,6 +275,15 @@
 #define conn_to_sec_mipi_dsim(conn)		\
 	container_of(conn, struct sec_mipi_dsim, connector)
 
+#ifdef CONFIG_ARCH_ADVANTECH
+extern void enable_lcd_vdd_en(void);
+extern void enable_bridge_stdy_en(void);
+extern void disable_bridge_stdy_en(void);
+extern void disable_lcd_vdd_en(void);
+//extern void enable_ldb_bkl_vcc(void);
+//extern void enable_ldb_bkl_pwm(void);
+#endif
+
 /* used for CEA standard modes */
 struct dsim_hblank_par {
 	char *name;		/* drm display mode name */
@@ -301,6 +310,9 @@ struct sec_mipi_dsim {
 	struct drm_bridge *next;
 	struct drm_panel *panel;
 	struct device *dev;
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct device_link *panel_link;
+#endif
 
 	void __iomem *base;
 
@@ -1344,6 +1356,11 @@ static void sec_mipi_dsim_bridge_atomic_enable(struct drm_bridge *bridge,
 	 * already been enabled. So the dsim can be configed here
 	 */
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	enable_bridge_stdy_en();
+	enable_lcd_vdd_en();
+#endif
+
 	crtc = sec_mipi_dsim_get_new_crtc(dsim, state);
 	if (!crtc) {
 		dev_err(dsim->dev, "bridge is enabling without CRTC\n");
@@ -1454,6 +1471,11 @@ disable:
 	drm_panel_unprepare(dsim->panel);
 
 	dsim->enabled = false;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	disable_lcd_vdd_en();
+	disable_bridge_stdy_en();
+#endif
 }
 
 static void sec_mipi_dsim_bridge_mode_set(struct drm_bridge *bridge,
@@ -2066,6 +2088,13 @@ int sec_mipi_dsim_bind(struct device *dev, struct device *master, void *data,
 
 panel:
 	if (dsim->panel) {
+#ifdef CONFIG_ARCH_ADVANTECH
+		dsim->panel_link = device_link_add(master, dsim->panel->dev,
+						   DL_FLAG_STATELESS |
+						   DL_FLAG_PM_RUNTIME);
+		if (!dsim->panel_link)
+			dev_warn(dev, "Failed to create device link to panel\n");
+#endif
 		/* A panel has been attached */
 		connector = &dsim->connector;
 
@@ -2100,6 +2129,13 @@ EXPORT_SYMBOL(sec_mipi_dsim_bind);
 void sec_mipi_dsim_unbind(struct device *dev, struct device *master, void *data)
 {
 	struct sec_mipi_dsim *dsim = dev_get_drvdata(dev);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (dsim->panel_link) {
+		device_link_del(dsim->panel_link);
+		dsim->panel_link = NULL;
+	}
+#endif
 
 	if (dsim->panel)
 		drm_connector_cleanup(&dsim->connector);

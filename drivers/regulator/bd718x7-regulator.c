@@ -45,7 +45,26 @@
 #define BD71837_LDO5_STARTUP_TIME  310
 #define BD71837_LDO6_STARTUP_TIME  400
 #define BD71837_LDO7_STARTUP_TIME  530
+#ifdef CONFIG_ARCH_ADVANTECH
+static struct regmap *suspend_regmap;
+static int bd718xx_suspend(struct device *dev)
+{
+			if(suspend_regmap)
+				return regmap_update_bits(suspend_regmap, BD718XX_REG_2ND_NODVS_BUCK_CTRL, 0x03, 0x02);
+			else
+                       return 0;
+               }
 
+static int bd718xx_resume(struct device *dev)
+{
+		if(suspend_regmap) {
+        	regmap_update_bits(suspend_regmap, BD718XX_REG_2ND_NODVS_BUCK_CTRL, 0x03, 0x00);
+			//msleep(10);
+}
+
+               return 0;
+}
+#endif
 /*
  * BD718(37/47/50) have two "enable control modes". ON/OFF can either be
  * controlled by software - or by PMIC internal HW state machine. Whether
@@ -1735,7 +1754,9 @@ static int bd718xx_probe(struct platform_device *pdev)
 
 		dev_dbg(&pdev->dev, "Changed all resets from SVNS to READY\n");
 	}
-
+#ifdef CONFIG_ARCH_ADVANTECH
+	suspend_regmap = regmap;
+#endif
 	config.dev = pdev->dev.parent;
 	config.regmap = regmap;
 	/*
@@ -1814,7 +1835,13 @@ static int bd718xx_probe(struct platform_device *pdev)
 
 	return err;
 }
-
+#ifdef CONFIG_ARCH_ADVANTECH
+static const struct dev_pm_ops bd718xx_pm_ops = {
+	//SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(bd718xx_suspend, bd718xx_resume)
+    //.resume_early = bd718xx_resume,
+	SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(bd718xx_suspend, bd718xx_resume)
+};
+#endif
 static const struct platform_device_id bd718x7_pmic_id[] = {
 	{ "bd71837-pmic", ROHM_CHIP_TYPE_BD71837 },
 	{ "bd71847-pmic", ROHM_CHIP_TYPE_BD71847 },
@@ -1826,12 +1853,30 @@ static struct platform_driver bd718xx_regulator = {
 	.driver = {
 		.name = "bd718xx-pmic",
 		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
+#ifdef CONFIG_ARCH_ADVANTECH
+		.pm = &bd718xx_pm_ops,
+#endif
 	},
 	.probe = bd718xx_probe,
 	.id_table = bd718x7_pmic_id,
 };
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int __init bd718xx_regulator_init(void)
+{
+    return platform_driver_register(&bd718xx_regulator);
+}
+
+static void __exit bd718xx_regulator_exit(void)
+{
+    platform_driver_unregister(&bd718xx_regulator);
+}
+
+subsys_initcall(bd718xx_regulator_init);
+module_exit(bd718xx_regulator_exit);
+#else
 module_platform_driver(bd718xx_regulator);
+#endif
 
 MODULE_AUTHOR("Matti Vaittinen <matti.vaittinen@fi.rohmeurope.com>");
 MODULE_DESCRIPTION("BD71837/BD71847 voltage regulator driver");

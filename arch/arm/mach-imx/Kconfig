@@ -15,6 +15,9 @@ menuconfig ARCH_MXC
 
 if ARCH_MXC
 
+config ARCH_ADVANTECH
+	bool "Support Advantech board"
+
 config MXC_TZIC
 	bool
 
