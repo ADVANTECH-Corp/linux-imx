@@ -29,6 +29,22 @@
 		post-power-on-delay-ms = <100>;
 	};
 
+	reg_vmmc_wifi: regulator-vmmc-wifi {
+        compatible = "regulator-fixed";
+        regulator-name = "vmmc_wifi";
+        regulator-min-microvolt = <3300000>;
+        regulator-max-microvolt = <3300000>;
+        regulator-always-on;
+    };
+
+    reg_vqmmc_wifi: regulator-vqmmc-wifi {
+        compatible = "regulator-fixed";
+        regulator-name = "vqmmc_wifi";
+        regulator-min-microvolt = <1800000>;
+        regulator-max-microvolt = <1800000>;
+        regulator-always-on;
+    };
+
 	backlight0: backlight@0 {
         compatible = "pwm-backlight";
         pwms = <&pwm4 0 1000000 0>;
@@ -265,6 +281,8 @@
 	keep-power-in-suspend;
 	wifi-pwr-en-gpios = <&gpio4 1 GPIO_ACTIVE_HIGH>;
 	wifi-pdn-gpios = <&gpio2 7 GPIO_ACTIVE_HIGH>;
+	vmmc-supply = <&reg_vmmc_wifi>;
+	vqmmc-supply = <&reg_vqmmc_wifi>;
 
 	status = "okay";
 
