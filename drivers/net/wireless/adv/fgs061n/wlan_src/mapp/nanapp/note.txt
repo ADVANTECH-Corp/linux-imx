@@ -1,0 +1,53 @@
+Nanapp has a dependency on OpenSSL. There are 4 scenarios identified, which handle this OpenSSL dependency:
+
+1) Compiling nanapp for U16 i.e. x86 platform:
+	- Nanapp compilation will be skipped if OpenSSL is not installed on the U16 machine where build is triggered.
+	- A warning will be generated in this scenario.
+	- apt install libssl -> This command can help resolve the warning and allow nanapp build.
+
+2) Compiling nanapp for iMX Android:
+	- This is not supported at the moment, due to unavailibility of OpenSSL in iMX android toolchain.
+	- A warning will be generated and nanapp build would be skipped.
+
+3) Compiling nanapp for iMX Linux:
+	- OpenSSL support is available in full toolchain for iMX Linux from EP team. Nanapp will be compiled successfully.
+	- OpenSSL support is unavailable in trimmed toolchain for iMX Linux from EP team. Nanapp compilation will fail.
+	- Special trimmed toolchain is installed on ATEB build servers and docker images, where OpenSSL library and header
+	  files are copied from full toolchain to trimmed toolchain (Meet Patel). Nanapp compilation will be successful in this case.
+
+4) Compiling nanapp for customer's target (non-iMX) ARM platform:
+	- OpenSSL may or may not be supported by the target platform's toolchain.
+	- If support unavailable, customer has to clone OpenSSL repo in /opt, checkout to the OpenSSL version tag which is available
+	  on the target platform, compile it using target platform's toolchain, then compile nanapp.
+	- Nanapp Makefile will search for libssl and libcrypto libraries and header files in /opt/openssl/, if toolchain does not support
+	  OpenSSL.
+
+
+Steps to compile OpenSSL for non-iMX platform: (This is with reference to trimmed iMX toolchain. Config and steps may vary for customer target platform)
+
+1) Check OpenSSL version on target platform:
+	$ openssl version
+	OpenSSL 3.1.4 24 Oct 2023 (Library: OpenSSL 3.1.4 24 Oct 2023)
+
+2) On Development machine, clone OpenSSL and checkout to above version tag:
+	$ cd /opt/
+	$ git clone https://github.com/openssl/openssl.git --branch openssl-3.1.4 --depth 1
+	$ cd openssl
+
+3) Run Configure OpenSSL:
+	$ export CROSS_COMPILE=aarch64-poky-linux-
+	$ ./Configure linux-aarch64 --cross-compile-prefix=$CROSS_COMPILE shared enable-ktls
+
+4) Add toolchain and target specific headers to PATH variable:
+	$ PATH=$PATH:/opt/fsl-imx-internal-xwayland/6.6-scarthgap/sysroots/x86_64-pokysdk-linux/usr/bin/aarch64-poky-linux/		//For iMX 6.6.23 toolchain
+	$ PATH=$PATH:/opt/fsl-imx-internal-xwayland/6.6-scarthgap/sysroots/x86_64-pokysdk-linux/usr/lib/aarch64-poky-linux/gcc/aarch64-poky-linux/13.2.0/include
+
+5) Add target sysroot from toolchain path to CFLAGS in Makefile, as shown in diff below:
+	  CNF_CPPFLAGS=-DOPENSSL_BUILDING_OPENSSL -DNDEBUG
+	- CNF_CFLAGS=-pthread
+	+ CNF_CFLAGS=-pthread --sysroot=/opt/fsl-imx-internal-xwayland/6.6-scarthgap/sysroots/armv8a-poky-linux
+	  CNF_LDFLAGS=
+	  CNF_EX_LIBS=-ldl -pthread
+
+6) Compile
+	$ make
