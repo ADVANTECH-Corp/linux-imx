@@ -118,30 +118,30 @@ static void rtl8211f_phy_fixup(struct phy_device *dev)
 	//msleep(200);
 	phy_write(dev, 0x1f, 0x0d04);
 	/*PHY LED OK*/
-	phy_write(dev, 0x10, 0xa050);
+	phy_write(dev, 0x10, 0x8910);
 	phy_write(dev, 0x11, 0x0000);
 	phy_write(dev, 0x1f, 0x0000);
 
-        if (of_property_read_bool(node, "ssc-enable")) {
-                dev_info(&dev->mdio.dev, "enable ssc\n");
-                /* Enable rxc ssc */
-                phy_write(dev, 0x1f, 0x0c44);
-                phy_write(dev, 0x13, 0x5f00);
-                phy_write(dev, 0x1f, 0x0000);
-                phy_write(dev, 0x00, 0x9200);
+	if (of_property_read_bool(node, "ssc-enable")) {
+		dev_info(&dev->mdio.dev, "enable ssc\n");
+		/* Enable rxc ssc */
+		phy_write(dev, 0x1f, 0x0c44);
+		phy_write(dev, 0x13, 0x5f00);
+		phy_write(dev, 0x1f, 0x0000);
+		phy_write(dev, 0x00, 0x9200);
 
-                /* Enable system clk ssc */
-                phy_write(dev, 0x1f, 0x0c44);
-                phy_write(dev, 0x17, 0x4f00);
-                phy_write(dev, 0x1f, 0x0000);
-                phy_write(dev, 0x00, 0x9200);
+		/* Enable system clk ssc */
+		phy_write(dev, 0x1f, 0x0c44);
+		phy_write(dev, 0x17, 0x4f00);
+		phy_write(dev, 0x1f, 0x0000);
+		phy_write(dev, 0x00, 0x9200);
 
-                /* clk_out disable */
-                phy_write(dev, 0x1f, 0x0a43);
-                phy_write(dev, 0x19, 0x0862);
-                phy_write(dev, 0x1f, 0x0000);
-                phy_write(dev, 0x00, 0x9200);
-        }
+		/* clk_out disable */
+		phy_write(dev, 0x1f, 0x0a43);
+		phy_write(dev, 0x19, 0x0862);
+		phy_write(dev, 0x1f, 0x0000);
+		phy_write(dev, 0x00, 0x9200);
+	}
 }
 #endif
 
