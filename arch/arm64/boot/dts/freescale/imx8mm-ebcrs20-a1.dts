@@ -61,30 +61,34 @@
 		simple-audio-card,format = "i2s";
 		simple-audio-card,name = "nxp,rt5640-codec";
 		simple-audio-card,mclk-fs = <512>;
-		// simple-audio-card,mclk-fs = <256>;
+		simple-audio-card,bitclock-master = <&dailink0_master>;
+		simple-audio-card,frame-master = <&dailink0_master>;
 		status = "okay";
 
 		simple-audio-card,widgets =
 			"Microphone", "Microphone Jack",
-			"Headphone", "Headphone Jack";
+			"Headphone", "Headphone Jack",
+			"Line", "Line Out";
 		simple-audio-card,routing =
 			"IN1P", "Microphone Jack",
 			"Microphone Jack", "MICBIAS1",
 			"Headphone Jack", "HPOL",
-			"Headphone Jack", "HPOR";
+			"Headphone Jack", "HPOR",
+			"Line Out", "LOUTL",
+			"Line Out", "LOUTR";
 
-		simple-audio-card,cpu {
+		dailink0_master: simple-audio-card,cpu {
 			sound-dai = <&sai1>;
-			bitclock-master;
-			frame-master;
-			/* BCLK = rate * 2 * 32, so 48k/24bit stays even-divisible from mclk-fs=512 */
 			dai-tdm-slot-num = <2>;
 			dai-tdm-slot-width = <32>;
 		};
+
 		simple-audio-card,codec {
 			sound-dai = <&rt5640_a0>;
 		};
 	};
+
+
 
 	misc-adv-gpio {
 		compatible = "misc-adv-gpio";
