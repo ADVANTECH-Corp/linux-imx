@@ -189,7 +189,7 @@ static void rtl8211f_phy_fixup(struct phy_device *dev)
 	//msleep(200);
 	phy_write(dev, 0x1f, 0x0d04);
 	/*PHY LED OK*/
-	phy_write(dev, 0x10, 0xa050);
+	phy_write(dev, 0x10, 0x8910);
 	phy_write(dev, 0x11, 0x0000);
 	phy_write(dev, 0x1f, 0x0000);
 
