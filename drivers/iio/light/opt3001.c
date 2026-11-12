@@ -933,6 +933,14 @@ static int opt3001_suspend(struct device *dev)
 
 	return 0;
 }
+
+static void opt3001_shutdown(struct i2c_client *client)
+{
+	struct iio_dev *iio = i2c_get_clientdata(client);
+	struct opt3001 *opt = iio_priv(iio);
+
+	cancel_delayed_work_sync(&opt->light_work);
+}
 #endif
 
 static const struct i2c_device_id opt3001_id[] = {
@@ -958,6 +966,9 @@ static struct i2c_driver opt3001_driver = {
 	.probe = opt3001_probe,
 	.remove = opt3001_remove,
 	.id_table = opt3001_id,
+#ifdef CONFIG_ARCH_ADVANTECH
+	.shutdown = opt3001_shutdown,
+#endif
 
 	.driver = {
 		.name = "opt3001",
