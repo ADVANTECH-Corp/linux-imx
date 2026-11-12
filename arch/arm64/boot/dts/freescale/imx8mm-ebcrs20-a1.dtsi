@@ -153,7 +153,7 @@
 		regulators {
 			buck1_reg: BUCK1 {
 				regulator-name = "BUCK1";
-				regulator-min-microvolt = <700000>;
+				regulator-min-microvolt = <805000>;
 				regulator-max-microvolt = <900000>;
 				regulator-boot-on;
 				regulator-always-on;
@@ -162,8 +162,8 @@
 
 			buck2_reg: BUCK2 {
 				regulator-name = "BUCK2";
-				regulator-min-microvolt = <700000>;
-				regulator-max-microvolt = <1100000>;
+				regulator-min-microvolt = <805000>;
+				regulator-max-microvolt = <1000000>;
 				regulator-boot-on;
 				regulator-always-on;
 				regulator-ramp-delay = <1250>;
@@ -174,8 +174,8 @@
 			buck3_reg: BUCK3 {
 				// BUCK5 in datasheet
 				regulator-name = "BUCK3";
-				regulator-min-microvolt = <700000>;
-				regulator-max-microvolt = <1100000>;
+				regulator-min-microvolt = <805000>;
+				regulator-max-microvolt = <1000000>;
 				regulator-boot-on;
 				regulator-always-on;
 			};
@@ -284,8 +284,8 @@
 		 reg= <0x2e>;
 		 pinctrl-names = "default";
 		 pinctrl-0 = <&pinctrl_tpm>;
-		 interrupt-parent = <&gpio5>;
-		 interrupts = <13 IRQ_TYPE_LEVEL_HIGH>;
+		 //interrupt-parent = <&gpio5>;
+		 //interrupts = <13 IRQ_TYPE_LEVEL_HIGH>;
 		 status = "okay";
 	};
 
