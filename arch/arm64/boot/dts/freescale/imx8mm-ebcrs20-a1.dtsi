@@ -322,8 +322,6 @@
 				#sound-dai-cells = <0>;
 				compatible = "realtek,rt5640";
 				reg = <0x1c>;
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_codec_mute>;
 				clocks = <&clk IMX8MM_CLK_SAI1_ROOT>;
 				clock-names = "mclk";
 				assigned-clocks = <&clk IMX8MM_CLK_SAI1>;
