@@ -63,28 +63,37 @@
         default-enable = <0>;
 	};
 
+	speaker_amp: analog-amplifier {
+		compatible = "simple-audio-amplifier";
+		enable-gpios = <&gpio4 29 GPIO_ACTIVE_HIGH>;
+		sound-name-prefix = "Speaker Amp";
+	};
+
 	rt5640-sound0 {
 		compatible = "simple-audio-card";
 		simple-audio-card,format = "i2s";
 		simple-audio-card,name = "nxp,rt5640-codec";
 		simple-audio-card,mclk-fs = <512>;
-		pinctrl-0 = <&pinctrl_codec_mute>;
-		simple-audio-card,pa-gpios = <&gpio4 29 GPIO_ACTIVE_LOW>;
 		simple-audio-card,bitclock-master = <&dailink0_master>;
 		simple-audio-card,frame-master = <&dailink0_master>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_codec_mute>;
+		simple-audio-card,aux-devs = <&speaker_amp>;
 		status = "okay";
 
 		simple-audio-card,widgets =
 			"Microphone", "Microphone Jack",
 			"Headphone", "Headphone Jack",
-			"Line", "Line Out";
+			"Speaker", "Speaker";
 		simple-audio-card,routing =
 			"IN1P", "Microphone Jack",
 			"Microphone Jack", "MICBIAS1",
 			"Headphone Jack", "HPOL",
 			"Headphone Jack", "HPOR",
-			"Line Out", "LOUTL",
-			"Line Out", "LOUTR";
+			"Speaker Amp INL", "LOUTL",
+			"Speaker Amp INR", "LOUTR",
+			"Speaker", "Speaker Amp OUTL",
+			"Speaker", "Speaker Amp OUTR";
 
 		dailink0_master: simple-audio-card,cpu {
 			sound-dai = <&sai1>;
@@ -96,6 +105,7 @@
 			sound-dai = <&rt5640_a0>;
 		};
 	};
+
 
 
 

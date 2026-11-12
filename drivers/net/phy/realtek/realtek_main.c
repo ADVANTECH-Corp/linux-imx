@@ -828,6 +828,11 @@ static int rtl8211f_resume(struct phy_device *phydev)
 	if (ret < 0)
 		return ret;
 
+	/* Re-apply custom PHY & LED register configuration after resume */
+	ret = rtl8211f_config_init(phydev);
+	if (ret < 0)
+		return ret;
+
 	/* If the device was programmed for a PME event, restore the interrupt
 	 * enable so phylib can receive link state interrupts.
 	 */
@@ -836,6 +841,7 @@ static int rtl8211f_resume(struct phy_device *phydev)
 
 	return ret;
 }
+
 
 static int rtl8211x_led_hw_is_supported(struct phy_device *phydev, u8 index,
 					unsigned long rules)

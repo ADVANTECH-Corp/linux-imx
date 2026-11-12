@@ -642,7 +642,7 @@
 
 	pinctrl_codec_mute: codec_mute  {
 		fsl,pins = <
-			MX8MM_IOMUXC_SAI3_RXC_GPIO4_IO29	0x116	/* AMP_MUTE */
+			MX8MM_IOMUXC_SAI3_RXC_GPIO4_IO29	0x106	/* AMP_MUTE */
 		>;
 	};
 
