@@ -329,7 +329,7 @@ static int tpm_tis_adv_resume(struct device *dev)
 	u8 access;
     int ret;
 	unsigned long stop;
-	stop = jiffies + msecs_to_jiffies(20000);
+	stop = jiffies + msecs_to_jiffies(5000);
 
 	do {
         ret = tpm_tis_i2c_read_bytes(priv, TPM_I2C_ACCESS,
@@ -450,7 +450,24 @@ static struct i2c_driver tpm_tis_i2c_driver = {
 	.remove = tpm_tis_i2c_remove,
 	.id_table = tpm_tis_i2c_id,
 };
+#ifndef CONFIG_ARCH_ADVANTECH
 module_i2c_driver(tpm_tis_i2c_driver);
+#else
+static int __init tpm_tis_i2c_init(void)
+{
+    return i2c_add_driver(&tpm_tis_i2c_driver);
+}
+/* register after i2c postcore initcall and before
+ * subsys initcalls that may rely on these GPIOs
+ */
+late_initcall(tpm_tis_i2c_init);
+
+static void __exit tpm_tis_i2c_exit(void)
+{
+    i2c_del_driver(&tpm_tis_i2c_driver);
+}
+module_exit(tpm_tis_i2c_exit);
+#endif
 
 MODULE_DESCRIPTION("TPM Driver for native I2C access");
 MODULE_LICENSE("GPL");
