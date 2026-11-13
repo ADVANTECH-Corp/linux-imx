@@ -165,6 +165,8 @@ static const struct opt3001_scale opt3001_scales[] = {
 };
 
 #ifdef CONFIG_ARCH_ADVANTECH
+static struct opt3001 *g_opt3001_dev = NULL;
+
 static int opt3001_get_lux(struct opt3001 *opt, int *val, int *val2);
 static void opt3001_light_work(struct work_struct *work)
 {
@@ -856,6 +858,7 @@ static int opt3001_probe(struct i2c_client *client)
 	}
 
 #ifdef CONFIG_ARCH_ADVANTECH
+	g_opt3001_dev = opt;
 	opt->bd = backlight_device_get_by_type(BACKLIGHT_RAW);
 	if (!opt->bd)
         return -ENODEV;
@@ -881,6 +884,7 @@ static void opt3001_remove(struct i2c_client *client)
 
 #ifdef CONFIG_ARCH_ADVANTECH
 	cancel_delayed_work_sync(&opt->light_work);
+	g_opt3001_dev = NULL;
 #endif
 
 	if (opt->use_irq)
@@ -905,42 +909,22 @@ static void opt3001_remove(struct i2c_client *client)
 }
 
 #ifdef CONFIG_ARCH_ADVANTECH
-static int opt3001_resume(struct device *dev)
+void opt3001_enable_work(void)
 {
-	struct opt3001 *opt = dev_get_drvdata(dev);
-
-	if (!opt) {
-		dev_err(dev, "Failed to get driver data in resume\n");
-		return -ENODEV;
+	if (g_opt3001_dev) {
+        opt3001_configure(g_opt3001_dev);
+        schedule_delayed_work(&g_opt3001_dev->light_work, 3*HZ);
 	}
-
-	opt3001_configure(opt);
-	schedule_delayed_work(&opt->light_work, 3*HZ);
-
-	return 0;
 }
+EXPORT_SYMBOL_GPL(opt3001_enable_work);
 
-static int opt3001_suspend(struct device *dev)
+void opt3001_cancel_work(void)
 {
-	struct opt3001 *opt = dev_get_drvdata(dev);
-
-	if (!opt) {
-		dev_err(dev, "Failed to get driver data in suspend\n");
-		return -ENODEV;
+	if (g_opt3001_dev) {
+		cancel_delayed_work_sync(&g_opt3001_dev->light_work);
 	}
-
-	cancel_delayed_work_sync(&opt->light_work);
-
-	return 0;
 }
-
-static void opt3001_shutdown(struct i2c_client *client)
-{
-	struct iio_dev *iio = i2c_get_clientdata(client);
-	struct opt3001 *opt = iio_priv(iio);
-
-	cancel_delayed_work_sync(&opt->light_work);
-}
+EXPORT_SYMBOL_GPL(opt3001_cancel_work);
 #endif
 
 static const struct i2c_device_id opt3001_id[] = {
@@ -955,27 +939,14 @@ static const struct of_device_id opt3001_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, opt3001_of_match);
 
-#ifdef CONFIG_ARCH_ADVANTECH
-static const struct dev_pm_ops opt3001_pm_ops = {
-	.resume = opt3001_resume,
-	.suspend = opt3001_suspend,
-};
-#endif
-
 static struct i2c_driver opt3001_driver = {
 	.probe = opt3001_probe,
 	.remove = opt3001_remove,
 	.id_table = opt3001_id,
-#ifdef CONFIG_ARCH_ADVANTECH
-	.shutdown = opt3001_shutdown,
-#endif
 
 	.driver = {
 		.name = "opt3001",
 		.of_match_table = opt3001_of_match,
-#ifdef CONFIG_ARCH_ADVANTECH
-		.pm = &opt3001_pm_ops,
-#endif
 	},
 };
 

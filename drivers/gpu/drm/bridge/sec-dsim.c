@@ -38,6 +38,10 @@
 #include <video/videomode.h>
 #include <video/mipi_display.h>
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/sched.h>
+#endif
+
 /* dsim registers */
 #define DSIM_VERSION			0x00
 #define DSIM_STATUS			0x04
@@ -277,6 +281,7 @@
 
 #ifdef CONFIG_ARCH_ADVANTECH
 extern void enable_lcd_vdd_en(void);
+extern void enable_ldb_signal(void);
 extern void enable_bridge_stdy_en(void);
 extern void disable_bridge_stdy_en(void);
 extern void disable_lcd_vdd_en(void);
@@ -1349,8 +1354,11 @@ sec_mipi_dsim_bridge_atomic_enable(struct drm_bridge *bridge,
 	 */
 
 #ifdef CONFIG_ARCH_ADVANTECH
-	enable_bridge_stdy_en();
-	enable_lcd_vdd_en();
+	if (strcmp(current->comm, "systemd") == 0 ||
+	    strcmp(current->comm, "seatd") == 0) {
+		dev_info(dsim->dev, "%s triggered enable, likely shutdown, ignore\n", current->comm);
+		return;
+	}
 #endif
 
 	crtc = sec_mipi_dsim_get_new_crtc(dsim, old_state);
@@ -1367,6 +1375,12 @@ sec_mipi_dsim_bridge_atomic_enable(struct drm_bridge *bridge,
 
 	if (dsim->enabled)
 		return;
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	enable_bridge_stdy_en();
+	enable_lcd_vdd_en();
+	enable_ldb_signal();
+#endif
 
 	/* config main display mode */
 	sec_mipi_dsim_set_main_mode(dsim);

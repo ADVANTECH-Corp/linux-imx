@@ -231,7 +231,7 @@
 	bklt-vcc-enable-gpios = <&gpio5 22 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 	lvds-bkl-delay-time = <150>;
-	lvds-vcc-delay-time = <60>;
+	lvds-vcc-delay-time = <30>;
 };
 
 &snvs_rtc {

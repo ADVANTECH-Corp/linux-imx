@@ -44,6 +44,11 @@
 
 #ifdef CONFIG_ARCH_ADVANTECH
 #include <video/mipi_display.h>
+#include <linux/backlight.h>
+
+extern void opt3001_enable_work(void);
+extern void opt3001_cancel_work(void);
+
 struct dsi_ctrl_hdr {
 	u8 dtype;	/* data type */
 	u8 wait;	/* ms */
@@ -180,17 +185,10 @@ struct panel_simple {
 	struct device *dev;
 	struct dsi_panel_cmds *on_cmds;
 	struct dsi_panel_cmds *off_cmds;
+	int saved_brightness;
 	#endif
 
 };
-
-#if defined(CONFIG_ARCH_ADVANTECH)
-bool blank_flag = false;
-extern void enable_ldb_bkl_vcc(void);
-extern void enable_ldb_bkl_pwm(void);
-extern void disable_ldb_bkl_pwm(void);
-extern void disable_ldb_bkl_vcc(void);
-#endif
 
 static inline struct panel_simple *to_panel_simple(struct drm_panel *panel)
 {
@@ -443,10 +441,18 @@ static int panel_simple_disable(struct drm_panel *panel)
 
 #if defined(CONFIG_ARCH_ADVANTECH)
 	int err;
-	if (blank_flag) {
-		disable_ldb_bkl_pwm();
-		disable_ldb_bkl_vcc();
-		blank_flag = false;
+
+	opt3001_cancel_work();
+
+	// turn off backlight
+	struct backlight_device *bd = devm_of_find_backlight(panel->dev);
+	if (!IS_ERR_OR_NULL(bd)) {
+		p->saved_brightness = bd->props.brightness;
+		if (p->saved_brightness == 0)
+			p->saved_brightness = 10;
+		backlight_device_set_brightness(bd, 0);
+		dev_info(panel->dev, "Saved backlight %d, turned off\n",
+			 p->saved_brightness);
 	}
 
 	if (p->off_cmds) {
@@ -555,14 +561,14 @@ static int panel_simple_enable(struct drm_panel *panel)
 		if (err)
 			dev_err(p->dev, "failed to send on cmds\n");
 	}
-#endif
 
-#if defined(CONFIG_ARCH_ADVANTECH)
-	if (!blank_flag) {
-		enable_ldb_bkl_vcc();
-		enable_ldb_bkl_pwm();
-		blank_flag = true;
+	struct backlight_device *bd = devm_of_find_backlight(panel->dev);
+	if (!IS_ERR_OR_NULL(bd) && p->saved_brightness > 0) {
+		backlight_device_set_brightness(bd, p->saved_brightness);
+		dev_info(panel->dev, "Restored backlight to %d\n",
+			 p->saved_brightness);
 	}
+	opt3001_enable_work();
 #endif
 
 	return 0;
