@@ -44,12 +44,26 @@ static void *vb2_vmalloc_alloc(struct vb2_buffer *vb, struct device *dev,
 		return ERR_PTR(-ENOMEM);
 
 	buf->size = size;
+#ifdef CONFIG_ARCH_ADVANTECH
+	gfp_t gfp_flags = GFP_KERNEL | __GFP_ZERO | GFP_DMA32;
+	buf->vaddr = __vmalloc(buf->size, gfp_flags);
+#else
 	buf->vaddr = vmalloc_user(buf->size);
+#endif
 	if (!buf->vaddr) {
 		pr_debug("vmalloc of size %ld failed\n", buf->size);
 		kfree(buf);
 		return ERR_PTR(-ENOMEM);
 	}
+#ifdef CONFIG_ARCH_ADVANTECH
+	{
+		struct vm_struct *area = find_vm_area(buf->vaddr);
+		if (area)
+			area->flags |= VM_USERMAP;
+
+		pr_debug("[VB2-VMALLOC-FIX] Allocated size=%lu KB, Phys Page0=0x%llx\n",buf->size / 1024,(unsigned long long)page_to_phys(vmalloc_to_page(buf->vaddr)));
+	}
+#endif
 
 	buf->dma_dir = vb->vb2_queue->dma_dir;
 	buf->handler.refcount = &buf->refcount;
