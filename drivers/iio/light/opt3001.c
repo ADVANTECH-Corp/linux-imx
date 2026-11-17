@@ -135,6 +135,7 @@ struct opt3001 {
 	u32 max_brightness;
 	struct delayed_work     light_work;
 	struct backlight_device *bd;
+	bool need_reconfig;
 #endif
 };
 
@@ -242,6 +243,7 @@ static const struct opt3001_scale opt3002_scales[] = {
 
 #ifdef CONFIG_ARCH_ADVANTECH
 static int opt3001_get_processed(struct opt3001 *opt, int *val, int *val2);
+static int opt3001_configure(struct opt3001 *opt);
 static void opt3001_light_work(struct work_struct *work)
 {
     struct opt3001 *opt =
@@ -250,6 +252,13 @@ static void opt3001_light_work(struct work_struct *work)
 	u32 brightness,old,gap;
 	unsigned long timeout = 2*HZ;
 	int i;
+
+	if (opt->need_reconfig) {
+		if (opt3001_configure(opt) == 0)
+			opt->need_reconfig = false;
+		else
+			goto retry;
+	}
 
 	if(IIO_VAL_INT_PLUS_MICRO != opt3001_get_processed(opt,&retval,&retvall))
 		goto retry;
@@ -980,7 +989,8 @@ static void opt3001_remove(struct i2c_client *client)
 	u16 reg;
 
 #ifdef CONFIG_ARCH_ADVANTECH
-	cancel_delayed_work_sync(&opt->light_work);
+	if (opt->light_work.work.func)
+		cancel_delayed_work_sync(&opt->light_work);
 #endif
 
 	if (opt->use_irq)
@@ -1036,7 +1046,7 @@ static int opt3001_resume(struct device *dev)
 		return -ENODEV;
 	}
 
-	opt3001_configure(opt);
+	opt->need_reconfig = true;
 	schedule_delayed_work(&opt->light_work, 3*HZ);
 
 	return 0;
@@ -1051,17 +1061,21 @@ static int opt3001_suspend(struct device *dev)
 		return -ENODEV;
 	}
 
-	cancel_delayed_work_sync(&opt->light_work);
+	if (opt->light_work.work.func)
+		cancel_delayed_work_sync(&opt->light_work);
 
 	return 0;
 }
 
 static void opt3001_shutdown(struct i2c_client *client)
 {
-	struct iio_dev *iio = i2c_get_clientdata(client);
-	struct opt3001 *opt = iio_priv(iio);
+	struct opt3001 *opt = i2c_get_clientdata(client);
 
-	cancel_delayed_work_sync(&opt->light_work);
+	if (!opt)
+		return;
+
+	if (opt->light_work.work.func)
+		cancel_delayed_work_sync(&opt->light_work);
 }
 #endif
 

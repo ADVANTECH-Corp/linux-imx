@@ -244,13 +244,14 @@ static int adv_wdt_restart(struct watchdog_device *wdog, unsigned long action,
 	struct i2c_client *client = to_i2c_client(wdog->parent);
 	struct adv_wdt_device *wdev = i2c_get_clientdata(client);
 
-	/* set timeout to 1 sec here and expect WDT_EN in restart handler */
+	/* Do not call sleeping i2c_transfer/msleep in atomic restart context;
+	 * timeout (2s) is already armed in adv_wdt_i2c_shutdown(). */
 	gpio_set_value(wdev->gpio_wdt_en, wdev->wdt_en_off);
-	adv_wdt_i2c_set_timeout(client, 1);
-	adv_wdt_ping(wdog);
+	wdev->wdt_ping_status = !wdev->wdt_ping_status;
+	gpio_set_value(wdev->gpio_wdt_ping, wdev->wdt_ping_status);
 
-	/* wait for reset to assert... */
-	mdelay(2000);
+	/* wait for MSP430 hardware watchdog reset to assert... */
+	mdelay(2500);
 
 	return 0;
 }
@@ -384,14 +385,13 @@ static void adv_wdt_i2c_shutdown(struct i2c_client *client)
 {
 	struct adv_wdt_device *wdev = i2c_get_clientdata(client);
 
-	if (test_bit(ADV_WDT_STATUS_STARTED, &wdev->status)) {
-		/* set timeout to 1 sec here and expect WDT_EN in restart handler */
-		gpio_set_value(wdev->gpio_wdt_en, wdev->wdt_en_off);
-		adv_wdt_i2c_set_timeout(client, 1);
-		adv_wdt_ping(&wdev->wdog);
+	/* Unconditionally arm MSP430 watchdog (2s timeout) during device_shutdown
+	 * while I2C controller & IRQs are still active. */
+	adv_wdt_i2c_set_timeout(client, 2);
+	gpio_set_value(wdev->gpio_wdt_en, wdev->wdt_en_off);
+	adv_wdt_ping(&wdev->wdog);
 
-		pr_warn("Device shutdown: Expect reboot!\n");
-	}
+	pr_warn("Device shutdown: MSP430 WDT armed (2s) for hardware reset!\n");
 	clear_bit(ADV_WDT_STATUS_STARTED, &wdev->status);
 }
 

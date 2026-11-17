@@ -33,6 +33,7 @@ struct pwm_bl_data {
 	unsigned int		scale;
 #ifdef CONFIG_ARCH_ADVANTECH
 	unsigned int		dft_enable;
+	bool			    bkl_vdd_enabled;
 #endif
 	unsigned int		post_pwm_on_delay;
 	unsigned int		pwm_off_delay;
@@ -42,6 +43,11 @@ struct pwm_bl_data {
 					int brightness);
 	void			(*exit)(struct device *);
 };
+
+#ifdef CONFIG_ARCH_ADVANTECH
+void enable_ldb_bkl_pwm(void);
+void disable_ldb_bkl_pwm(void);
+#endif
 
 static void pwm_backlight_power_on(struct pwm_bl_data *pb)
 {
@@ -61,6 +67,10 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb)
 
 	gpiod_set_value_cansleep(pb->enable_gpio, 1);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	enable_ldb_bkl_pwm();
+#endif
+
 	pb->enabled = true;
 }
 
@@ -69,6 +79,9 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 	if (!pb->enabled)
 		return;
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	disable_ldb_bkl_pwm();
+#endif
 	gpiod_set_value_cansleep(pb->enable_gpio, 0);
 
 	if (pb->pwm_off_delay)
@@ -224,6 +237,25 @@ void disable_ldb_bkl_pwm(void)
 		mdelay(bklt_en_delay_value);
 	}
 }
+
+static void pwm_backlight_vdd_on(struct pwm_bl_data *pb)
+{
+	if (pb->bkl_vdd_enabled)
+		return;
+
+	enable_ldb_bkl_vcc();
+
+	pb->bkl_vdd_enabled = true;
+}
+
+static void pwm_backlight_vdd_off(struct pwm_bl_data *pb)
+{
+	if (!pb->bkl_vdd_enabled)
+		return;
+
+	disable_ldb_bkl_vcc();
+	pb->bkl_vdd_enabled = false;
+}
 #endif
 
 static int pwm_backlight_update_status(struct backlight_device *bl)
@@ -249,6 +281,9 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
 		pwm_get_state(pb->pwm, &state);
 		state.duty_cycle = compute_duty_cycle(pb, brightness, &state);
 		state.enabled = true;
+	#ifdef CONFIG_ARCH_ADVANTECH
+		pwm_backlight_vdd_on(pb);
+	#endif
 		pwm_apply_might_sleep(pb->pwm, &state);
 
 		pwm_backlight_power_on(pb);
@@ -267,6 +302,9 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
 		 */
 		state.enabled = !pb->power_supply && !pb->enable_gpio;
 		pwm_apply_might_sleep(pb->pwm, &state);
+	#ifdef CONFIG_ARCH_ADVANTECH
+		pwm_backlight_vdd_off(pb);
+	#endif
 	}
 
 	if (pb->notify_after)
