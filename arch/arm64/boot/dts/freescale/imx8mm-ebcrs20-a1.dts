@@ -113,7 +113,8 @@
 		compatible = "misc-adv-gpio";
 		pinctrl-names = "default";
 		pinctrl-0 = <&adv_gpio_pinmux>;
-		timing-interval = <100>;
+		timing-interval = <200>;
+		minipcie-reset-gpios = <&gpio3 24 GPIO_ACTIVE_LOW>;
 		en-gpios = <&gpio4 25 GPIO_ACTIVE_HIGH>,<&gpio4 0 GPIO_ACTIVE_HIGH>,<&gpio2 9 GPIO_ACTIVE_HIGH>;
 		reset-gpios = < >;
 		sleep-gpios = <&gpio5 8 GPIO_ACTIVE_HIGH>,<&gpio3 21 GPIO_ACTIVE_HIGH>,
@@ -122,7 +123,7 @@
 					<&gpio1 11 GPIO_ACTIVE_HIGH>,<&gpio1 1 GPIO_ACTIVE_HIGH>,
 					<&gpio3 20 GPIO_ACTIVE_HIGH>,<&gpio5 7 GPIO_ACTIVE_HIGH>,<&gpio3 19 GPIO_ACTIVE_HIGH>,
 					<&gpio1 6 GPIO_ACTIVE_HIGH>,<&gpio3 22 GPIO_ACTIVE_HIGH>,<&gpio3 23 GPIO_ACTIVE_HIGH>,
-					<&gpio3 24 GPIO_ACTIVE_HIGH>,<&gpio5 25 GPIO_ACTIVE_HIGH>,
+					<&gpio5 25 GPIO_ACTIVE_HIGH>,
 					<&gpio2 11 GPIO_ACTIVE_HIGH>;
 		input-gpios = <&gpio1 12 GPIO_ACTIVE_LOW>,<&gpio1 14 GPIO_ACTIVE_LOW>;
 		dual-gpios = < >;

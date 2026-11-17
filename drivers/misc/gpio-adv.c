@@ -21,7 +21,11 @@
 
 #define MISC_ADV_GPIO_MODNAME		"misc-adv-gpio"
 
-static struct gpio_descs *sleep_gpios;
+struct misc_adv_gpio {
+	struct gpio_descs *sleep_gpios;
+    struct gpio_desc *minipcie_reset_gpio;
+	int timing_interval;
+};
 
 static int pmic_match(struct device *dev, const void *data)
 {
@@ -32,6 +36,23 @@ static struct device *misc_find_pmic_device(void)
     return bus_find_device(&platform_bus_type, NULL, NULL, pmic_match);
 }
 
+static ssize_t minipcie_reset_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+    struct misc_adv_gpio *priv = dev_get_drvdata(dev);
+
+    if (!IS_ERR(priv->minipcie_reset_gpio) && priv->minipcie_reset_gpio)
+    {
+        gpiod_set_value_cansleep(priv->minipcie_reset_gpio, 1);
+
+        msleep(priv->timing_interval);
+
+        gpiod_set_value_cansleep(priv->minipcie_reset_gpio, 0);
+    }
+
+    return count;
+}
+static DEVICE_ATTR(minipcie_reset, S_IWUSR|S_IWGRP, NULL, minipcie_reset_store);
+
 static int misc_adv_gpio_probe(struct platform_device *pdev)
 {
     struct device *pmic_pdev;
@@ -39,13 +60,17 @@ static int misc_adv_gpio_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
     struct device_node *np;
     struct gpio_descs *reset_gpios, *en_gpios, *in_gpios, *dual_gpios;
-    int timing_interval = 50;
+    struct misc_adv_gpio *priv;
     int i;
 
+    priv = devm_kzalloc(dev, sizeof(struct misc_adv_gpio), GFP_KERNEL);
+    if (!priv)
+		return -ENOMEM;
+    
     np = dev->of_node;
 
-    if (of_property_read_u32(np, "timing-interval", &timing_interval))
-        timing_interval = 50;
+    if (of_property_read_u32(np, "timing-interval", &priv->timing_interval))
+        priv->timing_interval = 50;
 
     // input-gpios
     in_gpios = devm_gpiod_get_array_optional(dev, "input", GPIOD_IN);
@@ -71,6 +96,16 @@ static int misc_adv_gpio_probe(struct platform_device *pdev)
             gpiod_direction_output(en_gpios->desc[i], 1);
     }
 
+    priv->sleep_gpios = devm_gpiod_get_array_optional(dev, "sleep", GPIOD_ASIS);
+    if (!IS_ERR(priv->sleep_gpios) && priv->sleep_gpios)
+    {   
+        for (i = 0; i < priv->sleep_gpios->ndescs; i++) {
+            gpiod_direction_output(priv->sleep_gpios->desc[i], 1);
+        }
+    }
+
+    priv->minipcie_reset_gpio = devm_gpiod_get_optional(dev, "minipcie-reset", GPIOD_OUT_HIGH);
+
     // reset-gpios
     reset_gpios = devm_gpiod_get_array_optional(dev, "reset", GPIOD_ASIS);
     if (!IS_ERR(reset_gpios) && reset_gpios)
@@ -78,19 +113,21 @@ static int misc_adv_gpio_probe(struct platform_device *pdev)
         for (i = 0; i < reset_gpios->ndescs; i++)
             gpiod_direction_output(reset_gpios->desc[i], 1);
 
-        msleep(timing_interval);
+        msleep(priv->timing_interval);
 
         for (i = 0; i < reset_gpios->ndescs; i++)
             gpiod_direction_output(reset_gpios->desc[i], 0);
     }
 
-    sleep_gpios = devm_gpiod_get_array_optional(dev, "sleep", GPIOD_ASIS);
-    if (!IS_ERR(sleep_gpios) && sleep_gpios)
-    {   
-        for (i = 0; i < sleep_gpios->ndescs; i++) {
-            gpiod_direction_output(sleep_gpios->desc[i], 1);
-        }
+    if (!IS_ERR(priv->minipcie_reset_gpio) && priv->minipcie_reset_gpio)
+    {
+        if (IS_ERR(reset_gpios) || !reset_gpios)
+            msleep(priv->timing_interval);
+  
+        gpiod_set_value_cansleep(priv->minipcie_reset_gpio, 0);
+        device_create_file(dev, &dev_attr_minipcie_reset);
     }
+    platform_set_drvdata(pdev, priv);
 
     pmic_pdev = misc_find_pmic_device();
     if (!pmic_pdev) {
@@ -110,15 +147,16 @@ static int misc_adv_gpio_probe(struct platform_device *pdev)
 
 static int adv_gpio_suspend_resume(struct device *dev, int mode)
 {
+    struct misc_adv_gpio *priv = dev_get_drvdata(dev);
     int i;
 
-    if (!IS_ERR(sleep_gpios) && sleep_gpios)
+    if (!IS_ERR(priv->sleep_gpios) && priv->sleep_gpios)
     {
-        for (i = 0; i < sleep_gpios->ndescs; i++) {
+        for (i = 0; i < priv->sleep_gpios->ndescs; i++) {
             if(mode)
-                gpiod_direction_output(sleep_gpios->desc[i], 1);
+                gpiod_direction_output(priv->sleep_gpios->desc[i], 1);
             else
-                gpiod_direction_output(sleep_gpios->desc[sleep_gpios->ndescs-1-i], 0);
+                gpiod_direction_output(priv->sleep_gpios->desc[priv->sleep_gpios->ndescs-1-i], 0);
         }
     }
 	return 0;
@@ -126,13 +164,21 @@ static int adv_gpio_suspend_resume(struct device *dev, int mode)
 
 static int misc_adv_gpio_suspend(struct device *dev)
 {
+    struct misc_adv_gpio *priv = dev_get_drvdata(dev);
+
+    if (!IS_ERR(priv->minipcie_reset_gpio) && priv->minipcie_reset_gpio)
+        gpiod_set_value_cansleep(priv->minipcie_reset_gpio, 1);
     adv_gpio_suspend_resume(dev, 0);
     return 0;
 }
 
 static int misc_adv_gpio_resume(struct device *dev)
 {
+    struct misc_adv_gpio *priv = dev_get_drvdata(dev);
+
     adv_gpio_suspend_resume(dev, 1);
+    if (!IS_ERR(priv->minipcie_reset_gpio) && priv->minipcie_reset_gpio)
+        gpiod_set_value_cansleep(priv->minipcie_reset_gpio, 0);
 
     return 0;
 }
