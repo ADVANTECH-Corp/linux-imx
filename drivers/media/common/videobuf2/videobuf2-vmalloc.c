@@ -61,7 +61,7 @@ static void *vb2_vmalloc_alloc(struct vb2_buffer *vb, struct device *dev,
 		if (area)
 			area->flags |= VM_USERMAP;
 
-		pr_debug("[VB2-VMALLOC-FIX] Allocated size=%lu KB, Phys Page0=0x%llx\n",buf->size / 1024,(unsigned long long)page_to_phys(vmalloc_to_page(buf->vaddr)));
+		pr_err("[VB2-VMALLOC-FIX] Allocated size=%lu KB, Phys Page0=0x%llx\n",buf->size / 1024,(unsigned long long)page_to_phys(vmalloc_to_page(buf->vaddr)));
 	}
 #endif
 
