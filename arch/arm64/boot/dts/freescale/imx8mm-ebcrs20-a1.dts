@@ -125,7 +125,7 @@
 					<&gpio1 6 GPIO_ACTIVE_HIGH>,<&gpio3 22 GPIO_ACTIVE_HIGH>,<&gpio3 23 GPIO_ACTIVE_HIGH>,
 					<&gpio5 25 GPIO_ACTIVE_HIGH>,
 					<&gpio2 11 GPIO_ACTIVE_HIGH>;
-		input-gpios = <&gpio1 12 GPIO_ACTIVE_LOW>,<&gpio1 14 GPIO_ACTIVE_LOW>;
+		input-gpios = < >;
 		dual-gpios = < >;
 	};
 
