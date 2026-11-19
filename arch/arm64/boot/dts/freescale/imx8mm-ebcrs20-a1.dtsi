@@ -263,13 +263,13 @@
 	status = "okay";
 
 	wdt@29 {
-		 compatible = "fsl,adv-wdt-i2c";
+		 compatible = "std,msp430-wdt";
 		 pinctrl-names = "default";
 		 pinctrl-0 = <&pinctrl_wdt_en_1 &pinctrl_wdt_ping_1>;
 		 fix-first-comm-issue;
 		 status = "okay";
-		 wdt-en-gpio = <&gpio1 9 GPIO_ACTIVE_HIGH>;
-		 wdt-ping-gpio = <&gpio1 15 GPIO_ACTIVE_HIGH>;
+		 wdt-en = <&gpio1 9 GPIO_ACTIVE_HIGH>;
+		 wdt-ping = <&gpio1 15 GPIO_ACTIVE_HIGH>;
 		 reg = <0x29>;
 	};
 
