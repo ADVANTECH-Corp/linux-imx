@@ -119,6 +119,7 @@ struct gpio_desc *gpio_bklt_vcc_en_desc = NULL;
 struct gpio_desc *gpio_lvds_reset_en_desc = NULL;
 struct gpio_desc *gpio_lvds_stby_en_desc = NULL;
 struct gpio_desc *gpio_lvds_bridge_vcc_desc = NULL;
+struct gpio_desc *gpio_lvds_bridge_vdd_desc = NULL;
 int lvds_vcc_delay_value;
 int lvds_bkl_delay_value;
 int bklt_pwm_delay_value;
@@ -151,8 +152,15 @@ void enable_bridge_stdy_en(void)
 	if (gpio_lvds_stby_en_desc != NULL)
 	{
 		printk(KERN_INFO "[LVDS Sequence]Bridge IC  standby and reset enable\n");
-		if(gpio_lvds_bridge_vcc_desc)
+		if(gpio_lvds_bridge_vcc_desc) {
 			gpiod_set_value_cansleep(gpio_lvds_bridge_vcc_desc, 1);
+			msleep(1);
+		}
+
+		if(gpio_lvds_bridge_vdd_desc) {
+			gpiod_set_value_cansleep(gpio_lvds_bridge_vdd_desc, 1);
+			msleep(1);
+		}
 		gpiod_set_value_cansleep(gpio_lvds_stby_en_desc, 1);
 		msleep(10);
 		if (gpio_lvds_reset_en_desc != NULL)
@@ -170,6 +178,8 @@ void disable_bridge_stdy_en(void)
 			gpiod_set_value_cansleep(gpio_lvds_reset_en_desc, 0);
 		msleep(10);
 		gpiod_set_value_cansleep(gpio_lvds_stby_en_desc, 0);
+		if(gpio_lvds_bridge_vdd_desc)
+			gpiod_set_value_cansleep(gpio_lvds_bridge_vdd_desc, 0);
 		if(gpio_lvds_bridge_vcc_desc)
 			gpiod_set_value_cansleep(gpio_lvds_bridge_vcc_desc, 0);
 	}
@@ -583,6 +593,10 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	gpio_lvds_bridge_vcc_desc = devm_gpiod_get_optional(dev, "lvds-bridge-vcc", GPIOD_OUT_HIGH);
 	if (IS_ERR(gpio_lvds_bridge_vcc_desc))
 		return PTR_ERR(gpio_lvds_bridge_vcc_desc);
+
+	gpio_lvds_bridge_vdd_desc = devm_gpiod_get_optional(dev, "lvds-bridge-vdd", GPIOD_OUT_HIGH);
+	if (IS_ERR(gpio_lvds_bridge_vdd_desc))
+		return PTR_ERR(gpio_lvds_bridge_vdd_desc);
 
 	if (of_find_property(node, "skip-gpios-init", NULL)) {
 		printk("[LVDS] Skip setting GPIOs to default states\n");

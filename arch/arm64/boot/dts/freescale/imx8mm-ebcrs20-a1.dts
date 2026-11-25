@@ -111,8 +111,7 @@
 					<&gpio3 20 GPIO_ACTIVE_HIGH>,<&gpio5 7 GPIO_ACTIVE_HIGH>,<&gpio3 19 GPIO_ACTIVE_HIGH>,
 					<&gpio1 6 GPIO_ACTIVE_HIGH>,<&gpio3 23 GPIO_ACTIVE_HIGH>,
 					<&gpio2 9 GPIO_ACTIVE_HIGH>,<&gpio2 10 GPIO_ACTIVE_HIGH>,
-					<&gpio5 25 GPIO_ACTIVE_HIGH>,
-					<&gpio2 11 GPIO_ACTIVE_HIGH>;
+					<&gpio5 25 GPIO_ACTIVE_HIGH>;
 		input-gpios = <&gpio1 12 GPIO_ACTIVE_LOW>,<&gpio1 14 GPIO_ACTIVE_LOW>;
 		dual-gpios = < >;
 	};
@@ -233,6 +232,7 @@
 	lvds-reset-gpios = <&gpio4 19 GPIO_ACTIVE_HIGH>;
 	lvds-stby-gpios  = <&gpio4 9 GPIO_ACTIVE_HIGH>;
 	lvds-bridge-vcc-gpios = <&gpio4 28 GPIO_ACTIVE_HIGH>;
+	lvds-bridge-vdd-gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>;
 	bklt-vcc-enable-gpios = <&gpio5 22 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 	lvds-bkl-delay-time = <150>;
