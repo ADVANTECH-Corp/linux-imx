@@ -425,6 +425,10 @@ struct pltfm_imx_data {
 	} multiblock_status;
 	u32 is_ddr;
 	struct pm_qos_request pm_qos_req;
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct gpio_desc *wifi_pwr_en_gpio;
+	struct gpio_desc *wifi_pdn_gpio;
+#endif
 };
 
 static const struct of_device_id imx_esdhc_dt_ids[] = {
@@ -1855,9 +1859,6 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
 	struct device_node *np = pdev->dev.of_node;
 	struct esdhc_platform_data *boarddata = &imx_data->boarddata;
 	int ret;
-#ifdef CONFIG_ARCH_ADVANTECH
-	struct gpio_desc *wifi_pwr_en_gpio,*wifi_pdn_gpio;
-#endif
 
 	if (of_property_read_bool(np, "fsl,wp-controller"))
 		boarddata->wp_type = ESDHC_WP_CONTROLLER;
@@ -1889,41 +1890,18 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
 
 #ifdef CONFIG_ARCH_ADVANTECH
 	/* wifi-pwr-en: LOW -> delay 5ms -> HIGH */
-	wifi_pwr_en_gpio = devm_gpiod_get_optional(&pdev->dev,
+	imx_data->wifi_pwr_en_gpio = devm_gpiod_get_optional(&pdev->dev,
 						   "wifi-pwr-en",
-						   GPIOD_OUT_LOW);
-	if (IS_ERR(wifi_pwr_en_gpio))
-		return dev_err_probe(&pdev->dev, PTR_ERR(wifi_pwr_en_gpio),
-				     "unable to get wifi-pwr-en gpio\n");
-	if (wifi_pwr_en_gpio) {
-		mdelay(5);
-		gpiod_set_value(wifi_pwr_en_gpio, 1);
-	}
+						   GPIOD_OUT_HIGH);
 
 	/* wifi-pdn: LOW -> delay 5ms -> HIGH */
-	wifi_pdn_gpio = devm_gpiod_get_optional(&pdev->dev,
+	imx_data->wifi_pdn_gpio = devm_gpiod_get_optional(&pdev->dev,
 						"wifi-pdn",
 						GPIOD_OUT_LOW);
-	if (IS_ERR(wifi_pdn_gpio))
-		return dev_err_probe(&pdev->dev, PTR_ERR(wifi_pdn_gpio),
-				     "unable to get wifi-pdn gpio\n");
-	if (wifi_pdn_gpio) {
+	if (!IS_ERR(imx_data->wifi_pdn_gpio) && imx_data->wifi_pdn_gpio) {
 		mdelay(5);
-		gpiod_set_value(wifi_pdn_gpio, 1);
+		gpiod_set_value(imx_data->wifi_pdn_gpio, 1);
 	}
-/*
-wifi_pwr_en_gpio = devm_gpiod_get_optional(&pdev->dev, "wifi-pwr-en", GPIOD_OUT_HIGH);
-if (!IS_ERR(wifi_pwr_en_gpio)) {
-    mdelay(5);
-    gpiod_set_value(wifi_pwr_en_gpio, 1);
-}
-
-wifi_pdn_gpio = devm_gpiod_get_optional(&pdev->dev, "wifi-pdn", GPIOD_OUT_HIGH);
-if (!IS_ERR(wifi_pdn_gpio)) {
-    mdelay(5);
-    gpiod_set_value(wifi_pdn_gpio, 1);
-}
-	*/
 #endif
 
 	mmc_of_parse_voltage(host->mmc, &host->ocr_mask);
@@ -2139,6 +2117,16 @@ static void sdhci_esdhc_imx_remove(struct platform_device *pdev)
 
 	sdhci_remove_host(host, dead);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (!IS_ERR(imx_data->wifi_pdn_gpio) && imx_data->wifi_pdn_gpio) {
+		gpiod_set_value(imx_data->wifi_pdn_gpio, 0);
+		mdelay(5);
+	}
+	if (!IS_ERR(imx_data->wifi_pwr_en_gpio) && imx_data->wifi_pwr_en_gpio) {
+		gpiod_set_value(imx_data->wifi_pwr_en_gpio, 0);
+	}
+#endif
+
 	clk_disable_unprepare(imx_data->clk_per);
 	clk_disable_unprepare(imx_data->clk_ipg);
 	clk_disable_unprepare(imx_data->clk_ahb);
@@ -2184,6 +2172,16 @@ static int sdhci_esdhc_suspend(struct device *dev)
 
 	/* The irqs of imx are not shared. It is safe to disable */
 	disable_irq(host->irq);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (!IS_ERR(imx_data->wifi_pdn_gpio) && imx_data->wifi_pdn_gpio) {
+		gpiod_set_value(imx_data->wifi_pdn_gpio, 0);
+		msleep(2);
+	}
+	if (!IS_ERR(imx_data->wifi_pwr_en_gpio) && imx_data->wifi_pwr_en_gpio) {
+		gpiod_set_value(imx_data->wifi_pwr_en_gpio, 0);
+	}
+#endif
 
 	if (device_may_wakeup(dev)) {
 		if (!sdhci_enable_irq_wakeups(host))
@@ -2234,6 +2232,17 @@ static int sdhci_esdhc_resume(struct device *dev)
 
 	if (imx_data->boarddata.cd_gpio_wakeup)
 		mmc_gpio_set_cd_wake(host->mmc, false);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (!IS_ERR(imx_data->wifi_pwr_en_gpio) && imx_data->wifi_pwr_en_gpio) {
+		gpiod_set_value(imx_data->wifi_pwr_en_gpio, 1);
+		msleep(5);
+	}
+	if (!IS_ERR(imx_data->wifi_pdn_gpio) && imx_data->wifi_pdn_gpio) {
+		gpiod_set_value(imx_data->wifi_pdn_gpio, 1);
+		msleep(10);
+	}
+#endif
 
 	/* re-initialize hw state in case it's lost in low power mode */
 	sdhci_esdhc_imx_hwinit(host);

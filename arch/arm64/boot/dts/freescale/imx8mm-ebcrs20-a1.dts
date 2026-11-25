@@ -25,8 +25,8 @@
 
 	usdhc1_pwrseq: usdhc1_pwrseq {
 		compatible = "mmc-pwrseq-simple";
-		reset-gpios = <&gpio2 10 GPIO_ACTIVE_LOW>;
-		post-power-on-delay-ms = <100>;
+		reset-gpios = <&gpio2 7 GPIO_ACTIVE_LOW>;
+		post-power-on-delay-ms = <10>;
 	};
 
 	reg_vmmc_wifi: regulator-vmmc-wifi {
@@ -34,7 +34,10 @@
         regulator-name = "vmmc_wifi";
         regulator-min-microvolt = <3300000>;
         regulator-max-microvolt = <3300000>;
-        regulator-always-on;
+        gpio = <&gpio4 1 GPIO_ACTIVE_HIGH>;
+        off-on-delay-us = <2000>;
+        enable-active-high;
+        //regulator-always-on;
     };
 
     reg_vqmmc_wifi: regulator-vqmmc-wifi {
@@ -115,14 +118,15 @@
 		pinctrl-0 = <&adv_gpio_pinmux>;
 		timing-interval = <200>;
 		minipcie-reset-gpios = <&gpio3 24 GPIO_ACTIVE_LOW>;
-		en-gpios = <&gpio4 25 GPIO_ACTIVE_HIGH>,<&gpio4 0 GPIO_ACTIVE_HIGH>,<&gpio2 9 GPIO_ACTIVE_HIGH>;
+		en-gpios = <&gpio4 0 GPIO_ACTIVE_HIGH>;
 		reset-gpios = < >;
 		sleep-gpios = <&gpio5 8 GPIO_ACTIVE_HIGH>,<&gpio3 21 GPIO_ACTIVE_HIGH>,
 					<&gpio5 24 GPIO_ACTIVE_HIGH>,<&gpio5 23 GPIO_ACTIVE_HIGH>,<&gpio5 9 GPIO_ACTIVE_HIGH>,
 					<&gpio5 10 GPIO_ACTIVE_HIGH>,<&gpio1 10 GPIO_ACTIVE_HIGH>,<&gpio1 0 GPIO_ACTIVE_HIGH>,
 					<&gpio1 11 GPIO_ACTIVE_HIGH>,<&gpio1 1 GPIO_ACTIVE_HIGH>,
 					<&gpio3 20 GPIO_ACTIVE_HIGH>,<&gpio5 7 GPIO_ACTIVE_HIGH>,<&gpio3 19 GPIO_ACTIVE_HIGH>,
-					<&gpio1 6 GPIO_ACTIVE_HIGH>,<&gpio3 22 GPIO_ACTIVE_HIGH>,<&gpio3 23 GPIO_ACTIVE_HIGH>,
+					<&gpio1 6 GPIO_ACTIVE_HIGH>,<&gpio3 23 GPIO_ACTIVE_HIGH>,
+					<&gpio2 9 GPIO_ACTIVE_HIGH>,<&gpio2 10 GPIO_ACTIVE_HIGH>,
 					<&gpio5 25 GPIO_ACTIVE_HIGH>,
 					<&gpio2 11 GPIO_ACTIVE_HIGH>;
 		input-gpios = < >;
@@ -286,20 +290,21 @@
 };
 
 &usdhc1 { /* wifi bt */
-	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-names = "default", "state_100mhz", "state_200mhz", "sleep";
 	pinctrl-0 = <&pinctrl_usdhc1>, <&pinctrl_usdhc1_gpio>;
 	pinctrl-1 = <&pinctrl_usdhc1_100mhz>, <&pinctrl_usdhc1_gpio>;
 	pinctrl-2 = <&pinctrl_usdhc1_200mhz>, <&pinctrl_usdhc1_gpio>;
+	pinctrl-3 = <&pinctrl_usdhc1_sleep>, <&pinctrl_usdhc1_gpio>;
 	bus-width = <4>;
 	pm-ignore-notify;
-	non-removable;
+	//non-removable;
 
 	fsl,sdio-async-interrupt-enabled;
-	wakeup-source;
+	//wakeup-source;
 	mmc-pwrseq = <&usdhc1_pwrseq>;
-	keep-power-in-suspend;
-	wifi-pwr-en-gpios = <&gpio4 1 GPIO_ACTIVE_HIGH>;
-	wifi-pdn-gpios = <&gpio2 7 GPIO_ACTIVE_HIGH>;
+	//keep-power-in-suspend;
+	wifi-pwr-en-gpios = <&gpio4 25 GPIO_ACTIVE_HIGH>;
+	//wifi-pdn-gpios = <&gpio2 7 GPIO_ACTIVE_HIGH>;
 	vmmc-supply = <&reg_vmmc_wifi>;
 	vqmmc-supply = <&reg_vqmmc_wifi>;
 
@@ -407,7 +412,7 @@
 			MX8MM_IOMUXC_SAI1_RXD6_GPIO4_IO8		0x116	/* W_BT/15.4_WAKE_OUT_1V8 */
 			MX8MM_IOMUXC_SAI1_RXD4_GPIO4_IO6		0x41	/* W_BT/15.4_WAKE_IN_1V8 */
 			MX8MM_IOMUXC_SAI1_TXD5_GPIO4_IO17		0x41	/* W_WLAN_WAKE_IN_1V8 */
-			MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27		0x41	/* W_WLAN_WAKE_OUT_1V8 */
+			MX8MM_IOMUXC_SAI2_MCLK_GPIO4_IO27		0x116	/* W_WLAN_WAKE_OUT_1V8 */
 
 			MX8MM_IOMUXC_SD1_DATA4_GPIO2_IO6		0x41	/* SD1_INT */
 
@@ -450,6 +455,17 @@
 			MX8MM_IOMUXC_SD1_DATA1_USDHC1_DATA1	0x1d6
 			MX8MM_IOMUXC_SD1_DATA2_USDHC1_DATA2	0x1d6
 			MX8MM_IOMUXC_SD1_DATA3_USDHC1_DATA3	0x1d6
+		>;
+	};
+
+	pinctrl_usdhc1_sleep: usdhc1grpsleep {
+		fsl,pins = <
+			MX8MM_IOMUXC_SD1_CLK_GPIO2_IO0		0x116
+			MX8MM_IOMUXC_SD1_CMD_GPIO2_IO1		0x116
+			MX8MM_IOMUXC_SD1_DATA0_GPIO2_IO2	0x116
+			MX8MM_IOMUXC_SD1_DATA1_GPIO2_IO3	0x116
+			MX8MM_IOMUXC_SD1_DATA2_GPIO2_IO4	0x116
+			MX8MM_IOMUXC_SD1_DATA3_GPIO2_IO5	0x116
 		>;
 	};
 

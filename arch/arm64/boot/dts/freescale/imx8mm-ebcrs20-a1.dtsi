@@ -429,8 +429,9 @@
 };
 
 &uart1 {
-	pinctrl-names = "default";
+	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&pinctrl_uart1>;
+	pinctrl-1 = <&pinctrl_uart1_sleep>;
 	assigned-clocks = <&clk IMX8MM_CLK_UART1>;
 	assigned-clock-parents = <&clk IMX8MM_SYS_PLL1_80M>;
 	fsl,uart-has-rtscts;
@@ -652,6 +653,14 @@
 			MX8MM_IOMUXC_SAI2_RXC_UART1_DCE_RX     0x140
 			MX8MM_IOMUXC_SAI2_RXD0_UART1_DCE_RTS_B  0x140
 			MX8MM_IOMUXC_SAI2_TXFS_UART1_DCE_CTS_B  0x140
+		>;
+	};
+	pinctrl_uart1_sleep: uart1grpslp {
+		fsl,pins = <
+			MX8MM_IOMUXC_SAI2_RXFS_GPIO4_IO21     0x116
+			MX8MM_IOMUXC_SAI2_RXC_GPIO4_IO22     0x116
+			MX8MM_IOMUXC_SAI2_RXD0_GPIO4_IO23  0x116
+			MX8MM_IOMUXC_SAI2_TXFS_GPIO4_IO24  0x116
 		>;
 	};
 
