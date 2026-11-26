@@ -235,7 +235,7 @@
 	lvds-bridge-vdd-gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>;
 	bklt-vcc-enable-gpios = <&gpio5 22 GPIO_ACTIVE_HIGH>;
 	status = "okay";
-	lvds-bkl-delay-time = <150>;
+	lvds-bkl-delay-time = <500>;
 	lvds-vcc-delay-time = <30>;
 };
 

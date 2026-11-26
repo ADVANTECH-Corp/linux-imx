@@ -278,11 +278,7 @@ static void pwm_backlight_vdd_off(struct pwm_bl_data *pb)
 static int pwm_backlight_update_status(struct backlight_device *bl)
 {
 	struct pwm_bl_data *pb = bl_get_data(bl);
-#ifndef CONFIG_ARCH_ADVANTECH
 	int brightness = backlight_get_brightness(bl);
-#else
-	int brightness = bl->props.brightness;
-#endif
 	struct pwm_state state;
 
 #ifndef CONFIG_ARCH_ADVANTECH
@@ -1000,12 +996,16 @@ static const struct dev_pm_ops pwm_backlight_pm_ops = {
 static struct platform_driver pwm_backlight_driver = {
 	.driver		= {
 		.name		= "pwm-backlight",
+#ifndef CONFIG_ARCH_ADVANTECH
 		.pm		= &pwm_backlight_pm_ops,
+#endif
 		.of_match_table	= of_match_ptr(pwm_backlight_of_match),
 	},
 	.probe		= pwm_backlight_probe,
+#ifndef CONFIG_ARCH_ADVANTECH
 	.remove_new	= pwm_backlight_remove,
 	.shutdown	= pwm_backlight_shutdown,
+#endif
 };
 
 module_platform_driver(pwm_backlight_driver);

@@ -354,7 +354,6 @@ static int imx_drm_bind(struct device *dev)
 		backlight_pending = false;
 		bd = backlight_device_get_by_type(BACKLIGHT_RAW);
 		if (bd) {
-			msleep(200);
 			backlight_device_set_brightness(bd, bd->props.max_brightness);
 		}
 	}
