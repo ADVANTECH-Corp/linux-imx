@@ -2139,6 +2139,9 @@ struct rt5640_priv {
 	struct clk *mclk;
 
 	struct gpio_desc *ldo1_en; /* GPIO for LDO1_EN */
+#ifdef CONFIG_ARCH_ADVANTECH
+	struct gpio_desc *amp_mute_gpio; /* GPIO for speaker amp mute */
+#endif
 	int irq;
 	int jd_gpio_irq;
 	int sysclk;

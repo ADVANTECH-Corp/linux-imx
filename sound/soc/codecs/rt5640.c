@@ -1931,6 +1931,24 @@ static int rt5640_set_dai_pll(struct snd_soc_dai *dai, int pll_id, int source,
 	return 0;
 }
 
+#ifdef CONFIG_ARCH_ADVANTECH
+static int rt5640_mute(struct snd_soc_dai *dai, int mute, int direction)
+{
+	struct snd_soc_component *component = dai->component;
+	struct rt5640_priv *rt5640 = snd_soc_component_get_drvdata(component);
+
+	if (direction != SNDRV_PCM_STREAM_PLAYBACK)
+		return 0;
+
+	if (!rt5640->amp_mute_gpio)
+		return 0;
+
+	gpiod_set_value_cansleep(rt5640->amp_mute_gpio, mute ? 0 : 1);
+
+	return 0;
+}
+#endif
+
 static int rt5640_set_bias_level(struct snd_soc_component *component,
 			enum snd_soc_bias_level level)
 {
@@ -2873,6 +2891,9 @@ static const struct snd_soc_dai_ops rt5640_aif_dai_ops = {
 	.set_fmt = rt5640_set_dai_fmt,
 	.set_sysclk = rt5640_set_dai_sysclk,
 	.set_pll = rt5640_set_dai_pll,
+#ifdef CONFIG_ARCH_ADVANTECH
+	.mute_stream = rt5640_mute,
+#endif
 };
 
 static struct snd_soc_dai_driver rt5640_dai[] = {
@@ -3003,6 +3024,21 @@ static int rt5640_i2c_probe(struct i2c_client *i2c)
 		gpiod_set_consumer_name(rt5640->ldo1_en, "RT5640 LDO1_EN");
 		msleep(400);
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	rt5640->amp_mute_gpio = devm_gpiod_get_optional(&i2c->dev, "amp-mute",
+						       GPIOD_OUT_LOW);
+	if (IS_ERR(rt5640->amp_mute_gpio)) {
+		ret = PTR_ERR(rt5640->amp_mute_gpio);
+		dev_err(&i2c->dev, "Failed to get amp mute GPIO: %d\n", ret);
+		return ret;
+	}
+
+	if (rt5640->amp_mute_gpio) {
+		gpiod_set_consumer_name(rt5640->amp_mute_gpio, "RT5640 amp mute");
+		gpiod_set_value_cansleep(rt5640->amp_mute_gpio, 0);
+	}
+#endif
 
 	rt5640->regmap = devm_regmap_init_i2c(i2c, &rt5640_regmap);
 	if (IS_ERR(rt5640->regmap)) {
