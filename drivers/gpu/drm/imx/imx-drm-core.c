@@ -30,6 +30,12 @@
 #include "dpu/dpu-blit.h"
 #include "imx-drm.h"
 
+#ifdef CONFIG_ARCH_ADVANTECH
+#include <linux/backlight.h>
+#include <linux/delay.h>
+extern bool backlight_pending;
+#endif
+
 static int legacyfb_depth = 16;
 module_param(legacyfb_depth, int, 0444);
 
@@ -341,6 +347,18 @@ static int imx_drm_bind(struct device *dev)
 	drm_fbdev_dma_setup(drm, legacyfb_depth);
 
 	dev_set_drvdata(dev, drm);
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	if (backlight_pending) {
+		struct backlight_device *bd;
+		backlight_pending = false;
+		bd = backlight_device_get_by_type(BACKLIGHT_RAW);
+		if (bd) {
+			msleep(200);
+			backlight_device_set_brightness(bd, bd->props.max_brightness);
+		}
+	}
+#endif
 
 	return 0;
 

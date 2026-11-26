@@ -51,6 +51,7 @@ struct pwm_bl_data {
 #ifdef CONFIG_ARCH_ADVANTECH
 void enable_ldb_bkl_pwm(void);
 void disable_ldb_bkl_pwm(void);
+bool backlight_pending = true;
 #endif
 
 static void pwm_backlight_power_on(struct pwm_bl_data *pb)
@@ -295,6 +296,12 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
 		brightness = pb->notify(pb->dev, brightness);
 
 	if (brightness > 0) {
+	#ifdef CONFIG_ARCH_ADVANTECH
+		if (backlight_pending) {
+			printk("pwm_backlight_update_status is pending\n");
+			return 0;
+		}
+	#endif
 		pwm_get_state(pb->pwm, &state);
 		state.duty_cycle = compute_duty_cycle(pb, brightness, &state);
 		state.enabled = true;

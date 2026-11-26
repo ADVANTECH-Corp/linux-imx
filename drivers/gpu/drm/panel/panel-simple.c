@@ -444,17 +444,6 @@ static int panel_simple_disable(struct drm_panel *panel)
 
 	opt3001_cancel_work();
 
-	// turn off backlight
-	struct backlight_device *bd = devm_of_find_backlight(panel->dev);
-	if (!IS_ERR_OR_NULL(bd)) {
-		p->saved_brightness = bd->props.brightness;
-		if (p->saved_brightness == 0)
-			p->saved_brightness = 10;
-		backlight_device_set_brightness(bd, 0);
-		dev_info(panel->dev, "Saved backlight %d, turned off\n",
-			 p->saved_brightness);
-	}
-
 	if (p->off_cmds) {
 		printk("DSI panel enter sleep mode\n");
 
@@ -562,12 +551,6 @@ static int panel_simple_enable(struct drm_panel *panel)
 			dev_err(p->dev, "failed to send on cmds\n");
 	}
 
-	struct backlight_device *bd = devm_of_find_backlight(panel->dev);
-	if (!IS_ERR_OR_NULL(bd) && p->saved_brightness > 0) {
-		backlight_device_set_brightness(bd, p->saved_brightness);
-		dev_info(panel->dev, "Restored backlight to %d\n",
-			 p->saved_brightness);
-	}
 	opt3001_enable_work();
 #endif
 
