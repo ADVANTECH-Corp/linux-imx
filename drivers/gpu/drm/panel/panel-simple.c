@@ -44,10 +44,6 @@
 
 #ifdef CONFIG_ARCH_ADVANTECH
 #include <video/mipi_display.h>
-#include <linux/backlight.h>
-
-extern void opt3001_enable_work(void);
-extern void opt3001_cancel_work(void);
 
 struct dsi_ctrl_hdr {
 	u8 dtype;	/* data type */
@@ -442,8 +438,6 @@ static int panel_simple_disable(struct drm_panel *panel)
 #if defined(CONFIG_ARCH_ADVANTECH)
 	int err;
 
-	opt3001_cancel_work();
-
 	if (p->off_cmds) {
 		printk("DSI panel enter sleep mode\n");
 
@@ -550,8 +544,6 @@ static int panel_simple_enable(struct drm_panel *panel)
 		if (err)
 			dev_err(p->dev, "failed to send on cmds\n");
 	}
-
-	opt3001_enable_work();
 #endif
 
 	return 0;

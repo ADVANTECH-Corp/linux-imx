@@ -29,6 +29,11 @@
 #include <drm/drm_panel.h>
 #include <drm/drm_print.h>
 
+#ifdef CONFIG_ARCH_ADVANTECH
+extern void opt3001_enable_work(void);
+extern void opt3001_cancel_work(void);
+#endif
+
 static DEFINE_MUTEX(panel_lock);
 static LIST_HEAD(panel_list);
 
@@ -233,6 +238,10 @@ int drm_panel_enable(struct drm_panel *panel)
 		DRM_DEV_INFO(panel->dev, "failed to enable backlight: %d\n",
 			     ret);
 
+#ifdef CONFIG_ARCH_ADVANTECH
+	opt3001_enable_work();
+#endif
+
 	return 0;
 }
 EXPORT_SYMBOL(drm_panel_enable);
@@ -267,6 +276,10 @@ int drm_panel_disable(struct drm_panel *panel)
 		dev_warn(panel->dev, "Skipping disable of already disabled panel\n");
 		return 0;
 	}
+
+#ifdef CONFIG_ARCH_ADVANTECH
+	opt3001_cancel_work();
+#endif
 
 	ret = backlight_disable(panel->backlight);
 	if (ret < 0)
